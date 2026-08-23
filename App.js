@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { NavigationContainer } from '@react-navigation/native'
 import { useEffect, useState } from 'react'
 import { Text } from 'react-native'
+import AboutScreen from './screens/AboutScreen'
 import BarcodeScannerScreen from './screens/BarcodeScannerScreen'
 import BudgetScreen from './screens/BudgetScreen'
 import EmergencyScreen from './screens/EmergencyScreen'
@@ -17,6 +18,7 @@ import ProductsScreen from './screens/ProductsScreen'
 import ProgressScreen from './screens/ProgressScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
+import SkinTypeQuizScreen from './screens/SkinTypeQuizScreen'
 import { SKYNKOD_COLORS } from './utils/constants'
 
 const Tab = createBottomTabNavigator()
@@ -33,9 +35,11 @@ function AppTabs({ userId }) {
       <Tab.Screen name="Routines" component={RoutinesScreen} options={{ tabBarLabel: 'Routines', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> }} />
       <Tab.Screen name="Products" component={ProductsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Products', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🧴</Text> }} />
       <Tab.Screen name="Photos" component={PhotosScreen} options={{ tabBarLabel: 'Photos', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📸</Text> }} />
+      <Tab.Screen name="Quiz" component={SkinTypeQuizScreen} options={{ tabBarLabel: 'Quiz', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎯</Text> }} />
       <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: 'Budget', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
       <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarLabel: 'Alerts', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }} />
+      <Tab.Screen name="About" component={AboutScreen} options={{ tabBarLabel: 'About', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>ℹ️</Text> }} />
       <Tab.Screen name="Emergency" component={EmergencyScreen} options={{ tabBarLabel: 'SOS', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🆘</Text> }} />
       <Tab.Screen name="Scanner" component={BarcodeScannerScreen} options={{ tabBarLabel: 'Scanner', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📷</Text> }} />
     </Tab.Navigator>
