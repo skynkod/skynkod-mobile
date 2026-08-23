@@ -14,6 +14,7 @@ import LoginScreen from './screens/LoginScreen'
 import NotificationsScreen from './screens/NotificationsScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import PhotosScreen from './screens/PhotosScreen'
+import PremiumScreen from './screens/PremiumScreen'
 import ProductsScreen from './screens/ProductsScreen'
 import ProgressScreen from './screens/ProgressScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
@@ -39,6 +40,7 @@ function AppTabs({ userId }) {
       <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: 'Budget', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
       <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarLabel: 'Alerts', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }} />
+      <Tab.Screen name="Premium" component={PremiumScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Premium', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👑</Text> }} />
       <Tab.Screen name="About" component={AboutScreen} options={{ tabBarLabel: 'About', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>ℹ️</Text> }} />
       <Tab.Screen name="Emergency" component={EmergencyScreen} options={{ tabBarLabel: 'SOS', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🆘</Text> }} />
       <Tab.Screen name="Scanner" component={BarcodeScannerScreen} options={{ tabBarLabel: 'Scanner', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📷</Text> }} />
