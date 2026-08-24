@@ -1,28 +1,41 @@
 import { useState } from 'react'
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { createUser, getUser } from '../utils/supabase'
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { SKYNKOD_COLORS } from '../utils/constants'
+import { createUser, signIn, signUp } from '../utils/supabase'
 
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter an email')
+  const handleAuthenticate = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter email and password')
       return
     }
 
     setLoading(true)
     try {
-      let user = await getUser(email)
-
-      if (!user) {
-        user = await createUser(email)
-        if (!user) throw new Error('Failed to create user')
-        Alert.alert('Success', 'Account created!')
+      let result
+      if (isSignUp) {
+        result = await signUp(email, password)
+        if (result.success) {
+          await createUser(result.user.id, email)
+          Alert.alert('Success', 'Account created! Please sign in.')
+          setIsSignUp(false)
+          setPassword('')
+        } else {
+          Alert.alert('Sign Up Error', result.error)
+        }
+      } else {
+        result = await signIn(email, password)
+        if (result.success) {
+          onLogin(email, result.user.id)
+        } else {
+          Alert.alert('Sign In Error', result.error)
+        }
       }
-
-      onLogin(email, user.id)
     } catch (error) {
       Alert.alert('Error', error.message)
     } finally {
@@ -32,86 +45,81 @@ export default function LoginScreen({ onLogin }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Skynkod</Text>
-      <Text style={styles.subtitle}>Your skincare journey starts here</Text>
+      <View style={styles.header}>
+        <Text style={styles.emoji}>✨</Text>
+        <Text style={styles.title}>Skynkod</Text>
+        <Text style={styles.subtitle}>Your AI Skincare Coach</Text>
+      </View>
 
-      <View style={styles.form}>
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>{isSignUp ? 'Create Account' : 'Sign In'}</Text>
+
         <TextInput
           style={styles.input}
-          placeholder="Enter your email"
+          placeholder="Email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           editable={!loading}
+          placeholderTextColor={SKYNKOD_COLORS.muted}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          editable={!loading}
+          placeholderTextColor={SKYNKOD_COLORS.muted}
         />
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
+          style={styles.button}
+          onPress={handleAuthenticate}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
-            {loading ? 'Loading...' : 'Sign In'}
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>
+              {isSignUp ? 'Create Account' : 'Sign In'}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            setIsSignUp(!isSignUp)
+            setPassword('')
+          }}
+          disabled={loading}
+        >
+          <Text style={styles.toggleText}>
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.footer}>Demo password: demo123</Text>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Secure login powered by Supabase</Text>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F7F1F5',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#14121A',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#9B97A0',
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  form: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ABA0AA',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#B283AC',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  footer: {
-    color: '#9B97A0',
-    textAlign: 'center',
-    fontSize: 12,
-  },
+  container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg, justifyContent: 'center', paddingHorizontal: 20 },
+  header: { alignItems: 'center', marginBottom: 40 },
+  emoji: { fontSize: 60, marginBottom: 12 },
+  title: { fontSize: 32, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
+  subtitle: { fontSize: 14, color: SKYNKOD_COLORS.muted, marginTop: 4 },
+  formCard: { backgroundColor: 'white', borderRadius: 12, padding: 24, marginBottom: 24 },
+  formTitle: { fontSize: 18, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 20 },
+  input: { borderWidth: 1, borderColor: SKYNKOD_COLORS.border, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: SKYNKOD_COLORS.text },
+  button: { backgroundColor: SKYNKOD_COLORS.primary, paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
+  buttonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  toggleText: { color: SKYNKOD_COLORS.primary, textAlign: 'center', marginTop: 16, fontWeight: '500' },
+  footer: { alignItems: 'center' },
+  footerText: { color: SKYNKOD_COLORS.muted, fontSize: 12 },
 })

@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SKYNKOD_COLORS } from '../utils/constants'
+import { getProducts, initializeIAP, purchasePremium } from '../utils/inAppPurchases'
 import { isPremiumUser, setPremium } from '../utils/premium'
 
 export default function PremiumScreen({ route }) {
   const { userId } = route.params
   const [isPremium, setIsPremium] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState([])
 
   useEffect(() => {
     checkPremium()
+    setupIAP()
   }, [userId])
 
   const checkPremium = async () => {
@@ -16,22 +20,32 @@ export default function PremiumScreen({ route }) {
     setIsPremium(premium)
   }
 
-  const handleUpgrade = async () => {
-    Alert.alert(
-      'Upgrade to Premium',
-      'In a real app, this would open Stripe payment!\n\nFor now, we\'re adding 30 days free trial.',
-      [
-        { text: 'Cancel', onPress: () => {} },
-        {
-          text: 'Start Free Trial',
-          onPress: async () => {
-            await setPremium(userId, true)
-            setIsPremium(true)
-            Alert.alert('Success', '🎉 You are now Premium!\n\nEnjoy unlimited features!')
-          },
-        },
-      ]
-    )
+  const setupIAP = async () => {
+    try {
+      await initializeIAP()
+      const prods = await getProducts()
+      setProducts(prods)
+    } catch (error) {
+      console.error('Setup IAP error:', error)
+    }
+  }
+
+  const handlePurchase = async () => {
+    setLoading(true)
+    try {
+      const result = await purchasePremium(userId)
+      if (result.success) {
+        await setPremium(userId, true)
+        setIsPremium(true)
+        Alert.alert('Success', '🎉 Welcome to Premium!\n\nEnjoy unlimited features!')
+      } else {
+        Alert.alert('Error', 'Purchase failed. Please try again.')
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (isPremium) {
@@ -54,14 +68,10 @@ export default function PremiumScreen({ route }) {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Plan Details</Text>
-            <Text style={styles.detail}>Plan: Premium Annual</Text>
+            <Text style={styles.detail}>Plan: Premium Monthly</Text>
             <Text style={styles.detail}>Status: Active</Text>
-            <Text style={styles.detail}>Renews: In 30 days</Text>
+            <Text style={styles.detail}>Auto-renews monthly</Text>
           </View>
-
-          <TouchableOpacity style={styles.manageBtn}>
-            <Text style={styles.manageBtnText}>Manage Subscription</Text>
-          </TouchableOpacity>
         </ScrollView>
       </View>
     )
@@ -79,7 +89,7 @@ export default function PremiumScreen({ route }) {
         <View style={styles.priceCard}>
           <Text style={styles.price}>$4.99</Text>
           <Text style={styles.period}>/month</Text>
-          <Text style={styles.trial}>30 days free trial</Text>
+          <Text style={styles.trial}>Auto-renews. Cancel anytime.</Text>
         </View>
 
         <View style={styles.featuresCard}>
@@ -129,14 +139,18 @@ export default function PremiumScreen({ route }) {
         <View style={styles.faqCard}>
           <Text style={styles.faqTitle}>FAQ</Text>
           <Text style={styles.faqQ}>Can I cancel anytime?</Text>
-          <Text style={styles.faqA}>Yes! Cancel anytime from settings.</Text>
-          <Text style={[styles.faqQ, { marginTop: 12 }]}>Do I get a refund?</Text>
-          <Text style={styles.faqA}>30-day money-back guarantee!</Text>
+          <Text style={styles.faqA}>Yes! Manage your subscription in App Store Settings.</Text>
+          <Text style={[styles.faqQ, { marginTop: 12 }]}>Is there a free trial?</Text>
+          <Text style={styles.faqA}>We offer a 30-day money-back guarantee!</Text>
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.upgradeBtn} onPress={handleUpgrade}>
-        <Text style={styles.upgradeBtnText}>Start Free Trial</Text>
+      <TouchableOpacity style={styles.upgradeBtn} onPress={handlePurchase} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.upgradeBtnText}>Start Premium Now</Text>
+        )}
       </TouchableOpacity>
     </View>
   )
@@ -158,8 +172,6 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 12 },
   benefit: { color: SKYNKOD_COLORS.text, fontSize: 14, marginBottom: 8 },
   detail: { color: SKYNKOD_COLORS.muted, fontSize: 14, marginBottom: 6 },
-  manageBtn: { backgroundColor: SKYNKOD_COLORS.border, padding: 12, margin: 16, borderRadius: 8 },
-  manageBtnText: { color: SKYNKOD_COLORS.text, textAlign: 'center', fontWeight: 'bold' },
   featuresCard: { backgroundColor: 'white', padding: 16, margin: 16, borderRadius: 12 },
   featuresTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 16 },
   feature: { flexDirection: 'row', marginBottom: 16 },
