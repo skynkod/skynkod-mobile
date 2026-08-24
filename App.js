@@ -16,6 +16,7 @@ import OnboardingScreen from './screens/OnboardingScreen'
 import PhotosScreen from './screens/PhotosScreen'
 import PremiumScreen from './screens/PremiumScreen'
 import ProductsScreen from './screens/ProductsScreen'
+import ProgressAnalysisScreen from './screens/ProgressAnalysisScreen'
 import ProgressScreen from './screens/ProgressScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
@@ -33,6 +34,7 @@ function AppTabs({ userId }) {
       <Tab.Screen name="Home" component={HomeScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Home', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
       <Tab.Screen name="Journal" component={JournalScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Journal', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📔</Text> }} />
       <Tab.Screen name="Progress" component={ProgressScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Progress', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📊</Text> }} />
+      <Tab.Screen name="Analysis" component={ProgressAnalysisScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Analysis', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📈</Text> }} />
       <Tab.Screen name="Koda" component={KodaScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Koda', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✨</Text> }} />
       <Tab.Screen name="Routines" component={RoutinesScreen} options={{ tabBarLabel: 'Routines', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> }} />
       <Tab.Screen name="Products" component={ProductsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Products', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🧴</Text> }} />
@@ -40,7 +42,7 @@ function AppTabs({ userId }) {
       <Tab.Screen name="Quiz" component={SkinTypeQuizScreen} options={{ tabBarLabel: 'Quiz', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎯</Text> }} />
       <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: 'Budget', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
       <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarLabel: 'Alerts', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }} />
       <Tab.Screen name="Premium" component={PremiumScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Premium', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👑</Text> }} />
       <Tab.Screen name="About" component={AboutScreen} options={{ tabBarLabel: 'About', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>ℹ️</Text> }} />
       <Tab.Screen name="Emergency" component={EmergencyScreen} options={{ tabBarLabel: 'SOS', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🆘</Text> }} />
@@ -66,7 +68,6 @@ export default function App() {
         setUser(JSON.parse(saved))
         if (!onboarded) setShowOnboarding(true)
         
-        // Initialize notifications
         await initializeNotifications(JSON.parse(saved).userId)
       }
     } catch (error) {
@@ -78,17 +79,14 @@ export default function App() {
 
   const initializeNotifications = async (userId) => {
     try {
-      // Request permissions
       const granted = await requestNotificationPermissions()
       
       if (granted) {
-        // Get push token
         const token = await getExpoPushToken()
         if (token) {
           await AsyncStorage.setItem(`push_token_${userId}`, token)
         }
 
-        // Schedule reminders
         await scheduleMorningReminder(userId)
         await scheduleEveningReminder(userId)
         await scheduleJournalReminder(userId)
