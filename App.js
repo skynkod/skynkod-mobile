@@ -21,13 +21,13 @@ import ProgressScreen from './screens/ProgressScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import SkinTypeQuizScreen from './screens/SkinTypeQuizScreen'
-import { SKYNKOD_COLORS } from './utils/constants'
+import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { getExpoPushToken, requestNotificationPermissions, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from './utils/notifications'
 
 const Tab = createBottomTabNavigator()
 
-function AppTabs({ userId }) {
-  const tabOptions = { tabBarActiveTintColor: SKYNKOD_COLORS.primary, headerShown: false }
+function AppTabs({ userId, colors }) {
+  const tabOptions = { tabBarActiveTintColor: colors.primary, headerShown: false, tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border } }
   
   return (
     <Tab.Navigator screenOptions={tabOptions}>
@@ -51,10 +51,11 @@ function AppTabs({ userId }) {
   )
 }
 
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const { colors } = useTheme()
 
   useEffect(() => {
     check()
@@ -115,7 +116,15 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <AppTabs userId={user.userId} />
+      <AppTabs userId={user.userId} colors={colors} />
     </NavigationContainer>
+  )
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   )
 }

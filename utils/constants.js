@@ -1,13 +1,20 @@
-export const SKYNKOD_COLORS = {
-  bg: '#F7F1F5',
-  primary: '#B283AC',
-  dark: '#7A3E76',
-  text: '#14121A',
-  muted: '#9B97A0',
-  card: '#FFFFFF',
-  border: '#ABA0AA',
+import { DARK_COLORS, LIGHT_COLORS } from './theme'
+
+export const getSkynkodColors = (isDark = false) => {
+  return isDark ? DARK_COLORS : LIGHT_COLORS
 }
 
-export const SKIN_CONDITIONS = ['oily', 'dry', 'acne', 'irritated', 'normal', 'sensitive']
+export const SKYNKOD_COLORS = LIGHT_COLORS
 
-export const MOODS = ['great', 'okay', 'bad']
+export const SKIN_CONDITIONS = [
+  'Acne',
+  'Dryness',
+  'Oiliness',
+  'Redness',
+  'Sensitivity',
+  'Hyperpigmentation',
+  'Fine Lines',
+  'Texture',
+]
+
+export const MOODS = ['Poor', 'Okay', 'Good', 'Great']
