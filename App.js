@@ -21,8 +21,9 @@ import ProgressScreen from './screens/ProgressScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import SkinTypeQuizScreen from './screens/SkinTypeQuizScreen'
-import { ThemeProvider, useTheme } from './utils/ThemeContext'
+import { LanguageProvider } from './utils/LanguageContext'
 import { getExpoPushToken, requestNotificationPermissions, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from './utils/notifications'
+import { ThemeProvider, useTheme } from './utils/ThemeContext'
 
 const Tab = createBottomTabNavigator()
 
@@ -124,7 +125,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </ThemeProvider>
   )
 }
