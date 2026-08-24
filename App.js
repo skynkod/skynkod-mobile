@@ -21,6 +21,7 @@ import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import SkinTypeQuizScreen from './screens/SkinTypeQuizScreen'
 import { SKYNKOD_COLORS } from './utils/constants'
+import { getExpoPushToken, requestNotificationPermissions, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from './utils/notifications'
 
 const Tab = createBottomTabNavigator()
 
@@ -35,7 +36,7 @@ function AppTabs({ userId }) {
       <Tab.Screen name="Koda" component={KodaScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Koda', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✨</Text> }} />
       <Tab.Screen name="Routines" component={RoutinesScreen} options={{ tabBarLabel: 'Routines', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> }} />
       <Tab.Screen name="Products" component={ProductsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Products', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🧴</Text> }} />
-      <Tab.Screen name="Photos" component={PhotosScreen} options={{ tabBarLabel: 'Photos', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📸</Text> }} />
+      <Tab.Screen name="Photos" component={PhotosScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Photos', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📸</Text> }} />
       <Tab.Screen name="Quiz" component={SkinTypeQuizScreen} options={{ tabBarLabel: 'Quiz', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎯</Text> }} />
       <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: 'Budget', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
       <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarLabel: 'Alerts', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }} />
@@ -54,27 +55,54 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
-    const check = async () => {
-      try {
-        const saved = await AsyncStorage.getItem('skynkod_user')
-        const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
-        if (saved) {
-          setUser(JSON.parse(saved))
-          if (!onboarded) setShowOnboarding(true)
-        }
-      } catch (error) {
-        console.error('Error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
     check()
   }, [])
+
+  const check = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('skynkod_user')
+      const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
+      if (saved) {
+        setUser(JSON.parse(saved))
+        if (!onboarded) setShowOnboarding(true)
+        
+        // Initialize notifications
+        await initializeNotifications(JSON.parse(saved).userId)
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const initializeNotifications = async (userId) => {
+    try {
+      // Request permissions
+      const granted = await requestNotificationPermissions()
+      
+      if (granted) {
+        // Get push token
+        const token = await getExpoPushToken()
+        if (token) {
+          await AsyncStorage.setItem(`push_token_${userId}`, token)
+        }
+
+        // Schedule reminders
+        await scheduleMorningReminder(userId)
+        await scheduleEveningReminder(userId)
+        await scheduleJournalReminder(userId)
+      }
+    } catch (error) {
+      console.error('Initialize notifications error:', error)
+    }
+  }
 
   const handleLogin = async (email, userId) => {
     const data = { email, userId }
     setUser(data)
     await AsyncStorage.setItem('skynkod_user', JSON.stringify(data))
+    await initializeNotifications(userId)
     setShowOnboarding(true)
   }
 

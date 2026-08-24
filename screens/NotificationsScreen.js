@@ -1,154 +1,156 @@
-import * as Notifications from 'expo-notifications'
 import { useEffect, useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { SKYNKOD_COLORS } from '../utils/constants'
+import { disableReminder, enableReminder, isReminderEnabled, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from '../utils/notifications'
 
-export default function NotificationsScreen() {
-  const [journalReminder, setJournalReminder] = useState(true)
-  const [morningReminder, setMorningReminder] = useState(true)
-  const [eveningReminder, setEveningReminder] = useState(true)
-  const [weeklyReport, setWeeklyReport] = useState(true)
+export default function NotificationsScreen({ route }) {
+  const { userId } = route.params
+  const [morningEnabled, setMorningEnabled] = useState(true)
+  const [eveningEnabled, setEveningEnabled] = useState(true)
+  const [journalEnabled, setJournalEnabled] = useState(true)
 
   useEffect(() => {
-    requestPermissions()
-  }, [])
+    loadNotificationSettings()
+  }, [userId])
 
-  const requestPermissions = async () => {
+  const loadNotificationSettings = async () => {
     try {
-      const { status } = await Notifications.requestPermissionsAsync()
-      if (status !== 'granted') {
-        Alert.alert('Permission', 'Please enable notifications in settings')
-      }
+      const morning = await isReminderEnabled(userId, 'morning')
+      const evening = await isReminderEnabled(userId, 'evening')
+      const journal = await isReminderEnabled(userId, 'journal')
+      
+      setMorningEnabled(morning)
+      setEveningEnabled(evening)
+      setJournalEnabled(journal)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Load settings error:', error)
     }
   }
 
-  const scheduleJournalReminder = async () => {
-    try {
-      if (journalReminder) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Time to journal! 📔',
-            body: 'How is your skin today?',
-          },
-          trigger: { hour: 9, minute: 0, repeats: true },
-        })
-      }
-    } catch (error) {
-      console.error('Error:', error)
+  const handleMorningToggle = async (value) => {
+    setMorningEnabled(value)
+    if (value) {
+      await enableReminder(userId, 'morning')
+      await scheduleMorningReminder(userId)
+      Alert.alert('Enabled', '🌅 Morning reminders at 8:00 AM')
+    } else {
+      await disableReminder(userId, 'morning')
+      Alert.alert('Disabled', 'Morning reminders turned off')
     }
   }
 
-  const scheduleMorningReminder = async () => {
-    try {
-      if (morningReminder) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Morning Skincare! 🌅',
-            body: 'Time for your morning routine',
-          },
-          trigger: { hour: 7, minute: 0, repeats: true },
-        })
-      }
-    } catch (error) {
-      console.error('Error:', error)
+  const handleEveningToggle = async (value) => {
+    setEveningEnabled(value)
+    if (value) {
+      await enableReminder(userId, 'evening')
+      await scheduleEveningReminder(userId)
+      Alert.alert('Enabled', '🌙 Evening reminders at 8:00 PM')
+    } else {
+      await disableReminder(userId, 'evening')
+      Alert.alert('Disabled', 'Evening reminders turned off')
     }
   }
 
-  const scheduleEveningReminder = async () => {
-    try {
-      if (eveningReminder) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Evening Skincare! 🌙',
-            body: 'Time for your night routine',
-          },
-          trigger: { hour: 21, minute: 0, repeats: true },
-        })
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    }
-  }
-
-  const scheduleWeeklyReport = async () => {
-    try {
-      if (weeklyReport) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Weekly Report! 📊',
-            body: 'Check your skin progress this week',
-          },
-          trigger: { weekday: 1, hour: 10, minute: 0, repeats: true },
-        })
-      }
-    } catch (error) {
-      console.error('Error:', error)
+  const handleJournalToggle = async (value) => {
+    setJournalEnabled(value)
+    if (value) {
+      await enableReminder(userId, 'journal')
+      await scheduleJournalReminder(userId)
+      Alert.alert('Enabled', '📔 Journal reminders at 9:00 PM')
+    } else {
+      await disableReminder(userId, 'journal')
+      Alert.alert('Disabled', 'Journal reminders turned off')
     }
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Notifications</Text>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Daily Reminders</Text>
-
-        <View style={styles.notifRow}>
-          <View>
-            <Text style={styles.notifTitle}>Morning Skincare</Text>
-            <Text style={styles.notifSubtitle}>7:00 AM</Text>
-          </View>
-          <Switch value={morningReminder} onValueChange={(val) => { setMorningReminder(val); scheduleMorningReminder(); }} trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }} />
-        </View>
-
-        <View style={styles.notifRow}>
-          <View>
-            <Text style={styles.notifTitle}>Journal Reminder</Text>
-            <Text style={styles.notifSubtitle}>9:00 AM</Text>
-          </View>
-          <Switch value={journalReminder} onValueChange={(val) => { setJournalReminder(val); scheduleJournalReminder(); }} trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }} />
-        </View>
-
-        <View style={styles.notifRow}>
-          <View>
-            <Text style={styles.notifTitle}>Evening Skincare</Text>
-            <Text style={styles.notifSubtitle}>9:00 PM</Text>
-          </View>
-          <Switch value={eveningReminder} onValueChange={(val) => { setEveningReminder(val); scheduleEveningReminder(); }} trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }} />
-        </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Notifications</Text>
+        <Text style={styles.subtitle}>Manage your reminders</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weekly</Text>
+      <ScrollView style={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Daily Reminders</Text>
 
-        <View style={styles.notifRow}>
-          <View>
-            <Text style={styles.notifTitle}>Weekly Progress Report</Text>
-            <Text style={styles.notifSubtitle}>Mondays at 10:00 AM</Text>
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderHeader}>
+              <Text style={styles.reminderEmoji}>🌅</Text>
+              <View style={styles.reminderInfo}>
+                <Text style={styles.reminderName}>Morning Routine</Text>
+                <Text style={styles.reminderTime}>8:00 AM daily</Text>
+              </View>
+              <Switch
+                value={morningEnabled}
+                onValueChange={handleMorningToggle}
+                trackColor={{ false: SKYNKOD_COLORS.border, true: SKYNKOD_COLORS.primary }}
+              />
+            </View>
+            <Text style={styles.reminderDesc}>Get reminded to start your morning skincare routine</Text>
           </View>
-          <Switch value={weeklyReport} onValueChange={(val) => { setWeeklyReport(val); scheduleWeeklyReport(); }} trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }} />
-        </View>
-      </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>💡 Tip</Text>
-        <Text style={styles.infoText}>Enable notifications to stay consistent with your skincare routine!</Text>
-      </View>
-    </ScrollView>
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderHeader}>
+              <Text style={styles.reminderEmoji}>🌙</Text>
+              <View style={styles.reminderInfo}>
+                <Text style={styles.reminderName}>Evening Routine</Text>
+                <Text style={styles.reminderTime}>8:00 PM daily</Text>
+              </View>
+              <Switch
+                value={eveningEnabled}
+                onValueChange={handleEveningToggle}
+                trackColor={{ false: SKYNKOD_COLORS.border, true: SKYNKOD_COLORS.primary }}
+              />
+            </View>
+            <Text style={styles.reminderDesc}>Get reminded to do your evening skincare routine</Text>
+          </View>
+
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderHeader}>
+              <Text style={styles.reminderEmoji}>📔</Text>
+              <View style={styles.reminderInfo}>
+                <Text style={styles.reminderName}>Journal Check-in</Text>
+                <Text style={styles.reminderTime}>9:00 PM daily</Text>
+              </View>
+              <Switch
+                value={journalEnabled}
+                onValueChange={handleJournalToggle}
+                trackColor={{ false: SKYNKOD_COLORS.border, true: SKYNKOD_COLORS.primary }}
+              />
+            </View>
+            <Text style={styles.reminderDesc}>Get reminded to log your skin progress for the day</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About Notifications</Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoText}>
+              📱 Notifications help you stay consistent with your skincare routine. Turn on reminders to get daily prompts at the best times for you!
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg, padding: 16 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, color: SKYNKOD_COLORS.text },
+  container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg },
+  header: { padding: 16, borderBottomWidth: 1, borderBottomColor: SKYNKOD_COLORS.border },
+  title: { fontSize: 24, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
+  subtitle: { fontSize: 12, color: SKYNKOD_COLORS.muted, marginTop: 4 },
+  content: { flex: 1, padding: 16 },
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.primary, marginBottom: 12 },
-  notifRow: { backgroundColor: 'white', padding: 16, borderRadius: 8, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  notifTitle: { fontSize: 14, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
-  notifSubtitle: { fontSize: 12, color: SKYNKOD_COLORS.muted, marginTop: 4 },
-  infoCard: { backgroundColor: 'rgba(178, 131, 172, 0.1)', padding: 16, borderRadius: 8, marginBottom: 20 },
-  infoTitle: { fontWeight: 'bold', marginBottom: 8 },
-  infoText: { color: SKYNKOD_COLORS.text, fontSize: 14 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 12 },
+  reminderCard: { backgroundColor: 'white', borderRadius: 12, padding: 16, marginBottom: 12 },
+  reminderHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  reminderEmoji: { fontSize: 24, marginRight: 12 },
+  reminderInfo: { flex: 1 },
+  reminderName: { fontWeight: '600', color: SKYNKOD_COLORS.text, fontSize: 14 },
+  reminderTime: { color: SKYNKOD_COLORS.muted, fontSize: 12, marginTop: 2 },
+  reminderDesc: { color: SKYNKOD_COLORS.muted, fontSize: 13, lineHeight: 18 },
+  infoCard: { backgroundColor: 'white', borderRadius: 12, padding: 16 },
+  infoText: { color: SKYNKOD_COLORS.text, fontSize: 14, lineHeight: 20 },
 })
