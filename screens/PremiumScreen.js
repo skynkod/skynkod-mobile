@@ -1,76 +1,107 @@
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { SKYNKOD_COLORS } from '../utils/constants'
-import { getProducts, initializeIAP, purchasePremium } from '../utils/inAppPurchases'
-import { isPremiumUser, setPremium } from '../utils/premium'
+import { useLanguage } from '../utils/LanguageContext'
+import { isPremiumUser } from '../utils/premium'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 
 export default function PremiumScreen({ route }) {
   const { userId } = route.params
-  const [isPremium, setIsPremium] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [products, setProducts] = useState([])
+  const { isDark } = useTheme()
+  const { t } = useLanguage()
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+
+  const [isUserPremium, setIsUserPremium] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkPremium()
-    setupIAP()
+    checkPremiumStatus()
   }, [userId])
 
-  const checkPremium = async () => {
-    const premium = await isPremiumUser(userId)
-    setIsPremium(premium)
-  }
-
-  const setupIAP = async () => {
+  const checkPremiumStatus = async () => {
     try {
-      await initializeIAP()
-      const prods = await getProducts()
-      setProducts(prods)
+      const premium = await isPremiumUser(userId)
+      setIsUserPremium(premium)
     } catch (error) {
-      console.error('Setup IAP error:', error)
-    }
-  }
-
-  const handlePurchase = async () => {
-    setLoading(true)
-    try {
-      const result = await purchasePremium(userId)
-      if (result.success) {
-        await setPremium(userId, true)
-        setIsPremium(true)
-        Alert.alert('Success', '🎉 Welcome to Premium!\n\nEnjoy unlimited features!')
-      } else {
-        Alert.alert('Error', 'Purchase failed. Please try again.')
-      }
-    } catch (error) {
-      Alert.alert('Error', error.message)
+      console.error('Error checking premium status:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  if (isPremium) {
+  const handleStartPremium = () => {
+    Alert.alert(
+      'Start Premium',
+      'Premium subscription: $4.99/month\n\nIncluding:\n✅ Unlimited Koda Chat\n✅ Routine Generator\n✅ Photo Analysis\n✅ Export Reports',
+      [
+        { text: 'Cancel', onPress: () => {} },
+        {
+          text: 'Subscribe',
+          onPress: () => {
+            Alert.alert('Coming Soon', 'In-App Purchase integration coming in next update!')
+          },
+        },
+      ]
+    )
+  }
+
+  if (loading) {
     return (
-      <View style={styles.container}>
-        <ScrollView>
-          <View style={styles.header}>
-            <Text style={styles.crown}>👑</Text>
-            <Text style={styles.title}>You're Premium!</Text>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (isUserPremium) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Premium</Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>You're premium!</Text>
+        </View>
+
+        <ScrollView style={styles.content}>
+          <View style={[styles.premiumCard, { backgroundColor: colors.primary }]}>
+            <Text style={styles.premiumEmoji}>👑</Text>
+            <Text style={styles.premiumTitle}>Premium Member</Text>
+            <Text style={styles.premiumDesc}>Enjoy unlimited access to all features!</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Active Benefits</Text>
-            <Text style={styles.benefit}>✅ Unlimited Koda Chat</Text>
-            <Text style={styles.benefit}>✅ Routine Generator</Text>
-            <Text style={styles.benefit}>✅ Photo Analysis</Text>
-            <Text style={styles.benefit}>✅ Export Reports</Text>
-            <Text style={styles.benefit}>✅ No Ads</Text>
-          </View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Benefits</Text>
+            
+            <View style={[styles.benefitCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.benefitEmoji}>✨</Text>
+              <View style={styles.benefitContent}>
+                <Text style={[styles.benefitTitle, { color: colors.text }]}>Unlimited Koda Chat</Text>
+                <Text style={[styles.benefitDesc, { color: colors.muted }]}>Ask Koda anything, anytime</Text>
+              </View>
+            </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Plan Details</Text>
-            <Text style={styles.detail}>Plan: Premium Monthly</Text>
-            <Text style={styles.detail}>Status: Active</Text>
-            <Text style={styles.detail}>Auto-renews monthly</Text>
+            <View style={[styles.benefitCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.benefitEmoji}>🔄</Text>
+              <View style={styles.benefitContent}>
+                <Text style={[styles.benefitTitle, { color: colors.text }]}>Routine Generator</Text>
+                <Text style={[styles.benefitDesc, { color: colors.muted }]}>AI-generated personalized routines</Text>
+              </View>
+            </View>
+
+            <View style={[styles.benefitCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.benefitEmoji}>📸</Text>
+              <View style={styles.benefitContent}>
+                <Text style={[styles.benefitTitle, { color: colors.text }]}>Photo Analysis</Text>
+                <Text style={[styles.benefitDesc, { color: colors.muted }]}>AI analyzes your skin progress</Text>
+              </View>
+            </View>
+
+            <View style={[styles.benefitCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.benefitEmoji}>📊</Text>
+              <View style={styles.benefitContent}>
+                <Text style={[styles.benefitTitle, { color: colors.text }]}>Export Reports</Text>
+                <Text style={[styles.benefitDesc, { color: colors.muted }]}>Download your skin data</Text>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -78,111 +109,120 @@ export default function PremiumScreen({ route }) {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.emoji}>✨</Text>
-          <Text style={styles.title}>Go Premium</Text>
-          <Text style={styles.subtitle}>Unlock all features</Text>
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Go Premium</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Unlock all features</Text>
+      </View>
 
-        <View style={styles.priceCard}>
+      <ScrollView style={styles.content}>
+        <View style={[styles.priceCard, { backgroundColor: colors.primary }]}>
+          <Text style={styles.priceEmoji}>👑</Text>
           <Text style={styles.price}>$4.99</Text>
-          <Text style={styles.period}>/month</Text>
-          <Text style={styles.trial}>Auto-renews. Cancel anytime.</Text>
+          <Text style={styles.pricePeriod}>/month</Text>
+          <Text style={styles.priceDesc}>Cancel anytime</Text>
         </View>
 
-        <View style={styles.featuresCard}>
-          <Text style={styles.featuresTitle}>What's Included</Text>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>What You Get</Text>
           
-          <View style={styles.feature}>
-            <Text style={styles.featureEmoji}>🤖</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureName}>Unlimited Koda</Text>
-              <Text style={styles.featureDesc}>Chat with AI anytime</Text>
+          <View style={[styles.featureCard, { backgroundColor: colors.card }]}>
+            <Text style={styles.featureCheckmark}>✅</Text>
+            <View style={styles.featureContent}>
+              <Text style={[styles.featureTitle, { color: colors.text }]}>Unlimited Koda Chat</Text>
+              <Text style={[styles.featureDesc, { color: colors.muted }]}>Unlimited daily conversations with your AI skin coach</Text>
             </View>
           </View>
 
-          <View style={styles.feature}>
-            <Text style={styles.featureEmoji}>🔄</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureName}>Routine Generator</Text>
-              <Text style={styles.featureDesc}>AI creates custom routines</Text>
+          <View style={[styles.featureCard, { backgroundColor: colors.card }]}>
+            <Text style={styles.featureCheckmark}>✅</Text>
+            <View style={styles.featureContent}>
+              <Text style={[styles.featureTitle, { color: colors.text }]}>Routine Generator</Text>
+              <Text style={[styles.featureDesc, { color: colors.muted }]}>Get AI-generated personalized skincare routines</Text>
             </View>
           </View>
 
-          <View style={styles.feature}>
-            <Text style={styles.featureEmoji}>📸</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureName}>Photo Analysis</Text>
-              <Text style={styles.featureDesc}>AI analyzes skin progress</Text>
+          <View style={[styles.featureCard, { backgroundColor: colors.card }]}>
+            <Text style={styles.featureCheckmark}>✅</Text>
+            <View style={styles.featureContent}>
+              <Text style={[styles.featureTitle, { color: colors.text }]}>Photo Analysis</Text>
+              <Text style={[styles.featureDesc, { color: colors.muted }]}>AI analyzes your photos for skin improvements</Text>
             </View>
           </View>
 
-          <View style={styles.feature}>
-            <Text style={styles.featureEmoji}>📊</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureName}>Export Reports</Text>
-              <Text style={styles.featureDesc}>Download your progress</Text>
+          <View style={[styles.featureCard, { backgroundColor: colors.card }]}>
+            <Text style={styles.featureCheckmark}>✅</Text>
+            <View style={styles.featureContent}>
+              <Text style={[styles.featureTitle, { color: colors.text }]}>Export Reports</Text>
+              <Text style={[styles.featureDesc, { color: colors.muted }]}>Download your complete skin tracking data</Text>
             </View>
           </View>
 
-          <View style={styles.feature}>
-            <Text style={styles.featureEmoji}>🚫</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureName}>No Ads</Text>
-              <Text style={styles.featureDesc}>Ad-free experience</Text>
+          <View style={[styles.featureCard, { backgroundColor: colors.card }]}>
+            <Text style={styles.featureCheckmark}>✅</Text>
+            <View style={styles.featureContent}>
+              <Text style={[styles.featureTitle, { color: colors.text }]}>Priority Support</Text>
+              <Text style={[styles.featureDesc, { color: colors.muted }]}>Get fast support from our team</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.faqCard}>
-          <Text style={styles.faqTitle}>FAQ</Text>
-          <Text style={styles.faqQ}>Can I cancel anytime?</Text>
-          <Text style={styles.faqA}>Yes! Manage your subscription in App Store Settings.</Text>
-          <Text style={[styles.faqQ, { marginTop: 12 }]}>Is there a free trial?</Text>
-          <Text style={styles.faqA}>We offer a 30-day money-back guarantee!</Text>
+        <View style={styles.section}>
+          <View style={[styles.faqCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>Frequently Asked</Text>
+            <Text style={[styles.faqText, { color: colors.muted }]}>
+              <Text style={{ fontWeight: '600' }}>Can I cancel anytime?</Text>{'\n'}
+              Yes, you can cancel your subscription at any time without penalties.
+            </Text>
+            <Text style={[styles.faqText, { color: colors.muted, marginTop: 12 }]}>
+              <Text style={{ fontWeight: '600' }}>Is there a free trial?</Text>{'\n'}
+              Coming soon! Free trial will be available in the next update.
+            </Text>
+          </View>
         </View>
+
+        <TouchableOpacity
+          style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
+          onPress={handleStartPremium}
+        >
+          <Text style={styles.ctaBtnText}>Start Premium Now</Text>
+        </TouchableOpacity>
       </ScrollView>
-
-      <TouchableOpacity style={styles.upgradeBtn} onPress={handlePurchase} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.upgradeBtnText}>Start Premium Now</Text>
-        )}
-      </TouchableOpacity>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg },
-  scrollContent: { paddingBottom: 100 },
-  header: { alignItems: 'center', paddingVertical: 40 },
-  emoji: { fontSize: 60, marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
-  subtitle: { fontSize: 14, color: SKYNKOD_COLORS.muted, marginTop: 4 },
-  crown: { fontSize: 50, marginBottom: 12 },
-  priceCard: { backgroundColor: SKYNKOD_COLORS.primary, padding: 24, margin: 16, borderRadius: 12, alignItems: 'center' },
-  price: { fontSize: 40, fontWeight: 'bold', color: 'white' },
-  period: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-  trial: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 8 },
-  card: { backgroundColor: 'white', padding: 16, margin: 16, borderRadius: 12 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 12 },
-  benefit: { color: SKYNKOD_COLORS.text, fontSize: 14, marginBottom: 8 },
-  detail: { color: SKYNKOD_COLORS.muted, fontSize: 14, marginBottom: 6 },
-  featuresCard: { backgroundColor: 'white', padding: 16, margin: 16, borderRadius: 12 },
-  featuresTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 16 },
-  feature: { flexDirection: 'row', marginBottom: 16 },
-  featureEmoji: { fontSize: 24, marginRight: 12, width: 30 },
-  featureText: { flex: 1 },
-  featureName: { fontWeight: '600', color: SKYNKOD_COLORS.text, fontSize: 14 },
-  featureDesc: { color: SKYNKOD_COLORS.muted, fontSize: 12, marginTop: 2 },
-  faqCard: { backgroundColor: 'white', padding: 16, margin: 16, borderRadius: 12 },
-  faqTitle: { fontSize: 16, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 12 },
-  faqQ: { fontWeight: '600', color: SKYNKOD_COLORS.text, fontSize: 13 },
-  faqA: { color: SKYNKOD_COLORS.muted, fontSize: 12, marginTop: 4 },
-  upgradeBtn: { position: 'absolute', bottom: 20, left: 16, right: 16, backgroundColor: SKYNKOD_COLORS.primary, paddingVertical: 16, borderRadius: 12 },
-  upgradeBtnText: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 },
+  container: { flex: 1 },
+  centerContent: { justifyContent: 'center', alignItems: 'center' },
+  header: { padding: 16, borderBottomWidth: 1 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 12, marginTop: 4 },
+  content: { flex: 1, padding: 16 },
+  priceCard: { borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 24 },
+  premiumCard: { borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 24 },
+  premiumEmoji: { fontSize: 60, marginBottom: 12 },
+  premiumTitle: { fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 4 },
+  premiumDesc: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
+  priceEmoji: { fontSize: 48, marginBottom: 12 },
+  price: { fontSize: 48, fontWeight: 'bold', color: 'white' },
+  pricePeriod: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 8 },
+  priceDesc: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  featureCard: { flexDirection: 'row', borderRadius: 12, padding: 16, marginBottom: 12, alignItems: 'flex-start' },
+  benefitCard: { flexDirection: 'row', borderRadius: 12, padding: 16, marginBottom: 12, alignItems: 'flex-start' },
+  featureCheckmark: { fontSize: 20, marginRight: 12, marginTop: 2 },
+  benefitEmoji: { fontSize: 24, marginRight: 12, marginTop: 2 },
+  featureContent: { flex: 1 },
+  benefitContent: { flex: 1 },
+  featureTitle: { fontWeight: 'bold', fontSize: 14 },
+  benefitTitle: { fontWeight: 'bold', fontSize: 14 },
+  featureDesc: { fontSize: 12, marginTop: 4, lineHeight: 16 },
+  benefitDesc: { fontSize: 12, marginTop: 4 },
+  faqCard: { borderRadius: 12, padding: 16 },
+  faqTitle: { fontWeight: 'bold', fontSize: 14, marginBottom: 12 },
+  faqText: { fontSize: 12, lineHeight: 18 },
+  ctaBtn: { padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 24, marginTop: 24 },
+  ctaBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 })

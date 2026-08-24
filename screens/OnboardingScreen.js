@@ -1,43 +1,47 @@
 import { useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { SKYNKOD_COLORS } from '../utils/constants'
+import { useLanguage } from '../utils/LanguageContext'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 
 export default function OnboardingScreen({ onComplete }) {
-  const [step, setStep] = useState(0)
+  const { isDark } = useTheme()
+  const { t } = useLanguage()
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
-  const slides = [
+  const [currentStep, setCurrentStep] = useState(0)
+
+  const steps = [
     {
-      title: '✨ Welcome to Skynkod',
-      description: 'Your personal skincare companion powered by AI',
-      emoji: '🌟'
+      emoji: '✨',
+      title: 'Welcome to Skynkod',
+      description: 'Your AI-powered skincare companion. Track your skin journey and get personalized advice.',
     },
     {
-      title: '📔 Track Daily',
-      description: 'Journal your skin conditions and mood every day',
-      emoji: '📔'
+      emoji: '📔',
+      title: 'Daily Journal',
+      description: 'Log your skin mood and conditions daily. Our AI learns your patterns to give better advice.',
     },
     {
-      title: '🤖 Get AI Advice',
-      description: 'Koda, your AI coach, gives personalized skincare tips',
-      emoji: '🤖'
+      emoji: '🔄',
+      title: 'Build Routines',
+      description: 'Create morning and evening routines. Get reminders to stay consistent.',
     },
     {
-      title: '📊 See Progress',
-      description: 'Watch your skin improve with detailed charts and stats',
-      emoji: '📊'
+      emoji: '✨',
+      title: 'Meet Koda',
+      description: 'Chat with Koda, your AI skin coach. Ask anything about skincare, routines, and skin concerns.',
     },
     {
-      title: '💪 Build Routines',
-      description: 'Create and manage your perfect skincare routine',
-      emoji: '💪'
+      emoji: '📸',
+      title: 'Track Progress',
+      description: 'Take photos to visualize your skin improvement. See real progress over time.',
     },
   ]
 
-  const current = slides[step]
-
   const handleNext = () => {
-    if (step < slides.length - 1) {
-      setStep(step + 1)
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1)
     } else {
       onComplete()
     }
@@ -47,30 +51,50 @@ export default function OnboardingScreen({ onComplete }) {
     onComplete()
   }
 
-  return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.emoji}>{current.emoji}</Text>
-        <Text style={styles.title}>{current.title}</Text>
-        <Text style={styles.description}>{current.description}</Text>
+  const step = steps[currentStep]
+  const progress = ((currentStep + 1) / steps.length) * 100
 
-        <View style={styles.dots}>
-          {slides.map((_, idx) => (
+  return (
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
+        <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.stepContainer}>
+          <Text style={styles.stepEmoji}>{step.emoji}</Text>
+          <Text style={[styles.stepTitle, { color: colors.text }]}>{step.title}</Text>
+          <Text style={[styles.stepDescription, { color: colors.muted }]}>{step.description}</Text>
+        </View>
+
+        <View style={styles.dotsContainer}>
+          {steps.map((_, idx) => (
             <View
               key={idx}
-              style={[styles.dot, idx === step && styles.dotActive]}
+              style={[
+                styles.dot,
+                idx === currentStep && { backgroundColor: colors.primary, width: 32 },
+                idx !== currentStep && { backgroundColor: colors.border },
+              ]}
             />
           ))}
         </View>
       </ScrollView>
 
-      <View style={styles.buttons}>
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-          <Text style={styles.skipBtnText}>Skip</Text>
+      <View style={[styles.buttonContainer, { borderTopColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.skipBtn, { borderColor: colors.border }]}
+          onPress={handleSkip}
+        >
+          <Text style={[styles.skipBtnText, { color: colors.text }]}>Skip</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
+
+        <TouchableOpacity
+          style={[styles.nextBtn, { backgroundColor: colors.primary }]}
+          onPress={handleNext}
+        >
           <Text style={styles.nextBtnText}>
-            {step === slides.length - 1 ? 'Get Started' : 'Next'}
+            {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -79,79 +103,19 @@ export default function OnboardingScreen({ onComplete }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: SKYNKOD_COLORS.bg,
-    paddingTop: 60,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingBottom: 100,
-  },
-  emoji: {
-    fontSize: 80,
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: SKYNKOD_COLORS.text,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  description: {
-    fontSize: 16,
-    color: SKYNKOD_COLORS.muted,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  dots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 48,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: SKYNKOD_COLORS.border,
-  },
-  dotActive: {
-    backgroundColor: SKYNKOD_COLORS.primary,
-    width: 24,
-  },
-  buttons: {
-    position: 'absolute',
-    bottom: 32,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  skipBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderWidth: 2,
-    borderColor: SKYNKOD_COLORS.primary,
-    borderRadius: 8,
-  },
-  skipBtnText: {
-    color: SKYNKOD_COLORS.primary,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  nextBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    backgroundColor: SKYNKOD_COLORS.primary,
-    borderRadius: 8,
-  },
-  nextBtnText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
+  container: { flex: 1 },
+  progressBar: { height: 4, width: '100%' },
+  progressFill: { height: '100%' },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  stepContainer: { alignItems: 'center' },
+  stepEmoji: { fontSize: 80, marginBottom: 24 },
+  stepTitle: { fontSize: 28, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+  stepDescription: { fontSize: 16, textAlign: 'center', lineHeight: 24, maxWidth: 300 },
+  dotsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 60 },
+  dot: { height: 8, borderRadius: 4, width: 8 },
+  buttonContainer: { flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1 },
+  skipBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', borderWidth: 1 },
+  skipBtnText: { fontWeight: 'bold', fontSize: 14 },
+  nextBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  nextBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
 })
