@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useLanguage } from '../utils/LanguageContext'
-import { addExpense, deleteExpense, getExpenses, getMonthlyBudgetTotal } from '../utils/supabase'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import { getExpenses, addExpense, deleteExpense, getMonthlyBudgetTotal } from '../utils/supabase'
+import { useFetchWithCache } from '../utils/useFetchWithCache'
+import { logError } from '../utils/errorLogger'
 import { useTheme } from '../utils/ThemeContext'
+import { useLanguage } from '../utils/LanguageContext'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
 
 export default function BudgetScreen({ route }) {
   const { userId } = route.params
@@ -11,46 +13,47 @@ export default function BudgetScreen({ route }) {
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
-  const [expenses, setExpenses] = useState([])
+  const { data: expenses, loading, error, isOffline, fetch, retry } = useFetchWithCache(
+    'expenses',
+    () => getExpenses(userId),
+    userId
+  )
+
   const [monthlyTotal, setMonthlyTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [itemInput, setItemInput] = useState('')
   const [priceInput, setPriceInput] = useState('')
   const [categoryInput, setCategoryInput] = useState('Product')
+  const [addError, setAddError] = useState(null)
 
   useEffect(() => {
-    loadExpenses()
+    fetch()
+    loadMonthlyTotal()
   }, [userId])
 
-  const loadExpenses = async () => {
+  const loadMonthlyTotal = async () => {
     try {
-      const data = await getExpenses(userId)
-      setExpenses(data || [])
-
       const total = await getMonthlyBudgetTotal(userId)
       setMonthlyTotal(total || 0)
-    } catch (error) {
-      console.error('Load expenses error:', error)
-      Alert.alert('Error', 'Failed to load expenses')
-    } finally {
-      setLoading(false)
+    } catch (err) {
+      await logError('BudgetScreen_loadMonthlyTotal', err, { userId })
     }
   }
 
   const handleAddExpense = async () => {
     if (!itemInput.trim() || !priceInput.trim()) {
-      Alert.alert('Error', 'Please fill all fields')
+      setAddError('Please fill all fields')
       return
     }
 
     const price = parseFloat(priceInput)
     if (isNaN(price) || price <= 0) {
-      Alert.alert('Error', 'Please enter a valid price')
+      setAddError('Please enter a valid price')
       return
     }
 
     setAdding(true)
+    setAddError(null)
     try {
       const newExpense = {
         user_id: userId,
@@ -61,16 +64,16 @@ export default function BudgetScreen({ route }) {
 
       const result = await addExpense(newExpense)
       if (result) {
-        setExpenses([result, ...expenses])
+        fetch() // Refresh list
         setMonthlyTotal(monthlyTotal + price)
         setItemInput('')
         setPriceInput('')
         setCategoryInput('Product')
         Alert.alert('Success', 'Expense added!')
       }
-    } catch (error) {
-      console.error('Add expense error:', error)
-      Alert.alert('Error', 'Failed to add expense')
+    } catch (err) {
+      await logError('BudgetScreen_addExpense', err, { userId })
+      setAddError(err.message || 'Failed to add expense')
     } finally {
       setAdding(false)
     }
@@ -85,11 +88,12 @@ export default function BudgetScreen({ route }) {
           try {
             const success = await deleteExpense(expenseId)
             if (success) {
-              setExpenses(expenses.filter(e => e.id !== expenseId))
+              fetch() // Refresh list
               setMonthlyTotal(Math.max(0, monthlyTotal - amount))
               Alert.alert('Success', 'Expense deleted')
             }
-          } catch (error) {
+          } catch (err) {
+            await logError('BudgetScreen_deleteExpense', err, { userId })
             Alert.alert('Error', 'Failed to delete expense')
           }
         },
@@ -97,7 +101,7 @@ export default function BudgetScreen({ route }) {
     ])
   }
 
-  if (loading) {
+  if (loading && !expenses) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -112,16 +116,37 @@ export default function BudgetScreen({ route }) {
         <Text style={[styles.subtitle, { color: colors.muted }]}>Track skincare spending</Text>
       </View>
 
+      {error && (
+        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isOffline && !error && (
+        <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
+          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
+        </View>
+      )}
+
       <ScrollView style={styles.content}>
-        {/* TOTAL CARD */}
         <View style={[styles.totalCard, { backgroundColor: colors.primary }]}>
           <Text style={styles.totalLabel}>This Month</Text>
           <Text style={styles.totalAmount}>${monthlyTotal.toFixed(2)}</Text>
         </View>
 
-        {/* ADD EXPENSE SECTION */}
         <View style={[styles.addSection, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Add Expense</Text>
+
+          {addError && (
+            <View style={[styles.addErrorBanner, { backgroundColor: '#FF6B6B' }]}>
+              <Text style={styles.addErrorText}>{addError}</Text>
+            </View>
+          )}
 
           <TextInput
             style={[
@@ -191,11 +216,10 @@ export default function BudgetScreen({ route }) {
           </TouchableOpacity>
         </View>
 
-        {/* EXPENSES LIST */}
         <View style={styles.listSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Expenses</Text>
 
-          {expenses.length === 0 ? (
+          {!expenses || expenses.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💰</Text>
               <Text style={[styles.emptyText, { color: colors.text }]}>No expenses tracked yet</Text>
@@ -242,6 +266,12 @@ const styles = StyleSheet.create({
   header: { padding: 16, borderBottomWidth: 1 },
   title: { fontSize: 24, fontWeight: 'bold' },
   subtitle: { fontSize: 12, marginTop: 4 },
+  errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
+  retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  retryBtnText: { color: 'white', fontSize: 11, fontWeight: 'bold' },
+  offlineBanner: { padding: 10, margin: 8, borderRadius: 8 },
+  offlineText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
   content: { flex: 1, padding: 16 },
   totalCard: { borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 24 },
   totalLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 8 },
@@ -249,6 +279,8 @@ const styles = StyleSheet.create({
   addSection: { borderRadius: 12, padding: 16, marginBottom: 24 },
   listSection: { marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  addErrorBanner: { padding: 8, borderRadius: 6, marginBottom: 12 },
+  addErrorText: { color: 'white', fontSize: 12, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 14 },
   categorySelector: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, marginBottom: 12, overflow: 'hidden' },
   categoryOption: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRightWidth: 1 },

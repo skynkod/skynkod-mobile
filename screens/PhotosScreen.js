@@ -1,11 +1,14 @@
-import * as FileSystem from 'expo-file-system'
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { useLanguage } from '../utils/LanguageContext'
-import { deletePhoto, getUserPhotos, supabase } from '../utils/supabase'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { getUserPhotos, deletePhoto } from '../utils/supabase'
+import { supabase } from '../utils/supabase'
+import { useFetchWithCache } from '../utils/useFetchWithCache'
+import { logError } from '../utils/errorLogger'
 import { useTheme } from '../utils/ThemeContext'
+import { useLanguage } from '../utils/LanguageContext'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import * as FileSystem from 'expo-file-system'
 
 export default function PhotosScreen({ route }) {
   const { userId } = route.params
@@ -13,25 +16,18 @@ export default function PhotosScreen({ route }) {
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
   
-  const [photos, setPhotos] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [pageLoading, setPageLoading] = useState(true)
+  const { data: photos, loading, error, isOffline, fetch, retry } = useFetchWithCache(
+    'user_photos',
+    () => getUserPhotos(userId),
+    userId
+  )
+
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
 
   useEffect(() => {
-    loadPhotos()
+    fetch()
   }, [userId])
-
-  const loadPhotos = async () => {
-    try {
-      const userPhotos = await getUserPhotos(userId)
-      setPhotos(userPhotos)
-    } catch (error) {
-      console.error('Error loading photos:', error)
-      Alert.alert('Error', 'Failed to load photos')
-    } finally {
-      setPageLoading(false)
-    }
-  }
 
   const pickImage = async (useCamera = false) => {
     try {
@@ -52,39 +48,34 @@ export default function PhotosScreen({ route }) {
       if (!result.canceled) {
         await uploadPhotoToSupabase(result.assets[0].uri)
       }
-    } catch (error) {
+    } catch (err) {
+      await logError('PhotosScreen_pickImage', err, { userId })
       Alert.alert('Error', 'Failed to pick image')
     }
   }
 
   const uploadPhotoToSupabase = async (uri) => {
-    setLoading(true)
+    setUploading(true)
+    setUploadError(null)
     try {
-      // Step 1: Read file as binary (NOT base64)
       const fileInfo = await FileSystem.getInfoAsync(uri)
       if (!fileInfo.exists) {
         throw new Error('File does not exist')
       }
 
-      // Step 2: Read as base64
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       })
 
-      // Step 3: Convert base64 to Blob properly
       const binaryString = atob(base64)
       const bytes = new Uint8Array(binaryString.length)
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i)
       }
 
-      // Step 4: Create actual Blob (not ArrayBuffer!)
       const blob = new Blob([bytes], { type: 'image/jpeg' })
-
-      // Step 5: Generate unique filename
       const fileName = `${userId}/${Date.now()}.jpg`
 
-      // Step 6: Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
         .upload(fileName, blob, {
@@ -93,16 +84,14 @@ export default function PhotosScreen({ route }) {
 
       if (uploadError) throw uploadError
 
-      // Step 7: Get signed URL (IMPORTANT for PRIVATE bucket!)
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('photos')
-        .createSignedUrl(fileName, 60 * 60 * 24 * 365) // 1 year expiry
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365)
 
       if (urlError) throw urlError
 
       const photoUrl = signedUrlData.signedUrl
 
-      // Step 8: Save to database
       const { data: photoData, error: dbError } = await supabase
         .from('photos')
         .insert({
@@ -114,14 +103,14 @@ export default function PhotosScreen({ route }) {
 
       if (dbError) throw dbError
 
-      // Step 9: Update local state
-      setPhotos([photoData[0], ...photos])
+      fetch() // Refresh list
       Alert.alert('Success', 'Photo uploaded!')
-    } catch (error) {
-      console.error('Upload error:', error)
-      Alert.alert('Error', `Failed to upload photo: ${error.message}`)
+    } catch (err) {
+      await logError('PhotosScreen_uploadPhoto', err, { userId })
+      setUploadError(err.message || 'Failed to upload photo')
+      Alert.alert('Error', err.message || 'Failed to upload photo')
     } finally {
-      setLoading(false)
+      setUploading(false)
     }
   }
 
@@ -134,12 +123,11 @@ export default function PhotosScreen({ route }) {
           try {
             const success = await deletePhoto(photoId)
             if (success) {
-              setPhotos(photos.filter(p => p.id !== photoId))
+              fetch() // Refresh list
               Alert.alert('Success', 'Photo deleted')
-            } else {
-              Alert.alert('Error', 'Failed to delete photo')
             }
-          } catch (error) {
+          } catch (err) {
+            await logError('PhotosScreen_deletePhoto', err, { userId })
             Alert.alert('Error', 'Failed to delete photo')
           }
         },
@@ -147,7 +135,7 @@ export default function PhotosScreen({ route }) {
     ])
   }
 
-  if (pageLoading) {
+  if (loading && !photos) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -161,8 +149,36 @@ export default function PhotosScreen({ route }) {
         <Text style={[styles.title, { color: colors.text }]}>Skin Progress Photos</Text>
       </View>
 
+      {error && (
+        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {uploadError && (
+        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.errorText}>{uploadError}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setUploadError(null)} style={styles.retryBtn}>
+            <Text style={styles.retryBtnText}>Dismiss</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isOffline && !error && (
+        <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
+          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
+        </View>
+      )}
+
       <ScrollView style={styles.content}>
-        {photos.length === 0 ? (
+        {!photos || photos.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📸</Text>
             <Text style={[styles.emptyText, { color: colors.text }]}>No photos yet</Text>
@@ -188,11 +204,11 @@ export default function PhotosScreen({ route }) {
 
       <View style={[styles.actionButtons, { borderTopColor: colors.border }]}>
         <TouchableOpacity 
-          style={[styles.actionBtn, { backgroundColor: colors.primary }]} 
+          style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: uploading ? 0.6 : 1 }]} 
           onPress={() => pickImage(true)} 
-          disabled={loading}
+          disabled={uploading}
         >
-          {loading ? (
+          {uploading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
             <>
@@ -203,11 +219,11 @@ export default function PhotosScreen({ route }) {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.actionBtn, { backgroundColor: colors.primary }]} 
+          style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: uploading ? 0.6 : 1 }]} 
           onPress={() => pickImage(false)} 
-          disabled={loading}
+          disabled={uploading}
         >
-          {loading ? (
+          {uploading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
             <>
@@ -226,6 +242,12 @@ const styles = StyleSheet.create({
   centerContent: { justifyContent: 'center', alignItems: 'center' },
   header: { padding: 16, borderBottomWidth: 1 },
   title: { fontSize: 24, fontWeight: 'bold' },
+  errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
+  retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  retryBtnText: { color: 'white', fontSize: 11, fontWeight: 'bold' },
+  offlineBanner: { padding: 10, margin: 8, borderRadius: 8 },
+  offlineText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
   content: { flex: 1, padding: 16 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyEmoji: { fontSize: 60, marginBottom: 12 },

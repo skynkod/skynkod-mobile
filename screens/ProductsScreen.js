@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useLanguage } from '../utils/LanguageContext'
-import { addUserProduct, deleteUserProduct, getUserProducts } from '../utils/supabase'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import React, { useEffect } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import { getUserProducts, addUserProduct, deleteUserProduct } from '../utils/supabase'
+import { useFetchWithCache } from '../utils/useFetchWithCache'
+import { logError } from '../utils/errorLogger'
 import { useTheme } from '../utils/ThemeContext'
+import { useLanguage } from '../utils/LanguageContext'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
 
 export default function ProductsScreen({ route }) {
   const { userId } = route.params
@@ -11,36 +13,30 @@ export default function ProductsScreen({ route }) {
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [adding, setAdding] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [brandInput, setBrandInput] = useState('')
-  const [categoryInput, setCategoryInput] = useState('')
+  const { data: products, loading, error, isOffline, fetch, retry } = useFetchWithCache(
+    'user_products',
+    () => getUserProducts(userId),
+    userId
+  )
+
+  const [adding, setAdding] = React.useState(false)
+  const [nameInput, setNameInput] = React.useState('')
+  const [brandInput, setBrandInput] = React.useState('')
+  const [categoryInput, setCategoryInput] = React.useState('')
+  const [addError, setAddError] = React.useState(null)
 
   useEffect(() => {
-    loadProducts()
+    fetch()
   }, [userId])
-
-  const loadProducts = async () => {
-    try {
-      const data = await getUserProducts(userId)
-      setProducts(data || [])
-    } catch (error) {
-      console.error('Load products error:', error)
-      Alert.alert('Error', 'Failed to load products')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleAddProduct = async () => {
     if (!nameInput.trim() || !brandInput.trim() || !categoryInput.trim()) {
-      Alert.alert('Error', 'Please fill all fields')
+      setAddError('Please fill all fields')
       return
     }
 
     setAdding(true)
+    setAddError(null)
     try {
       const newProduct = {
         user_id: userId,
@@ -51,15 +47,15 @@ export default function ProductsScreen({ route }) {
 
       const result = await addUserProduct(newProduct)
       if (result) {
-        setProducts([result, ...products])
+        fetch() // Refresh list
         setNameInput('')
         setBrandInput('')
         setCategoryInput('')
         Alert.alert('Success', 'Product added!')
       }
-    } catch (error) {
-      console.error('Add product error:', error)
-      Alert.alert('Error', 'Failed to add product')
+    } catch (err) {
+      await logError('ProductsScreen_addProduct', err, { userId })
+      setAddError(err.message || 'Failed to add product')
     } finally {
       setAdding(false)
     }
@@ -74,10 +70,11 @@ export default function ProductsScreen({ route }) {
           try {
             const success = await deleteUserProduct(productId)
             if (success) {
-              setProducts(products.filter(p => p.id !== productId))
+              fetch() // Refresh list
               Alert.alert('Success', 'Product deleted')
             }
-          } catch (error) {
+          } catch (err) {
+            await logError('ProductsScreen_deleteProduct', err, { userId })
             Alert.alert('Error', 'Failed to delete product')
           }
         },
@@ -85,7 +82,7 @@ export default function ProductsScreen({ route }) {
     ])
   }
 
-  if (loading) {
+  if (loading && !products) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -100,10 +97,32 @@ export default function ProductsScreen({ route }) {
         <Text style={[styles.subtitle, { color: colors.muted }]}>Track your skincare products</Text>
       </View>
 
+      {error && (
+        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isOffline && !error && (
+        <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
+          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
+        </View>
+      )}
+
       <ScrollView style={styles.content}>
-        {/* ADD PRODUCT SECTION */}
         <View style={[styles.addSection, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Add New Product</Text>
+
+          {addError && (
+            <View style={[styles.addErrorBanner, { backgroundColor: '#FF6B6B' }]}>
+              <Text style={styles.addErrorText}>{addError}</Text>
+            </View>
+          )}
 
           <TextInput
             style={[
@@ -166,11 +185,10 @@ export default function ProductsScreen({ route }) {
           </TouchableOpacity>
         </View>
 
-        {/* PRODUCTS LIST */}
         <View style={styles.listSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Products</Text>
 
-          {products.length === 0 ? (
+          {!products || products.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🧴</Text>
               <Text style={[styles.emptyText, { color: colors.text }]}>No products added yet</Text>
@@ -208,10 +226,18 @@ const styles = StyleSheet.create({
   header: { padding: 16, borderBottomWidth: 1 },
   title: { fontSize: 24, fontWeight: 'bold' },
   subtitle: { fontSize: 12, marginTop: 4 },
+  errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
+  retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
+  retryBtnText: { color: 'white', fontSize: 11, fontWeight: 'bold' },
+  offlineBanner: { padding: 10, margin: 8, borderRadius: 8 },
+  offlineText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
   content: { flex: 1, padding: 16 },
   addSection: { borderRadius: 12, padding: 16, marginBottom: 24 },
   listSection: { marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  addErrorBanner: { padding: 8, borderRadius: 6, marginBottom: 12 },
+  addErrorText: { color: 'white', fontSize: 12, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 14 },
   addBtn: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 8 },
   addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
