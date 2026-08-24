@@ -199,3 +199,81 @@ export const clearChatHistory = async (userId) => {
     return false
   }
 }
+
+// Photo functions
+export const uploadPhoto = async (userId, photoBase64, notes = '') => {
+  try {
+    const fileName = `${userId}/${Date.now()}.jpg`
+    
+    const { error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(fileName, decode(photoBase64), {
+        contentType: 'image/jpeg',
+      })
+    
+    if (uploadError) throw uploadError
+
+    const { data } = supabase.storage
+      .from('photos')
+      .getPublicUrl(fileName)
+
+    const photoUrl = data.publicUrl
+
+    const { data: photoData, error: dbError } = await supabase
+      .from('photos')
+      .insert({
+        user_id: userId,
+        photo_url: photoUrl,
+        notes: notes,
+      })
+      .select()
+
+    if (dbError) throw dbError
+
+    return { success: true, photo: photoData[0] }
+  } catch (error) {
+    console.error('Upload photo error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const getUserPhotos = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('photos')
+      .select('*')
+      .eq('user_id', userId)
+      .order('uploaded_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Get photos error:', error)
+    return []
+  }
+}
+
+export const deletePhoto = async (photoId) => {
+  try {
+    const { error } = await supabase
+      .from('photos')
+      .delete()
+      .eq('id', photoId)
+    
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Delete photo error:', error)
+    return false
+  }
+}
+
+// Helper function to decode base64
+function decode(base64String) {
+  const binaryString = atob(base64String.split(',')[1] || base64String)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+  return bytes.buffer
+}
