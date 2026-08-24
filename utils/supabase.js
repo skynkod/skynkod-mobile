@@ -336,9 +336,82 @@ export const getRoutineStreak = async (userId, routineType) => {
   }
 }
 
+// Expense functions
+export const getExpenses = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('purchase_date', { ascending: false })
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Get expenses error:', error)
+    return []
+  }
+}
+
+export const addExpense = async (userId, expense) => {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert({
+        user_id: userId,
+        product_name: expense.product_name,
+        brand: expense.brand,
+        category: expense.category,
+        price: parseFloat(expense.price),
+        purchase_date: expense.purchase_date || new Date().toISOString().split('T')[0],
+      })
+      .select()
+    if (error) throw error
+    return data[0]
+  } catch (error) {
+    console.error('Add expense error:', error)
+    return null
+  }
+}
+
+export const deleteExpense = async (expenseId) => {
+  try {
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', expenseId)
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Delete expense error:', error)
+    return false
+  }
+}
+
+export const getMonthlyBudgetTotal = async (userId) => {
+  try {
+    const today = new Date()
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+    const monthStartStr = monthStart.toISOString().split('T')[0]
+
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('price')
+      .eq('user_id', userId)
+      .gte('purchase_date', monthStartStr)
+    
+    if (error) throw error
+    
+    const total = data.reduce((sum, exp) => sum + parseFloat(exp.price), 0)
+    return total
+  } catch (error) {
+    console.error('Get monthly budget total error:', error)
+    return 0
+  }
+}
+
 // Helper function to decode base64
 function decode(base64String) {
-  const binaryString = atob(base64String.split(',')[1] || base64String)
+  const binaryString = atob(base64String)
   const bytes = new Uint8Array(binaryString.length)
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i)

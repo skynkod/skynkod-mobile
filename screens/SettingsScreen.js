@@ -1,162 +1,192 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native'
-import { SKYNKOD_COLORS } from '../utils/constants'
+import { useLanguage } from '../utils/LanguageContext'
+import { signOut } from '../utils/supabase'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 
-export default function SettingsScreen({ navigation }) {
-  const [notifications, setNotifications] = useState(true)
-  const [darkMode, setDarkMode] = useState(false)
-  const [reminders, setReminders] = useState(true)
+export default function SettingsScreen({ route, navigation }) {
+  const { userId } = route.params
+  const { isDark, toggleTheme } = useTheme()
+  const { language, changeLanguage, languages, t } = useLanguage()
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
-  const handleLogout = () => {
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
+
+  const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure?', [
       { text: 'Cancel', onPress: () => {} },
       {
         text: 'Logout',
         onPress: async () => {
-          await AsyncStorage.removeItem('skynkod_user')
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-          })
+          try {
+            const result = await signOut()
+            if (result.success) {
+              await AsyncStorage.removeItem('skynkod_user')
+              await AsyncStorage.removeItem('skynkod_onboarded')
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              })
+            }
+          } catch (error) {
+            Alert.alert('Error', 'Failed to logout')
+          }
         },
       },
     ])
   }
 
+  const handleChangeLanguage = async (lang) => {
+    await changeLanguage(lang)
+    setShowLanguageMenu(false)
+    Alert.alert('Success', `Language changed to ${languages[lang]}`)
+  }
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Account</Text>
-          <TouchableOpacity>
-            <Text style={styles.settingValue}>View Profile</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Email</Text>
-          <TouchableOpacity>
-            <Text style={styles.settingValue}>Change</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>{t('settings_title')}</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Manage your preferences</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Daily Reminders</Text>
-          <Switch
-            value={reminders}
-            onValueChange={setReminders}
-            trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }}
-          />
-        </View>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Push Notifications</Text>
-          <Switch
-            value={notifications}
-            onValueChange={setNotifications}
-            trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }}
-          />
-        </View>
-      </View>
+      <ScrollView style={styles.content}>
+        {/* THEME SECTION */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Display</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Display</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Dark Mode</Text>
-          <Switch
-            value={darkMode}
-            onValueChange={setDarkMode}
-            trackColor={{ false: '#767577', true: SKYNKOD_COLORS.primary }}
-          />
+          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingEmoji}>🌙</Text>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingName, { color: colors.text }]}>{t('settings_dark_mode')}</Text>
+                <Text style={[styles.settingDesc, { color: colors.muted }]}>
+                  {isDark ? 'Dark mode ON' : 'Light mode ON'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={isDark ? colors.primary : colors.muted}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Version</Text>
-          <Text style={styles.settingValue}>1.0.0</Text>
+        {/* LANGUAGE SECTION */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('settings_language')}</Text>
+
+          {!showLanguageMenu ? (
+            <TouchableOpacity
+              style={[styles.settingCard, { backgroundColor: colors.card }]}
+              onPress={() => setShowLanguageMenu(true)}
+            >
+              <View style={styles.settingContent}>
+                <Text style={styles.settingEmoji}>🌍</Text>
+                <View style={styles.settingInfo}>
+                  <Text style={[styles.settingName, { color: colors.text }]}>{t('settings_language')}</Text>
+                  <Text style={[styles.settingDesc, { color: colors.muted }]}>
+                    {languages[language]}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.arrow, { color: colors.muted }]}>→</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.languageMenu, { backgroundColor: colors.card }]}>
+              {Object.entries(languages).map(([code, name]) => (
+                <TouchableOpacity
+                  key={code}
+                  style={[
+                    styles.languageOption,
+                    language === code && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => handleChangeLanguage(code)}
+                >
+                  <Text style={[
+                    styles.languageOptionText,
+                    { color: language === code ? 'white' : colors.text }
+                  ]}>
+                    {name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[styles.languageOption, { backgroundColor: colors.border }]}
+                onPress={() => setShowLanguageMenu(false)}
+              >
+                <Text style={[styles.languageOptionText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Privacy Policy</Text>
-          <TouchableOpacity>
-            <Text style={styles.link}>Read</Text>
+
+        {/* ACCOUNT SECTION */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+
+          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingEmoji}>📱</Text>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingName, { color: colors.text }]}>Skynkod</Text>
+                <Text style={[styles.settingDesc, { color: colors.muted }]}>v1.0.0</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingEmoji}>✨</Text>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingName, { color: colors.text }]}>Powered by AI</Text>
+                <Text style={[styles.settingDesc, { color: colors.muted }]}>Claude + Supabase</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* LOGOUT SECTION */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.settingCard, styles.dangerCard, { backgroundColor: colors.card, borderColor: '#FF6B6B' }]}
+            onPress={handleLogout}
+          >
+            <View style={styles.settingContent}>
+              <Text style={styles.settingEmoji}>🚪</Text>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingName, styles.dangerText]}>{t('settings_logout')}</Text>
+                <Text style={[styles.settingDesc, { color: colors.muted }]}>Sign out of your account</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </View>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Terms of Service</Text>
-          <TouchableOpacity>
-            <Text style={styles.link}>Read</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: SKYNKOD_COLORS.bg,
-    padding: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: SKYNKOD_COLORS.text,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: SKYNKOD_COLORS.primary,
-    marginBottom: 12,
-  },
-  settingRow: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  settingLabel: {
-    fontSize: 14,
-    color: SKYNKOD_COLORS.text,
-    fontWeight: '500',
-  },
-  settingValue: {
-    fontSize: 14,
-    color: SKYNKOD_COLORS.muted,
-  },
-  link: {
-    fontSize: 14,
-    color: SKYNKOD_COLORS.primary,
-    textDecorationLine: 'underline',
-  },
-  logoutBtn: {
-    backgroundColor: '#D84040',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  logoutText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  container: { flex: 1 },
+  header: { padding: 16, borderBottomWidth: 1 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 12, marginTop: 4 },
+  content: { flex: 1, padding: 16 },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  settingCard: { borderRadius: 12, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  settingContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  settingEmoji: { fontSize: 24, marginRight: 12 },
+  settingInfo: { flex: 1 },
+  settingName: { fontWeight: '600', fontSize: 14 },
+  settingDesc: { fontSize: 12, marginTop: 2 },
+  arrow: { fontSize: 18, fontWeight: 'bold' },
+  dangerCard: { borderWidth: 1 },
+  dangerText: { color: '#FF6B6B' },
+  languageMenu: { borderRadius: 12, padding: 12, marginBottom: 12, gap: 8 },
+  languageOption: { borderRadius: 8, padding: 12, alignItems: 'center' },
+  languageOptionText: { fontWeight: '600', fontSize: 14 },
 })
