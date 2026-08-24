@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { NavigationContainer } from '@react-navigation/native'
 import { useEffect, useState } from 'react'
-import { Text } from 'react-native'
+import { ActivityIndicator, Text, View } from 'react-native'
 import AboutScreen from './screens/AboutScreen'
 import BarcodeScannerScreen from './screens/BarcodeScannerScreen'
 import BudgetScreen from './screens/BudgetScreen'
@@ -21,7 +21,7 @@ import ProgressScreen from './screens/ProgressScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import SkinTypeQuizScreen from './screens/SkinTypeQuizScreen'
-import { LanguageProvider } from './utils/LanguageContext'
+import { LanguageProvider, useLanguage } from './utils/LanguageContext'
 import { getExpoPushToken, requestNotificationPermissions, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from './utils/notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
 
@@ -37,12 +37,12 @@ function AppTabs({ userId, colors }) {
       <Tab.Screen name="Progress" component={ProgressScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Progress', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📊</Text> }} />
       <Tab.Screen name="Analysis" component={ProgressAnalysisScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Analysis', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📈</Text> }} />
       <Tab.Screen name="Koda" component={KodaScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Koda', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✨</Text> }} />
-      <Tab.Screen name="Routines" component={RoutinesScreen} options={{ tabBarLabel: 'Routines', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> }} />
+      <Tab.Screen name="Routines" component={RoutinesScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Routines', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> }} />
       <Tab.Screen name="Products" component={ProductsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Products', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🧴</Text> }} />
       <Tab.Screen name="Photos" component={PhotosScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Photos', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📸</Text> }} />
       <Tab.Screen name="Quiz" component={SkinTypeQuizScreen} options={{ tabBarLabel: 'Quiz', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎯</Text> }} />
-      <Tab.Screen name="Budget" component={BudgetScreen} options={{ tabBarLabel: 'Budget', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
-      <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarLabel: 'Alerts', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }} />
+      <Tab.Screen name="Budget" component={BudgetScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Budget', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
+      <Tab.Screen name="Alerts" component={NotificationsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Alerts', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }} />
       <Tab.Screen name="Settings" component={SettingsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }} />
       <Tab.Screen name="Premium" component={PremiumScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Premium', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👑</Text> }} />
       <Tab.Screen name="About" component={AboutScreen} options={{ tabBarLabel: 'About', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>ℹ️</Text> }} />
@@ -56,7 +56,8 @@ function AppContent() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const { colors } = useTheme()
+  const { colors, loading: themeLoading } = useTheme()
+  const { loading: languageLoading } = useLanguage()
 
   useEffect(() => {
     check()
@@ -68,7 +69,10 @@ function AppContent() {
       const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
       if (saved) {
         setUser(JSON.parse(saved))
-        if (!onboarded) setShowOnboarding(true)
+        // Only show onboarding if NOT onboarded before
+        if (!onboarded) {
+          setShowOnboarding(true)
+        }
         
         await initializeNotifications(JSON.parse(saved).userId)
       }
@@ -103,12 +107,27 @@ function AppContent() {
     setUser(data)
     await AsyncStorage.setItem('skynkod_user', JSON.stringify(data))
     await initializeNotifications(userId)
-    setShowOnboarding(true)
+    
+    // Check if user has been onboarded before
+    const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
+    // Only show onboarding if NEVER been onboarded
+    if (!onboarded) {
+      setShowOnboarding(true)
+    }
   }
 
   const handleOnboardingComplete = async () => {
     await AsyncStorage.setItem('skynkod_onboarded', 'true')
     setShowOnboarding(false)
+  }
+
+  // Wait for theme and language to load
+  if (themeLoading || languageLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
   }
 
   if (loading) return null

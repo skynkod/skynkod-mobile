@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useLanguage } from '../utils/LanguageContext'
-import { deletePhoto, getUserPhotos } from '../utils/supabase'
+import { deletePhoto, getUserPhotos, supabase } from '../utils/supabase'
 import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
 import { useTheme } from '../utils/ThemeContext'
 
@@ -16,7 +16,6 @@ export default function PhotosScreen({ route }) {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
-  const [uploadingPhotoId, setUploadingPhotoId] = useState(null)
 
   useEffect(() => {
     loadPhotos()
@@ -51,39 +50,59 @@ export default function PhotosScreen({ route }) {
           })
 
       if (!result.canceled) {
-        await uploadPhoto(result.assets[0].uri)
+        await uploadPhotoToSupabase(result.assets[0].uri)
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image')
     }
   }
 
-  const uploadPhoto = async (uri) => {
+  const uploadPhotoToSupabase = async (uri) => {
     setLoading(true)
-    const photoId = Date.now()
-    setUploadingPhotoId(photoId)
-    
     try {
-      // Read file as base64
+      // Step 1: Read file as binary (NOT base64)
+      const fileInfo = await FileSystem.getInfoAsync(uri)
+      if (!fileInfo.exists) {
+        throw new Error('File does not exist')
+      }
+
+      // Step 2: Read as base64
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       })
 
-      // Upload to Supabase Storage
-      const fileName = `${userId}/${photoId}.jpg`
+      // Step 3: Convert base64 to Blob properly
+      const binaryString = atob(base64)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+
+      // Step 4: Create actual Blob (not ArrayBuffer!)
+      const blob = new Blob([bytes], { type: 'image/jpeg' })
+
+      // Step 5: Generate unique filename
+      const fileName = `${userId}/${Date.now()}.jpg`
+
+      // Step 6: Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(fileName, decode(base64), {
+        .upload(fileName, blob, {
           contentType: 'image/jpeg',
         })
 
       if (uploadError) throw uploadError
 
-      // Get public URL
-      const { data } = supabase.storage.from('photos').getPublicUrl(fileName)
-      const photoUrl = data.publicUrl
+      // Step 7: Get signed URL (IMPORTANT for PRIVATE bucket!)
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('photos')
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365) // 1 year expiry
 
-      // Save to database
+      if (urlError) throw urlError
+
+      const photoUrl = signedUrlData.signedUrl
+
+      // Step 8: Save to database
       const { data: photoData, error: dbError } = await supabase
         .from('photos')
         .insert({
@@ -95,14 +114,14 @@ export default function PhotosScreen({ route }) {
 
       if (dbError) throw dbError
 
+      // Step 9: Update local state
       setPhotos([photoData[0], ...photos])
       Alert.alert('Success', 'Photo uploaded!')
     } catch (error) {
       console.error('Upload error:', error)
-      Alert.alert('Error', 'Failed to upload photo')
+      Alert.alert('Error', `Failed to upload photo: ${error.message}`)
     } finally {
       setLoading(false)
-      setUploadingPhotoId(null)
     }
   }
 
@@ -173,7 +192,7 @@ export default function PhotosScreen({ route }) {
           onPress={() => pickImage(true)} 
           disabled={loading}
         >
-          {uploadingPhotoId && loading ? (
+          {loading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
             <>
@@ -188,7 +207,7 @@ export default function PhotosScreen({ route }) {
           onPress={() => pickImage(false)} 
           disabled={loading}
         >
-          {uploadingPhotoId && loading ? (
+          {loading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
             <>
@@ -201,19 +220,6 @@ export default function PhotosScreen({ route }) {
     </View>
   )
 }
-
-// Helper to decode base64
-function decode(base64String) {
-  const binaryString = atob(base64String)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-  return bytes.buffer
-}
-
-// Import supabase for storage
-import { supabase } from '../utils/supabase'
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

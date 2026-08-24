@@ -24,7 +24,7 @@ export default function SettingsScreen({ route, navigation }) {
             const result = await signOut()
             if (result.success) {
               await AsyncStorage.removeItem('skynkod_user')
-              await AsyncStorage.removeItem('skynkod_onboarded')
+              // DO NOT remove 'skynkod_onboarded' - user can skip onboarding on re-login
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
