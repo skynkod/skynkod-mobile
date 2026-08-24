@@ -268,6 +268,74 @@ export const deletePhoto = async (photoId) => {
   }
 }
 
+// Routine completion functions
+export const markRoutineComplete = async (userId, routineType) => {
+  try {
+    const { data, error } = await supabase
+      .from('routine_completions')
+      .insert({
+        user_id: userId,
+        routine_type: routineType,
+        date: new Date().toISOString().split('T')[0],
+      })
+      .select()
+    if (error) throw error
+    return data[0]
+  } catch (error) {
+    console.error('Mark routine complete error:', error)
+    return null
+  }
+}
+
+export const getTodayRoutineCompletion = async (userId, routineType) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabase
+      .from('routine_completions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('routine_type', routineType)
+      .eq('date', today)
+    if (error) throw error
+    return data && data.length > 0
+  } catch (error) {
+    console.error('Get today routine completion error:', error)
+    return false
+  }
+}
+
+export const getRoutineStreak = async (userId, routineType) => {
+  try {
+    const { data, error } = await supabase
+      .from('routine_completions')
+      .select('date')
+      .eq('user_id', userId)
+      .eq('routine_type', routineType)
+      .order('date', { ascending: false })
+    if (error) throw error
+    
+    let streak = 0
+    const today = new Date()
+    
+    for (let i = 0; i < data.length; i++) {
+      const completionDate = new Date(data[i].date)
+      const expectedDate = new Date(today)
+      expectedDate.setDate(expectedDate.getDate() - i)
+      
+      if (completionDate.toISOString().split('T')[0] === expectedDate.toISOString().split('T')[0]) {
+        streak++
+      } else {
+        break
+      }
+    }
+    
+    return streak
+  } catch (error) {
+    console.error('Get routine streak error:', error)
+    return 0
+  }
+}
+
 // Helper function to decode base64
 function decode(base64String) {
   const binaryString = atob(base64String.split(',')[1] || base64String)
