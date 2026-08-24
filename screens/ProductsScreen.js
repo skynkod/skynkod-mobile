@@ -13,11 +13,10 @@ export default function ProductsScreen({ route }) {
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newProduct, setNewProduct] = useState({ name: '', brand: '', category: 'Cleanser' })
-  const [submitting, setSubmitting] = useState(false)
-
-  const categories = ['Cleanser', 'Toner', 'Serum', 'Moisturizer', 'Sunscreen', 'Mask', 'Other']
+  const [adding, setAdding] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [brandInput, setBrandInput] = useState('')
+  const [categoryInput, setCategoryInput] = useState('')
 
   useEffect(() => {
     loadProducts()
@@ -25,10 +24,10 @@ export default function ProductsScreen({ route }) {
 
   const loadProducts = async () => {
     try {
-      const userProducts = await getUserProducts(userId)
-      setProducts(userProducts)
+      const data = await getUserProducts(userId)
+      setProducts(data || [])
     } catch (error) {
-      console.error('Error loading products:', error)
+      console.error('Load products error:', error)
       Alert.alert('Error', 'Failed to load products')
     } finally {
       setLoading(false)
@@ -36,31 +35,33 @@ export default function ProductsScreen({ route }) {
   }
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.brand) {
-      Alert.alert('Error', 'Please fill in all fields')
+    if (!nameInput.trim() || !brandInput.trim() || !categoryInput.trim()) {
+      Alert.alert('Error', 'Please fill all fields')
       return
     }
 
-    setSubmitting(true)
+    setAdding(true)
     try {
-      const added = await addUserProduct(userId, {
-        name: newProduct.name,
-        brand: newProduct.brand,
-        category: newProduct.category,
-      })
+      const newProduct = {
+        user_id: userId,
+        product_name: nameInput.trim(),
+        brand: brandInput.trim(),
+        category: categoryInput.trim(),
+      }
 
-      if (added) {
-        setProducts([added, ...products])
-        setNewProduct({ name: '', brand: '', category: 'Cleanser' })
-        setShowAddForm(false)
+      const result = await addUserProduct(newProduct)
+      if (result) {
+        setProducts([result, ...products])
+        setNameInput('')
+        setBrandInput('')
+        setCategoryInput('')
         Alert.alert('Success', 'Product added!')
-      } else {
-        Alert.alert('Error', 'Failed to add product')
       }
     } catch (error) {
+      console.error('Add product error:', error)
       Alert.alert('Error', 'Failed to add product')
     } finally {
-      setSubmitting(false)
+      setAdding(false)
     }
   }
 
@@ -75,8 +76,6 @@ export default function ProductsScreen({ route }) {
             if (success) {
               setProducts(products.filter(p => p.id !== productId))
               Alert.alert('Success', 'Product deleted')
-            } else {
-              Alert.alert('Error', 'Failed to delete product')
             }
           } catch (error) {
             Alert.alert('Error', 'Failed to delete product')
@@ -97,107 +96,108 @@ export default function ProductsScreen({ route }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>{t('products_title')}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>My Products</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>Track your skincare products</Text>
       </View>
 
       <ScrollView style={styles.content}>
-        {products.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🧴</Text>
-            <Text style={[styles.emptyText, { color: colors.text }]}>No products yet</Text>
-            <Text style={[styles.emptySubtext, { color: colors.muted }]}>Add products to track your routine</Text>
-          </View>
-        ) : (
-          <View style={styles.productsList}>
-            {products.map(product => (
+        {/* ADD PRODUCT SECTION */}
+        <View style={[styles.addSection, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Add New Product</Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                borderColor: colors.primary,
+                color: colors.text,
+              },
+            ]}
+            placeholder="Product Name"
+            placeholderTextColor={colors.muted}
+            value={nameInput}
+            onChangeText={setNameInput}
+            editable={!adding}
+          />
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                borderColor: colors.primary,
+                color: colors.text,
+              },
+            ]}
+            placeholder="Brand"
+            placeholderTextColor={colors.muted}
+            value={brandInput}
+            onChangeText={setBrandInput}
+            editable={!adding}
+          />
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                borderColor: colors.primary,
+                color: colors.text,
+              },
+            ]}
+            placeholder="Category (Cleanser, Moisturizer, etc.)"
+            placeholderTextColor={colors.muted}
+            value={categoryInput}
+            onChangeText={setCategoryInput}
+            editable={!adding}
+          />
+
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: colors.primary, opacity: adding ? 0.6 : 1 }]}
+            onPress={handleAddProduct}
+            disabled={adding}
+          >
+            {adding ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.addBtnText}>+ Add Product</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* PRODUCTS LIST */}
+        <View style={styles.listSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Products</Text>
+
+          {products.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🧴</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>No products added yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.muted }]}>Add your skincare products to track them</Text>
+            </View>
+          ) : (
+            products.map(product => (
               <View key={product.id} style={[styles.productCard, { backgroundColor: colors.card }]}>
-                <View style={styles.productHeader}>
-                  <View style={styles.productInfo}>
-                    <Text style={[styles.productName, { color: colors.text }]}>{product.product_name}</Text>
-                    <Text style={[styles.productBrand, { color: colors.muted }]}>{product.brand}</Text>
-                  </View>
-                  <Text style={[styles.productCategory, { color: colors.primary }]}>{product.category}</Text>
+                <View style={styles.productInfo}>
+                  <Text style={[styles.productName, { color: colors.text }]}>{product.product_name}</Text>
+                  <Text style={[styles.productBrand, { color: colors.muted }]}>{product.brand}</Text>
+                  <Text style={[styles.productCategory, { color: colors.primary, marginTop: 4 }]}>
+                    {product.category}
+                  </Text>
                 </View>
 
                 <TouchableOpacity
                   style={styles.deleteBtn}
                   onPress={() => handleDeleteProduct(product.id)}
                 >
-                  <Text style={styles.deleteBtnText}>Delete</Text>
+                  <Text style={styles.deleteBtnText}>🗑️</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      {!showAddForm ? (
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={() => setShowAddForm(true)}
-        >
-          <Text style={styles.addBtnText}>+ Add Product</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={[styles.formContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-            placeholder="Product name"
-            placeholderTextColor={colors.muted}
-            value={newProduct.name}
-            onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
-          />
-
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-            placeholder="Brand"
-            placeholderTextColor={colors.muted}
-            value={newProduct.brand}
-            onChangeText={(text) => setNewProduct({ ...newProduct, brand: text })}
-          />
-
-          <ScrollView horizontal style={styles.categoryScroll}>
-            {categories.map(cat => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryBtn,
-                  newProduct.category === cat && { backgroundColor: colors.primary }
-                ]}
-                onPress={() => setNewProduct({ ...newProduct, category: cat })}
-              >
-                <Text
-                  style={[
-                    styles.categoryBtnText,
-                    newProduct.category === cat ? { color: 'white' } : { color: colors.text }
-                  ]}
-                >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <View style={styles.formButtons}>
-            <TouchableOpacity
-              style={[styles.formBtn, { backgroundColor: colors.border }]}
-              onPress={() => setShowAddForm(false)}
-              disabled={submitting}
-            >
-              <Text style={[styles.formBtnText, { color: colors.text }]}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.formBtn, { backgroundColor: colors.primary }]}
-              onPress={handleAddProduct}
-              disabled={submitting}
-            >
-              <Text style={styles.formBtnText}>{submitting ? 'Adding...' : 'Add'}</Text>
-            </TouchableOpacity>
-          </View>
+            ))
+          )}
         </View>
-      )}
+      </ScrollView>
     </View>
   )
 }
@@ -209,27 +209,21 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold' },
   subtitle: { fontSize: 12, marginTop: 4 },
   content: { flex: 1, padding: 16 },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyEmoji: { fontSize: 60, marginBottom: 12 },
-  emptyText: { fontSize: 18, fontWeight: 'bold' },
-  emptySubtext: { fontSize: 14, marginTop: 4 },
-  productsList: { gap: 12 },
-  productCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
-  productHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  addSection: { borderRadius: 12, padding: 16, marginBottom: 24 },
+  listSection: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 14 },
+  addBtn: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+  addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
+  emptyState: { alignItems: 'center', paddingVertical: 40 },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  emptySubtext: { fontSize: 12 },
+  productCard: { borderRadius: 12, padding: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   productInfo: { flex: 1 },
-  productName: { fontSize: 16, fontWeight: 'bold' },
-  productBrand: { fontSize: 12, marginTop: 4 },
-  productCategory: { fontSize: 12, fontWeight: '600', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  deleteBtn: { backgroundColor: '#FF6B6B', padding: 8, borderRadius: 6 },
-  deleteBtnText: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 12 },
-  addBtn: { margin: 16, padding: 16, borderRadius: 8, alignItems: 'center' },
-  addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  formContainer: { padding: 16, borderTopWidth: 1, gap: 12 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 14 },
-  categoryScroll: { flexGrow: 0, marginVertical: 8 },
-  categoryBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 8, borderWidth: 1, borderColor: '#ccc' },
-  categoryBtnText: { fontSize: 12, fontWeight: '600' },
-  formButtons: { flexDirection: 'row', gap: 12 },
-  formBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-  formBtnText: { color: 'white', fontWeight: 'bold' },
+  productName: { fontWeight: 'bold', fontSize: 14, marginBottom: 2 },
+  productBrand: { fontSize: 12, marginBottom: 2 },
+  productCategory: { fontSize: 12, fontWeight: '600' },
+  deleteBtn: { paddingLeft: 16 },
+  deleteBtnText: { fontSize: 20 },
 })

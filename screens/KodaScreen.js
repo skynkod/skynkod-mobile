@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { callKodaAI } from '../utils/koda'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
@@ -14,74 +14,133 @@ export default function KodaScreen({ route }) {
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
   const [messages, setMessages] = useState([])
-  const [inputText, setInputText] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
-  const [chatsToday, setChatsToday] = useState(0)
+  const [todayMessageCount, setTodayMessageCount] = useState(0)
 
   useEffect(() => {
-    loadChatHistory()
-    checkPremiumStatus()
+    initialize()
   }, [userId])
+
+  const initialize = async () => {
+    try {
+      const premium = await isPremiumUser(userId)
+      setIsPremium(premium)
+      
+      await loadChatHistory()
+    } catch (error) {
+      console.error('Initialize error:', error)
+    } finally {
+      setPageLoading(false)
+    }
+  }
 
   const loadChatHistory = async () => {
     try {
       const history = await getChatHistory(userId)
-      setMessages(history)
-      
-      // Count chats from today
+      setMessages(history || [])
+
+      // Count today's messages
       const today = new Date().toISOString().split('T')[0]
-      const todayChats = history.filter(m => m.role === 'assistant' && m.created_at?.startsWith(today))
-      setChatsToday(todayChats.length)
+      const todayCount = (history || []).filter(m => {
+        const msgDate = new Date(m.created_at).toISOString().split('T')[0]
+        return msgDate === today && m.role === 'user'
+      }).length
+
+      setTodayMessageCount(todayCount)
     } catch (error) {
-      console.error('Error loading chat history:', error)
+      console.error('Load chat history error:', error)
+      Alert.alert('Error', 'Failed to load chat history')
+    }
+  }
+
+  const handleSendMessage = async () => {
+    if (!input.trim()) return
+
+    // FREEMIUM CHECK - BEFORE sending!
+    if (!isPremium && todayMessageCount >= 5) {
+      Alert.alert(
+        'Limit Reached',
+        'You have reached your daily chat limit (5 messages). Upgrade to Premium for unlimited chat!',
+        [
+          { text: 'Cancel', onPress: () => {} },
+          {
+            text: 'Go Premium',
+            onPress: () => {
+              // Navigate to Premium screen
+              // For now, just show alert
+              Alert.alert('Premium', 'Premium features coming soon!')
+            },
+          },
+        ]
+      )
+      return
+    }
+
+    const userMessage = input.trim()
+    setInput('')
+    setLoading(true)
+
+    try {
+      // Add user message to UI immediately
+      const newUserMessage = {
+        id: Date.now(),
+        role: 'user',
+        content: userMessage,
+        created_at: new Date().toISOString(),
+      }
+      setMessages([...messages, newUserMessage])
+
+      // Call Koda AI
+      const kodaResponse = await callKodaAI(userMessage, messages)
+
+      if (!kodaResponse) {
+        Alert.alert('Error', 'Failed to get response from Koda')
+        return
+      }
+
+      // Add Koda response to UI
+      const newKodaMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: kodaResponse,
+        created_at: new Date().toISOString(),
+      }
+      setMessages(prev => [...prev, newKodaMessage])
+
+      // Save both messages to database
+      await saveChatMessage(userId, 'user', userMessage)
+      await saveChatMessage(userId, 'assistant', kodaResponse)
+
+      // Update today's message count
+      setTodayMessageCount(prev => prev + 1)
+    } catch (error) {
+      console.error('Send message error:', error)
+      Alert.alert('Error', `Failed to send message: ${error.message}`)
+      // Remove the user message we added
+      setMessages(messages.slice(0, -1))
     } finally {
       setLoading(false)
     }
   }
 
-  const checkPremiumStatus = async () => {
-    const premium = await isPremiumUser(userId)
-    setIsPremium(premium)
+  const handleClearChat = () => {
+    Alert.alert('Clear Chat', 'Are you sure? This will clear the conversation.', [
+      { text: 'Cancel', onPress: () => {} },
+      {
+        text: 'Clear',
+        onPress: () => {
+          setMessages([])
+          setTodayMessageCount(0)
+          Alert.alert('Success', 'Chat cleared')
+        },
+      },
+    ])
   }
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return
-
-    // Check freemium limits
-    if (!isPremium && chatsToday >= 3) {
-      Alert.alert('Limit Reached', 'Upgrade to Premium for unlimited Koda chats!')
-      return
-    }
-
-    setSending(true)
-    try {
-      // Save user message
-      await saveChatMessage(userId, 'user', inputText)
-      
-      // Add to UI
-      setMessages([...messages, { role: 'user', content: inputText, created_at: new Date().toISOString() }])
-
-      // Get AI response
-      const response = await callKodaAI(userId, inputText, messages)
-      
-      // Save AI response
-      await saveChatMessage(userId, 'assistant', response)
-      
-      // Add to UI
-      setMessages(prev => [...prev, { role: 'assistant', content: response, created_at: new Date().toISOString() }])
-      
-      setInputText('')
-      setChatsToday(chatsToday + 1)
-    } catch (error) {
-      Alert.alert('Error', 'Failed to get response from Koda')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  if (loading) {
+  if (pageLoading) {
     return (
       <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -94,68 +153,122 @@ export default function KodaScreen({ route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: colors.bg }]}
     >
+      {/* HEADER */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Koda AI Coach</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>
-          {isPremium ? 'Unlimited' : `${3 - chatsToday} chats left today`}
-        </Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerEmoji}>✨</Text>
+          <View style={styles.headerInfo}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Koda</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.muted }]}>Your AI Skin Coach</Text>
+          </View>
+        </View>
+
+        {!isPremium && (
+          <View style={[styles.limitBadge, { backgroundColor: colors.primary }]}>
+            <Text style={styles.limitBadgeText}>{5 - todayMessageCount} left</Text>
+          </View>
+        )}
       </View>
 
-      <ScrollView style={styles.messagesContainer}>
+      {/* MESSAGES */}
+      <ScrollView
+        style={styles.messagesContainer}
+        contentContainerStyle={styles.messagesContent}
+        onContentSizeChange={() => {}}
+      >
         {messages.length === 0 ? (
-          <View style={styles.welcomeMessage}>
-            <Text style={styles.welcomeEmoji}>✨</Text>
-            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Hi! I'm Koda</Text>
-            <Text style={[styles.welcomeText, { color: colors.muted }]}>
-              Your AI skin coach. Ask me anything about skincare, routines, or your skin concerns!
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>✨</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Hi! I'm Koda</Text>
+            <Text style={[styles.emptyDesc, { color: colors.muted }]}>
+              Ask me anything about skincare, routines, or your skin concerns
             </Text>
           </View>
         ) : (
-          messages.map((msg, idx) => (
+          messages.map(msg => (
             <View
-              key={idx}
+              key={msg.id}
               style={[
-                styles.messageBubble,
-                msg.role === 'user'
-                  ? { alignSelf: 'flex-end', backgroundColor: colors.primary }
-                  : { alignSelf: 'flex-start', backgroundColor: colors.card },
+                styles.messageWrapper,
+                msg.role === 'user' ? styles.userMessageWrapper : styles.assistantMessageWrapper,
               ]}
             >
-              <Text
+              <View
                 style={[
-                  styles.messageText,
-                  { color: msg.role === 'user' ? 'white' : colors.text },
+                  styles.messageBubble,
+                  msg.role === 'user'
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.card },
                 ]}
               >
-                {msg.content}
-              </Text>
+                <Text
+                  style={[
+                    styles.messageText,
+                    msg.role === 'user'
+                      ? { color: 'white' }
+                      : { color: colors.text },
+                  ]}
+                >
+                  {msg.content}
+                </Text>
+              </View>
             </View>
           ))
         )}
-        {sending && (
-          <View style={[styles.messageBubble, { alignSelf: 'flex-start', backgroundColor: colors.card }]}>
-            <ActivityIndicator color={colors.primary} />
+
+        {loading && (
+          <View style={styles.userMessageWrapper}>
+            <View style={[styles.messageBubble, { backgroundColor: colors.primary }]}>
+              <ActivityIndicator color="white" size="small" />
+            </View>
           </View>
         )}
       </ScrollView>
 
-      <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <TextInput
-          style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-          placeholder={t('koda_ask')}
-          placeholderTextColor={colors.muted}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxHeight={100}
-          editable={!sending}
-        />
-        <TouchableOpacity
-          style={[styles.sendBtn, { backgroundColor: colors.primary, opacity: sending ? 0.5 : 1 }]}
-          onPress={handleSendMessage}
-          disabled={sending || !inputText.trim()}
-        >
-          <Text style={styles.sendBtnText}>{t('koda_send')}</Text>
+      {/* INPUT */}
+      <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+        {todayMessageCount >= 5 && !isPremium && (
+          <View style={[styles.limitWarning, { backgroundColor: colors.primary }]}>
+            <Text style={styles.limitWarningText}>Daily limit reached. Upgrade to Premium for unlimited chat!</Text>
+          </View>
+        )}
+
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[
+              styles.input,
+              { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border },
+            ]}
+            placeholder="Ask Koda anything..."
+            placeholderTextColor={colors.muted}
+            value={input}
+            onChangeText={setInput}
+            editable={!loading && (isPremium || todayMessageCount < 5)}
+            multiline
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendBtn,
+              {
+                backgroundColor:
+                  loading || (!isPremium && todayMessageCount >= 5)
+                    ? colors.muted
+                    : colors.primary,
+              },
+            ]}
+            onPress={handleSendMessage}
+            disabled={loading || (!isPremium && todayMessageCount >= 5)}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.sendBtnText}>📤</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.clearBtn} onPress={handleClearChat}>
+          <Text style={[styles.clearBtnText, { color: colors.muted }]}>Clear Chat</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -165,18 +278,32 @@ export default function KodaScreen({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 12, marginTop: 4 },
-  messagesContainer: { flex: 1, padding: 16 },
-  welcomeMessage: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  welcomeEmoji: { fontSize: 60, marginBottom: 16 },
-  welcomeTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  welcomeText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  messageBubble: { borderRadius: 12, padding: 12, marginVertical: 6, maxWidth: '85%' },
-  messageText: { fontSize: 14, lineHeight: 18 },
-  inputContainer: { flexDirection: 'row', padding: 12, gap: 8, borderTopWidth: 1, alignItems: 'flex-end' },
-  input: { flex: 1, borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, fontSize: 14 },
-  sendBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
-  sendBtnText: { color: 'white', fontWeight: 'bold' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
+  headerContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  headerEmoji: { fontSize: 32, marginRight: 12 },
+  headerInfo: { flex: 1 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold' },
+  headerSubtitle: { fontSize: 12, marginTop: 2 },
+  limitBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  limitBadgeText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+  messagesContainer: { flex: 1 },
+  messagesContent: { padding: 16, gap: 12 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+  emptyEmoji: { fontSize: 60, marginBottom: 12 },
+  emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  emptyDesc: { fontSize: 14, textAlign: 'center', maxWidth: 280, lineHeight: 20 },
+  messageWrapper: { marginBottom: 8 },
+  userMessageWrapper: { alignItems: 'flex-end' },
+  assistantMessageWrapper: { alignItems: 'flex-start' },
+  messageBubble: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, maxWidth: '80%' },
+  messageText: { fontSize: 14, lineHeight: 20 },
+  inputContainer: { borderTopWidth: 1, padding: 12 },
+  limitWarning: { borderRadius: 8, padding: 8, marginBottom: 8 },
+  limitWarningText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  inputRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  input: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 14, maxHeight: 100 },
+  sendBtn: { width: 44, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  sendBtnText: { fontSize: 20 },
+  clearBtn: { alignItems: 'center', paddingVertical: 8, marginTop: 8 },
+  clearBtnText: { fontSize: 12, fontWeight: '600' },
 })

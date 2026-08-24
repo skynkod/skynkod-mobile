@@ -14,72 +14,69 @@ export default function BudgetScreen({ route }) {
   const [expenses, setExpenses] = useState([])
   const [monthlyTotal, setMonthlyTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [newExpense, setNewExpense] = useState({
-    product_name: '',
-    brand: '',
-    category: 'Skincare',
-    price: '',
-  })
-
-  const categories = ['Skincare', 'Supplements', 'Professional', 'Other']
+  const [adding, setAdding] = useState(false)
+  const [itemInput, setItemInput] = useState('')
+  const [priceInput, setPriceInput] = useState('')
+  const [categoryInput, setCategoryInput] = useState('Product')
 
   useEffect(() => {
-    loadBudgetData()
+    loadExpenses()
   }, [userId])
 
-  const loadBudgetData = async () => {
+  const loadExpenses = async () => {
     try {
-      const userExpenses = await getExpenses(userId)
+      const data = await getExpenses(userId)
+      setExpenses(data || [])
+
       const total = await getMonthlyBudgetTotal(userId)
-      setExpenses(userExpenses)
-      setMonthlyTotal(total)
+      setMonthlyTotal(total || 0)
     } catch (error) {
-      console.error('Error loading budget:', error)
-      Alert.alert('Error', 'Failed to load budget data')
+      console.error('Load expenses error:', error)
+      Alert.alert('Error', 'Failed to load expenses')
     } finally {
       setLoading(false)
     }
   }
 
   const handleAddExpense = async () => {
-    if (!newExpense.product_name || !newExpense.price) {
-      Alert.alert('Error', 'Please fill in product name and price')
+    if (!itemInput.trim() || !priceInput.trim()) {
+      Alert.alert('Error', 'Please fill all fields')
       return
     }
 
-    setSubmitting(true)
-    try {
-      const added = await addExpense(userId, {
-        product_name: newExpense.product_name,
-        brand: newExpense.brand,
-        category: newExpense.category,
-        price: newExpense.price,
-      })
+    const price = parseFloat(priceInput)
+    if (isNaN(price) || price <= 0) {
+      Alert.alert('Error', 'Please enter a valid price')
+      return
+    }
 
-      if (added) {
-        setExpenses([added, ...expenses])
-        setMonthlyTotal(monthlyTotal + parseFloat(newExpense.price))
-        setNewExpense({
-          product_name: '',
-          brand: '',
-          category: 'Skincare',
-          price: '',
-        })
-        setShowAddForm(false)
+    setAdding(true)
+    try {
+      const newExpense = {
+        user_id: userId,
+        item_name: itemInput.trim(),
+        amount: price,
+        category: categoryInput,
+      }
+
+      const result = await addExpense(newExpense)
+      if (result) {
+        setExpenses([result, ...expenses])
+        setMonthlyTotal(monthlyTotal + price)
+        setItemInput('')
+        setPriceInput('')
+        setCategoryInput('Product')
         Alert.alert('Success', 'Expense added!')
-      } else {
-        Alert.alert('Error', 'Failed to add expense')
       }
     } catch (error) {
+      console.error('Add expense error:', error)
       Alert.alert('Error', 'Failed to add expense')
     } finally {
-      setSubmitting(false)
+      setAdding(false)
     }
   }
 
-  const handleDeleteExpense = async (expenseId, price) => {
+  const handleDeleteExpense = async (expenseId, amount) => {
     Alert.alert('Delete Expense', 'Are you sure?', [
       { text: 'Cancel', onPress: () => {} },
       {
@@ -89,10 +86,8 @@ export default function BudgetScreen({ route }) {
             const success = await deleteExpense(expenseId)
             if (success) {
               setExpenses(expenses.filter(e => e.id !== expenseId))
-              setMonthlyTotal(monthlyTotal - parseFloat(price))
+              setMonthlyTotal(Math.max(0, monthlyTotal - amount))
               Alert.alert('Success', 'Expense deleted')
-            } else {
-              Alert.alert('Error', 'Failed to delete expense')
             }
           } catch (error) {
             Alert.alert('Error', 'Failed to delete expense')
@@ -113,130 +108,130 @@ export default function BudgetScreen({ route }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>{t('common_budget') || 'Budget'}</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>Track your skincare spending</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Budget</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Track skincare spending</Text>
       </View>
 
       <ScrollView style={styles.content}>
-        {/* MONTHLY TOTAL */}
-        <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
-          <Text style={styles.summaryLabel}>This Month Total</Text>
-          <Text style={styles.summaryAmount}>${monthlyTotal.toFixed(2)}</Text>
-          <Text style={styles.summaryDesc}>{expenses.length} expenses</Text>
+        {/* TOTAL CARD */}
+        <View style={[styles.totalCard, { backgroundColor: colors.primary }]}>
+          <Text style={styles.totalLabel}>This Month</Text>
+          <Text style={styles.totalAmount}>${monthlyTotal.toFixed(2)}</Text>
         </View>
 
-        {/* EXPENSES LIST */}
-        {expenses.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>💰</Text>
-            <Text style={[styles.emptyText, { color: colors.text }]}>No expenses yet</Text>
-            <Text style={[styles.emptySubtext, { color: colors.muted }]}>Start tracking your skincare budget</Text>
-          </View>
-        ) : (
-          <View style={styles.expensesList}>
-            {expenses.map(expense => (
-              <View key={expense.id} style={[styles.expenseCard, { backgroundColor: colors.card }]}>
-                <View style={styles.expenseHeader}>
-                  <View style={styles.expenseInfo}>
-                    <Text style={[styles.expenseName, { color: colors.text }]}>{expense.product_name}</Text>
-                    <Text style={[styles.expenseBrand, { color: colors.muted }]}>
-                      {expense.brand} • {expense.category}
-                    </Text>
-                  </View>
-                  <Text style={[styles.expensePrice, { color: colors.primary }]}>${parseFloat(expense.price).toFixed(2)}</Text>
-                </View>
+        {/* ADD EXPENSE SECTION */}
+        <View style={[styles.addSection, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Add Expense</Text>
 
-                <View style={styles.expenseFooter}>
-                  <Text style={[styles.expenseDate, { color: colors.muted }]}>
-                    {new Date(expense.purchase_date).toLocaleDateString()}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteExpense(expense.id, expense.price)}
-                  >
-                    <Text style={styles.deleteLink}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      {!showAddForm ? (
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={() => setShowAddForm(true)}
-        >
-          <Text style={styles.addBtnText}>+ Add Expense</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={[styles.formContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
           <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-            placeholder="Product name"
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                borderColor: colors.primary,
+                color: colors.text,
+              },
+            ]}
+            placeholder="Item Name"
             placeholderTextColor={colors.muted}
-            value={newExpense.product_name}
-            onChangeText={(text) => setNewExpense({ ...newExpense, product_name: text })}
+            value={itemInput}
+            onChangeText={setItemInput}
+            editable={!adding}
           />
 
           <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
-            placeholder="Brand"
-            placeholderTextColor={colors.muted}
-            value={newExpense.brand}
-            onChangeText={(text) => setNewExpense({ ...newExpense, brand: text })}
-          />
-
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                borderColor: colors.primary,
+                color: colors.text,
+              },
+            ]}
             placeholder="Price ($)"
             placeholderTextColor={colors.muted}
-            value={newExpense.price}
-            onChangeText={(text) => setNewExpense({ ...newExpense, price: text })}
+            value={priceInput}
+            onChangeText={setPriceInput}
             keyboardType="decimal-pad"
+            editable={!adding}
           />
 
-          <ScrollView horizontal style={styles.categoryScroll}>
-            {categories.map(cat => (
+          <View style={[styles.categorySelector, { borderColor: colors.primary }]}>
+            {['Product', 'Service', 'Other'].map(cat => (
               <TouchableOpacity
                 key={cat}
                 style={[
-                  styles.categoryBtn,
-                  newExpense.category === cat && { backgroundColor: colors.primary }
+                  styles.categoryOption,
+                  categoryInput === cat && { backgroundColor: colors.primary },
                 ]}
-                onPress={() => setNewExpense({ ...newExpense, category: cat })}
+                onPress={() => setCategoryInput(cat)}
               >
                 <Text
                   style={[
-                    styles.categoryBtnText,
-                    newExpense.category === cat ? { color: 'white' } : { color: colors.text }
+                    styles.categoryOptionText,
+                    categoryInput === cat ? { color: 'white' } : { color: colors.text },
                   ]}
                 >
                   {cat}
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
-
-          <View style={styles.formButtons}>
-            <TouchableOpacity
-              style={[styles.formBtn, { backgroundColor: colors.border }]}
-              onPress={() => setShowAddForm(false)}
-              disabled={submitting}
-            >
-              <Text style={[styles.formBtnText, { color: colors.text }]}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.formBtn, { backgroundColor: colors.primary }]}
-              onPress={handleAddExpense}
-              disabled={submitting}
-            >
-              <Text style={styles.formBtnText}>{submitting ? 'Adding...' : 'Add'}</Text>
-            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: colors.primary, opacity: adding ? 0.6 : 1 }]}
+            onPress={handleAddExpense}
+            disabled={adding}
+          >
+            {adding ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.addBtnText}>+ Add Expense</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      )}
+
+        {/* EXPENSES LIST */}
+        <View style={styles.listSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Expenses</Text>
+
+          {expenses.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>💰</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>No expenses tracked yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.muted }]}>Start tracking your spending</Text>
+            </View>
+          ) : (
+            expenses.map(expense => (
+              <View key={expense.id} style={[styles.expenseCard, { backgroundColor: colors.card }]}>
+                <View style={styles.expenseInfo}>
+                  <View style={styles.expenseHeader}>
+                    <Text style={[styles.expenseName, { color: colors.text }]}>{expense.item_name}</Text>
+                    <Text style={[styles.expenseAmount, { color: colors.primary, fontWeight: 'bold' }]}>
+                      ${expense.amount.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.expenseFooter}>
+                    <Text style={[styles.expenseCategory, { color: colors.muted }]}>
+                      {expense.category}
+                    </Text>
+                    <Text style={[styles.expenseDate, { color: colors.muted }]}>
+                      {new Date(expense.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => handleDeleteExpense(expense.id, expense.amount)}
+                >
+                  <Text style={styles.deleteBtnText}>🗑️</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
     </View>
   )
 }
@@ -248,32 +243,30 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold' },
   subtitle: { fontSize: 12, marginTop: 4 },
   content: { flex: 1, padding: 16 },
-  summaryCard: { borderRadius: 12, padding: 20, marginBottom: 24 },
-  summaryLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
-  summaryAmount: { fontSize: 40, fontWeight: 'bold', color: 'white', marginVertical: 8 },
-  summaryDesc: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyEmoji: { fontSize: 60, marginBottom: 12 },
-  emptyText: { fontSize: 18, fontWeight: 'bold' },
-  emptySubtext: { fontSize: 14, marginTop: 4 },
-  expensesList: { gap: 12 },
-  expenseCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
-  expenseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  totalCard: { borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 24 },
+  totalLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 8 },
+  totalAmount: { color: 'white', fontSize: 36, fontWeight: 'bold' },
+  addSection: { borderRadius: 12, padding: 16, marginBottom: 24 },
+  listSection: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 14 },
+  categorySelector: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, marginBottom: 12, overflow: 'hidden' },
+  categoryOption: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRightWidth: 1 },
+  categoryOptionText: { fontSize: 12, fontWeight: '600' },
+  addBtn: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+  addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
+  emptyState: { alignItems: 'center', paddingVertical: 40 },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  emptySubtext: { fontSize: 12 },
+  expenseCard: { borderRadius: 12, padding: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   expenseInfo: { flex: 1 },
-  expenseName: { fontSize: 16, fontWeight: 'bold' },
-  expenseBrand: { fontSize: 12, marginTop: 4 },
-  expensePrice: { fontSize: 18, fontWeight: 'bold' },
-  expenseFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  expenseHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  expenseName: { fontWeight: 'bold', fontSize: 14 },
+  expenseAmount: { fontSize: 14 },
+  expenseFooter: { flexDirection: 'row', justifyContent: 'space-between' },
+  expenseCategory: { fontSize: 12 },
   expenseDate: { fontSize: 12 },
-  deleteLink: { color: '#FF6B6B', fontWeight: 'bold', fontSize: 12 },
-  addBtn: { margin: 16, padding: 16, borderRadius: 8, alignItems: 'center' },
-  addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  formContainer: { padding: 16, borderTopWidth: 1, gap: 12 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 14 },
-  categoryScroll: { flexGrow: 0, marginVertical: 8 },
-  categoryBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 8, borderWidth: 1, borderColor: '#ccc' },
-  categoryBtnText: { fontSize: 12, fontWeight: '600' },
-  formButtons: { flexDirection: 'row', gap: 12 },
-  formBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center' },
-  formBtnText: { color: 'white', fontWeight: 'bold' },
+  deleteBtn: { paddingLeft: 16 },
+  deleteBtnText: { fontSize: 20 },
 })

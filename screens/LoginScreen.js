@@ -65,7 +65,14 @@ export default function LoginScreen({ onLogin }) {
           </Text>
 
           <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                color: colors.text,
+                borderColor: colors.primary,
+              },
+            ]}
             placeholder={t('auth_email')}
             placeholderTextColor={colors.muted}
             value={email}
@@ -76,7 +83,14 @@ export default function LoginScreen({ onLogin }) {
           />
 
           <TextInput
-            style={[styles.input, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.bg,
+                color: colors.text,
+                borderColor: colors.primary,
+              },
+            ]}
             placeholder={t('auth_password')}
             placeholderTextColor={colors.muted}
             value={password}
