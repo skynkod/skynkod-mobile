@@ -1,174 +1,182 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { SKYNKOD_COLORS } from '../utils/constants'
-import { askKodaWithContext } from '../utils/koda'
-import { decrementKodaChats, getRemainingKodaChats, isPremiumUser } from '../utils/premium'
-import { getChatHistory, getJournalEntries, saveChatMessage } from '../utils/supabase'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { callKodaAI } from '../utils/koda'
+import { useLanguage } from '../utils/LanguageContext'
+import { isPremiumUser } from '../utils/premium'
+import { getChatHistory, saveChatMessage } from '../utils/supabase'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 
-export default function KodaScreen({ route, navigation }) {
+export default function KodaScreen({ route }) {
   const { userId } = route.params
-  const [messages, setMessages] = useState([
-    { id: 1, role: 'assistant', content: 'Hi! I\'m Koda, your skincare coach. How can I help you today?' }
-  ])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [journalHistory, setJournalHistory] = useState([])
+  const { isDark } = useTheme()
+  const { t } = useLanguage()
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+
+  const [messages, setMessages] = useState([])
+  const [inputText, setInputText] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
-  const [remainingChats, setRemainingChats] = useState(3)
-  const [pageLoading, setPageLoading] = useState(true)
+  const [chatsToday, setChatsToday] = useState(0)
 
   useEffect(() => {
-    loadData()
+    loadChatHistory()
+    checkPremiumStatus()
   }, [userId])
 
-  const loadData = async () => {
+  const loadChatHistory = async () => {
     try {
-      const entries = await getJournalEntries(userId)
-      setJournalHistory(entries)
+      const history = await getChatHistory(userId)
+      setMessages(history)
       
-      const chatHistory = await getChatHistory(userId)
-      if (chatHistory.length > 0) {
-        const formattedMessages = chatHistory.map((msg, idx) => ({
-          id: idx,
-          role: msg.role,
-          content: msg.content,
-        }))
-        setMessages(formattedMessages)
-      }
-      
-      const premium = await isPremiumUser(userId)
-      setIsPremium(premium)
-      
-      if (!premium) {
-        const chats = await getRemainingKodaChats(userId)
-        setRemainingChats(chats)
-      }
+      // Count chats from today
+      const today = new Date().toISOString().split('T')[0]
+      const todayChats = history.filter(m => m.role === 'assistant' && m.created_at?.startsWith(today))
+      setChatsToday(todayChats.length)
     } catch (error) {
-      console.error('Error loading data:', error)
-    } finally {
-      setPageLoading(false)
-    }
-  }
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-
-    if (!isPremium && remainingChats <= 0) {
-      Alert.alert(
-        'Out of Chats',
-        'You\'ve used all 3 free Koda chats today!\n\nUpgrade to Premium for unlimited chat.',
-        [
-          { text: 'Cancel', onPress: () => {} },
-          { text: 'Go Premium', onPress: () => navigation.navigate('Premium') },
-        ]
-      )
-      return
-    }
-
-    const userMsg = { id: Date.now(), role: 'user', content: input }
-    setMessages([...messages, userMsg])
-    setInput('')
-    setLoading(true)
-
-    try {
-      // Save user message
-      await saveChatMessage(userId, 'user', input)
-
-      // Get AI response
-      const response = await askKodaWithContext(input, journalHistory, messages)
-      const assistantMsg = { id: Date.now() + 1, role: 'assistant', content: response }
-      setMessages(prev => [...prev, assistantMsg])
-
-      // Save assistant message
-      await saveChatMessage(userId, 'assistant', response)
-
-      // Decrement free chats
-      if (!isPremium) {
-        const remaining = await decrementKodaChats(userId)
-        setRemainingChats(remaining)
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      Alert.alert('Error', 'Failed to get response. Please try again.')
+      console.error('Error loading chat history:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  if (pageLoading) {
+  const checkPremiumStatus = async () => {
+    const premium = await isPremiumUser(userId)
+    setIsPremium(premium)
+  }
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim()) return
+
+    // Check freemium limits
+    if (!isPremium && chatsToday >= 3) {
+      Alert.alert('Limit Reached', 'Upgrade to Premium for unlimited Koda chats!')
+      return
+    }
+
+    setSending(true)
+    try {
+      // Save user message
+      await saveChatMessage(userId, 'user', inputText)
+      
+      // Add to UI
+      setMessages([...messages, { role: 'user', content: inputText, created_at: new Date().toISOString() }])
+
+      // Get AI response
+      const response = await callKodaAI(userId, inputText, messages)
+      
+      // Save AI response
+      await saveChatMessage(userId, 'assistant', response)
+      
+      // Add to UI
+      setMessages(prev => [...prev, { role: 'assistant', content: response, created_at: new Date().toISOString() }])
+      
+      setInputText('')
+      setChatsToday(chatsToday + 1)
+    } catch (error) {
+      Alert.alert('Error', 'Failed to get response from Koda')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={SKYNKOD_COLORS.primary} />
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Koda AI Coach</Text>
-        {!isPremium && <Text style={styles.badge}>{remainingChats}/3 chats left</Text>}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: colors.bg }]}
+    >
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Koda AI Coach</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>
+          {isPremium ? 'Unlimited' : `${3 - chatsToday} chats left today`}
+        </Text>
       </View>
 
-      <ScrollView style={styles.chatBox}>
-        {messages.map(msg => (
-          <View key={msg.id} style={[styles.message, msg.role === 'user' ? styles.userMsg : styles.assistantMsg]}>
-            <Text style={msg.role === 'user' ? styles.userText : styles.assistantText}>{msg.content}</Text>
+      <ScrollView style={styles.messagesContainer}>
+        {messages.length === 0 ? (
+          <View style={styles.welcomeMessage}>
+            <Text style={styles.welcomeEmoji}>✨</Text>
+            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Hi! I'm Koda</Text>
+            <Text style={[styles.welcomeText, { color: colors.muted }]}>
+              Your AI skin coach. Ask me anything about skincare, routines, or your skin concerns!
+            </Text>
           </View>
-        ))}
-        {loading && <ActivityIndicator size="large" color={SKYNKOD_COLORS.primary} style={styles.loader} />}
+        ) : (
+          messages.map((msg, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.messageBubble,
+                msg.role === 'user'
+                  ? { alignSelf: 'flex-end', backgroundColor: colors.primary }
+                  : { alignSelf: 'flex-start', backgroundColor: colors.card },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  { color: msg.role === 'user' ? 'white' : colors.text },
+                ]}
+              >
+                {msg.content}
+              </Text>
+            </View>
+          ))
+        )}
+        {sending && (
+          <View style={[styles.messageBubble, { alignSelf: 'flex-start', backgroundColor: colors.card }]}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        )}
       </ScrollView>
 
-      {!isPremium && remainingChats === 0 && (
-        <View style={styles.upgradePrompt}>
-          <Text style={styles.upgradeText}>Upgrade to Premium for unlimited Koda chats!</Text>
-          <TouchableOpacity style={styles.upgradeBtn} onPress={() => navigation.navigate('Premium')}>
-            <Text style={styles.upgradeBtnText}>Go Premium</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <View style={styles.inputBox}>
-        <TextInput 
-          style={styles.input} 
-          placeholder="Ask Koda..." 
-          value={input} 
-          onChangeText={setInput} 
-          multiline 
-          editable={isPremium || remainingChats > 0}
-          placeholderTextColor={SKYNKOD_COLORS.muted}
+      <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <TextInput
+          style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+          placeholder={t('koda_ask')}
+          placeholderTextColor={colors.muted}
+          value={inputText}
+          onChangeText={setInputText}
+          multiline
+          maxHeight={100}
+          editable={!sending}
         />
-        <TouchableOpacity 
-          style={styles.sendBtn} 
-          onPress={handleSend} 
-          disabled={loading || (!isPremium && remainingChats <= 0)}
+        <TouchableOpacity
+          style={[styles.sendBtn, { backgroundColor: colors.primary, opacity: sending ? 0.5 : 1 }]}
+          onPress={handleSendMessage}
+          disabled={sending || !inputText.trim()}
         >
-          <Text style={styles.sendBtnText}>Send</Text>
+          <Text style={styles.sendBtnText}>{t('koda_send')}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg },
+  container: { flex: 1 },
   centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: SKYNKOD_COLORS.border },
-  title: { fontSize: 24, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
-  badge: { fontSize: 12, color: 'white', backgroundColor: SKYNKOD_COLORS.primary, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  chatBox: { flex: 1, padding: 16 },
-  message: { marginBottom: 12, borderRadius: 8, padding: 12, maxWidth: '80%' },
-  userMsg: { alignSelf: 'flex-end', backgroundColor: SKYNKOD_COLORS.primary },
-  assistantMsg: { alignSelf: 'flex-start', backgroundColor: 'white' },
-  userText: { color: 'white', fontSize: 14 },
-  assistantText: { color: SKYNKOD_COLORS.text, fontSize: 14 },
-  loader: { marginVertical: 20 },
-  upgradePrompt: { backgroundColor: 'rgba(178, 131, 172, 0.1)', padding: 12, margin: 16, borderRadius: 8 },
-  upgradeText: { color: SKYNKOD_COLORS.primary, fontWeight: 'bold', marginBottom: 8 },
-  upgradeBtn: { backgroundColor: SKYNKOD_COLORS.primary, padding: 8, borderRadius: 6 },
-  upgradeBtnText: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 12 },
-  inputBox: { flexDirection: 'row', padding: 16, borderTopWidth: 1, borderTopColor: SKYNKOD_COLORS.border, gap: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: SKYNKOD_COLORS.border, borderRadius: 8, padding: 12, maxHeight: 100, color: SKYNKOD_COLORS.text },
-  sendBtn: { backgroundColor: SKYNKOD_COLORS.primary, paddingHorizontal: 16, borderRadius: 8, justifyContent: 'center' },
+  header: { padding: 16, borderBottomWidth: 1 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 12, marginTop: 4 },
+  messagesContainer: { flex: 1, padding: 16 },
+  welcomeMessage: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+  welcomeEmoji: { fontSize: 60, marginBottom: 16 },
+  welcomeTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  welcomeText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  messageBubble: { borderRadius: 12, padding: 12, marginVertical: 6, maxWidth: '85%' },
+  messageText: { fontSize: 14, lineHeight: 18 },
+  inputContainer: { flexDirection: 'row', padding: 12, gap: 8, borderTopWidth: 1, alignItems: 'flex-end' },
+  input: { flex: 1, borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, fontSize: 14 },
+  sendBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
   sendBtnText: { color: 'white', fontWeight: 'bold' },
 })

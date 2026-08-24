@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { SKYNKOD_COLORS } from '../utils/constants'
+import { useLanguage } from '../utils/LanguageContext'
 import { getRoutineStreak, getTodayRoutineCompletion, markRoutineComplete } from '../utils/supabase'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 
 export default function RoutinesScreen({ route }) {
   const { userId } = route.params
+  const { isDark } = useTheme()
+  const { t } = useLanguage()
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+
   const [morningComplete, setMorningComplete] = useState(false)
   const [eveningComplete, setEveningComplete] = useState(false)
   const [morningStreak, setMorningStreak] = useState(0)
@@ -56,107 +62,107 @@ export default function RoutinesScreen({ route }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={SKYNKOD_COLORS.primary} />
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Skincare Routines</Text>
-        <Text style={styles.subtitle}>Track your daily routines</Text>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>{t('routines_title')}</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Track your daily routines</Text>
       </View>
 
       <ScrollView style={styles.content}>
         {/* MORNING ROUTINE */}
-        <View style={[styles.routineCard, morningComplete && styles.routineCardComplete]}>
+        <View style={[styles.routineCard, morningComplete && { borderColor: colors.primary, borderWidth: 2 }, { backgroundColor: colors.card }]}>
           <View style={styles.routineHeader}>
             <Text style={styles.routineEmoji}>🌅</Text>
             <View style={styles.routineInfo}>
-              <Text style={styles.routineName}>Morning Routine</Text>
-              <Text style={styles.routineTime}>Start your day right</Text>
+              <Text style={[styles.routineName, { color: colors.text }]}>{t('routines_morning')}</Text>
+              <Text style={[styles.routineTime, { color: colors.muted }]}>Start your day right</Text>
             </View>
             {morningComplete && <Text style={styles.checkmark}>✓</Text>}
           </View>
 
-          <View style={styles.streakContainer}>
-            <Text style={styles.streakLabel}>Current Streak</Text>
-            <Text style={styles.streakNumber}>{morningStreak} days</Text>
+          <View style={[styles.streakContainer, { backgroundColor: colors.bg }]}>
+            <Text style={[styles.streakLabel, { color: colors.muted }]}>{t('routines_streak')}</Text>
+            <Text style={[styles.streakNumber, { color: colors.primary }]}>{morningStreak} days</Text>
           </View>
 
           <TextInput
-            style={styles.notesInput}
+            style={[styles.notesInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
             placeholder="Add notes about your morning routine..."
+            placeholderTextColor={colors.muted}
             value={morningNotes}
             onChangeText={setMorningNotes}
             multiline
-            placeholderTextColor={SKYNKOD_COLORS.muted}
           />
 
           <TouchableOpacity
-            style={[styles.completeBtn, morningComplete && styles.completeBtnDone]}
+            style={[styles.completeBtn, morningComplete && styles.completeBtnDone, { backgroundColor: morningComplete ? '#4CAF50' : colors.primary }]}
             onPress={() => handleMarkComplete('morning')}
             disabled={morningComplete}
           >
             <Text style={styles.completeBtnText}>
-              {morningComplete ? '✓ Completed Today' : 'Mark as Complete'}
+              {morningComplete ? '✓ Completed Today' : t('routines_complete')}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.stepsList}>
-            <Text style={styles.stepsTitle}>Suggested Steps:</Text>
-            <Text style={styles.step}>1. Cleanse your face</Text>
-            <Text style={styles.step}>2. Apply toner</Text>
-            <Text style={styles.step}>3. Apply serum</Text>
-            <Text style={styles.step}>4. Apply moisturizer</Text>
-            <Text style={styles.step}>5. Apply sunscreen</Text>
+            <Text style={[styles.stepsTitle, { color: colors.text }]}>Suggested Steps:</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>1. Cleanse your face</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>2. Apply toner</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>3. Apply serum</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>4. Apply moisturizer</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>5. Apply sunscreen</Text>
           </View>
         </View>
 
         {/* EVENING ROUTINE */}
-        <View style={[styles.routineCard, eveningComplete && styles.routineCardComplete]}>
+        <View style={[styles.routineCard, eveningComplete && { borderColor: colors.primary, borderWidth: 2 }, { backgroundColor: colors.card }]}>
           <View style={styles.routineHeader}>
             <Text style={styles.routineEmoji}>🌙</Text>
             <View style={styles.routineInfo}>
-              <Text style={styles.routineName}>Evening Routine</Text>
-              <Text style={styles.routineTime}>End your day with care</Text>
+              <Text style={[styles.routineName, { color: colors.text }]}>{t('routines_evening')}</Text>
+              <Text style={[styles.routineTime, { color: colors.muted }]}>End your day with care</Text>
             </View>
             {eveningComplete && <Text style={styles.checkmark}>✓</Text>}
           </View>
 
-          <View style={styles.streakContainer}>
-            <Text style={styles.streakLabel}>Current Streak</Text>
-            <Text style={styles.streakNumber}>{eveningStreak} days</Text>
+          <View style={[styles.streakContainer, { backgroundColor: colors.bg }]}>
+            <Text style={[styles.streakLabel, { color: colors.muted }]}>{t('routines_streak')}</Text>
+            <Text style={[styles.streakNumber, { color: colors.primary }]}>{eveningStreak} days</Text>
           </View>
 
           <TextInput
-            style={styles.notesInput}
+            style={[styles.notesInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
             placeholder="Add notes about your evening routine..."
+            placeholderTextColor={colors.muted}
             value={eveningNotes}
             onChangeText={setEveningNotes}
             multiline
-            placeholderTextColor={SKYNKOD_COLORS.muted}
           />
 
           <TouchableOpacity
-            style={[styles.completeBtn, eveningComplete && styles.completeBtnDone]}
+            style={[styles.completeBtn, eveningComplete && styles.completeBtnDone, { backgroundColor: eveningComplete ? '#4CAF50' : colors.primary }]}
             onPress={() => handleMarkComplete('evening')}
             disabled={eveningComplete}
           >
             <Text style={styles.completeBtnText}>
-              {eveningComplete ? '✓ Completed Today' : 'Mark as Complete'}
+              {eveningComplete ? '✓ Completed Today' : t('routines_complete')}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.stepsList}>
-            <Text style={styles.stepsTitle}>Suggested Steps:</Text>
-            <Text style={styles.step}>1. Remove makeup</Text>
-            <Text style={styles.step}>2. Cleanse your face</Text>
-            <Text style={styles.step}>3. Apply toner</Text>
-            <Text style={styles.step}>4. Apply serum</Text>
-            <Text style={styles.step}>5. Apply night cream</Text>
+            <Text style={[styles.stepsTitle, { color: colors.text }]}>Suggested Steps:</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>1. Remove makeup</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>2. Cleanse your face</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>3. Apply toner</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>4. Apply serum</Text>
+            <Text style={[styles.step, { color: colors.muted }]}>5. Apply night cream</Text>
           </View>
         </View>
       </ScrollView>
@@ -165,28 +171,27 @@ export default function RoutinesScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg },
+  container: { flex: 1 },
   centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, borderBottomWidth: 1, borderBottomColor: SKYNKOD_COLORS.border },
-  title: { fontSize: 24, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
-  subtitle: { fontSize: 12, color: SKYNKOD_COLORS.muted, marginTop: 4 },
+  header: { padding: 16, borderBottomWidth: 1 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 12, marginTop: 4 },
   content: { flex: 1, padding: 16 },
-  routineCard: { backgroundColor: 'white', borderRadius: 12, padding: 16, marginBottom: 16 },
-  routineCardComplete: { borderWidth: 2, borderColor: '#4CAF50' },
+  routineCard: { borderRadius: 12, padding: 16, marginBottom: 16 },
   routineHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   routineEmoji: { fontSize: 32, marginRight: 12 },
   routineInfo: { flex: 1 },
-  routineName: { fontSize: 18, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
-  routineTime: { fontSize: 12, color: SKYNKOD_COLORS.muted, marginTop: 2 },
+  routineName: { fontSize: 18, fontWeight: 'bold' },
+  routineTime: { fontSize: 12, marginTop: 2 },
   checkmark: { fontSize: 28, color: '#4CAF50', fontWeight: 'bold' },
-  streakContainer: { backgroundColor: 'rgba(178, 131, 172, 0.1)', padding: 12, borderRadius: 8, marginBottom: 12 },
-  streakLabel: { fontSize: 12, color: SKYNKOD_COLORS.muted },
-  streakNumber: { fontSize: 24, fontWeight: 'bold', color: SKYNKOD_COLORS.primary, marginTop: 4 },
-  notesInput: { borderWidth: 1, borderColor: SKYNKOD_COLORS.border, borderRadius: 8, padding: 12, marginBottom: 12, height: 80, color: SKYNKOD_COLORS.text },
-  completeBtn: { backgroundColor: SKYNKOD_COLORS.primary, padding: 14, borderRadius: 8, marginBottom: 12 },
+  streakContainer: { padding: 12, borderRadius: 8, marginBottom: 12 },
+  streakLabel: { fontSize: 12 },
+  streakNumber: { fontSize: 24, fontWeight: 'bold', marginTop: 4 },
+  notesInput: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, height: 80 },
+  completeBtn: { padding: 14, borderRadius: 8, marginBottom: 12 },
   completeBtnDone: { backgroundColor: '#4CAF50' },
   completeBtnText: { color: 'white', textAlign: 'center', fontWeight: 'bold' },
-  stepsList: { borderTopWidth: 1, borderTopColor: SKYNKOD_COLORS.border, paddingTop: 12 },
-  stepsTitle: { fontSize: 12, fontWeight: 'bold', color: SKYNKOD_COLORS.text, marginBottom: 8 },
-  step: { fontSize: 13, color: SKYNKOD_COLORS.muted, marginBottom: 6, lineHeight: 18 },
+  stepsList: { borderTopWidth: 1, borderTopColor: '#ccc', paddingTop: 12 },
+  stepsTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 8 },
+  step: { fontSize: 13, marginBottom: 6, lineHeight: 18 },
 })
