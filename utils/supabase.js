@@ -1,65 +1,67 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://akshyahfnxmilhpimzme.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_B7gC1CGaQLe1thewflvNvA_qeKHI_iP'
+const supabaseUrl = 'https://akshyahfnxmilhpimzme.supabase.co'
+const supabaseAnonKey = 'sb_publishable_B7gC1CGaQLe1thewflvNvA_qeKHI_iP'
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInApp: true,
+  },
+})
 
-// Authentication functions
-export const signUp = async (email, password) => {
+// ============ AUTH ============
+export async function signUp(email, password) {
   try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    if (error) throw error
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) return { success: false, error: error.message }
     return { success: true, user: data.user }
   } catch (error) {
     return { success: false, error: error.message }
   }
 }
 
-export const signIn = async (email, password) => {
+export async function signIn(email, password) {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) throw error
-    return { success: true, user: data.user, session: data.session }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { success: false, error: error.message }
+    return { success: true, user: data.user }
   } catch (error) {
     return { success: false, error: error.message }
   }
 }
 
-export const signOut = async () => {
+export async function signOut() {
   try {
     const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    if (error) return { success: false, error: error.message }
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
   }
 }
 
-export const getUser = async () => {
+export async function getUser() {
   try {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error) throw error
-    return user
+    const { data, error } = await supabase.auth.getUser()
+    if (error) return null
+    return data.user
   } catch (error) {
-    console.error('Get user error:', error)
     return null
   }
 }
 
-// User functions
-export const createUser = async (userId, email) => {
+// ============ USER PROFILE ============
+export async function createUser(userId, email) {
   try {
     const { data, error } = await supabase
       .from('users')
       .insert({ id: userId, email })
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -68,34 +70,62 @@ export const createUser = async (userId, email) => {
   }
 }
 
-// Journal functions
-export const getJournalEntries = async (userId) => {
+export async function getUserProfile(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Get user profile error:', error)
+    return null
+  }
+}
+
+export async function updateUserProfile(userId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+
+    if (error) throw error
+    return data[0]
+  } catch (error) {
+    console.error('Update user profile error:', error)
+    return null
+  }
+}
+
+// ============ JOURNAL ============
+export async function getJournalEntries(userId) {
   try {
     const { data, error } = await supabase
       .from('journal_entries')
       .select('*')
       .eq('user_id', userId)
-      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+
     if (error) throw error
-    return data || []
+    return data
   } catch (error) {
     console.error('Get journal entries error:', error)
     return []
   }
 }
 
-export const saveJournalEntry = async (userId, entry) => {
+export async function saveJournalEntry(entry) {
   try {
     const { data, error } = await supabase
       .from('journal_entries')
-      .insert({
-        user_id: userId,
-        date: new Date().toISOString().split('T')[0],
-        mood: entry.mood,
-        skin_conditions: entry.skin_conditions,
-        notes: entry.notes,
-      })
+      .insert([entry])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -104,80 +134,108 @@ export const saveJournalEntry = async (userId, entry) => {
   }
 }
 
-// Products functions
-export const getUserProducts = async (userId) => {
+export async function updateJournalEntry(entryId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .update(updates)
+      .eq('id', entryId)
+      .select()
+
+    if (error) throw error
+    return data[0]
+  } catch (error) {
+    console.error('Update journal entry error:', error)
+    return null
+  }
+}
+
+export async function deleteJournalEntry(entryId) {
+  try {
+    const { error } = await supabase
+      .from('journal_entries')
+      .delete()
+      .eq('id', entryId)
+
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Delete journal entry error:', error)
+    return false
+  }
+}
+
+// ============ PRODUCTS ============
+export async function getUserProducts(userId) {
   try {
     const { data, error } = await supabase
       .from('user_products')
       .select('*')
       .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
     if (error) throw error
-    return data || []
+    return data
   } catch (error) {
     console.error('Get user products error:', error)
     return []
   }
 }
 
-export const addUserProduct = async (userId, product) => {
+export async function addUserProduct(product) {
   try {
     const { data, error } = await supabase
       .from('user_products')
-      .insert({
-        user_id: userId,
-        product_name: product.name,
-        brand: product.brand,
-        category: product.category,
-      })
+      .insert([product])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
-    console.error('Add product error:', error)
+    console.error('Add user product error:', error)
     return null
   }
 }
 
-export const deleteUserProduct = async (productId) => {
+export async function deleteUserProduct(productId) {
   try {
     const { error } = await supabase
       .from('user_products')
       .delete()
       .eq('id', productId)
+
     if (error) throw error
     return true
   } catch (error) {
-    console.error('Delete product error:', error)
+    console.error('Delete user product error:', error)
     return false
   }
 }
 
-// Chat history functions
-export const getChatHistory = async (userId) => {
+// ============ CHAT ============
+export async function getChatHistory(userId) {
   try {
     const { data, error } = await supabase
       .from('chat_history')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
+
     if (error) throw error
-    return data || []
+    return data
   } catch (error) {
     console.error('Get chat history error:', error)
     return []
   }
 }
 
-export const saveChatMessage = async (userId, role, content) => {
+export async function saveChatMessage(userId, role, content) {
   try {
     const { data, error } = await supabase
       .from('chat_history')
-      .insert({
-        user_id: userId,
-        role: role,
-        content: content,
-      })
+      .insert([{ user_id: userId, role, content }])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -186,12 +244,13 @@ export const saveChatMessage = async (userId, role, content) => {
   }
 }
 
-export const clearChatHistory = async (userId) => {
+export async function clearChatHistory(userId) {
   try {
     const { error } = await supabase
       .from('chat_history')
       .delete()
       .eq('user_id', userId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -200,66 +259,44 @@ export const clearChatHistory = async (userId) => {
   }
 }
 
-// Photo functions
-export const uploadPhoto = async (userId, photoBase64, notes = '') => {
+// ============ PHOTOS ============
+export async function uploadPhoto(fileName, blob) {
   try {
-    const fileName = `${userId}/${Date.now()}.jpg`
-    
-    const { error: uploadError } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from('photos')
-      .upload(fileName, decode(photoBase64), {
-        contentType: 'image/jpeg',
-      })
-    
-    if (uploadError) throw uploadError
+      .upload(fileName, blob, { contentType: 'image/jpeg' })
 
-    const { data } = supabase.storage
-      .from('photos')
-      .getPublicUrl(fileName)
-
-    const photoUrl = data.publicUrl
-
-    const { data: photoData, error: dbError } = await supabase
-      .from('photos')
-      .insert({
-        user_id: userId,
-        photo_url: photoUrl,
-        notes: notes,
-      })
-      .select()
-
-    if (dbError) throw dbError
-
-    return { success: true, photo: photoData[0] }
+    if (error) throw error
+    return data
   } catch (error) {
     console.error('Upload photo error:', error)
-    return { success: false, error: error.message }
+    return null
   }
 }
 
-export const getUserPhotos = async (userId) => {
+export async function getUserPhotos(userId) {
   try {
     const { data, error } = await supabase
       .from('photos')
       .select('*')
       .eq('user_id', userId)
-      .order('uploaded_at', { ascending: false })
-    
+      .order('created_at', { ascending: false })
+
     if (error) throw error
-    return data || []
+    return data
   } catch (error) {
-    console.error('Get photos error:', error)
+    console.error('Get user photos error:', error)
     return []
   }
 }
 
-export const deletePhoto = async (photoId) => {
+export async function deletePhoto(photoId) {
   try {
     const { error } = await supabase
       .from('photos')
       .delete()
       .eq('id', photoId)
-    
+
     if (error) throw error
     return true
   } catch (error) {
@@ -268,67 +305,79 @@ export const deletePhoto = async (photoId) => {
   }
 }
 
-// Routine completion functions
-export const markRoutineComplete = async (userId, routineType) => {
+// ============ ROUTINES ============
+export async function markRoutineComplete(data) {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('routine_completions')
-      .insert({
-        user_id: userId,
-        routine_type: routineType,
-        date: new Date().toISOString().split('T')[0],
-      })
-      .select()
+      .insert([data])
+
     if (error) throw error
-    return data[0]
+    return true
   } catch (error) {
     console.error('Mark routine complete error:', error)
-    return null
+    return false
   }
 }
 
-export const getTodayRoutineCompletion = async (userId, routineType) => {
+export async function getTodayRoutineCompletion(userId) {
   try {
     const today = new Date().toISOString().split('T')[0]
     const { data, error } = await supabase
       .from('routine_completions')
       .select('*')
       .eq('user_id', userId)
-      .eq('routine_type', routineType)
-      .eq('date', today)
+      .gte('created_at', `${today}T00:00:00`)
+      .lte('created_at', `${today}T23:59:59`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
     if (error) throw error
-    return data && data.length > 0
+    return data && data.length > 0 ? data[0] : null
   } catch (error) {
     console.error('Get today routine completion error:', error)
-    return false
+    return null
   }
 }
 
-export const getRoutineStreak = async (userId, routineType) => {
+export async function getRoutineStreak(userId, routineType) {
   try {
     const { data, error } = await supabase
       .from('routine_completions')
-      .select('date')
+      .select('created_at')
       .eq('user_id', userId)
       .eq('routine_type', routineType)
-      .order('date', { ascending: false })
+      .eq(`${routineType}_completed`, true)
+      .order('created_at', { ascending: false })
+
     if (error) throw error
-    
-    let streak = 0
+
+    if (!data || data.length === 0) return 0
+
+    let streak = 1
     const today = new Date()
-    
+    let currentDate = new Date(today)
+
     for (let i = 0; i < data.length; i++) {
-      const completionDate = new Date(data[i].date)
-      const expectedDate = new Date(today)
-      expectedDate.setDate(expectedDate.getDate() - i)
-      
-      if (completionDate.toISOString().split('T')[0] === expectedDate.toISOString().split('T')[0]) {
-        streak++
+      const entryDate = new Date(data[i].created_at)
+      const expectedDate = new Date(currentDate)
+      expectedDate.setDate(expectedDate.getDate() - 1)
+
+      const entrDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate())
+      const expectedDateOnly = new Date(
+        expectedDate.getFullYear(),
+        expectedDate.getMonth(),
+        expectedDate.getDate()
+      )
+
+      if (entrDateOnly.getTime() === expectedDateOnly.getTime()) {
+        streak += 1
+        currentDate = expectedDate
       } else {
         break
       }
     }
-    
+
     return streak
   } catch (error) {
     console.error('Get routine streak error:', error)
@@ -336,35 +385,30 @@ export const getRoutineStreak = async (userId, routineType) => {
   }
 }
 
-// Expense functions
-export const getExpenses = async (userId) => {
+// ============ EXPENSES ============
+export async function getExpenses(userId) {
   try {
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .eq('user_id', userId)
-      .order('purchase_date', { ascending: false })
+      .order('created_at', { ascending: false })
+
     if (error) throw error
-    return data || []
+    return data
   } catch (error) {
     console.error('Get expenses error:', error)
     return []
   }
 }
 
-export const addExpense = async (userId, expense) => {
+export async function addExpense(expense) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .insert({
-        user_id: userId,
-        product_name: expense.product_name,
-        brand: expense.brand,
-        category: expense.category,
-        price: parseFloat(expense.price),
-        purchase_date: expense.purchase_date || new Date().toISOString().split('T')[0],
-      })
+      .insert([expense])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -373,12 +417,13 @@ export const addExpense = async (userId, expense) => {
   }
 }
 
-export const deleteExpense = async (expenseId) => {
+export async function deleteExpense(expenseId) {
   try {
     const { error } = await supabase
       .from('expenses')
       .delete()
       .eq('id', expenseId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -387,21 +432,22 @@ export const deleteExpense = async (expenseId) => {
   }
 }
 
-export const getMonthlyBudgetTotal = async (userId) => {
+export async function getMonthlyBudgetTotal(userId) {
   try {
-    const today = new Date()
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-    const monthStartStr = monthStart.toISOString().split('T')[0]
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
     const { data, error } = await supabase
       .from('expenses')
-      .select('price')
+      .select('amount')
       .eq('user_id', userId)
-      .gte('purchase_date', monthStartStr)
-    
+      .gte('created_at', firstDay.toISOString())
+      .lte('created_at', lastDay.toISOString())
+
     if (error) throw error
-    
-    const total = data.reduce((sum, exp) => sum + parseFloat(exp.price), 0)
+
+    const total = data.reduce((sum, expense) => sum + (expense.amount || 0), 0)
     return total
   } catch (error) {
     console.error('Get monthly budget total error:', error)
@@ -409,12 +455,51 @@ export const getMonthlyBudgetTotal = async (userId) => {
   }
 }
 
-// Helper function to decode base64
-function decode(base64String) {
-  const binaryString = atob(base64String)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
+// ============ ANALYTICS ============
+export async function getJournalStats(userId, daysBack = 30) {
+  try {
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - daysBack)
+
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .select('mood')
+      .eq('user_id', userId)
+      .gte('created_at', startDate.toISOString())
+
+    if (error) throw error
+
+    const moodCounts = {
+      Poor: 0,
+      Okay: 0,
+      Good: 0,
+      Great: 0,
+    }
+
+    data.forEach(entry => {
+      if (entry.mood && moodCounts.hasOwnProperty(entry.mood)) {
+        moodCounts[entry.mood] += 1
+      }
+    })
+
+    return moodCounts
+  } catch (error) {
+    console.error('Get journal stats error:', error)
+    return null
   }
-  return bytes.buffer
+}
+
+export async function getProductCount(userId) {
+  try {
+    const { count, error } = await supabase
+      .from('user_products')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+
+    if (error) throw error
+    return count
+  } catch (error) {
+    console.error('Get product count error:', error)
+    return 0
+  }
 }
