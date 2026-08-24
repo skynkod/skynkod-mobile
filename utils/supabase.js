@@ -53,7 +53,7 @@ export const getUser = async () => {
   }
 }
 
-// Database functions
+// User functions
 export const createUser = async (userId, email) => {
   try {
     const { data, error } = await supabase
@@ -68,6 +68,7 @@ export const createUser = async (userId, email) => {
   }
 }
 
+// Journal functions
 export const getJournalEntries = async (userId) => {
   try {
     const { data, error } = await supabase
@@ -103,6 +104,7 @@ export const saveJournalEntry = async (userId, entry) => {
   }
 }
 
+// Products functions
 export const getUserProducts = async (userId) => {
   try {
     const { data, error } = await supabase
@@ -146,6 +148,54 @@ export const deleteUserProduct = async (productId) => {
     return true
   } catch (error) {
     console.error('Delete product error:', error)
+    return false
+  }
+}
+
+// Chat history functions
+export const getChatHistory = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Get chat history error:', error)
+    return []
+  }
+}
+
+export const saveChatMessage = async (userId, role, content) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_history')
+      .insert({
+        user_id: userId,
+        role: role,
+        content: content,
+      })
+      .select()
+    if (error) throw error
+    return data[0]
+  } catch (error) {
+    console.error('Save chat message error:', error)
+    return null
+  }
+}
+
+export const clearChatHistory = async (userId) => {
+  try {
+    const { error } = await supabase
+      .from('chat_history')
+      .delete()
+      .eq('user_id', userId)
+    if (error) throw error
+    return true
+  } catch (error) {
+    console.error('Clear chat history error:', error)
     return false
   }
 }

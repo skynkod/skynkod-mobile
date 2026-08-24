@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, Touc
 import { SKYNKOD_COLORS } from '../utils/constants'
 import { askKodaWithContext } from '../utils/koda'
 import { decrementKodaChats, getRemainingKodaChats, isPremiumUser } from '../utils/premium'
-import { getJournalEntries } from '../utils/supabase'
+import { getChatHistory, getJournalEntries, saveChatMessage } from '../utils/supabase'
 
 export default function KodaScreen({ route, navigation }) {
   const { userId } = route.params
@@ -15,6 +15,7 @@ export default function KodaScreen({ route, navigation }) {
   const [journalHistory, setJournalHistory] = useState([])
   const [isPremium, setIsPremium] = useState(false)
   const [remainingChats, setRemainingChats] = useState(3)
+  const [pageLoading, setPageLoading] = useState(true)
 
   useEffect(() => {
     loadData()
@@ -25,6 +26,16 @@ export default function KodaScreen({ route, navigation }) {
       const entries = await getJournalEntries(userId)
       setJournalHistory(entries)
       
+      const chatHistory = await getChatHistory(userId)
+      if (chatHistory.length > 0) {
+        const formattedMessages = chatHistory.map((msg, idx) => ({
+          id: idx,
+          role: msg.role,
+          content: msg.content,
+        }))
+        setMessages(formattedMessages)
+      }
+      
       const premium = await isPremiumUser(userId)
       setIsPremium(premium)
       
@@ -34,6 +45,8 @@ export default function KodaScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('Error loading data:', error)
+    } finally {
+      setPageLoading(false)
     }
   }
 
@@ -58,19 +71,36 @@ export default function KodaScreen({ route, navigation }) {
     setLoading(true)
 
     try {
+      // Save user message
+      await saveChatMessage(userId, 'user', input)
+
+      // Get AI response
       const response = await askKodaWithContext(input, journalHistory, messages)
       const assistantMsg = { id: Date.now() + 1, role: 'assistant', content: response }
       setMessages(prev => [...prev, assistantMsg])
 
+      // Save assistant message
+      await saveChatMessage(userId, 'assistant', response)
+
+      // Decrement free chats
       if (!isPremium) {
         const remaining = await decrementKodaChats(userId)
         setRemainingChats(remaining)
       }
     } catch (error) {
       console.error('Error:', error)
+      Alert.alert('Error', 'Failed to get response. Please try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (pageLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={SKYNKOD_COLORS.primary} />
+      </View>
+    )
   }
 
   return (
@@ -99,8 +129,20 @@ export default function KodaScreen({ route, navigation }) {
       )}
 
       <View style={styles.inputBox}>
-        <TextInput style={styles.input} placeholder="Ask Koda..." value={input} onChangeText={setInput} multiline editable={isPremium || remainingChats > 0} />
-        <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={loading || (!isPremium && remainingChats <= 0)}>
+        <TextInput 
+          style={styles.input} 
+          placeholder="Ask Koda..." 
+          value={input} 
+          onChangeText={setInput} 
+          multiline 
+          editable={isPremium || remainingChats > 0}
+          placeholderTextColor={SKYNKOD_COLORS.muted}
+        />
+        <TouchableOpacity 
+          style={styles.sendBtn} 
+          onPress={handleSend} 
+          disabled={loading || (!isPremium && remainingChats <= 0)}
+        >
           <Text style={styles.sendBtnText}>Send</Text>
         </TouchableOpacity>
       </View>
@@ -110,6 +152,7 @@ export default function KodaScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: SKYNKOD_COLORS.bg },
+  centerContent: { justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: SKYNKOD_COLORS.border },
   title: { fontSize: 24, fontWeight: 'bold', color: SKYNKOD_COLORS.text },
   badge: { fontSize: 12, color: 'white', backgroundColor: SKYNKOD_COLORS.primary, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
@@ -125,7 +168,7 @@ const styles = StyleSheet.create({
   upgradeBtn: { backgroundColor: SKYNKOD_COLORS.primary, padding: 8, borderRadius: 6 },
   upgradeBtnText: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 12 },
   inputBox: { flexDirection: 'row', padding: 16, borderTopWidth: 1, borderTopColor: SKYNKOD_COLORS.border, gap: 8 },
-  input: { flex: 1, borderWidth: 1, borderColor: SKYNKOD_COLORS.border, borderRadius: 8, padding: 12, maxHeight: 100 },
+  input: { flex: 1, borderWidth: 1, borderColor: SKYNKOD_COLORS.border, borderRadius: 8, padding: 12, maxHeight: 100, color: SKYNKOD_COLORS.text },
   sendBtn: { backgroundColor: SKYNKOD_COLORS.primary, paddingHorizontal: 16, borderRadius: 8, justifyContent: 'center' },
   sendBtnText: { color: 'white', fontWeight: 'bold' },
 })
