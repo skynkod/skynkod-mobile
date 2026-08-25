@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { getUserPhotos } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
@@ -19,9 +19,28 @@ export default function ProgressScreen({ route }) {
     userId
   )
 
+  const [mounted, setMounted] = useState(true)
+
   useEffect(() => {
+    setMounted(true)
+    
+    return () => {
+      setMounted(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     fetch()
-  }, [userId])
+  }, [userId, fetch, mounted])
+
+  const handleRetry = async () => {
+    try {
+      await retry()
+    } catch (err) {
+      await logError('ProgressScreen_retry', err, { userId }, 'error')
+    }
+  }
 
   if (loading && !photos) {
     return (
@@ -43,7 +62,7 @@ export default function ProgressScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -59,11 +78,11 @@ export default function ProgressScreen({ route }) {
         <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.statsLabel, { color: colors.text }]}>Total Photos</Text>
           <Text style={[styles.statsValue, { color: colors.primary }]}>
-            {photos ? photos.length : 0}
+            {photos && Array.isArray(photos) ? photos.length : 0}
           </Text>
         </View>
 
-        {!photos || photos.length === 0 ? (
+        {!photos || !Array.isArray(photos) || photos.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📸</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No photos yet</Text>
@@ -74,19 +93,27 @@ export default function ProgressScreen({ route }) {
         ) : (
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Progress Timeline</Text>
-            {photos.map((photo, idx) => (
-              <View key={photo.id} style={[styles.photoItem, { backgroundColor: colors.card }]}>
-                <Text style={styles.photoNumber}>Photo {idx + 1}</Text>
-                <Text style={[styles.photoDate, { color: colors.muted }]}>
-                  {new Date(photo.created_at).toLocaleDateString()}
-                </Text>
-                {photo.notes && (
-                  <Text style={[styles.photoNotes, { color: colors.text }]}>
-                    {photo.notes}
+            {photos.map((photo, idx) => {
+              if (!photo || !photo.id) return null
+              
+              return (
+                <View key={photo.id} style={[styles.photoItem, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.photoNumber, { color: colors.text }]}>
+                    Photo {idx + 1}
                   </Text>
-                )}
-              </View>
-            ))}
+                  <Text style={[styles.photoDate, { color: colors.muted }]}>
+                    {photo.created_at 
+                      ? new Date(photo.created_at).toLocaleDateString() 
+                      : 'Unknown date'}
+                  </Text>
+                  {photo.notes && (
+                    <Text style={[styles.photoNotes, { color: colors.text }]}>
+                      {photo.notes}
+                    </Text>
+                  )}
+                </View>
+              )
+            })}
           </>
         )}
       </ScrollView>
