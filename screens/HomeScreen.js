@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native'
 import { getJournalEntries } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
+import { logError } from '../utils/errorLogger'
 import { useTheme } from '../utils/ThemeContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
@@ -18,9 +19,31 @@ export default function HomeScreen({ route }) {
     userId
   )
 
+  const [refreshing, setRefreshing] = useState(false)
+  const [mounted, setMounted] = useState(true)
+
   useEffect(() => {
+    setMounted(true)
     fetch()
-  }, [userId])
+
+    return () => {
+      setMounted(false)
+    }
+  }, [userId, fetch])
+
+  const handleRefresh = async () => {
+    if (!mounted) return
+    setRefreshing(true)
+    try {
+      await fetch()
+    } catch (err) {
+      await logError('HomeScreen_handleRefresh', err, { userId }, 'error')
+    } finally {
+      if (mounted) {
+        setRefreshing(false)
+      }
+    }
+  }
 
   if (loading && !entries) {
     return (
@@ -42,7 +65,13 @@ export default function HomeScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={async () => {
+            try {
+              await retry()
+            } catch (err) {
+              await logError('HomeScreen_retry', err, { userId }, 'error')
+            }
+          }} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -57,7 +86,11 @@ export default function HomeScreen({ route }) {
       <ScrollView
         style={styles.content}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetch} tintColor={colors.primary} />
+          <RefreshControl 
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
         }
       >
         {!entries || entries.length === 0 ? (
@@ -85,7 +118,7 @@ export default function HomeScreen({ route }) {
                     {new Date(entry.created_at).toLocaleDateString()}
                   </Text>
                   <Text style={[styles.entryMood, { color: colors.primary, fontWeight: 'bold' }]}>
-                    {entry.mood}
+                    {entry.mood || 'N/A'}
                   </Text>
                 </View>
                 {entry.notes && (

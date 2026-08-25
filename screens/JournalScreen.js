@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, FlatList } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Keyboard } from 'react-native'
 import { getJournalEntries, saveJournalEntry, deleteJournalEntry, updateJournalEntry } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
 import { logError } from '../utils/errorLogger'
@@ -13,6 +13,7 @@ export default function JournalScreen({ route }) {
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  const scrollViewRef = useRef(null)
 
   const { data: entries, loading, error, isOffline, fetch, retry } = useFetchWithCache(
     'journal_entries',
@@ -25,10 +26,20 @@ export default function JournalScreen({ route }) {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
+    setMounted(true)
+    
+    return () => {
+      setMounted(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     fetch()
-  }, [userId])
+  }, [userId, fetch, mounted])
 
   const handleSaveEntry = async () => {
     if (!mood || !notes.trim()) {
@@ -37,6 +48,8 @@ export default function JournalScreen({ route }) {
     }
 
     setSaving(true)
+    Keyboard.dismiss()
+    
     try {
       const entryData = {
         user_id: userId,
@@ -51,26 +64,30 @@ export default function JournalScreen({ route }) {
           Alert.alert('Success', 'Entry updated!')
           setEditingId(null)
         } else {
-          throw new Error('Failed to update')
+          throw new Error('Failed to update entry')
         }
       } else {
         const result = await saveJournalEntry(entryData)
         if (result) {
           Alert.alert('Success', 'Entry saved!')
         } else {
-          throw new Error('Failed to save')
+          throw new Error('Failed to save entry')
         }
       }
 
-      fetch() // Refresh list
-      setMood('Good')
-      setConditions([])
-      setNotes('')
+      if (mounted) {
+        await fetch()
+        setMood('Good')
+        setConditions([])
+        setNotes('')
+      }
     } catch (err) {
-      await logError('JournalScreen_saveEntry', err, { userId })
+      await logError('JournalScreen_saveEntry', err, { userId, editingId }, 'error')
       Alert.alert('Error', err.message || 'Failed to save entry')
     } finally {
-      setSaving(false)
+      if (mounted) {
+        setSaving(false)
+      }
     }
   }
 
@@ -83,12 +100,16 @@ export default function JournalScreen({ route }) {
           try {
             const success = await deleteJournalEntry(entryId)
             if (success) {
-              fetch() // Refresh list
-              Alert.alert('Success', 'Entry deleted')
+              if (mounted) {
+                await fetch()
+                Alert.alert('Success', 'Entry deleted')
+              }
+            } else {
+              throw new Error('Failed to delete entry')
             }
           } catch (err) {
-            await logError('JournalScreen_deleteEntry', err, { userId })
-            Alert.alert('Error', 'Failed to delete entry')
+            await logError('JournalScreen_deleteEntry', err, { userId, entryId }, 'error')
+            Alert.alert('Error', err.message || 'Failed to delete entry')
           }
         },
       },
@@ -96,10 +117,22 @@ export default function JournalScreen({ route }) {
   }
 
   const handleEditEntry = (entry) => {
-    setMood(entry.mood)
+    setMood(entry.mood || 'Good')
     setConditions(entry.skin_conditions ? entry.skin_conditions.split(', ') : [])
-    setNotes(entry.notes)
+    setNotes(entry.notes || '')
     setEditingId(entry.id)
+    
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true })
+    }
+  }
+
+  const handleRetry = async () => {
+    try {
+      await retry()
+    } catch (err) {
+      await logError('JournalScreen_retry', err, { userId }, 'error')
+    }
   }
 
   const toggleCondition = (condition) => {
@@ -130,7 +163,7 @@ export default function JournalScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -142,7 +175,7 @@ export default function JournalScreen({ route }) {
         </View>
       )}
 
-      <ScrollView style={styles.content}>
+      <ScrollView ref={scrollViewRef} style={styles.content}>
         <View style={[styles.inputCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Entry</Text>
 
@@ -205,6 +238,7 @@ export default function JournalScreen({ route }) {
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+            editable={!saving}
           />
 
           <TouchableOpacity
@@ -229,6 +263,7 @@ export default function JournalScreen({ route }) {
                 setMood('Good')
                 setConditions([])
                 setNotes('')
+                Keyboard.dismiss()
               }}
             >
               <Text style={[styles.cancelBtnText, { color: colors.primary }]}>Cancel Editing</Text>
@@ -248,9 +283,11 @@ export default function JournalScreen({ route }) {
             entries.map(entry => (
               <View key={entry.id} style={[styles.entryCard, { backgroundColor: colors.card }]}>
                 <View style={styles.entryHeader}>
-                  <Text style={[styles.entryMood, { color: colors.primary }]}>{entry.mood}</Text>
+                  <Text style={[styles.entryMood, { color: colors.primary }]}>
+                    {entry.mood || 'N/A'}
+                  </Text>
                   <Text style={[styles.entryDate, { color: colors.muted }]}>
-                    {new Date(entry.created_at).toLocaleDateString()}
+                    {entry.created_at ? new Date(entry.created_at).toLocaleDateString() : 'N/A'}
                   </Text>
                 </View>
 
@@ -260,9 +297,11 @@ export default function JournalScreen({ route }) {
                   </Text>
                 )}
 
-                <Text style={[styles.entryNotes, { color: colors.text }]}>
-                  {entry.notes}
-                </Text>
+                {entry.notes && (
+                  <Text style={[styles.entryNotes, { color: colors.text }]}>
+                    {entry.notes}
+                  </Text>
+                )}
 
                 <View style={styles.entryActions}>
                   <TouchableOpacity onPress={() => handleEditEntry(entry)}>
@@ -303,7 +342,7 @@ const styles = StyleSheet.create({
   conditionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   conditionTag: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   conditionText: { fontSize: 12, fontWeight: '500' },
-  notesInput: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13 },
+  notesInput: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, textAlignVertical: 'top' },
   saveBtn: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
   saveBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
   cancelBtn: { borderWidth: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
