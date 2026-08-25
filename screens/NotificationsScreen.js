@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
-import { useLanguage } from '../utils/LanguageContext'
-import { disableReminder, enableReminder, isReminderEnabled, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from '../utils/notifications'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useTheme } from '../utils/ThemeContext'
+import { useLanguage } from '../utils/LanguageContext'
+import { logError } from '../utils/errorLogger'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { NOTIFICATION_TIMES } from '../utils/constants'
 
 export default function NotificationsScreen({ route }) {
   const { userId } = route.params
@@ -11,131 +13,107 @@ export default function NotificationsScreen({ route }) {
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
-  const [morningEnabled, setMorningEnabled] = useState(true)
-  const [eveningEnabled, setEveningEnabled] = useState(true)
-  const [journalEnabled, setJournalEnabled] = useState(true)
+  const [settings, setSettings] = useState({
+    morningReminder: true,
+    eveningReminder: true,
+    journalReminder: true,
+    morningTime: '08:00',
+    eveningTime: '20:00',
+    journalTime: '21:00',
+  })
 
   useEffect(() => {
-    loadNotificationSettings()
+    loadSettings()
   }, [userId])
 
-  const loadNotificationSettings = async () => {
+  const loadSettings = async () => {
     try {
-      const morning = await isReminderEnabled(userId, 'morning')
-      const evening = await isReminderEnabled(userId, 'evening')
-      const journal = await isReminderEnabled(userId, 'journal')
-      
-      setMorningEnabled(morning)
-      setEveningEnabled(evening)
-      setJournalEnabled(journal)
+      const saved = await AsyncStorage.getItem(`notifications_${userId}`)
+      if (saved) {
+        setSettings(JSON.parse(saved))
+      }
     } catch (error) {
-      console.error('Load settings error:', error)
+      await logError('NotificationsScreen_loadSettings', error, { userId }, 'warn')
     }
   }
 
-  const handleMorningToggle = async (value) => {
-    setMorningEnabled(value)
-    if (value) {
-      await enableReminder(userId, 'morning')
-      await scheduleMorningReminder(userId)
-      Alert.alert('Enabled', '🌅 Morning reminders at 8:00 AM')
-    } else {
-      await disableReminder(userId, 'morning')
-      Alert.alert('Disabled', 'Morning reminders turned off')
+  const saveSettings = async (newSettings) => {
+    try {
+      setSettings(newSettings)
+      await AsyncStorage.setItem(`notifications_${userId}`, JSON.stringify(newSettings))
+    } catch (error) {
+      await logError('NotificationsScreen_saveSettings', error, { userId }, 'error')
+      Alert.alert('Error', 'Failed to save notification settings')
     }
   }
 
-  const handleEveningToggle = async (value) => {
-    setEveningEnabled(value)
-    if (value) {
-      await enableReminder(userId, 'evening')
-      await scheduleEveningReminder(userId)
-      Alert.alert('Enabled', '🌙 Evening reminders at 8:00 PM')
-    } else {
-      await disableReminder(userId, 'evening')
-      Alert.alert('Disabled', 'Evening reminders turned off')
-    }
-  }
-
-  const handleJournalToggle = async (value) => {
-    setJournalEnabled(value)
-    if (value) {
-      await enableReminder(userId, 'journal')
-      await scheduleJournalReminder(userId)
-      Alert.alert('Enabled', '📔 Journal reminders at 9:00 PM')
-    } else {
-      await disableReminder(userId, 'journal')
-      Alert.alert('Disabled', 'Journal reminders turned off')
-    }
+  const toggleReminder = (key) => {
+    const newSettings = { ...settings, [key]: !settings[key] }
+    saveSettings(newSettings)
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>Manage your reminders</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Manage your alerts</Text>
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Reminders</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Reminders</Text>
 
-          <View style={[styles.reminderCard, { backgroundColor: colors.card }]}>
-            <View style={styles.reminderHeader}>
-              <Text style={styles.reminderEmoji}>🌅</Text>
-              <View style={styles.reminderInfo}>
-                <Text style={[styles.reminderName, { color: colors.text }]}>Morning Routine</Text>
-                <Text style={[styles.reminderTime, { color: colors.muted }]}>8:00 AM daily</Text>
-              </View>
-              <Switch
-                value={morningEnabled}
-                onValueChange={handleMorningToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-              />
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+            <View>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Morning Reminder</Text>
+              <Text style={[styles.settingTime, { color: colors.muted }]}>
+                {settings.morningTime}
+              </Text>
             </View>
-            <Text style={[styles.reminderDesc, { color: colors.muted }]}>Get reminded to start your morning skincare routine</Text>
+            <Switch
+              value={settings.morningReminder}
+              onValueChange={() => toggleReminder('morningReminder')}
+              trackColor={{ false: '#ccc', true: colors.primary }}
+              thumbColor="white"
+            />
           </View>
 
-          <View style={[styles.reminderCard, { backgroundColor: colors.card }]}>
-            <View style={styles.reminderHeader}>
-              <Text style={styles.reminderEmoji}>🌙</Text>
-              <View style={styles.reminderInfo}>
-                <Text style={[styles.reminderName, { color: colors.text }]}>Evening Routine</Text>
-                <Text style={[styles.reminderTime, { color: colors.muted }]}>8:00 PM daily</Text>
-              </View>
-              <Switch
-                value={eveningEnabled}
-                onValueChange={handleEveningToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-              />
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+            <View>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Evening Reminder</Text>
+              <Text style={[styles.settingTime, { color: colors.muted }]}>
+                {settings.eveningTime}
+              </Text>
             </View>
-            <Text style={[styles.reminderDesc, { color: colors.muted }]}>Get reminded to do your evening skincare routine</Text>
+            <Switch
+              value={settings.eveningReminder}
+              onValueChange={() => toggleReminder('eveningReminder')}
+              trackColor={{ false: '#ccc', true: colors.primary }}
+              thumbColor="white"
+            />
           </View>
 
-          <View style={[styles.reminderCard, { backgroundColor: colors.card }]}>
-            <View style={styles.reminderHeader}>
-              <Text style={styles.reminderEmoji}>📔</Text>
-              <View style={styles.reminderInfo}>
-                <Text style={[styles.reminderName, { color: colors.text }]}>Journal Check-in</Text>
-                <Text style={[styles.reminderTime, { color: colors.muted }]}>9:00 PM daily</Text>
-              </View>
-              <Switch
-                value={journalEnabled}
-                onValueChange={handleJournalToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-              />
+          <View style={[styles.settingRow]}>
+            <View>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Journal Reminder</Text>
+              <Text style={[styles.settingTime, { color: colors.muted }]}>
+                {settings.journalTime}
+              </Text>
             </View>
-            <Text style={[styles.reminderDesc, { color: colors.muted }]}>Get reminded to log your skin progress for the day</Text>
+            <Switch
+              value={settings.journalReminder}
+              onValueChange={() => toggleReminder('journalReminder')}
+              trackColor={{ false: '#ccc', true: colors.primary }}
+              thumbColor="white"
+            />
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>About Notifications</Text>
-          <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.infoText, { color: colors.text }]}>
-              📱 Notifications help you stay consistent with your skincare routine. Turn on reminders to get daily prompts at the best times for you!
-            </Text>
-          </View>
+        <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
+          <Text style={[styles.infoTitle, { color: colors.text }]}>💡 Tips</Text>
+          <Text style={[styles.infoText, { color: colors.muted }]}>
+            Keep reminders on to maintain your skincare routine consistently
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -148,15 +126,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold' },
   subtitle: { fontSize: 12, marginTop: 4 },
   content: { flex: 1, padding: 16 },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
-  reminderCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
-  reminderHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  reminderEmoji: { fontSize: 24, marginRight: 12 },
-  reminderInfo: { flex: 1 },
-  reminderName: { fontWeight: '600', fontSize: 14 },
-  reminderTime: { fontSize: 12, marginTop: 2 },
-  reminderDesc: { fontSize: 13, lineHeight: 18 },
-  infoCard: { borderRadius: 12, padding: 16 },
-  infoText: { fontSize: 14, lineHeight: 20 },
+  section: { borderRadius: 12, marginBottom: 16, overflow: 'hidden' },
+  sectionTitle: { fontWeight: 'bold', fontSize: 14, padding: 16, paddingBottom: 8 },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  settingLabel: { fontSize: 14, fontWeight: '500' },
+  settingTime: { fontSize: 12, marginTop: 4 },
+  infoSection: { borderRadius: 12, padding: 16, marginBottom: 24 },
+  infoTitle: { fontWeight: 'bold', fontSize: 14, marginBottom: 8 },
+  infoText: { fontSize: 13, lineHeight: 20 },
 })
