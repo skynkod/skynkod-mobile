@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getChatHistory, saveChatMessage } from '../utils/supabase'
 import { callKodaAI, checkDailyMessageLimit } from '../utils/koda'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
@@ -14,6 +15,7 @@ export default function KodaScreen({ route }) {
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  const scrollViewRef = useRef(null)
 
   const { data: chatHistory, loading, error, isOffline, fetch, retry } = useFetchWithCache(
     'chat_history',
@@ -26,43 +28,68 @@ export default function KodaScreen({ route }) {
   const [sending, setSending] = useState(false)
   const [todayCount, setTodayCount] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
+  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
-    initialize()
-  }, [userId])
-
-  useEffect(() => {
-    if (chatHistory) {
-      setMessages(chatHistory)
-      checkMessageLimit()
+    setMounted(true)
+    
+    return () => {
+      setMounted(false)
     }
-  }, [chatHistory])
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    initialize()
+  }, [userId, mounted])
+
+  useEffect(() => {
+    if (chatHistory && mounted) {
+      setMessages(chatHistory)
+      checkMessageLimit(chatHistory)
+    }
+  }, [chatHistory, mounted])
 
   const initialize = async () => {
     try {
       await fetch()
       
       const premium = await AsyncStorage.getItem('skynkod_premium')
-      setIsPremium(premium === 'true')
+      if (mounted) {
+        setIsPremium(premium === 'true')
+      }
     } catch (err) {
-      await logError('KodaScreen_initialize', err, { userId })
+      await logError('KodaScreen_initialize', err, { userId }, 'error')
     }
   }
 
-  const checkMessageLimit = () => {
-    const today = new Date().toISOString().split('T')[0]
-    const todayMessages = (chatHistory || []).filter(m => {
-      const msgDate = new Date(m.created_at).toISOString().split('T')[0]
-      return msgDate === today && m.role === 'user'
-    }).length
+  const checkMessageLimit = (history) => {
+    try {
+      if (!history || !Array.isArray(history)) {
+        setTodayCount(0)
+        return
+      }
 
-    setTodayCount(todayMessages)
+      const today = new Date().toISOString().split('T')[0]
+      const todayMessages = history.filter(m => {
+        if (!m || !m.created_at) return false
+        const msgDate = new Date(m.created_at).toISOString().split('T')[0]
+        return msgDate === today && m.role === 'user'
+      }).length
+
+      if (mounted) {
+        setTodayCount(todayMessages)
+      }
+    } catch (err) {
+      await logError('KodaScreen_checkMessageLimit', err, { userId }, 'warn')
+    }
   }
 
   const handleSendMessage = async () => {
     if (!input.trim()) return
 
     const limit = isPremium ? FREEMIUM_LIMITS.premium_daily_chat : FREEMIUM_LIMITS.freemium_daily_chat
+    
     if (!isPremium && todayCount >= limit) {
       Alert.alert('Limit Reached', `You've reached your daily limit of ${limit} chats. Upgrade to Premium for unlimited access!`)
       return
@@ -71,6 +98,7 @@ export default function KodaScreen({ route }) {
     const userMessage = { role: 'user', content: input.trim() }
     setMessages(prev => [...prev, userMessage])
     setInput('')
+    Keyboard.dismiss()
     setSending(true)
 
     try {
@@ -89,7 +117,10 @@ export default function KodaScreen({ route }) {
       }
 
       const assistantMessage = { role: 'assistant', content: aiResponse }
-      setMessages(prev => [...prev, assistantMessage])
+      
+      if (mounted) {
+        setMessages(prev => [...prev, assistantMessage])
+      }
 
       // Save assistant message
       await saveChatMessage({
@@ -98,16 +129,36 @@ export default function KodaScreen({ route }) {
         content: aiResponse,
       })
 
-      setTodayCount(todayCount + 1)
-      await fetch() // Refresh chat history
+      if (mounted) {
+        setTodayCount(todayCount + 1)
+        await fetch()
+        
+        setTimeout(() => {
+          if (scrollViewRef.current) {
+            scrollViewRef.current.scrollToEnd({ animated: true })
+          }
+        }, 100)
+      }
     } catch (err) {
-      await logError('KodaScreen_sendMessage', err, { userId, userMessage })
+      await logError('KodaScreen_sendMessage', err, { userId, userMessage }, 'error')
       
       // Remove the user message if AI call failed
-      setMessages(prev => prev.slice(0, -1))
-      Alert.alert('Error', err.message || 'Failed to get response from Koda')
+      if (mounted) {
+        setMessages(prev => prev.slice(0, -1))
+        Alert.alert('Error', err.message || 'Failed to get response from Koda')
+      }
     } finally {
-      setSending(false)
+      if (mounted) {
+        setSending(false)
+      }
+    }
+  }
+
+  const handleRetry = async () => {
+    try {
+      await retry()
+    } catch (err) {
+      await logError('KodaScreen_retry', err, { userId }, 'error')
     }
   }
 
@@ -134,7 +185,7 @@ export default function KodaScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -154,7 +205,7 @@ export default function KodaScreen({ route }) {
         </View>
       )}
 
-      <ScrollView style={styles.messagesContainer}>
+      <ScrollView ref={scrollViewRef} style={styles.messagesContainer}>
         {(!messages || messages.length === 0) && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>
@@ -163,29 +214,33 @@ export default function KodaScreen({ route }) {
           </View>
         )}
 
-        {messages.map((msg, idx) => (
-          <View
-            key={idx}
-            style={[
-              styles.message,
-              msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
-              msg.role === 'user'
-                ? { backgroundColor: colors.primary }
-                : { backgroundColor: colors.card },
-            ]}
-          >
-            <Text
+        {messages && messages.map((msg, idx) => {
+          if (!msg || !msg.role) return null
+          
+          return (
+            <View
+              key={idx}
               style={[
-                styles.messageText,
+                styles.message,
+                msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
                 msg.role === 'user'
-                  ? { color: 'white' }
-                  : { color: colors.text },
+                  ? { backgroundColor: colors.primary }
+                  : { backgroundColor: colors.card },
               ]}
             >
-              {msg.content}
-            </Text>
-          </View>
-        ))}
+              <Text
+                style={[
+                  styles.messageText,
+                  msg.role === 'user'
+                    ? { color: 'white' }
+                    : { color: colors.text },
+                ]}
+              >
+                {msg.content || ''}
+              </Text>
+            </View>
+          )
+        })}
       </ScrollView>
 
       <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
