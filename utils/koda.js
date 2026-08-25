@@ -1,69 +1,92 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { logError } from './errorLogger'
 
-export async function callKodaAI(userMessage, conversationHistory = []) {
+const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY
+const API_URL = 'https://api.anthropic.com/v1/messages'
+const FREEMIUM_DAILY_LIMIT = 5
+const PREMIUM_DAILY_LIMIT = 999
+
+export async function callKodaAI(userMessage) {
   try {
-    const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY
-    
-    if (!apiKey) {
-      throw new Error('Anthropic API key not configured')
+    if (!API_KEY) {
+      throw new Error('API key not configured')
     }
 
-    // Build conversation context
-    const messages = [
-      ...conversationHistory.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      {
-        role: 'user',
-        content: userMessage,
-      },
-    ]
+    // ✅ Extra validation
+    if (!userMessage || userMessage.trim().length === 0) {
+      throw new Error('Message cannot be empty')
+    }
 
-    // Call Anthropic API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    if (userMessage.length > 1000) {
+      throw new Error('Message too long (max 1000 chars)')
+    }
+
+    const systemPrompt = `You are Koda, an AI skin care coach. You provide personalized skin care advice based on user input. Be friendly, professional, and helpful. Keep responses concise and actionable.`
+
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
+        'x-api-key': API_KEY,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-opus-4-6',
-        max_tokens: 1024,
-        system: `You are Koda, an AI skincare coach. You provide personalized advice about skincare routines, products, and skin health. 
-        
-Be friendly, supportive, and practical. Keep responses concise and actionable.
-If the user asks about serious skin conditions, recommend consulting a dermatologist.`,
-        messages: messages,
+        max_tokens: 500,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: userMessage,
+          },
+        ],
       }),
     })
 
     if (!response.ok) {
       const errorData = await response.json()
-      throw new Error(errorData.error?.message || 'API request failed')
+      throw new Error(errorData.error?.message || `API error: ${response.status}`)
     }
 
     const data = await response.json()
-    
-    if (data.content && data.content.length > 0) {
-      return data.content[0].text
-    } else {
+    const aiMessage = data.content[0]?.text
+
+    if (!aiMessage) {
       throw new Error('No response from API')
     }
+
+    return aiMessage
   } catch (error) {
-    console.error('Koda AI error:', error)
+    await logError('callKodaAI', error, { messageLength: userMessage?.length })
     throw error
   }
 }
 
-// Rate limiting helper
-export async function checkDailyMessageLimit(userId, currentCount, limit = 5) {
-  const today = new Date().toISOString().split('T')[0]
-  const key = `koda_messages_${userId}_${today}`
-  
-  if (currentCount >= limit) {
-    return { canMessage: false, remaining: 0 }
+export async function checkDailyMessageLimit(userId, isPremium) {
+  try {
+    const limit = isPremium ? PREMIUM_DAILY_LIMIT : FREEMIUM_DAILY_LIMIT
+    const today = new Date().toISOString().split('T')[0]
+    const key = `koda_messages_${userId}_${today}`
+    
+    const count = await AsyncStorage.getItem(key)
+    const current = parseInt(count || '0', 10)
+
+    if (current >= limit) {
+      return { allowed: false, remaining: 0, limit }
+    }
+
+    // Increment counter
+    await AsyncStorage.setItem(key, (current + 1).toString())
+
+    // Expire counter at midnight
+    await AsyncStorage.setItem(
+      `${key}_expires`,
+      new Date().setHours(24, 0, 0, 0).toString()
+    )
+
+    return { allowed: true, remaining: limit - current - 1, limit }
+  } catch (error) {
+    await logError('checkDailyMessageLimit', error, { userId })
+    return { allowed: true, remaining: -1, limit: -1 } // Allow on error
   }
-  
-  return { canMessage: true, remaining: limit - currentCount }
 }

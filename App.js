@@ -1,33 +1,33 @@
+import React, { useState, useEffect } from 'react'
+import { Text, ActivityIndicator, View } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { NavigationContainer } from '@react-navigation/native'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native'
-import AboutScreen from './screens/AboutScreen'
-import BarcodeScannerScreen from './screens/BarcodeScannerScreen'
-import BudgetScreen from './screens/BudgetScreen'
-import EmergencyScreen from './screens/EmergencyScreen'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { NavigationContext } from '@react-navigation/native'
+import * as Notifications from 'expo-notifications'
+import { ThemeProvider, useTheme } from './utils/ThemeContext'
+import { LanguageProvider, useLanguage } from './utils/LanguageContext'
+import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
+import LoginScreen from './screens/LoginScreen'
+import OnboardingScreen from './screens/OnboardingScreen'
 import HomeScreen from './screens/HomeScreen'
 import JournalScreen from './screens/JournalScreen'
 import KodaScreen from './screens/KodaScreen'
-import LoginScreen from './screens/LoginScreen'
-import NotificationsScreen from './screens/NotificationsScreen'
-import OnboardingScreen from './screens/OnboardingScreen'
-import PhotosScreen from './screens/PhotosScreen'
-import PremiumScreen from './screens/PremiumScreen'
 import ProductsScreen from './screens/ProductsScreen'
-import ProgressAnalysisScreen from './screens/ProgressAnalysisScreen'
 import ProgressScreen from './screens/ProgressScreen'
+import ProgressAnalysisScreen from './screens/ProgressAnalysisScreen'
 import RoutinesScreen from './screens/RoutinesScreen'
 import SettingsScreen from './screens/SettingsScreen'
+import NotificationsScreen from './screens/NotificationsScreen'
+import BudgetScreen from './screens/BudgetScreen'
+import PhotosScreen from './screens/PhotosScreen'
 import SkinTypeQuizScreen from './screens/SkinTypeQuizScreen'
-import { LanguageProvider, useLanguage } from './utils/LanguageContext'
-import { getExpoPushToken, requestNotificationPermissions, scheduleEveningReminder, scheduleJournalReminder, scheduleMorningReminder } from './utils/notifications'
-import { ThemeProvider, useTheme } from './utils/ThemeContext'
+import AboutScreen from './screens/AboutScreen'
+import PremiumScreen from './screens/PremiumScreen'
+import EmergencyScreen from './screens/EmergencyScreen'
+import BarcodeScannerScreen from './screens/BarcodeScannerScreen'
 
 const Tab = createBottomTabNavigator()
-const Stack = createNativeStackNavigator()
 
 const MORE_SCREENS = [
   { name: 'Progress', component: ProgressScreen, emoji: '📊', label: 'Progress' },
@@ -44,7 +44,7 @@ const MORE_SCREENS = [
 ]
 
 function MoreMenu({ userId, colors, navigation }) {
-  const [showModal, setShowModal] = useState(false)
+  const [showModal, setShowModal] = React.useState(false)
 
   return (
     <>
@@ -65,7 +65,7 @@ function MoreMenu({ userId, colors, navigation }) {
         {() => <View />}
       </Tab.Screen>
 
-      <Modal visible={showModal} transparent animationType="slide">
+      {showModal && (
         <View style={{ flex: 1, backgroundColor: `${colors.bg}80` }}>
           <View
             style={{
@@ -80,7 +80,7 @@ function MoreMenu({ userId, colors, navigation }) {
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>More Features</Text>
             </View>
 
-            <ScrollView style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
               {MORE_SCREENS.map(screen => (
                 <TouchableOpacity
                   key={screen.name}
@@ -103,7 +103,7 @@ function MoreMenu({ userId, colors, navigation }) {
                   <Text style={{ color: colors.muted }}>→</Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
 
             <TouchableOpacity
               style={{ padding: 16, borderTopWidth: 1, borderTopColor: colors.border }}
@@ -115,13 +115,13 @@ function MoreMenu({ userId, colors, navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      )}
     </>
   )
 }
 
 function AppTabs({ userId, colors }) {
-  const navigation = useNavigation()
+  const navigation = React.useContext(NavigationContext)
   const tabOptions = { 
     tabBarActiveTintColor: colors.primary, 
     headerShown: false, 
@@ -130,76 +130,26 @@ function AppTabs({ userId, colors }) {
   
   return (
     <Tab.Navigator screenOptions={tabOptions}>
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen} 
-        initialParams={{ userId }} 
-        options={{ 
-          tabBarLabel: 'Home', 
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> 
-        }} 
-      />
-      <Tab.Screen 
-        name="Journal" 
-        component={JournalScreen} 
-        initialParams={{ userId }} 
-        options={{ 
-          tabBarLabel: 'Journal', 
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📔</Text> 
-        }} 
-      />
-      <Tab.Screen 
-        name="Koda" 
-        component={KodaScreen} 
-        initialParams={{ userId }} 
-        options={{ 
-          tabBarLabel: 'Koda', 
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✨</Text> 
-        }} 
-      />
-      <Tab.Screen 
-        name="Routines" 
-        component={RoutinesScreen} 
-        initialParams={{ userId }} 
-        options={{ 
-          tabBarLabel: 'Routines', 
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> 
-        }} 
-      />
-      <Tab.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
-        initialParams={{ userId }} 
-        options={{ 
-          tabBarLabel: 'Settings', 
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> 
-        }} 
-      />
+      <Tab.Screen name="Home" component={HomeScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Home', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
+      <Tab.Screen name="Journal" component={JournalScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Journal', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📔</Text> }} />
+      <Tab.Screen name="Koda" component={KodaScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Koda', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✨</Text> }} />
+      <Tab.Screen name="Routines" component={RoutinesScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Routines', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔄</Text> }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} initialParams={{ userId }} options={{ tabBarLabel: 'Settings', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚙️</Text> }} />
       
       <MoreMenu userId={userId} colors={colors} navigation={navigation} />
 
-      {/* Hidden Stack Screens for "More" Menu */}
       {MORE_SCREENS.map(screen => (
         <Tab.Screen
           key={screen.name}
           name={screen.name}
           component={screen.component}
           options={{ tabBarButton: () => null, headerShown: false }}
+          initialParams={{ userId }}
         />
       ))}
     </Tab.Navigator>
   )
 }
-
-function useNavigation() {
-  const navigation = React.useContext(NavigationContext)
-  if (!navigation) {
-    throw new Error('useNavigation must be used within a NavigationContainer')
-  }
-  return navigation
-}
-
-import { NavigationContext } from '@react-navigation/native'
 
 function AppContent() {
   const [user, setUser] = useState(null)
@@ -209,25 +159,33 @@ function AppContent() {
   const { loading: languageLoading } = useLanguage()
 
   useEffect(() => {
-    check()
+    // ✅ CRITICAL: Must await check() before rendering anything!
+    const initApp = async () => {
+      await check()
+    }
+    initApp()
   }, [])
 
   const check = async () => {
     try {
       const saved = await AsyncStorage.getItem('skynkod_user')
       const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
+      
       if (saved) {
-        setUser(JSON.parse(saved))
+        const userData = JSON.parse(saved)
+        setUser(userData)
+        
         if (!onboarded) {
           setShowOnboarding(true)
         }
         
-        await initializeNotifications(JSON.parse(saved).userId)
+        // ✅ CRITICAL: Wait for notifications BEFORE setting loading to false
+        await initializeNotifications(userData.userId)
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Check error:', error)
     } finally {
-      setLoading(false)
+      setLoading(false)  // ← Only set after ALL async operations done
     }
   }
 
@@ -241,9 +199,12 @@ function AppContent() {
           await AsyncStorage.setItem(`push_token_${userId}`, token)
         }
 
-        await scheduleMorningReminder(userId)
-        await scheduleEveningReminder(userId)
-        await scheduleJournalReminder(userId)
+        // ✅ Wait for all three to complete
+        await Promise.all([
+          scheduleMorningReminder(userId),
+          scheduleEveningReminder(userId),
+          scheduleJournalReminder(userId),
+        ])
       }
     } catch (error) {
       console.error('Initialize notifications error:', error)

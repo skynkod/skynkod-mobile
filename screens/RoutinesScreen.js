@@ -1,15 +1,23 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useLanguage } from '../utils/LanguageContext'
-import { getRoutineStreak, getTodayRoutineCompletion, markRoutineComplete } from '../utils/supabase'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import { markRoutineComplete, getTodayRoutineCompletion, getRoutineStreak } from '../utils/supabase'
+import { useFetchWithCache } from '../utils/useFetchWithCache'
+import { logError } from '../utils/errorLogger'
 import { useTheme } from '../utils/ThemeContext'
+import { useLanguage } from '../utils/LanguageContext'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
 
 export default function RoutinesScreen({ route }) {
   const { userId } = route.params
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+
+  const { data: todayData, loading, fetch } = useFetchWithCache(
+    'today_routine',
+    () => getTodayRoutineCompletion(userId),
+    userId
+  )
 
   const [morningRoutine, setMorningRoutine] = useState('')
   const [morningNotes, setMorningNotes] = useState('')
@@ -21,59 +29,64 @@ export default function RoutinesScreen({ route }) {
   const [eveningCompleted, setEveningCompleted] = useState(false)
   const [eveningStreak, setEveningStreak] = useState(0)
 
-  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     initialize()
   }, [userId])
 
+  useEffect(() => {
+    if (todayData) {
+      setMorningRoutine(todayData.morning_routine || '')
+      setMorningNotes(todayData.morning_notes || '')
+      setMorningCompleted(todayData.morning_completed || false)
+      setEveningRoutine(todayData.evening_routine || '')
+      setEveningNotes(todayData.evening_notes || '')
+      setEveningCompleted(todayData.evening_completed || false)
+    }
+  }, [todayData])
+
   const initialize = async () => {
     try {
-      const today = await getTodayRoutineCompletion(userId)
-      if (today) {
-        setMorningRoutine(today.morning_routine || '')
-        setMorningNotes(today.morning_notes || '')
-        setMorningCompleted(today.morning_completed || false)
-        setEveningRoutine(today.evening_routine || '')
-        setEveningNotes(today.evening_notes || '')
-        setEveningCompleted(today.evening_completed || false)
-      }
+      await fetch()
 
       const mStreak = await getRoutineStreak(userId, 'morning')
       const eStreak = await getRoutineStreak(userId, 'evening')
       setMorningStreak(mStreak || 0)
       setEveningStreak(eStreak || 0)
     } catch (error) {
-      console.error('Initialize error:', error)
+      await logError('RoutinesScreen_initialize', error, { userId })
       Alert.alert('Error', 'Failed to load routines')
-    } finally {
-      setLoading(false)
     }
   }
 
   const handleCompleteRoutine = async (type) => {
+    setSaving(true)
     try {
       const data = {
         user_id: userId,
         routine_type: type,
-        completed: true,
-        notes: type === 'morning' ? morningNotes : eveningNotes,
+        [type === 'morning' ? 'morning_completed' : 'evening_completed']: true,
+        [type === 'morning' ? 'morning_notes' : 'evening_notes']: type === 'morning' ? morningNotes : eveningNotes,
       }
 
-      await markRoutineComplete(data)
-
-      if (type === 'morning') {
-        setMorningCompleted(true)
-        setMorningStreak(morningStreak + 1)
-      } else {
-        setEveningCompleted(true)
-        setEveningStreak(eveningStreak + 1)
+      const success = await markRoutineComplete(data)
+      if (success) {
+        if (type === 'morning') {
+          setMorningCompleted(true)
+          setMorningStreak(morningStreak + 1)
+        } else {
+          setEveningCompleted(true)
+          setEveningStreak(eveningStreak + 1)
+        }
+        Alert.alert('Success', `${type} routine completed! 🎉`)
+        await fetch()
       }
-
-      Alert.alert('Success', `${type} routine completed! 🎉`)
     } catch (error) {
-      console.error('Complete routine error:', error)
+      await logError('RoutinesScreen_completeRoutine', error, { userId })
       Alert.alert('Error', 'Failed to mark routine complete')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -111,7 +124,7 @@ export default function RoutinesScreen({ route }) {
                 morningCompleted && { backgroundColor: colors.primary },
               ]}
               onPress={() => handleCompleteRoutine('morning')}
-              disabled={morningCompleted}
+              disabled={morningCompleted || saving}
             >
               <Text style={styles.checkBtnText}>{morningCompleted ? '✓' : '○'}</Text>
             </TouchableOpacity>
@@ -144,7 +157,7 @@ export default function RoutinesScreen({ route }) {
                 color: colors.text,
               },
             ]}
-            placeholder="Notes (optional)..."
+            placeholder="Notes (saved to Supabase)..."
             placeholderTextColor={colors.muted}
             value={morningNotes}
             onChangeText={setMorningNotes}
@@ -172,7 +185,7 @@ export default function RoutinesScreen({ route }) {
                 eveningCompleted && { backgroundColor: colors.primary },
               ]}
               onPress={() => handleCompleteRoutine('evening')}
-              disabled={eveningCompleted}
+              disabled={eveningCompleted || saving}
             >
               <Text style={styles.checkBtnText}>{eveningCompleted ? '✓' : '○'}</Text>
             </TouchableOpacity>
@@ -205,7 +218,7 @@ export default function RoutinesScreen({ route }) {
                 color: colors.text,
               },
             ]}
-            placeholder="Notes (optional)..."
+            placeholder="Notes (saved to Supabase)..."
             placeholderTextColor={colors.muted}
             value={eveningNotes}
             onChangeText={setEveningNotes}
@@ -219,7 +232,7 @@ export default function RoutinesScreen({ route }) {
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>💡 Tips</Text>
           <Text style={[styles.infoText, { color: colors.muted }]}>
-            Complete your routine daily to build streaks. Consistency is key to healthy skin!
+            Complete your routine daily to build streaks. Your notes are automatically saved!
           </Text>
         </View>
       </ScrollView>

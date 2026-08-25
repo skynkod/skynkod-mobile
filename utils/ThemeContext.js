@@ -1,8 +1,8 @@
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import React, { createContext, useEffect, useState } from 'react'
-import { getColors, getTheme, isNightTime, setTheme } from './theme'
+import { DARK_COLORS, LIGHT_COLORS } from './theme'
 
-export const ThemeContext = createContext()
+const ThemeContext = createContext()
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(false)
@@ -10,14 +10,17 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     initializeTheme()
-    const interval = setInterval(checkAutoTheme, 60000) // Check every minute
-    return () => clearInterval(interval)
   }, [])
 
   const initializeTheme = async () => {
     try {
-      const mode = await getTheme()
-      setIsDark(mode === 'dark')
+      const saved = await AsyncStorage.getItem('skynkod_theme')
+      if (saved) {
+        setIsDark(JSON.parse(saved))
+      } else {
+        const isNight = checkIfNight()
+        setIsDark(isNight)
+      }
     } catch (error) {
       console.error('Initialize theme error:', error)
     } finally {
@@ -25,41 +28,41 @@ export const ThemeProvider = ({ children }) => {
     }
   }
 
-  const checkAutoTheme = async () => {
-    try {
-      const saved = await AsyncStorage.getItem('theme_mode')
-      if (saved === 'auto') {
-        const shouldBeDark = isNightTime()
-        setIsDark(shouldBeDark)
-      }
-    } catch (error) {
-      console.error('Check auto theme error:', error)
-    }
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const isNight = checkIfNight()
+      setIsDark(isNight)
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const checkIfNight = () => {
+    const hour = new Date().getHours()
+    return hour >= 20 || hour < 6
   }
 
   const toggleTheme = async () => {
-    const newMode = isDark ? 'light' : 'dark'
-    setIsDark(!isDark)
-    await setTheme(newMode)
+    try {
+      const newIsDark = !isDark
+      setIsDark(newIsDark)
+      await AsyncStorage.setItem('skynkod_theme', JSON.stringify(newIsDark))
+    } catch (error) {
+      console.error('Toggle theme error:', error)
+    }
   }
 
-  const setAutoTheme = async () => {
-    await setTheme('auto')
-    const shouldBeDark = isNightTime()
-    setIsDark(shouldBeDark)
-  }
-
-  const colors = getColors(isDark)
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, setAutoTheme, colors, loading }}>
+    <ThemeContext.Provider value={{ isDark, toggleTheme, colors, loading }}>
       {children}
     </ThemeContext.Provider>
   )
 }
 
 export const useTheme = () => {
-  const context = React.useContext(ThemeContext)
+  const context = useContext(ThemeContext)
   if (!context) {
     throw new Error('useTheme must be used within ThemeProvider')
   }
