@@ -63,7 +63,7 @@ export default function KodaScreen({ route }) {
     }
   }
 
-  const checkMessageLimit = (history) => {
+  const checkMessageLimit = async (history) => {
     try {
       if (!history || !Array.isArray(history)) {
         setTodayCount(0)
