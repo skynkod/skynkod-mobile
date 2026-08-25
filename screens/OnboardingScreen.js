@@ -1,92 +1,96 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { useLanguage } from '../utils/LanguageContext'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import React, { useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native'
 import { useTheme } from '../utils/ThemeContext'
+import { useLanguage } from '../utils/LanguageContext'
+import { logError } from '../utils/errorLogger'
+import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
 
 export default function OnboardingScreen({ onComplete }) {
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-
-  const [currentStep, setCurrentStep] = useState(0)
+  const [step, setStep] = useState(0)
 
   const steps = [
     {
-      emoji: '✨',
       title: 'Welcome to Skynkod',
-      description: 'Your AI-powered skincare companion. Track your skin journey and get personalized advice.',
+      subtitle: 'Your AI Skin Coach ✨',
+      description: 'Get personalized skincare recommendations tailored to your skin type and concerns.',
+      emoji: '👋',
     },
     {
-      emoji: '📔',
-      title: 'Daily Journal',
-      description: 'Log your skin mood and conditions daily. Our AI learns your patterns to give better advice.',
-    },
-    {
-      emoji: '🔄',
-      title: 'Build Routines',
-      description: 'Create morning and evening routines. Get reminders to stay consistent.',
-    },
-    {
-      emoji: '✨',
-      title: 'Meet Koda',
-      description: 'Chat with Koda, your AI skin coach. Ask anything about skincare, routines, and skin concerns.',
-    },
-    {
+      title: 'Track Your Progress',
+      subtitle: 'See Real Results',
+      description: 'Take photos and keep daily journal entries to monitor your skin improvements.',
       emoji: '📸',
-      title: 'Track Progress',
-      description: 'Take photos to visualize your skin improvement. See real progress over time.',
+    },
+    {
+      title: 'Build Healthy Habits',
+      subtitle: 'Consistent Care',
+      description: 'Create morning and evening routines to maintain your skincare regimen.',
+      emoji: '🔄',
+    },
+    {
+      title: 'Get Expert Advice',
+      subtitle: 'Chat with Koda',
+      description: 'Ask Koda anything about your skin and get instant personalized recommendations.',
+      emoji: '💬',
     },
   ]
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
-    } else {
-      onComplete()
+  const handleNext = async () => {
+    try {
+      if (step < steps.length - 1) {
+        setStep(step + 1)
+      } else {
+        await onComplete()
+      }
+    } catch (error) {
+      await logError('OnboardingScreen_handleNext', error, { step }, 'error')
+      Alert.alert('Error', 'Failed to complete onboarding')
     }
   }
 
-  const handleSkip = () => {
-    onComplete()
+  const handleSkip = async () => {
+    try {
+      await onComplete()
+    } catch (error) {
+      await logError('OnboardingScreen_handleSkip', error, {}, 'error')
+      Alert.alert('Error', 'Failed to complete onboarding')
+    }
   }
 
-  const step = steps[currentStep]
-  const progress = ((currentStep + 1) / steps.length) * 100
+  const currentStep = steps[step]
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-        <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]} />
-      </View>
+      <ScrollView style={styles.content}>
+        <Text style={[styles.emoji, { marginTop: 60 }]}>{currentStep.emoji}</Text>
+        
+        <Text style={[styles.title, { color: colors.text }]}>{currentStep.title}</Text>
+        <Text style={[styles.subtitle, { color: colors.primary }]}>{currentStep.subtitle}</Text>
+        
+        <Text style={[styles.description, { color: colors.muted }]}>
+          {currentStep.description}
+        </Text>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.stepContainer}>
-          <Text style={styles.stepEmoji}>{step.emoji}</Text>
-          <Text style={[styles.stepTitle, { color: colors.text }]}>{step.title}</Text>
-          <Text style={[styles.stepDescription, { color: colors.muted }]}>{step.description}</Text>
-        </View>
-
-        <View style={styles.dotsContainer}>
+        <View style={styles.progressContainer}>
           {steps.map((_, idx) => (
             <View
               key={idx}
               style={[
-                styles.dot,
-                idx === currentStep && { backgroundColor: colors.primary, width: 32 },
-                idx !== currentStep && { backgroundColor: colors.border },
+                styles.progressBar,
+                idx <= step && { backgroundColor: colors.primary },
+                idx > step && { backgroundColor: colors.border },
               ]}
             />
           ))}
         </View>
       </ScrollView>
 
-      <View style={[styles.buttonContainer, { borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.skipBtn, { borderColor: colors.border }]}
-          onPress={handleSkip}
-        >
-          <Text style={[styles.skipBtnText, { color: colors.text }]}>Skip</Text>
+      <View style={[styles.buttons, { borderTopColor: colors.border }]}>
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+          <Text style={[styles.skipBtnText, { color: colors.primary }]}>Skip</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -94,7 +98,7 @@ export default function OnboardingScreen({ onComplete }) {
           onPress={handleNext}
         >
           <Text style={styles.nextBtnText}>
-            {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
+            {step === steps.length - 1 ? 'Get Started' : 'Next'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -104,18 +108,16 @@ export default function OnboardingScreen({ onComplete }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  progressBar: { height: 4, width: '100%' },
-  progressFill: { height: '100%' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  stepContainer: { alignItems: 'center' },
-  stepEmoji: { fontSize: 80, marginBottom: 24 },
-  stepTitle: { fontSize: 28, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
-  stepDescription: { fontSize: 16, textAlign: 'center', lineHeight: 24, maxWidth: 300 },
-  dotsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 60 },
-  dot: { height: 8, borderRadius: 4, width: 8 },
-  buttonContainer: { flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1 },
-  skipBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', borderWidth: 1 },
-  skipBtnText: { fontWeight: 'bold', fontSize: 14 },
+  content: { flex: 1, padding: 24, justifyContent: 'center' },
+  emoji: { fontSize: 80, textAlign: 'center', marginBottom: 24 },
+  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', marginBottom: 16 },
+  description: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 48 },
+  progressContainer: { flexDirection: 'row', gap: 8, marginBottom: 48 },
+  progressBar: { flex: 1, height: 4, borderRadius: 2 },
+  buttons: { flexDirection: 'row', gap: 12, padding: 16, borderTopWidth: 1 },
+  skipBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  skipBtnText: { fontWeight: '600', fontSize: 14 },
   nextBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   nextBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
 })

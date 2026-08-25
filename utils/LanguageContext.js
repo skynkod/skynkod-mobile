@@ -1,10 +1,12 @@
-import React, { createContext, useEffect, useState } from 'react'
-import { getLanguage, getLanguages, setLanguage, t } from './i18n'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { translations } from './i18n'
+import { logError } from './errorLogger'
 
-export const LanguageContext = createContext()
+const LanguageContext = createContext()
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguageState] = useState('en')
+  const [language, setLanguage] = useState('en')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -13,29 +15,41 @@ export const LanguageProvider = ({ children }) => {
 
   const initializeLanguage = async () => {
     try {
-      const lang = await getLanguage()
-      setLanguageState(lang)
+      const saved = await AsyncStorage.getItem('skynkod_language')
+      if (saved) {
+        setLanguage(saved)
+      } else {
+        setLanguage('en')
+      }
     } catch (error) {
-      console.error('Initialize language error:', error)
+      await logError('LanguageContext_initializeLanguage', error, {}, 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const changeLanguage = async (lang) => {
-    setLanguageState(lang)
-    await setLanguage(lang)
+  const setLanguageAsync = async (lang) => {
+    try {
+      setLanguage(lang)
+      await AsyncStorage.setItem('skynkod_language', lang)
+    } catch (error) {
+      await logError('LanguageContext_setLanguage', error, { lang }, 'error')
+    }
+  }
+
+  const t = (key) => {
+    return translations[language]?.[key] || key
   }
 
   return (
-    <LanguageContext.Provider value={{ language, changeLanguage, t: (key) => t(key, language), languages: getLanguages(), loading }}>
+    <LanguageContext.Provider value={{ language, setLanguage: setLanguageAsync, t, loading }}>
       {children}
     </LanguageContext.Provider>
   )
 }
 
 export const useLanguage = () => {
-  const context = React.useContext(LanguageContext)
+  const context = useContext(LanguageContext)
   if (!context) {
     throw new Error('useLanguage must be used within LanguageProvider')
   }
