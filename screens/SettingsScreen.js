@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch, ActivityIndicator } from 'react-native'
 import { signOut } from '../utils/supabase'
 import { useTheme } from '../utils/ThemeContext'
@@ -14,8 +14,9 @@ export default function SettingsScreen({ route, navigation }) {
   const { language, setLanguage } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
   const [loggingOut, setLoggingOut] = useState(false)
+  const [clearingCache, setClearingCache] = useState(false)
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', onPress: () => {} },
       {
@@ -25,46 +26,64 @@ export default function SettingsScreen({ route, navigation }) {
           try {
             // 1. Sign out from Supabase
             const result = await signOut()
-            if (!result.success) {
-              throw new Error(result.error || 'Logout failed')
+            if (!result || !result.success) {
+              throw new Error(result?.error || 'Logout failed')
             }
 
             // 2. Clear AsyncStorage user data
-            await AsyncStorage.removeItem('skynkod_user')
-            
+            try {
+              await AsyncStorage.removeItem('skynkod_user')
+            } catch (err) {
+              await logError('SettingsScreen_removeUser', err, { userId }, 'warn')
+            }
+
             // 3. Clear push token from storage
-            const token = await AsyncStorage.getItem(`push_token_${userId}`)
-            if (token) {
-              await AsyncStorage.removeItem(`push_token_${userId}`)
+            try {
+              const token = await AsyncStorage.getItem(`push_token_${userId}`)
+              if (token) {
+                await AsyncStorage.removeItem(`push_token_${userId}`)
+              }
+            } catch (err) {
+              await logError('SettingsScreen_removePushToken', err, { userId }, 'warn')
             }
 
             // 4. Cancel all scheduled notifications
             try {
               await Notifications.cancelAllScheduledNotificationsAsync()
             } catch (err) {
-              console.warn('Cancel notifications error:', err)
+              await logError('SettingsScreen_cancelNotifications', err, { userId }, 'warn')
             }
 
             // 5. Clear cache data
-            const cacheKeys = ['journal_entries', 'user_products', 'today_routine', 'expenses', 'user_photos', 'chat_history', 'progress_photos']
-            for (const key of cacheKeys) {
-              await AsyncStorage.removeItem(`cache_${key}`)
-              await AsyncStorage.removeItem(`cache_${key}_timestamp`)
+            try {
+              const cacheKeys = ['journal_entries', 'user_products', 'today_routine', 'expenses', 'user_photos', 'chat_history', 'progress_photos']
+              for (const key of cacheKeys) {
+                await AsyncStorage.removeItem(`cache_${key}`)
+                await AsyncStorage.removeItem(`cache_${key}_timestamp`)
+              }
+            } catch (err) {
+              await logError('SettingsScreen_clearCache', err, { userId }, 'warn')
             }
 
             // 6. Log the logout
             await logError('SettingsScreen_logout', new Error('User logout - clean exit'), { userId }, 'info')
 
-            // 7. Reset navigation
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'LoginScreen' }],
-            })
-
-            Alert.alert('Success', 'You have been logged out')
+            // 7. Show success alert first, then navigate
+            Alert.alert('Success', 'You have been logged out', [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // NOW reset navigation after user acknowledges
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'LoginScreen' }],
+                  })
+                },
+              },
+            ])
           } catch (error) {
-            await logError('SettingsScreen_logout_error', error, { userId })
-            Alert.alert('Error', error.message || 'Logout failed. Please try again.')
+            await logError('SettingsScreen_logout_error', error, { userId }, 'error')
+            Alert.alert('Error', error?.message || 'Logout failed. Please try again.')
             setLoggingOut(false)
           }
         },
@@ -78,20 +97,49 @@ export default function SettingsScreen({ route, navigation }) {
       {
         text: 'Clear',
         onPress: async () => {
+          setClearingCache(true)
           try {
             const cacheKeys = ['journal_entries', 'user_products', 'today_routine', 'expenses', 'user_photos', 'chat_history', 'progress_photos', 'error_logs']
             for (const key of cacheKeys) {
-              await AsyncStorage.removeItem(`cache_${key}`)
-              await AsyncStorage.removeItem(`cache_${key}_timestamp`)
+              try {
+                await AsyncStorage.removeItem(`cache_${key}`)
+                await AsyncStorage.removeItem(`cache_${key}_timestamp`)
+              } catch (err) {
+                await logError('SettingsScreen_removeCacheKey', err, { userId, key }, 'warn')
+              }
             }
+            await logError('SettingsScreen_clearCache_success', new Error('Cache cleared'), { userId }, 'info')
             Alert.alert('Success', 'Cache cleared')
           } catch (error) {
-            await logError('SettingsScreen_clearCache', error, { userId })
-            Alert.alert('Error', 'Failed to clear cache')
+            await logError('SettingsScreen_clearCache_error', error, { userId }, 'error')
+            Alert.alert('Error', error?.message || 'Failed to clear cache')
+          } finally {
+            setClearingCache(false)
           }
         },
       },
     ])
+  }
+
+  const handleToggleTheme = async () => {
+    try {
+      await toggleTheme()
+    } catch (error) {
+      await logError('SettingsScreen_toggleTheme', error, { userId }, 'error')
+      Alert.alert('Error', 'Failed to toggle theme')
+    }
+  }
+
+  const handleSetLanguage = async (lang) => {
+    try {
+      if (!['en', 'es', 'fr'].includes(lang)) {
+        throw new Error('Invalid language')
+      }
+      await setLanguage(lang)
+    } catch (error) {
+      await logError('SettingsScreen_setLanguage', error, { userId, lang }, 'error')
+      Alert.alert('Error', 'Failed to set language')
+    }
   }
 
   if (loggingOut) {
@@ -113,12 +161,12 @@ export default function SettingsScreen({ route, navigation }) {
         {/* APPEARANCE */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
-          
+
           <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
             <Switch
               value={isDark}
-              onValueChange={toggleTheme}
+              onValueChange={handleToggleTheme}
               trackColor={{ false: '#ccc', true: colors.primary }}
               thumbColor="white"
             />
@@ -128,12 +176,12 @@ export default function SettingsScreen({ route, navigation }) {
         {/* LANGUAGE */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Language</Text>
-          
+
           {['en', 'es', 'fr'].map(lang => (
             <TouchableOpacity
               key={lang}
               style={[styles.languageOption, { borderBottomColor: colors.border }]}
-              onPress={() => setLanguage(lang)}
+              onPress={() => handleSetLanguage(lang)}
             >
               <Text style={[styles.languageLabel, { color: colors.text }]}>
                 {lang === 'en' ? '🇺🇸 English' : lang === 'es' ? '🇪🇸 Español' : '🇫🇷 Français'}
@@ -146,19 +194,24 @@ export default function SettingsScreen({ route, navigation }) {
         {/* DATA */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Data</Text>
-          
+
           <TouchableOpacity
-            style={[styles.settingButton, { borderColor: '#FF6B6B' }]}
+            style={[styles.settingButton, { borderColor: '#FF6B6B', opacity: clearingCache ? 0.6 : 1 }]}
             onPress={handleClearAllData}
+            disabled={clearingCache}
           >
-            <Text style={{ color: '#FF6B6B', fontWeight: '600', fontSize: 14 }}>Clear Cache</Text>
+            {clearingCache ? (
+              <ActivityIndicator color="#FF6B6B" />
+            ) : (
+              <Text style={{ color: '#FF6B6B', fontWeight: '600', fontSize: 14 }}>Clear Cache</Text>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* ACCOUNT */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <TouchableOpacity
-            style={[styles.logoutButton, { backgroundColor: '#FF6B6B' }]}
+            style={[styles.logoutButton, { backgroundColor: '#FF6B6B', opacity: loggingOut ? 0.6 : 1 }]}
             onPress={handleLogout}
             disabled={loggingOut}
           >
