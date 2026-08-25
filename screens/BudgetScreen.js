@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState, useRef } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Keyboard } from 'react-native'
 import { getExpenses, addExpense, deleteExpense, getMonthlyBudgetTotal } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
 import { logError } from '../utils/errorLogger'
@@ -12,6 +12,7 @@ export default function BudgetScreen({ route }) {
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  const scrollViewRef = useRef(null)
 
   const { data: expenses, loading, error, isOffline, fetch, retry } = useFetchWithCache(
     'expenses',
@@ -25,18 +26,38 @@ export default function BudgetScreen({ route }) {
   const [priceInput, setPriceInput] = useState('')
   const [categoryInput, setCategoryInput] = useState('Product')
   const [addError, setAddError] = useState(null)
+  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
-    fetch()
-    loadMonthlyTotal()
-  }, [userId])
+    setMounted(true)
+    
+    return () => {
+      setMounted(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    initialize()
+  }, [userId, mounted])
+
+  const initialize = async () => {
+    try {
+      await fetch()
+      await loadMonthlyTotal()
+    } catch (err) {
+      await logError('BudgetScreen_initialize', err, { userId }, 'error')
+    }
+  }
 
   const loadMonthlyTotal = async () => {
     try {
       const total = await getMonthlyBudgetTotal(userId)
-      setMonthlyTotal(total || 0)
+      if (mounted) {
+        setMonthlyTotal(total || 0)
+      }
     } catch (err) {
-      await logError('BudgetScreen_loadMonthlyTotal', err, { userId })
+      await logError('BudgetScreen_loadMonthlyTotal', err, { userId }, 'error')
     }
   }
 
@@ -54,6 +75,8 @@ export default function BudgetScreen({ route }) {
 
     setAdding(true)
     setAddError(null)
+    Keyboard.dismiss()
+
     try {
       const newExpense = {
         user_id: userId,
@@ -63,23 +86,44 @@ export default function BudgetScreen({ route }) {
       }
 
       const result = await addExpense(newExpense)
-      if (result) {
-        fetch() // Refresh list
-        setMonthlyTotal(monthlyTotal + price)
+      
+      if (!result) {
+        throw new Error('Failed to add expense')
+      }
+
+      if (mounted) {
+        await fetch()
+        await loadMonthlyTotal()
         setItemInput('')
         setPriceInput('')
         setCategoryInput('Product')
+        setAddError(null)
         Alert.alert('Success', 'Expense added!')
+        
+        setTimeout(() => {
+          if (scrollViewRef.current) {
+            scrollViewRef.current.scrollToEnd({ animated: true })
+          }
+        }, 100)
       }
     } catch (err) {
-      await logError('BudgetScreen_addExpense', err, { userId })
-      setAddError(err.message || 'Failed to add expense')
+      await logError('BudgetScreen_addExpense', err, { userId, itemInput }, 'error')
+      if (mounted) {
+        setAddError(err.message || 'Failed to add expense')
+      }
     } finally {
-      setAdding(false)
+      if (mounted) {
+        setAdding(false)
+      }
     }
   }
 
   const handleDeleteExpense = async (expenseId, amount) => {
+    if (!expenseId || !amount) {
+      await logError('BudgetScreen_deleteExpense', new Error('Missing expenseId or amount'), { userId }, 'error')
+      return
+    }
+
     Alert.alert('Delete Expense', 'Are you sure?', [
       { text: 'Cancel', onPress: () => {} },
       {
@@ -87,18 +131,34 @@ export default function BudgetScreen({ route }) {
         onPress: async () => {
           try {
             const success = await deleteExpense(expenseId)
-            if (success) {
-              fetch() // Refresh list
-              setMonthlyTotal(Math.max(0, monthlyTotal - amount))
+            
+            if (!success) {
+              throw new Error('Failed to delete expense')
+            }
+
+            if (mounted) {
+              await fetch()
+              await loadMonthlyTotal()
               Alert.alert('Success', 'Expense deleted')
             }
           } catch (err) {
-            await logError('BudgetScreen_deleteExpense', err, { userId })
-            Alert.alert('Error', 'Failed to delete expense')
+            await logError('BudgetScreen_deleteExpense', err, { userId, expenseId }, 'error')
+            Alert.alert('Error', err.message || 'Failed to delete expense')
           }
         },
       },
     ])
+  }
+
+  const handleRetry = async () => {
+    try {
+      await retry()
+      if (mounted) {
+        await loadMonthlyTotal()
+      }
+    } catch (err) {
+      await logError('BudgetScreen_retry', err, { userId }, 'error')
+    }
   }
 
   if (loading && !expenses) {
@@ -121,7 +181,7 @@ export default function BudgetScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -129,14 +189,14 @@ export default function BudgetScreen({ route }) {
 
       {isOffline && !error && (
         <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
-          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
+          <Text style={styles.offlineText}>📡 Offline - Cached data</Text>
         </View>
       )}
 
-      <ScrollView style={styles.content}>
+      <ScrollView ref={scrollViewRef} style={styles.content}>
         <View style={[styles.totalCard, { backgroundColor: colors.primary }]}>
           <Text style={styles.totalLabel}>This Month</Text>
-          <Text style={styles.totalAmount}>${monthlyTotal.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>${monthlyTotal ? monthlyTotal.toFixed(2) : '0.00'}</Text>
         </View>
 
         <View style={[styles.addSection, { backgroundColor: colors.card }]}>
@@ -219,40 +279,46 @@ export default function BudgetScreen({ route }) {
         <View style={styles.listSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Expenses</Text>
 
-          {!expenses || expenses.length === 0 ? (
+          {!expenses || !Array.isArray(expenses) || expenses.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💰</Text>
               <Text style={[styles.emptyText, { color: colors.text }]}>No expenses tracked yet</Text>
               <Text style={[styles.emptySubtext, { color: colors.muted }]}>Start tracking your spending</Text>
             </View>
           ) : (
-            expenses.map(expense => (
-              <View key={expense.id} style={[styles.expenseCard, { backgroundColor: colors.card }]}>
-                <View style={styles.expenseInfo}>
-                  <View style={styles.expenseHeader}>
-                    <Text style={[styles.expenseName, { color: colors.text }]}>{expense.item_name}</Text>
-                    <Text style={[styles.expenseAmount, { color: colors.primary, fontWeight: 'bold' }]}>
-                      ${expense.amount.toFixed(2)}
-                    </Text>
+            expenses.map(expense => {
+              if (!expense || !expense.id) return null
+              
+              return (
+                <View key={expense.id} style={[styles.expenseCard, { backgroundColor: colors.card }]}>
+                  <View style={styles.expenseInfo}>
+                    <View style={styles.expenseHeader}>
+                      <Text style={[styles.expenseName, { color: colors.text }]}>
+                        {expense.item_name || 'Unknown'}
+                      </Text>
+                      <Text style={[styles.expenseAmount, { color: colors.primary, fontWeight: 'bold' }]}>
+                        ${expense.amount ? expense.amount.toFixed(2) : '0.00'}
+                      </Text>
+                    </View>
+                    <View style={styles.expenseFooter}>
+                      <Text style={[styles.expenseCategory, { color: colors.muted }]}>
+                        {expense.category || 'No category'}
+                      </Text>
+                      <Text style={[styles.expenseDate, { color: colors.muted }]}>
+                        {expense.created_at ? new Date(expense.created_at).toLocaleDateString() : 'Unknown'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.expenseFooter}>
-                    <Text style={[styles.expenseCategory, { color: colors.muted }]}>
-                      {expense.category}
-                    </Text>
-                    <Text style={[styles.expenseDate, { color: colors.muted }]}>
-                      {new Date(expense.created_at).toLocaleDateString()}
-                    </Text>
-                  </View>
-                </View>
 
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDeleteExpense(expense.id, expense.amount)}
-                >
-                  <Text style={styles.deleteBtnText}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            ))
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => handleDeleteExpense(expense.id, expense.amount)}
+                  >
+                    <Text style={styles.deleteBtnText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            })
           )}
         </View>
       </ScrollView>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, Keyboard } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { getUserPhotos, deletePhoto } from '../utils/supabase'
 import { supabase } from '../utils/supabase'
@@ -15,7 +15,8 @@ export default function PhotosScreen({ route }) {
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-  
+  const scrollViewRef = useRef(null)
+
   const { data: photos, loading, error, isOffline, fetch, retry } = useFetchWithCache(
     'user_photos',
     () => getUserPhotos(userId),
@@ -24,10 +25,28 @@ export default function PhotosScreen({ route }) {
 
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
+  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
+    setMounted(true)
+    
+    return () => {
+      setMounted(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     fetch()
-  }, [userId])
+  }, [userId, fetch, mounted])
+
+  const handleRetry = async () => {
+    try {
+      await retry()
+    } catch (err) {
+      await logError('PhotosScreen_retry', err, { userId }, 'error')
+    }
+  }
 
   const pickImage = async (useCamera = false) => {
     try {
@@ -45,18 +64,23 @@ export default function PhotosScreen({ route }) {
             quality: 0.8,
           })
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         await uploadPhotoToSupabase(result.assets[0].uri)
       }
     } catch (err) {
-      await logError('PhotosScreen_pickImage', err, { userId })
-      Alert.alert('Error', 'Failed to pick image')
+      await logError('PhotosScreen_pickImage', err, { userId, useCamera }, 'error')
+      if (mounted) {
+        Alert.alert('Error', err.message || 'Failed to pick image')
+      }
     }
   }
 
   const uploadPhotoToSupabase = async (uri) => {
+    if (!uri || !mounted) return
+
     setUploading(true)
     setUploadError(null)
+
     try {
       const fileInfo = await FileSystem.getInfoAsync(uri)
       if (!fileInfo.exists) {
@@ -66,6 +90,10 @@ export default function PhotosScreen({ route }) {
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       })
+
+      if (!base64) {
+        throw new Error('Failed to read file')
+      }
 
       const binaryString = atob(base64)
       const bytes = new Uint8Array(binaryString.length)
@@ -90,9 +118,13 @@ export default function PhotosScreen({ route }) {
 
       if (urlError) throw urlError
 
+      if (!signedUrlData || !signedUrlData.signedUrl) {
+        throw new Error('Failed to get signed URL')
+      }
+
       const photoUrl = signedUrlData.signedUrl
 
-      const { data: photoData, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('photos')
         .insert({
           user_id: userId,
@@ -103,18 +135,31 @@ export default function PhotosScreen({ route }) {
 
       if (dbError) throw dbError
 
-      fetch() // Refresh list
-      Alert.alert('Success', 'Photo uploaded!')
+      if (mounted) {
+        await fetch()
+        setUploadError(null)
+        Alert.alert('Success', 'Photo uploaded!')
+      }
     } catch (err) {
-      await logError('PhotosScreen_uploadPhoto', err, { userId })
-      setUploadError(err.message || 'Failed to upload photo')
-      Alert.alert('Error', err.message || 'Failed to upload photo')
+      await logError('PhotosScreen_uploadPhoto', err, { userId }, 'error')
+      
+      if (mounted) {
+        setUploadError(err.message || 'Failed to upload photo')
+        Alert.alert('Error', err.message || 'Failed to upload photo')
+      }
     } finally {
-      setUploading(false)
+      if (mounted) {
+        setUploading(false)
+      }
     }
   }
 
   const handleDeletePhoto = async (photoId) => {
+    if (!photoId) {
+      await logError('PhotosScreen_deletePhoto', new Error('Missing photoId'), { userId }, 'error')
+      return
+    }
+
     Alert.alert('Delete Photo', 'Are you sure?', [
       { text: 'Cancel', onPress: () => {} },
       {
@@ -122,13 +167,18 @@ export default function PhotosScreen({ route }) {
         onPress: async () => {
           try {
             const success = await deletePhoto(photoId)
-            if (success) {
-              fetch() // Refresh list
+            
+            if (!success) {
+              throw new Error('Failed to delete photo')
+            }
+
+            if (mounted) {
+              await fetch()
               Alert.alert('Success', 'Photo deleted')
             }
           } catch (err) {
-            await logError('PhotosScreen_deletePhoto', err, { userId })
-            Alert.alert('Error', 'Failed to delete photo')
+            await logError('PhotosScreen_deletePhoto', err, { userId, photoId }, 'error')
+            Alert.alert('Error', err.message || 'Failed to delete photo')
           }
         },
       },
@@ -147,6 +197,7 @@ export default function PhotosScreen({ route }) {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.text }]}>Skin Progress Photos</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Track your improvements</Text>
       </View>
 
       {error && (
@@ -154,7 +205,7 @@ export default function PhotosScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -173,12 +224,12 @@ export default function PhotosScreen({ route }) {
 
       {isOffline && !error && (
         <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
-          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
+          <Text style={styles.offlineText}>📡 Offline - Cached data</Text>
         </View>
       )}
 
-      <ScrollView style={styles.content}>
-        {!photos || photos.length === 0 ? (
+      <ScrollView ref={scrollViewRef} style={styles.content}>
+        {!photos || !Array.isArray(photos) || photos.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📸</Text>
             <Text style={[styles.emptyText, { color: colors.text }]}>No photos yet</Text>
@@ -186,26 +237,40 @@ export default function PhotosScreen({ route }) {
           </View>
         ) : (
           <View style={styles.photoGrid}>
-            {photos.map(photo => (
-              <View key={photo.id} style={[styles.photoCard, { backgroundColor: colors.card }]}>
-                <Image source={{ uri: photo.photo_url }} style={styles.photoImage} />
-                {photo.notes && <Text style={[styles.photoNotes, { color: colors.muted }]}>{photo.notes}</Text>}
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDeletePhoto(photo.id)}
-                >
-                  <Text style={styles.deleteBtnText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+            {photos.map(photo => {
+              if (!photo || !photo.id || !photo.photo_url) return null
+              
+              return (
+                <View key={photo.id} style={[styles.photoCard, { backgroundColor: colors.card }]}>
+                  <Image 
+                    source={{ uri: photo.photo_url }} 
+                    style={styles.photoImage}
+                    onError={(error) => {
+                      logError('PhotosScreen_imageLoadError', error, { photoId: photo.id }, 'warn')
+                    }}
+                  />
+                  {photo.notes && (
+                    <Text style={[styles.photoNotes, { color: colors.muted }]}>
+                      {photo.notes}
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.deleteBtn, { backgroundColor: '#FF6B6B' }]}
+                    onPress={() => handleDeletePhoto(photo.id)}
+                  >
+                    <Text style={styles.deleteBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            })}
           </View>
         )}
       </ScrollView>
 
       <View style={[styles.actionButtons, { borderTopColor: colors.border }]}>
-        <TouchableOpacity 
-          style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: uploading ? 0.6 : 1 }]} 
-          onPress={() => pickImage(true)} 
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: uploading ? 0.6 : 1 }]}
+          onPress={() => pickImage(true)}
           disabled={uploading}
         >
           {uploading ? (
@@ -218,9 +283,9 @@ export default function PhotosScreen({ route }) {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: uploading ? 0.6 : 1 }]} 
-          onPress={() => pickImage(false)} 
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: uploading ? 0.6 : 1 }]}
+          onPress={() => pickImage(false)}
           disabled={uploading}
         >
           {uploading ? (
@@ -242,6 +307,7 @@ const styles = StyleSheet.create({
   centerContent: { justifyContent: 'center', alignItems: 'center' },
   header: { padding: 16, borderBottomWidth: 1 },
   title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 12, marginTop: 4 },
   errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
   retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
@@ -257,7 +323,7 @@ const styles = StyleSheet.create({
   photoCard: { borderRadius: 12, overflow: 'hidden', marginBottom: 12 },
   photoImage: { width: '100%', height: 300 },
   photoNotes: { padding: 12, fontSize: 12 },
-  deleteBtn: { backgroundColor: '#FF6B6B', padding: 8, margin: 12, borderRadius: 6 },
+  deleteBtn: { padding: 8, margin: 12, borderRadius: 6 },
   deleteBtnText: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 12 },
   actionButtons: { flexDirection: 'row', padding: 16, gap: 12, borderTopWidth: 1 },
   actionBtn: { flex: 1, paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
