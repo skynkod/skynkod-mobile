@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Keyboard } from 'react-native'
 import { getUserProducts, addUserProduct, deleteUserProduct } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
 import { logError } from '../utils/errorLogger'
@@ -12,6 +12,7 @@ export default function ProductsScreen({ route }) {
   const { isDark } = useTheme()
   const { t } = useLanguage()
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  const scrollViewRef = useRef(null)
 
   const { data: products, loading, error, isOffline, fetch, retry } = useFetchWithCache(
     'user_products',
@@ -19,15 +20,25 @@ export default function ProductsScreen({ route }) {
     userId
   )
 
-  const [adding, setAdding] = React.useState(false)
-  const [nameInput, setNameInput] = React.useState('')
-  const [brandInput, setBrandInput] = React.useState('')
-  const [categoryInput, setCategoryInput] = React.useState('')
-  const [addError, setAddError] = React.useState(null)
+  const [adding, setAdding] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [brandInput, setBrandInput] = useState('')
+  const [categoryInput, setCategoryInput] = useState('')
+  const [addError, setAddError] = useState(null)
+  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
+    setMounted(true)
+    
+    return () => {
+      setMounted(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     fetch()
-  }, [userId])
+  }, [userId, fetch, mounted])
 
   const handleAddProduct = async () => {
     if (!nameInput.trim() || !brandInput.trim() || !categoryInput.trim()) {
@@ -37,6 +48,8 @@ export default function ProductsScreen({ route }) {
 
     setAdding(true)
     setAddError(null)
+    Keyboard.dismiss()
+
     try {
       const newProduct = {
         user_id: userId,
@@ -46,22 +59,37 @@ export default function ProductsScreen({ route }) {
       }
 
       const result = await addUserProduct(newProduct)
+      
       if (result) {
-        fetch() // Refresh list
-        setNameInput('')
-        setBrandInput('')
-        setCategoryInput('')
-        Alert.alert('Success', 'Product added!')
+        if (mounted) {
+          await fetch()
+          setNameInput('')
+          setBrandInput('')
+          setCategoryInput('')
+          setAddError(null)
+          Alert.alert('Success', 'Product added!')
+        }
+      } else {
+        throw new Error('Failed to add product')
       }
     } catch (err) {
-      await logError('ProductsScreen_addProduct', err, { userId })
-      setAddError(err.message || 'Failed to add product')
+      await logError('ProductsScreen_addProduct', err, { userId }, 'error')
+      if (mounted) {
+        setAddError(err.message || 'Failed to add product')
+      }
     } finally {
-      setAdding(false)
+      if (mounted) {
+        setAdding(false)
+      }
     }
   }
 
   const handleDeleteProduct = async (productId) => {
+    if (!productId) {
+      await logError('ProductsScreen_deleteProduct', new Error('Missing productId'), { userId }, 'error')
+      return
+    }
+
     Alert.alert('Delete Product', 'Are you sure?', [
       { text: 'Cancel', onPress: () => {} },
       {
@@ -69,17 +97,30 @@ export default function ProductsScreen({ route }) {
         onPress: async () => {
           try {
             const success = await deleteUserProduct(productId)
+            
             if (success) {
-              fetch() // Refresh list
-              Alert.alert('Success', 'Product deleted')
+              if (mounted) {
+                await fetch()
+                Alert.alert('Success', 'Product deleted')
+              }
+            } else {
+              throw new Error('Failed to delete product')
             }
           } catch (err) {
-            await logError('ProductsScreen_deleteProduct', err, { userId })
-            Alert.alert('Error', 'Failed to delete product')
+            await logError('ProductsScreen_deleteProduct', err, { userId, productId }, 'error')
+            Alert.alert('Error', err.message || 'Failed to delete product')
           }
         },
       },
     ])
+  }
+
+  const handleRetry = async () => {
+    try {
+      await retry()
+    } catch (err) {
+      await logError('ProductsScreen_retry', err, { userId }, 'error')
+    }
   }
 
   if (loading && !products) {
@@ -102,7 +143,7 @@ export default function ProductsScreen({ route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-          <TouchableOpacity onPress={retry} style={styles.retryBtn}>
+          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -114,7 +155,7 @@ export default function ProductsScreen({ route }) {
         </View>
       )}
 
-      <ScrollView style={styles.content}>
+      <ScrollView ref={scrollViewRef} style={styles.content}>
         <View style={[styles.addSection, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Add New Product</Text>
 
@@ -195,24 +236,32 @@ export default function ProductsScreen({ route }) {
               <Text style={[styles.emptySubtext, { color: colors.muted }]}>Add your skincare products to track them</Text>
             </View>
           ) : (
-            products.map(product => (
-              <View key={product.id} style={[styles.productCard, { backgroundColor: colors.card }]}>
-                <View style={styles.productInfo}>
-                  <Text style={[styles.productName, { color: colors.text }]}>{product.product_name}</Text>
-                  <Text style={[styles.productBrand, { color: colors.muted }]}>{product.brand}</Text>
-                  <Text style={[styles.productCategory, { color: colors.primary, marginTop: 4 }]}>
-                    {product.category}
-                  </Text>
-                </View>
+            products.map(product => {
+              if (!product || !product.id) return null
+              
+              return (
+                <View key={product.id} style={[styles.productCard, { backgroundColor: colors.card }]}>
+                  <View style={styles.productInfo}>
+                    <Text style={[styles.productName, { color: colors.text }]}>
+                      {product.product_name || 'Unknown'}
+                    </Text>
+                    <Text style={[styles.productBrand, { color: colors.muted }]}>
+                      {product.brand || 'No brand'}
+                    </Text>
+                    <Text style={[styles.productCategory, { color: colors.primary, marginTop: 4 }]}>
+                      {product.category || 'No category'}
+                    </Text>
+                  </View>
 
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDeleteProduct(product.id)}
-                >
-                  <Text style={styles.deleteBtnText}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            ))
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => handleDeleteProduct(product.id)}
+                  >
+                    <Text style={styles.deleteBtnText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            })
           )}
         </View>
       </ScrollView>
