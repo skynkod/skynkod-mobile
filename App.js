@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Text, ActivityIndicator, View } from 'react-native'
+import { Text, ActivityIndicator, View, TouchableOpacity } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'

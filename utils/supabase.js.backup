@@ -61,6 +61,7 @@ export async function createUser(userId, email) {
       .from('users')
       .insert({ id: userId, email })
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -76,6 +77,7 @@ export async function getUserProfile(userId) {
       .select('*')
       .eq('id', userId)
       .single()
+
     if (error) throw error
     return data
   } catch (error) {
@@ -91,6 +93,7 @@ export async function updateUserProfile(userId, updates) {
       .update(updates)
       .eq('id', userId)
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -107,6 +110,7 @@ export async function getJournalEntries(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+
     if (error) throw error
     return data
   } catch (error) {
@@ -121,6 +125,7 @@ export async function saveJournalEntry(entry) {
       .from('journal_entries')
       .insert([entry])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -136,6 +141,7 @@ export async function updateJournalEntry(entryId, updates) {
       .update(updates)
       .eq('id', entryId)
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -150,6 +156,7 @@ export async function deleteJournalEntry(entryId) {
       .from('journal_entries')
       .delete()
       .eq('id', entryId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -166,6 +173,7 @@ export async function getUserProducts(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+
     if (error) throw error
     return data
   } catch (error) {
@@ -180,6 +188,7 @@ export async function addUserProduct(product) {
       .from('user_products')
       .insert([product])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -194,6 +203,7 @@ export async function deleteUserProduct(productId) {
       .from('user_products')
       .delete()
       .eq('id', productId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -210,6 +220,7 @@ export async function getChatHistory(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
+
     if (error) throw error
     return data
   } catch (error) {
@@ -218,12 +229,13 @@ export async function getChatHistory(userId) {
   }
 }
 
-export async function saveChatMessage(messageData) {
+export async function saveChatMessage(userId, role, content) {
   try {
     const { data, error } = await supabase
       .from('chat_history')
-      .insert([messageData])
+      .insert([{ user_id: userId, role, content }])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -238,6 +250,7 @@ export async function clearChatHistory(userId) {
       .from('chat_history')
       .delete()
       .eq('user_id', userId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -252,6 +265,7 @@ export async function uploadPhoto(fileName, blob) {
     const { data, error } = await supabase.storage
       .from('photos')
       .upload(fileName, blob, { contentType: 'image/jpeg' })
+
     if (error) throw error
     return data
   } catch (error) {
@@ -267,6 +281,7 @@ export async function getUserPhotos(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+
     if (error) throw error
     return data
   } catch (error) {
@@ -281,6 +296,7 @@ export async function deletePhoto(photoId) {
       .from('photos')
       .delete()
       .eq('id', photoId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -295,6 +311,7 @@ export async function markRoutineComplete(data) {
     const { error } = await supabase
       .from('routine_completions')
       .insert([data])
+
     if (error) throw error
     return true
   } catch (error) {
@@ -314,6 +331,7 @@ export async function getTodayRoutineCompletion(userId) {
       .lte('created_at', `${today}T23:59:59`)
       .order('created_at', { ascending: false })
       .limit(1)
+
     if (error) throw error
     return data && data.length > 0 ? data[0] : null
   } catch (error) {
@@ -329,9 +347,11 @@ export async function getRoutineStreak(userId, routineType) {
       .select('created_at')
       .eq('user_id', userId)
       .eq('routine_type', routineType)
-      .eq('completed', true)
+      .eq(`${routineType}_completed`, true)
       .order('created_at', { ascending: false })
+
     if (error) throw error
+
     if (!data || data.length === 0) return 0
 
     let streak = 1
@@ -373,6 +393,7 @@ export async function getExpenses(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+
     if (error) throw error
     return data
   } catch (error) {
@@ -387,6 +408,7 @@ export async function addExpense(expense) {
       .from('expenses')
       .insert([expense])
       .select()
+
     if (error) throw error
     return data[0]
   } catch (error) {
@@ -401,6 +423,7 @@ export async function deleteExpense(expenseId) {
       .from('expenses')
       .delete()
       .eq('id', expenseId)
+
     if (error) throw error
     return true
   } catch (error) {
@@ -421,6 +444,7 @@ export async function getMonthlyBudgetTotal(userId) {
       .eq('user_id', userId)
       .gte('created_at', firstDay.toISOString())
       .lte('created_at', lastDay.toISOString())
+
     if (error) throw error
 
     const total = data.reduce((sum, expense) => sum + (expense.amount || 0), 0)
@@ -442,7 +466,7 @@ export async function getJournalStats(userId, daysBack = 30) {
       .select('mood')
       .eq('user_id', userId)
       .gte('created_at', startDate.toISOString())
-      .limit(500)
+
     if (error) throw error
 
     const moodCounts = {
@@ -471,6 +495,7 @@ export async function getProductCount(userId) {
       .from('user_products')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
+
     if (error) throw error
     return count
   } catch (error) {
