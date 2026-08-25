@@ -322,6 +322,8 @@ export async function getTodayRoutineCompletion(userId) {
   }
 }
 
+// ✅ FIXED: Changed .eq('${routineType}_completed', true) to .eq('completed', true)
+// ✅ FIXED: Improved date calculation to use timezone-safe comparison
 export async function getRoutineStreak(userId, routineType) {
   try {
     const { data, error } = await supabase
@@ -336,23 +338,19 @@ export async function getRoutineStreak(userId, routineType) {
 
     let streak = 1
     const today = new Date()
+    today.setHours(0, 0, 0, 0)
     let currentDate = new Date(today)
 
     for (let i = 0; i < data.length; i++) {
       const entryDate = new Date(data[i].created_at)
+      entryDate.setHours(0, 0, 0, 0)
+      
       const expectedDate = new Date(currentDate)
       expectedDate.setDate(expectedDate.getDate() - 1)
 
-      const entrDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate())
-      const expectedDateOnly = new Date(
-        expectedDate.getFullYear(),
-        expectedDate.getMonth(),
-        expectedDate.getDate()
-      )
-
-      if (entrDateOnly.getTime() === expectedDateOnly.getTime()) {
+      if (entryDate.getTime() === expectedDate.getTime()) {
         streak += 1
-        currentDate = expectedDate
+        currentDate = new Date(expectedDate)
       } else {
         break
       }
@@ -409,11 +407,12 @@ export async function deleteExpense(expenseId) {
   }
 }
 
+// ✅ FIXED: Use UTC for consistent timezone handling
 export async function getMonthlyBudgetTotal(userId) {
   try {
     const now = new Date()
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const firstDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+    const lastDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0))
 
     const { data, error } = await supabase
       .from('expenses')

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Text, ActivityIndicator, View, TouchableOpacity } from 'react-native'
+import { Text, ActivityIndicator, View, TouchableOpacity, Modal } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -8,6 +8,7 @@ import * as Notifications from 'expo-notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { LanguageProvider, useLanguage } from './utils/LanguageContext'
 import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
+import { logError } from './utils/errorLogger'
 import LoginScreen from './screens/LoginScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import HomeScreen from './screens/HomeScreen'
@@ -65,7 +66,12 @@ function MoreMenu({ userId, colors, navigation }) {
         {() => <View />}
       </Tab.Screen>
 
-      {showModal && (
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowModal(false)}
+      >
         <View style={{ flex: 1, backgroundColor: `${colors.bg}80` }}>
           <View
             style={{
@@ -115,7 +121,7 @@ function MoreMenu({ userId, colors, navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      </Modal>
     </>
   )
 }
@@ -159,7 +165,6 @@ function AppContent() {
   const { loading: languageLoading } = useLanguage()
 
   useEffect(() => {
-    // ✅ CRITICAL: Must await check() before rendering anything!
     const initApp = async () => {
       await check()
     }
@@ -179,13 +184,12 @@ function AppContent() {
           setShowOnboarding(true)
         }
         
-        // ✅ CRITICAL: Wait for notifications BEFORE setting loading to false
         await initializeNotifications(userData.userId)
       }
     } catch (error) {
-      console.error('Check error:', error)
+      await logError('AppContent_check', error, {}, 'error')
     } finally {
-      setLoading(false)  // ← Only set after ALL async operations done
+      setLoading(false)
     }
   }
 
@@ -199,7 +203,6 @@ function AppContent() {
           await AsyncStorage.setItem(`push_token_${userId}`, token)
         }
 
-        // ✅ Wait for all three to complete
         await Promise.all([
           scheduleMorningReminder(userId),
           scheduleEveningReminder(userId),
@@ -207,7 +210,7 @@ function AppContent() {
         ])
       }
     } catch (error) {
-      console.error('Initialize notifications error:', error)
+      await logError('AppContent_initializeNotifications', error, { userId }, 'warn')
     }
   }
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { DARK_COLORS, LIGHT_COLORS } from './theme'
+import { logError } from './errorLogger'
 
 const ThemeContext = createContext()
 
@@ -22,7 +23,7 @@ export const ThemeProvider = ({ children }) => {
         setIsDark(isNight)
       }
     } catch (error) {
-      console.error('Initialize theme error:', error)
+      await logError('ThemeContext_initializeTheme', error, {}, 'error')
     } finally {
       setLoading(false)
     }
@@ -48,7 +49,7 @@ export const ThemeProvider = ({ children }) => {
       setIsDark(newIsDark)
       await AsyncStorage.setItem('skynkod_theme', JSON.stringify(newIsDark))
     } catch (error) {
-      console.error('Toggle theme error:', error)
+      await logError('ThemeContext_toggleTheme', error, {}, 'error')
     }
   }
 
