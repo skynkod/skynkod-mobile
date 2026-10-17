@@ -14,7 +14,15 @@
       "expo-camera",
       "expo-image-picker",
       "expo-image",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/skynkod-logo-white.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#C5A8BB"
+        }
+      ],
       "expo-web-browser"
     ],
     "android": {

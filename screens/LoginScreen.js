@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, Alert, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Alert, Pressable, Image } from 'react-native'
 import * as Linking from 'expo-linking'
+import * as WebBrowser from 'expo-web-browser'
 import { supabase, signUp, signIn } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
-import { Screen, Card, Input, Button, Banner, IconCircle, SegmentedControl, useColors } from '../components/ui'
+import { Screen, Card, Input, Button, Banner, SegmentedControl, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
+
+const LOGO = require('../assets/images/skynkod-logo.png')
+// Turn on once Google is set up in Supabase > Authentication > Providers.
+const GOOGLE_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH === 'true'
 
 export default function LoginScreen({ onLogin }) {
   const colors = useColors()
@@ -91,6 +96,40 @@ export default function LoginScreen({ onLogin }) {
     }
   }
 
+  // Google sign-in through Supabase in an in-app browser; the redirect brings
+  // the session back in the URL fragment.
+  const handleGoogle = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const redirectTo = Linking.createURL('auth-callback')
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: true },
+      })
+      if (oauthError) throw oauthError
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+      if (result.type !== 'success') return
+
+      const params = Object.fromEntries(new URLSearchParams(result.url.split('#')[1] || ''))
+      if (!params.access_token || !params.refresh_token) {
+        throw new Error(params.error_description?.replace(/\+/g, ' ') || 'Google sign-in was cancelled.')
+      }
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token,
+      })
+      if (sessionError) throw sessionError
+      await onLogin(sessionData.user.email, sessionData.user.id)
+    } catch (err) {
+      await logError('LoginScreen_google', err)
+      setError(err.message || 'Google sign-in failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleAuth = async () => {
     const cleanEmail = email.trim().toLowerCase()
     setError(null)
@@ -124,11 +163,8 @@ export default function LoginScreen({ onLogin }) {
   return (
     <Screen keyboard contentStyle={styles.content}>
       <View style={styles.hero}>
-        <IconCircle name="sparkles" size={72} />
-        <Text style={[TYPE.display, { color: colors.text, marginTop: SPACING.xl }]}>Skynkod</Text>
-        <Text style={[TYPE.body, { color: colors.muted, marginTop: 4, textAlign: 'center' }]}>
-          Your AI skin coach. Track, learn, glow.
-        </Text>
+        <Text style={[TYPE.heading, { color: colors.textSecondary, fontWeight: '600' }]}>Welcome to</Text>
+        <Image source={LOGO} resizeMode="contain" style={styles.logo} accessibilityLabel="Skynkod" />
       </View>
 
       {isReset ? (
@@ -219,6 +255,17 @@ export default function LoginScreen({ onLogin }) {
             <Text style={[TYPE.caption, { color: colors.primary, textAlign: 'center', fontWeight: '700' }]}>Forgot password?</Text>
           </Pressable>
         ) : null}
+
+        {GOOGLE_ENABLED ? (
+        <>
+        <View style={styles.divider}>
+          <View style={[styles.line, { backgroundColor: colors.border }]} />
+          <Text style={[TYPE.caption, { color: colors.muted }]}>or</Text>
+          <View style={[styles.line, { backgroundColor: colors.border }]} />
+        </View>
+        <Button title="Continue with Google" icon="logo-google" variant="secondary" onPress={handleGoogle} disabled={loading} />
+        </>
+        ) : null}
       </Card>
       )}
 
@@ -235,4 +282,7 @@ export default function LoginScreen({ onLogin }) {
 const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'center', paddingVertical: SPACING.xxxl },
   hero: { alignItems: 'center', marginBottom: SPACING.xxl },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginVertical: SPACING.xl },
+  line: { flex: 1, height: StyleSheet.hairlineWidth },
+  logo: { width: 230, height: 230 * 333 / 1306, marginTop: SPACING.md },
 })

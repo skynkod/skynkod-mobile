@@ -13,6 +13,8 @@ import { AuthProvider } from './utils/AuthContext'
 import { signOut } from './utils/supabase'
 import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
 import { logError } from './utils/errorLogger'
+import * as SplashScreen from 'expo-splash-screen'
+import AnimatedSplash from './components/AnimatedSplash'
 import LoginScreen from './screens/LoginScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import HomeScreen from './screens/HomeScreen-updated'
@@ -20,6 +22,9 @@ import JournalScreen from './screens/JournalScreen'
 import KodaScreen from './screens/KodaScreen-updated'
 import RoutinesScreen from './screens/RoutinesScreen-updated'
 import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
+
+// Keep the native splash up until our animated one takes over.
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 const Tab = createBottomTabNavigator()
 
@@ -83,6 +88,7 @@ function AppTabs({ userId }) {
 function AppContent() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showSplash, setShowSplash] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const { colors, isDark, loading: themeLoading } = useTheme()
   const { loading: languageLoading } = useLanguage()
@@ -175,17 +181,7 @@ function AppContent() {
 
   const statusBar = <StatusBar style={isDark ? 'light' : 'dark'} />
 
-  if (themeLoading || languageLoading || loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
-        {statusBar}
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    )
-  }
-
-  if (!user) return <>{statusBar}<LoginScreen onLogin={handleLogin} /></>
-  if (showOnboarding) return <>{statusBar}<OnboardingScreen onComplete={handleOnboardingComplete} /></>
+  const booting = themeLoading || languageLoading || loading
 
   const baseNavTheme = isDark ? DarkTheme : DefaultTheme
   const navTheme = {
@@ -193,13 +189,31 @@ function AppContent() {
     colors: { ...baseNavTheme.colors, background: colors.bg, card: colors.card, border: colors.border, primary: colors.primary, text: colors.text },
   }
 
+  let content = null
+  if (booting) {
+    content = showSplash ? null : <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1 }} />
+  } else if (!user) {
+    content = <LoginScreen onLogin={handleLogin} />
+  } else if (showOnboarding) {
+    content = <OnboardingScreen onComplete={handleOnboardingComplete} />
+  } else {
+    content = (
+      <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout}>
+        <NavigationContainer theme={navTheme}>
+          <AppTabs userId={user.userId} />
+        </NavigationContainer>
+      </AuthProvider>
+    )
+  }
+
+  // The splash sits on top of whatever screen is loading underneath, so it is
+  // never remounted while it plays.
   return (
-    <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {statusBar}
-      <NavigationContainer theme={navTheme}>
-        <AppTabs userId={user.userId} />
-      </NavigationContainer>
-    </AuthProvider>
+      {content}
+      {showSplash ? <AnimatedSplash ready={!booting} onDone={() => setShowSplash(false)} /> : null}
+    </View>
   )
 }
 
