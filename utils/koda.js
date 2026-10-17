@@ -1,18 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { logError } from './errorLogger'
+import { askKoda } from './koda-ai'
 
-const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY
-const API_URL = 'https://api.anthropic.com/v1/messages'
 const FREEMIUM_DAILY_LIMIT = 5
 const PREMIUM_DAILY_LIMIT = 999
 
+// Goes through the backend like askKoda; no model key lives in the app.
 export async function callKodaAI(userMessage) {
   try {
-    if (!API_KEY) {
-      throw new Error('API key not configured')
-    }
-
-    // ✅ Extra validation
     if (!userMessage || userMessage.trim().length === 0) {
       throw new Error('Message cannot be empty')
     }
@@ -21,41 +16,12 @@ export async function callKodaAI(userMessage) {
       throw new Error('Message too long (max 1000 chars)')
     }
 
-    const systemPrompt = `You are Koda, an AI skin care coach. You provide personalized skin care advice based on user input. Be friendly, professional, and helpful. Keep responses concise and actionable.`
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 500,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error?.message || `API error: ${response.status}`)
+    const result = await askKoda(userMessage)
+    if (result.error) {
+      throw new Error(result.message || result.error)
     }
 
-    const data = await response.json()
-    const aiMessage = data.content[0]?.text
-
-    if (!aiMessage) {
-      throw new Error('No response from API')
-    }
-
-    return aiMessage
+    return result.content
   } catch (error) {
     await logError('callKodaAI', error, { messageLength: userMessage?.length })
     throw error

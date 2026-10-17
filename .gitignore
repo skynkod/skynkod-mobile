@@ -11,6 +11,8 @@ npm-debug.*
 *.orig.*
 web-build/
 .env.local
+.env.secret
+.env*.local
 .DS_Store
 *.log
 .idea/
