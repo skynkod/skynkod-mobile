@@ -1,310 +1,172 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { getChatHistory, saveChatMessage } from '../utils/supabase'
-import { callKodaAI, checkDailyMessageLimit } from '../utils/koda'
-import { useFetchWithCache } from '../utils/useFetchWithCache'
-import { logError } from '../utils/errorLogger'
-import { useTheme } from '../utils/ThemeContext'
-import { useLanguage } from '../utils/LanguageContext'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
-import { FREEMIUM_LIMITS } from '../utils/constants'
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { askKoda, generateKodaIntroduction } from '../utils/koda-ai';
 
-export default function KodaScreen({ route }) {
-  const { userId } = route.params
-  const { isDark } = useTheme()
-  const { t } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-  const scrollViewRef = useRef(null)
+const COLORS = {
+  background: '#F7F1F5',
+  primary: '#B283AC',
+  secondary: '#7A3E76',
+  text: '#14121A',
+  muted: '#9B97A0',
+  border: '#E8E1ED',
+  card: '#FFFFFF',
+};
 
-  const { data: chatHistory, loading, error, isOffline, fetch, retry } = useFetchWithCache(
-    'chat_history',
-    () => getChatHistory(userId),
-    userId
-  )
+export default function KodaScreen() {
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: generateKodaIntroduction(), timestamp: new Date().toISOString() },
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const flatListRef = useRef(null);
 
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
-  const [todayCount, setTodayCount] = useState(0)
-  const [isPremium, setIsPremium] = useState(false)
-  const [mounted, setMounted] = useState(true)
-
-  useEffect(() => {
-    setMounted(true)
-    
-    return () => {
-      setMounted(false)
-    }
-  }, [])
+  const scrollToBottom = () => {
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
 
   useEffect(() => {
-    if (!mounted) return
-    initialize()
-  }, [userId, mounted])
-
-  useEffect(() => {
-    if (chatHistory && mounted) {
-      setMessages(chatHistory)
-      checkMessageLimit(chatHistory)
-    }
-  }, [chatHistory, mounted])
-
-  const initialize = async () => {
-    try {
-      await fetch()
-      
-      const premium = await AsyncStorage.getItem('skynkod_premium')
-      if (mounted) {
-        setIsPremium(premium === 'true')
-      }
-    } catch (err) {
-      await logError('KodaScreen_initialize', err, { userId }, 'error')
-    }
-  }
-
-  const checkMessageLimit = async (history) => {
-    try {
-      if (!history || !Array.isArray(history)) {
-        setTodayCount(0)
-        return
-      }
-
-      const today = new Date().toISOString().split('T')[0]
-      const todayMessages = history.filter(m => {
-        if (!m || !m.created_at) return false
-        const msgDate = new Date(m.created_at).toISOString().split('T')[0]
-        return msgDate === today && m.role === 'user'
-      }).length
-
-      if (mounted) {
-        setTodayCount(todayMessages)
-      }
-    } catch (err) {
-      await logError('KodaScreen_checkMessageLimit', err, { userId }, 'warn')
-    }
-  }
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return
+    if (!inputText.trim()) return;
 
-    const limit = isPremium ? FREEMIUM_LIMITS.premium_daily_chat : FREEMIUM_LIMITS.freemium_daily_chat
-    
-    if (!isPremium && todayCount >= limit) {
-      Alert.alert('Limit Reached', `You've reached your daily limit of ${limit} chats. Upgrade to Premium for unlimited access!`)
-      return
-    }
+    const userMessage = inputText.trim();
+    setInputText('');
 
-    const userMessage = { role: 'user', content: input.trim() }
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
-    Keyboard.dismiss()
-    setSending(true)
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: userMessage, timestamp: new Date().toISOString() },
+    ]);
+
+    setLoading(true);
 
     try {
-      // Save user message
-      await saveChatMessage({
-        user_id: userId,
-        role: 'user',
-        content: userMessage.content,
-      })
+      const response = await askKoda(userMessage, messages);
 
-      // Get AI response
-      const aiResponse = await callKodaAI(userMessage.content)
-
-      if (!aiResponse) {
-        throw new Error('No response from AI')
+      if (response.error) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: response.message || 'Sorry, something went wrong.',
+            timestamp: new Date().toISOString(),
+            error: true,
+          },
+        ]);
+      } else {
+        setMessages(prev => [...prev, response]);
       }
-
-      const assistantMessage = { role: 'assistant', content: aiResponse }
-      
-      if (mounted) {
-        setMessages(prev => [...prev, assistantMessage])
-      }
-
-      // Save assistant message
-      await saveChatMessage({
-        user_id: userId,
-        role: 'assistant',
-        content: aiResponse,
-      })
-
-      if (mounted) {
-        setTodayCount(todayCount + 1)
-        await fetch()
-        
-        setTimeout(() => {
-          if (scrollViewRef.current) {
-            scrollViewRef.current.scrollToEnd({ animated: true })
-          }
-        }, 100)
-      }
-    } catch (err) {
-      await logError('KodaScreen_sendMessage', err, { userId, userMessage }, 'error')
-      
-      // Remove the user message if AI call failed
-      if (mounted) {
-        setMessages(prev => prev.slice(0, -1))
-        Alert.alert('Error', err.message || 'Failed to get response from Koda')
-      }
-    } finally {
-      if (mounted) {
-        setSending(false)
-      }
+    } catch (error) {
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Oops! Connection issue. Please check your internet and API key.',
+          timestamp: new Date().toISOString(),
+          error: true,
+        },
+      ]);
     }
-  }
 
-  const handleRetry = async () => {
-    try {
-      await retry()
-    } catch (err) {
-      await logError('KodaScreen_retry', err, { userId }, 'error')
-    }
-  }
+    setLoading(false);
+    scrollToBottom();
+  };
 
-  if (loading && !messages.length) {
+  const MessageBubble = ({ message }) => {
+    const isUser = message.role === 'user';
+
     return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    )
-  }
-
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: colors.bg }]}
-    >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Koda</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>Your AI Skin Coach ✨</Text>
-      </View>
-
-      {error && (
-        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isOffline && !error && (
-        <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
-          <Text style={styles.offlineText}>📡 Offline - Cached messages only</Text>
-        </View>
-      )}
-
-      {!isPremium && (
-        <View style={[styles.limitBanner, { backgroundColor: colors.card }]}>
-          <Text style={[styles.limitText, { color: colors.text }]}>
-            🔄 Today: {todayCount}/{FREEMIUM_LIMITS.freemium_daily_chat} chats
+      <View style={[styles.messageBubbleContainer, isUser ? styles.userContainer : styles.assistantContainer]}>
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.assistantBubble,
+            message.error && styles.errorBubble,
+          ]}
+        >
+          <Text style={[styles.messageText, isUser ? styles.userText : styles.assistantText]}>
+            {message.content}
           </Text>
         </View>
-      )}
-
-      <ScrollView ref={scrollViewRef} style={styles.messagesContainer}>
-        {(!messages || messages.length === 0) && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>✨</Text>
-            <Text style={[styles.emptyText, { color: colors.text }]}>Hi! I'm Koda, your AI skin coach</Text>
-            <Text style={[styles.emptySubtext, { color: colors.muted }]}>Ask me anything about your skin!</Text>
-          </View>
-        )}
-
-        {messages && messages.map((msg, idx) => {
-          if (!msg || !msg.role) return null
-          
-          return (
-            <View
-              key={idx}
-              style={[
-                styles.message,
-                msg.role === 'user' ? styles.userMessage : styles.assistantMessage,
-                msg.role === 'user'
-                  ? { backgroundColor: colors.primary }
-                  : { backgroundColor: colors.card },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.messageText,
-                  msg.role === 'user'
-                    ? { color: 'white' }
-                    : { color: colors.text },
-                ]}
-              >
-                {msg.content || ''}
-              </Text>
-            </View>
-          )
-        })}
-      </ScrollView>
-
-      <View style={[styles.inputContainer, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.bg,
-              borderColor: colors.primary,
-              color: colors.text,
-            },
-          ]}
-          placeholder="Ask Koda..."
-          placeholderTextColor={colors.muted}
-          value={input}
-          onChangeText={setInput}
-          multiline
-          maxLength={500}
-          editable={!sending}
-        />
-        <TouchableOpacity
-          style={[
-            styles.sendBtn,
-            { backgroundColor: colors.primary, opacity: sending || !input.trim() ? 0.6 : 1 },
-          ]}
-          onPress={handleSendMessage}
-          disabled={sending || !input.trim()}
-        >
-          {sending ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.sendBtnText}>Send</Text>
-          )}
-        </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
-  )
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>✨ Koda - Your AI Skin Coach</Text>
+        <Text style={styles.subtitle}>Ask me anything about your skin</Text>
+      </View>
+
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item, idx) => idx.toString()}
+        renderItem={({ item }) => <MessageBubble message={item} />}
+        contentContainerStyle={styles.messagesContainer}
+        scrollEnabled={true}
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.inputContainer}
+      >
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Ask Koda..."
+            value={inputText}
+            onChangeText={setInputText}
+            placeholderTextColor={COLORS.muted}
+            multiline
+            maxHeight={80}
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, loading && styles.sendButtonDisabled]}
+            onPress={handleSendMessage}
+            disabled={loading || !inputText.trim()}
+          >
+            <Text style={styles.sendButtonText}>{loading ? '⏳' : '→'}</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 12, marginTop: 4 },
-  errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
-  retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
-  retryBtnText: { color: 'white', fontSize: 11, fontWeight: 'bold' },
-  offlineBanner: { padding: 10, margin: 8, borderRadius: 8 },
-  offlineText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  limitBanner: { paddingHorizontal: 16, paddingVertical: 8, margin: 8, borderRadius: 8 },
-  limitText: { fontSize: 12, fontWeight: '600' },
-  messagesContainer: { flex: 1, padding: 16 },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyEmoji: { fontSize: 60, marginBottom: 16 },
-  emptyText: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  emptySubtext: { fontSize: 14 },
-  message: { marginBottom: 12, padding: 12, borderRadius: 12, maxWidth: '85%' },
-  userMessage: { alignSelf: 'flex-end' },
-  assistantMessage: { alignSelf: 'flex-start' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
+  subtitle: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
+  messagesContainer: { paddingHorizontal: 16, paddingVertical: 12 },
+  messageBubbleContainer: { marginVertical: 6 },
+  userContainer: { alignItems: 'flex-end' },
+  assistantContainer: { alignItems: 'flex-start' },
+  messageBubble: { maxWidth: '80%', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
+  userBubble: { backgroundColor: COLORS.primary },
+  assistantBubble: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border },
+  errorBubble: { backgroundColor: '#FFEBEE', borderColor: '#F44336' },
   messageText: { fontSize: 14, lineHeight: 20 },
-  inputContainer: { borderTopWidth: 1, padding: 12, flexDirection: 'row', gap: 8 },
-  input: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 14, maxHeight: 100 },
-  sendBtn: { paddingHorizontal: 20, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  sendBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-})
+  userText: { color: '#FFF' },
+  assistantText: { color: COLORS.text },
+  inputContainer: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.background },
+  inputRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  input: { flex: 1, backgroundColor: COLORS.card, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border },
+  sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
+  sendButtonDisabled: { opacity: 0.5 },
+  sendButtonText: { fontSize: 20, fontWeight: 'bold' },
+});

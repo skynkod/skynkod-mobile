@@ -1,250 +1,172 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch, ActivityIndicator } from 'react-native'
-import { signOut } from '../utils/supabase'
+import { Text, Alert, ActivityIndicator } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useTheme } from '../utils/ThemeContext'
 import { useLanguage } from '../utils/LanguageContext'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as Notifications from 'expo-notifications'
+import { useAuth } from '../utils/AuthContext'
 import { logError } from '../utils/errorLogger'
+import { deleteAccount } from '../utils/account'
+import { Screen, Card, SectionHeader, ListRow, SegmentedControl, useColors } from '../components/ui'
+import { SPACING, TYPE } from '../utils/theme'
 
-export default function SettingsScreen({ route, navigation }) {
-  const { userId } = route.params
-  const { isDark, toggleTheme } = useTheme()
+const LANGS = [
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+]
+
+export default function SettingsScreen({ route }) {
+  const userId = route?.params?.userId
+  const colors = useColors()
+  const { themeMode, setThemeMode } = useTheme()
   const { language, setLanguage } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-  const [loggingOut, setLoggingOut] = useState(false)
-  const [clearingCache, setClearingCache] = useState(false)
+  const { user, logout } = useAuth()
+  const [busy, setBusy] = useState(null)
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', onPress: () => {} },
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Logout',
+        text: 'Log out',
+        style: 'destructive',
         onPress: async () => {
-          setLoggingOut(true)
+          setBusy('logout')
           try {
-            // 1. Sign out from Supabase
-            const result = await signOut()
-            if (!result || !result.success) {
-              throw new Error(result?.error || 'Logout failed')
-            }
-
-            // 2. Clear AsyncStorage user data
-            try {
-              await AsyncStorage.removeItem('skynkod_user')
-            } catch (err) {
-              await logError('SettingsScreen_removeUser', err, { userId }, 'warn')
-            }
-
-            // 3. Clear push token from storage
-            try {
-              const token = await AsyncStorage.getItem(`push_token_${userId}`)
-              if (token) {
-                await AsyncStorage.removeItem(`push_token_${userId}`)
-              }
-            } catch (err) {
-              await logError('SettingsScreen_removePushToken', err, { userId }, 'warn')
-            }
-
-            // 4. Cancel all scheduled notifications
-            try {
-              await Notifications.cancelAllScheduledNotificationsAsync()
-            } catch (err) {
-              await logError('SettingsScreen_cancelNotifications', err, { userId }, 'warn')
-            }
-
-            // 5. Clear cache data
-            try {
-              const cacheKeys = ['journal_entries', 'user_products', 'today_routine', 'expenses', 'user_photos', 'chat_history', 'progress_photos']
-              for (const key of cacheKeys) {
-                await AsyncStorage.removeItem(`cache_${key}`)
-                await AsyncStorage.removeItem(`cache_${key}_timestamp`)
-              }
-            } catch (err) {
-              await logError('SettingsScreen_clearCache', err, { userId }, 'warn')
-            }
-
-            // 6. Log the logout
-            await logError('SettingsScreen_logout', new Error('User logout - clean exit'), { userId }, 'info')
-
-            // 7. Show success alert first, then navigate
-            Alert.alert('Success', 'You have been logged out', [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // NOW reset navigation after user acknowledges
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'LoginScreen' }],
-                  })
-                },
-              },
-            ])
+            await logout()
           } catch (error) {
-            await logError('SettingsScreen_logout_error', error, { userId }, 'error')
+            await logError('SettingsScreen_logout', error, { userId })
             Alert.alert('Error', error?.message || 'Logout failed. Please try again.')
-            setLoggingOut(false)
+            setBusy(null)
           }
         },
       },
     ])
   }
 
-  const handleClearAllData = () => {
-    Alert.alert('Clear All Data', 'This will delete all cached data. Continue?', [
-      { text: 'Cancel', onPress: () => {} },
-      {
-        text: 'Clear',
-        onPress: async () => {
-          setClearingCache(true)
-          try {
-            const cacheKeys = ['journal_entries', 'user_products', 'today_routine', 'expenses', 'user_photos', 'chat_history', 'progress_photos', 'error_logs']
-            for (const key of cacheKeys) {
-              try {
-                await AsyncStorage.removeItem(`cache_${key}`)
-                await AsyncStorage.removeItem(`cache_${key}_timestamp`)
-              } catch (err) {
-                await logError('SettingsScreen_removeCacheKey', err, { userId, key }, 'warn')
-              }
-            }
-            await logError('SettingsScreen_clearCache_success', new Error('Cache cleared'), { userId }, 'info')
-            Alert.alert('Success', 'Cache cleared')
-          } catch (error) {
-            await logError('SettingsScreen_clearCache_error', error, { userId }, 'error')
-            Alert.alert('Error', error?.message || 'Failed to clear cache')
-          } finally {
-            setClearingCache(false)
-          }
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete account',
+      'This permanently deletes your account, journal, photos, routines and chats. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => Alert.alert('Are you sure?', 'Your data will be gone forever.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete forever',
+              style: 'destructive',
+              onPress: async () => {
+                setBusy('delete')
+                const result = await deleteAccount()
+                if (!result.success) {
+                  await logError('SettingsScreen_deleteAccount', new Error(result.error), { userId })
+                  Alert.alert('Error', "Your account couldn't be deleted. Please try again.")
+                  setBusy(null)
+                  return
+                }
+                Alert.alert('Account deleted', 'Your account and data have been deleted.')
+                try {
+                  await logout()
+                } catch (error) {
+                  await logError('SettingsScreen_deleteAccountLogout', error, { userId }, 'warn')
+                }
+              },
+            },
+          ]),
         },
-      },
-    ])
-  }
-
-  const handleToggleTheme = async () => {
-    try {
-      await toggleTheme()
-    } catch (error) {
-      await logError('SettingsScreen_toggleTheme', error, { userId }, 'error')
-      Alert.alert('Error', 'Failed to toggle theme')
-    }
-  }
-
-  const handleSetLanguage = async (lang) => {
-    try {
-      if (!['en', 'es', 'fr'].includes(lang)) {
-        throw new Error('Invalid language')
-      }
-      await setLanguage(lang)
-    } catch (error) {
-      await logError('SettingsScreen_setLanguage', error, { userId, lang }, 'error')
-      Alert.alert('Error', 'Failed to set language')
-    }
-  }
-
-  if (loggingOut) {
-    return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.muted }]}>Logging out...</Text>
-      </View>
+      ]
     )
   }
 
+  const handleClearCache = () => {
+    Alert.alert('Clear cache', 'Cached data will be downloaded again next time.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        onPress: async () => {
+          setBusy('cache')
+          try {
+            const keys = ['journal_entries', 'user_products', 'today_routine', 'expenses', 'user_photos', 'chat_history', 'progress_photos', 'analysis_stats']
+            await AsyncStorage.multiRemove(keys.flatMap(k => [`cache_${k}`, `cache_${k}_timestamp`]))
+            Alert.alert('Done', 'Cache cleared')
+          } catch (error) {
+            await logError('SettingsScreen_clearCache', error, { userId })
+            Alert.alert('Error', 'Failed to clear cache')
+          } finally {
+            setBusy(null)
+          }
+        },
+      },
+    ])
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-      </View>
+    <Screen back title="Settings" subtitle={user?.email}>
+      <SectionHeader title="Appearance" />
+      <SegmentedControl
+        value={themeMode}
+        onChange={setThemeMode}
+        options={[
+          { value: 'light', label: 'Light', icon: 'sunny-outline' },
+          { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+          { value: 'auto', label: 'Auto', icon: 'time-outline' },
+        ]}
+      />
+      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>
+        Auto switches to dark mode between 8 pm and 6 am.
+      </Text>
 
-      <ScrollView style={styles.content}>
-        {/* APPEARANCE */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+      <SectionHeader title="Language" style={{ marginTop: SPACING.xxl }} />
+      <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
+        {LANGS.map((lang, idx) => (
+          <ListRow
+            key={lang.code}
+            icon={undefined}
+            title={`${lang.flag}  ${lang.label}`}
+            onPress={() => setLanguage(lang.code)}
+            right={language === lang.code ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+            last={idx === LANGS.length - 1}
+          />
+        ))}
+      </Card>
 
-          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
-            <Switch
-              value={isDark}
-              onValueChange={handleToggleTheme}
-              trackColor={{ false: '#ccc', true: colors.primary }}
-              thumbColor="white"
-            />
-          </View>
-        </View>
+      <SectionHeader title="Data & account" style={{ marginTop: SPACING.xxl }} />
+      <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
+        <ListRow
+          icon="trash-outline"
+          title="Clear cache"
+          subtitle="Free up space on this device"
+          onPress={handleClearCache}
+          right={busy === 'cache' ? <ActivityIndicator color={colors.primary} /> : undefined}
+        />
+        <ListRow
+          icon="log-out-outline"
+          iconColor={colors.danger}
+          iconBackground={colors.dangerSoft}
+          title="Log out"
+          destructive
+          onPress={handleLogout}
+          right={busy === 'logout' ? <ActivityIndicator color={colors.danger} /> : null}
+        />
+        <ListRow
+          icon="person-remove-outline"
+          iconColor={colors.danger}
+          iconBackground={colors.dangerSoft}
+          title="Delete account"
+          subtitle="Permanently delete your account and data"
+          destructive
+          onPress={handleDeleteAccount}
+          right={busy === 'delete' ? <ActivityIndicator color={colors.danger} /> : null}
+          last
+        />
+      </Card>
 
-        {/* LANGUAGE */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Language</Text>
-
-          {['en', 'es', 'fr'].map(lang => (
-            <TouchableOpacity
-              key={lang}
-              style={[styles.languageOption, { borderBottomColor: colors.border }]}
-              onPress={() => handleSetLanguage(lang)}
-            >
-              <Text style={[styles.languageLabel, { color: colors.text }]}>
-                {lang === 'en' ? '🇺🇸 English' : lang === 'es' ? '🇪🇸 Español' : '🇫🇷 Français'}
-              </Text>
-              {language === lang && <Text style={{ color: colors.primary }}>✓</Text>}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* DATA */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Data</Text>
-
-          <TouchableOpacity
-            style={[styles.settingButton, { borderColor: '#FF6B6B', opacity: clearingCache ? 0.6 : 1 }]}
-            onPress={handleClearAllData}
-            disabled={clearingCache}
-          >
-            {clearingCache ? (
-              <ActivityIndicator color="#FF6B6B" />
-            ) : (
-              <Text style={{ color: '#FF6B6B', fontWeight: '600', fontSize: 14 }}>Clear Cache</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* ACCOUNT */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <TouchableOpacity
-            style={[styles.logoutButton, { backgroundColor: '#FF6B6B', opacity: loggingOut ? 0.6 : 1 }]}
-            onPress={handleLogout}
-            disabled={loggingOut}
-          >
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* VERSION INFO */}
-        <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
-          <Text style={[styles.infoText, { color: colors.muted }]}>Skynkod v1.0.0</Text>
-          <Text style={[styles.infoText, { color: colors.muted }]}>Your AI Skin Coach</Text>
-        </View>
-      </ScrollView>
-    </View>
+      <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>
+        Skynkod v1.0.0 · Your AI skin coach
+      </Text>
+    </Screen>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  content: { flex: 1, padding: 16 },
-  loadingText: { marginTop: 12, fontSize: 14 },
-  section: { borderRadius: 12, marginBottom: 16, overflow: 'hidden' },
-  sectionTitle: { fontWeight: 'bold', fontSize: 14, padding: 16, paddingBottom: 8 },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  settingLabel: { fontSize: 14, fontWeight: '500' },
-  languageOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  languageLabel: { fontSize: 14 },
-  settingButton: { borderWidth: 1, borderRadius: 8, paddingVertical: 12, alignItems: 'center', margin: 16 },
-  logoutButton: { borderRadius: 8, paddingVertical: 14, alignItems: 'center', margin: 16 },
-  logoutButtonText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  infoSection: { borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 24 },
-  infoText: { fontSize: 12, marginVertical: 4 },
-})

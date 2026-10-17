@@ -1,106 +1,82 @@
-import React from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native'
-import { useTheme } from '../utils/ThemeContext'
-import { useLanguage } from '../utils/LanguageContext'
-import { logError } from '../utils/errorLogger'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { generateEmergencyPlan, calculateSeverity, getSOS_Tips } from '../utils/emergency-mode';
+import { Screen, Card, Button, Chip, Stepper, SectionHeader, Badge, useColors } from '../components/ui';
+import { SPACING, RADIUS, TYPE } from '../utils/theme';
+
+const ISSUES = [
+  { value: 'acne', label: 'Breakout', icon: 'flame-outline' },
+  { value: 'redness', label: 'Redness', icon: 'thermometer-outline' },
+  { value: 'dryness', label: 'Dryness', icon: 'water-outline' },
+];
+
+const SEVERITY_TONE = { low: 'success', moderate: 'warning', high: 'danger' };
 
 export default function EmergencyScreen() {
-  const { isDark } = useTheme()
-  const { t } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  const colors = useColors();
+  const [issue, setIssue] = useState('acne');
+  const [score, setScore] = useState(5);
+  const [plan, setPlan] = useState(null);
 
-  const emergencyContacts = [
-    { name: 'Emergency Services', number: '911', emoji: '🚨' },
-    { name: 'Poison Control', number: '1-800-222-1222', emoji: '☠️' },
-    { name: 'Dermatology Hotline', number: '1-800-SKIN-911', emoji: '🏥' },
-  ]
-
-  const handleCall = async (number) => {
-    try {
-      const url = `tel:${number}`
-      const supported = await Linking.canOpenURL(url)
-      if (supported) {
-        await Linking.openURL(url)
-      } else {
-        Alert.alert('Error', 'Phone calls not supported on this device')
-      }
-    } catch (error) {
-      await logError('EmergencyScreen_handleCall', error, { number }, 'error')
-      Alert.alert('Error', 'Failed to make call')
-    }
-  }
+  const generate = () => {
+    const severity = calculateSeverity(score);
+    setPlan({ days: generateEmergencyPlan(issue, severity) || {}, severity });
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Emergency Contacts</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>Important numbers</Text>
-      </View>
-
-      <ScrollView style={styles.content}>
-        <View style={[styles.warningCard, { backgroundColor: '#FF6B6B' }]}>
-          <Text style={styles.warningEmoji}>⚠️</Text>
-          <Text style={styles.warningTitle}>For Skin Emergencies</Text>
-          <Text style={styles.warningText}>
-            If you experience severe allergic reactions, severe burns, or signs of infection, contact emergency services immediately.
-          </Text>
+    <Screen back title="Emergency mode" subtitle="A calm 7-day recovery plan">
+      <Card>
+        <Text style={[TYPE.bodyStrong, { color: colors.text, marginBottom: SPACING.md }]}>What's going on?</Text>
+        <View style={styles.chips}>
+          {ISSUES.map(i => (
+            <Chip key={i.value} label={i.label} icon={i.icon} selected={issue === i.value} onPress={() => { setIssue(i.value); setPlan(null); }} />
+          ))}
         </View>
+        <View style={{ height: SPACING.xl }} />
+        <Stepper label="How severe?" hint="1 = mild · 10 = very severe" value={score} min={1} max={10} onChange={v => { setScore(v); setPlan(null); }} />
+        <Button title="Generate my plan" icon="medkit-outline" onPress={generate} />
+      </Card>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Dial</Text>
+      {plan ? (
+        <>
+          <View style={[styles.planHead]}>
+            <SectionHeader title="Your recovery plan" style={{ marginBottom: 0, marginTop: 0 }} />
+            <Badge label={plan.severity} tone={SEVERITY_TONE[plan.severity] || 'primary'} />
+          </View>
+          {Object.values(plan.days).map((steps, idx) => (
+            <Card key={idx} style={styles.dayCard}>
+              <View style={[styles.dayNum, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[TYPE.overline, { color: colors.primary, fontSize: 9 }]}>Day</Text>
+                <Text style={[TYPE.subheading, { color: colors.primary }]}>{idx + 1}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 4 }}>
+                {(steps || []).map((step, i) => (
+                  <Text key={i} style={[TYPE.body, { color: colors.text }]}>{step}</Text>
+                ))}
+              </View>
+            </Card>
+          ))}
 
-        {emergencyContacts.map((contact, idx) => (
-          <TouchableOpacity
-            key={idx}
-            style={[styles.contactCard, { backgroundColor: colors.card }]}
-            onPress={() => handleCall(contact.number)}
-          >
-            <Text style={styles.contactEmoji}>{contact.emoji}</Text>
-            <View style={styles.contactInfo}>
-              <Text style={[styles.contactName, { color: colors.text }]}>
-                {contact.name}
-              </Text>
-              <Text style={[styles.contactNumber, { color: colors.primary }]}>
-                {contact.number}
-              </Text>
+          <Card tone="soft" style={{ marginTop: SPACING.md }}>
+            <View style={styles.tipsHead}>
+              <Ionicons name="alert-circle-outline" size={18} color={colors.primary} />
+              <Text style={[TYPE.subheading, { color: colors.text }]}>Important</Text>
             </View>
-            <Text style={[styles.callBtn, { color: colors.primary }]}>📞 Call</Text>
-          </TouchableOpacity>
-        ))}
-
-        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>When to Seek Help</Text>
-          <Text style={[styles.infoText, { color: colors.muted }]}>
-            • Severe allergic reactions{'\n'}
-            • Signs of infection (fever, pus){'\n'}
-            • Chemical burns{'\n'}
-            • Severe pain or swelling{'\n'}
-            • Persistent rashes that don't improve
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
-  )
+            {getSOS_Tips().map((tip, idx) => (
+              <Text key={idx} style={[TYPE.body, { color: colors.textSecondary, marginTop: 6 }]}>{tip}</Text>
+            ))}
+          </Card>
+        </>
+      ) : null}
+    </Screen>
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 12, marginTop: 4 },
-  content: { flex: 1, padding: 16 },
-  warningCard: { borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 24 },
-  warningEmoji: { fontSize: 40, marginBottom: 12 },
-  warningTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  warningText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
-  contactCard: { borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  contactEmoji: { fontSize: 32, marginRight: 12 },
-  contactInfo: { flex: 1 },
-  contactName: { fontWeight: 'bold', fontSize: 14, marginBottom: 4 },
-  contactNumber: { fontSize: 13, fontWeight: '600' },
-  callBtn: { fontSize: 18, fontWeight: 'bold' },
-  infoCard: { borderRadius: 12, padding: 16, marginBottom: 24 },
-  infoTitle: { fontWeight: 'bold', fontSize: 14, marginBottom: 12 },
-  infoText: { fontSize: 13, lineHeight: 20 },
-})
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  planHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.xxl, marginBottom: SPACING.md },
+  dayCard: { flexDirection: 'row', gap: SPACING.lg, marginBottom: SPACING.md },
+  dayNum: { width: 48, height: 48, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
+  tipsHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+});

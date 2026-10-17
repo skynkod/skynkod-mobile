@@ -451,9 +451,13 @@ export async function getJournalStats(userId, daysBack = 30) {
       Great: 0,
     }
 
+    // The Journal screen saves moods as emojis; older entries used labels.
+    const EMOJI_TO_MOOD = { '😭': 'Poor', '😕': 'Poor', '😐': 'Okay', '🙂': 'Good', '😄': 'Great' }
+
     data.forEach(entry => {
-      if (entry.mood && moodCounts.hasOwnProperty(entry.mood)) {
-        moodCounts[entry.mood] += 1
+      const mood = EMOJI_TO_MOOD[entry.mood] || entry.mood
+      if (mood && moodCounts.hasOwnProperty(mood)) {
+        moodCounts[mood] += 1
       }
     })
 

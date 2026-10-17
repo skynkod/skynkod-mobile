@@ -3,14 +3,31 @@
     "name": "skynkod",
     "slug": "skynkod",
     "version": "1.0.0",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTabletMode": true
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.anonymous.skynkod"
     },
     "plugins": [
-      "expo-barcode-scanner",
       "expo-camera",
-      "expo-image-picker"
-    ]
+      "expo-image-picker",
+      "expo-image",
+      "expo-splash-screen",
+      "expo-web-browser"
+    ],
+    "android": {
+      "package": "com.anonymous.skynkod",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7ef267a3-e2d1-4f13-b949-7f6391a41a82"
+      }
+    }
   }
 }

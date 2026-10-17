@@ -1,133 +1,72 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
+import Constants from 'expo-constants'
 
-// Configure notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
-    shouldSetBadge: true,
+    shouldSetBadge: false,
   }),
 })
 
 export const requestNotificationPermissions = async () => {
   try {
-    const { status } = await Notifications.requestPermissionsAsync()
+    const { status: existing } = await Notifications.getPermissionsAsync()
+    let status = existing
+    if (existing !== 'granted') {
+      const response = await Notifications.requestPermissionsAsync()
+      status = response.status
+    }
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      })
+    }
     return status === 'granted'
   } catch (error) {
-    console.error('Request permissions error:', error)
+    console.warn('Notification permission error:', error)
     return false
   }
 }
 
 export const getExpoPushToken = async () => {
   try {
-    const token = await Notifications.getExpoPushTokenAsync()
-    return token.data
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId })
+    return data
   } catch (error) {
-    console.error('Get push token error:', error)
+    console.warn('Push token error:', error)
     return null
   }
 }
 
-export const scheduleMorningReminder = async (userId) => {
+const scheduleDaily = async (id, title, body, hour, minute) => {
   try {
-    const saved = await AsyncStorage.getItem(`morning_reminder_${userId}`)
-    if (saved === 'disabled') return
-
+    await Notifications.cancelScheduledNotificationAsync(id)
+  } catch (_) {}
+  try {
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌅 Good Morning!',
-        body: 'Time for your morning skincare routine',
-        sound: 'default',
-        badge: 1,
-      },
+      identifier: id,
+      content: { title, body, sound: true },
       trigger: {
-        hour: 8,
-        minute: 0,
-        repeats: true,
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
       },
     })
   } catch (error) {
-    console.error('Schedule morning reminder error:', error)
+    console.warn(`Schedule ${id} error:`, error)
   }
 }
 
-export const scheduleEveningReminder = async (userId) => {
-  try {
-    const saved = await AsyncStorage.getItem(`evening_reminder_${userId}`)
-    if (saved === 'disabled') return
+export const scheduleMorningReminder = (userId) =>
+  scheduleDaily(`morning-${userId}`, "Skynkod", "Ta routine du matin t'attend ☀️", 8, 0)
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🌙 Evening Routine',
-        body: 'Time for your evening skincare routine',
-        sound: 'default',
-        badge: 1,
-      },
-      trigger: {
-        hour: 20,
-        minute: 0,
-        repeats: true,
-      },
-    })
-  } catch (error) {
-    console.error('Schedule evening reminder error:', error)
-  }
-}
+export const scheduleEveningReminder = (userId) =>
+  scheduleDaily(`evening-${userId}`, "Skynkod", "Ta routine du soir, c'est le moment 🌙", 21, 0)
 
-export const scheduleJournalReminder = async (userId) => {
-  try {
-    const saved = await AsyncStorage.getItem(`journal_reminder_${userId}`)
-    if (saved === 'disabled') return
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '📔 Journal Check-in',
-        body: 'How is your skin feeling today?',
-        sound: 'default',
-        badge: 1,
-      },
-      trigger: {
-        hour: 21,
-        minute: 0,
-        repeats: true,
-      },
-    })
-  } catch (error) {
-    console.error('Schedule journal reminder error:', error)
-  }
-}
-
-export const cancelAllNotifications = async () => {
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync()
-  } catch (error) {
-    console.error('Cancel notifications error:', error)
-  }
-}
-
-export const disableReminder = async (userId, reminderType) => {
-  try {
-    await AsyncStorage.setItem(`${reminderType}_reminder_${userId}`, 'disabled')
-  } catch (error) {
-    console.error('Disable reminder error:', error)
-  }
-}
-
-export const enableReminder = async (userId, reminderType) => {
-  try {
-    await AsyncStorage.removeItem(`${reminderType}_reminder_${userId}`)
-  } catch (error) {
-    console.error('Enable reminder error:', error)
-  }
-}
-
-export const isReminderEnabled = async (userId, reminderType) => {
-  try {
-    const saved = await AsyncStorage.getItem(`${reminderType}_reminder_${userId}`)
-    return saved !== 'disabled'
-  } catch (error) {
-    return true
-  }
-}
+export const scheduleJournalReminder = (userId) =>
+  scheduleDaily(`journal-${userId}`, "Skynkod", "Comment va ta peau aujourd'hui ? Note-le dans ton journal 📔", 20, 0)

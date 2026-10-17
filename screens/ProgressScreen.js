@@ -1,149 +1,92 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
+import React, { useEffect } from 'react'
+import { View, Text, StyleSheet, Image } from 'react-native'
 import { getUserPhotos } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
-import { logError } from '../utils/errorLogger'
-import { useTheme } from '../utils/ThemeContext'
-import { useLanguage } from '../utils/LanguageContext'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { Screen, Card, Button, EmptyState, Banner, LoadingView, SectionHeader, useColors } from '../components/ui'
+import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
-export default function ProgressScreen({ route }) {
+export default function ProgressScreen({ route, navigation }) {
   const { userId } = route.params
-  const { isDark } = useTheme()
-  const { t } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-
-  const { data: photos, loading, error, isOffline, fetch, retry } = useFetchWithCache(
-    'progress_photos',
-    () => getUserPhotos(userId),
-    userId
-  )
-
-  const [mounted, setMounted] = useState(true)
+  const colors = useColors()
+  const { data: photos, loading, error, isOffline, fetch, retry } = useFetchWithCache('progress_photos', () => getUserPhotos(userId), userId)
 
   useEffect(() => {
-    setMounted(true)
-    
-    return () => {
-      setMounted(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return
     fetch()
-  }, [userId, fetch, mounted])
+  }, [fetch])
 
-  const handleRetry = async () => {
-    try {
-      await retry()
-    } catch (err) {
-      await logError('ProgressScreen_retry', err, { userId }, 'error')
-    }
-  }
+  if (loading && !photos) return <LoadingView />
 
-  if (loading && !photos) {
-    return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    )
-  }
+  const list = Array.isArray(photos) ? photos.filter(p => p?.id) : []
+  const first = list[list.length - 1]
+  const latest = list[0]
+  const days = first && latest ? Math.max(0, Math.round((new Date(latest.created_at) - new Date(first.created_at)) / 86400000)) : 0
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Progress</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>See your skin improvements</Text>
+    <Screen back title="Progress" subtitle="Your skin journey over time">
+      {error ? <Banner message={error} actionLabel="Retry" onAction={retry} /> : null}
+      {isOffline && !error ? <Banner tone="info" message="Offline — showing saved data" /> : null}
+
+      <View style={styles.stats}>
+        <Card style={styles.stat}>
+          <Text style={[TYPE.title, { color: colors.primary }]}>{list.length}</Text>
+          <Text style={[TYPE.caption, { color: colors.muted }]}>Photos</Text>
+        </Card>
+        <Card style={styles.stat}>
+          <Text style={[TYPE.title, { color: colors.primary }]}>{days}</Text>
+          <Text style={[TYPE.caption, { color: colors.muted }]}>Days tracked</Text>
+        </Card>
       </View>
 
-      {error && (
-        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isOffline && !error && (
-        <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
-          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
-        </View>
-      )}
-
-      <ScrollView style={styles.content}>
-        <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.statsLabel, { color: colors.text }]}>Total Photos</Text>
-          <Text style={[styles.statsValue, { color: colors.primary }]}>
-            {photos && Array.isArray(photos) ? photos.length : 0}
-          </Text>
-        </View>
-
-        {!photos || !Array.isArray(photos) || photos.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📸</Text>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No photos yet</Text>
-            <Text style={[styles.emptyDesc, { color: colors.muted }]}>
-              Start taking progress photos to track your skin improvements
-            </Text>
-          </View>
-        ) : (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Progress Timeline</Text>
-            {photos.map((photo, idx) => {
-              if (!photo || !photo.id) return null
-              
-              return (
-                <View key={photo.id} style={[styles.photoItem, { backgroundColor: colors.card }]}>
-                  <Text style={[styles.photoNumber, { color: colors.text }]}>
-                    Photo {idx + 1}
-                  </Text>
-                  <Text style={[styles.photoDate, { color: colors.muted }]}>
-                    {photo.created_at 
-                      ? new Date(photo.created_at).toLocaleDateString() 
-                      : 'Unknown date'}
-                  </Text>
-                  {photo.notes && (
-                    <Text style={[styles.photoNotes, { color: colors.text }]}>
-                      {photo.notes}
+      {list.length === 0 ? (
+        <EmptyState icon="trending-up-outline" title="No photos yet" description="Take progress photos to see your skin change over time." action="Add a photo" onAction={() => navigation.navigate('Photos')} />
+      ) : (
+        <>
+          {list.length > 1 && first?.photo_url && latest?.photo_url ? (
+            <>
+              <SectionHeader title="Before / after" />
+              <View style={styles.compare}>
+                {[{ p: first, label: 'First' }, { p: latest, label: 'Latest' }].map(({ p, label }) => (
+                  <View key={label} style={{ flex: 1 }}>
+                    <Image source={{ uri: p.photo_url }} style={[styles.compareImg, { backgroundColor: colors.surface }]} />
+                    <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6, textAlign: 'center' }]}>
+                      {label} · {new Date(p.created_at).toLocaleDateString()}
                     </Text>
-                  )}
-                </View>
-              )
-            })}
-          </>
-        )}
-      </ScrollView>
-    </View>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          <SectionHeader title="Timeline" style={{ marginTop: SPACING.xl }} />
+          {list.map((photo, idx) => (
+            <View key={photo.id} style={styles.timelineRow}>
+              <View style={styles.dotCol}>
+                <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                {idx < list.length - 1 ? <View style={[styles.line, { backgroundColor: colors.border }]} /> : null}
+              </View>
+              <Card style={{ flex: 1, marginBottom: SPACING.md }}>
+                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>Photo {list.length - idx}</Text>
+                <Text style={[TYPE.caption, { color: colors.muted }]}>
+                  {photo.created_at ? new Date(photo.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : 'Unknown date'}
+                </Text>
+                {photo.notes ? <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{photo.notes}</Text> : null}
+              </Card>
+            </View>
+          ))}
+          <Button title="Add a photo" icon="camera-outline" variant="secondary" onPress={() => navigation.navigate('Photos')} style={{ marginTop: SPACING.sm }} />
+        </>
+      )}
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 12, marginTop: 4 },
-  errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
-  retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
-  retryBtnText: { color: 'white', fontSize: 11, fontWeight: 'bold' },
-  offlineBanner: { padding: 10, margin: 8, borderRadius: 8 },
-  offlineText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  content: { flex: 1, padding: 16 },
-  statsCard: { borderRadius: 12, padding: 16, marginBottom: 24 },
-  statsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  statsValue: { fontSize: 28, fontWeight: 'bold' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyEmoji: { fontSize: 60, marginBottom: 12 },
-  emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  emptyDesc: { fontSize: 14, textAlign: 'center', maxWidth: 280, lineHeight: 20 },
-  photoItem: { borderRadius: 12, padding: 16, marginBottom: 12 },
-  photoNumber: { fontWeight: 'bold', fontSize: 14 },
-  photoDate: { fontSize: 12, marginTop: 4 },
-  photoNotes: { fontSize: 13, marginTop: 8, lineHeight: 18 },
+  stats: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xl },
+  stat: { flex: 1, alignItems: 'center' },
+  compare: { flexDirection: 'row', gap: SPACING.md },
+  compareImg: { width: '100%', aspectRatio: 3 / 4, borderRadius: RADIUS.lg },
+  timelineRow: { flexDirection: 'row', gap: SPACING.md },
+  dotCol: { width: 14, alignItems: 'center', paddingTop: SPACING.lg },
+  dot: { width: 12, height: 12, borderRadius: 6 },
+  line: { width: 2, flex: 1, marginTop: 4 },
 })

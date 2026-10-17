@@ -1,226 +1,131 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
-import { useTheme } from '../utils/ThemeContext'
-import { useLanguage } from '../utils/LanguageContext'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
 import { SKIN_TYPES } from '../utils/constants'
+import { Screen, Card, Button, ProgressBar, useColors } from '../components/ui'
+import { SPACING, RADIUS, TYPE } from '../utils/theme'
+
+const QUESTIONS = [
+  {
+    question: 'How does your skin usually feel?',
+    answers: [
+      { text: 'Dry and tight', type: 'Dry' },
+      { text: 'Oily and shiny', type: 'Oily' },
+      { text: 'Oily T-zone, dry cheeks', type: 'Combination' },
+      { text: 'Easily irritated', type: 'Sensitive' },
+    ],
+  },
+  {
+    question: 'How does your skin react to new products?',
+    answers: [
+      { text: 'Gets irritated easily', type: 'Sensitive' },
+      { text: 'Usually fine, sometimes tight', type: 'Dry' },
+      { text: 'No major reactions', type: 'Oily' },
+      { text: 'Varies by area', type: 'Combination' },
+    ],
+  },
+  {
+    question: 'What is your main skin concern?',
+    answers: [
+      { text: 'Acne and oiliness', type: 'Oily' },
+      { text: 'Dryness and flaking', type: 'Dry' },
+      { text: 'Sensitivity and redness', type: 'Sensitive' },
+      { text: 'A bit of everything', type: 'Combination' },
+    ],
+  },
+]
 
 export default function SkinTypeQuizScreen({ route }) {
   const { userId } = route.params
-  const { isDark } = useTheme()
-  const { t } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-
-  const questions = [
-    {
-      question: 'How does your skin usually feel?',
-      answers: [
-        { text: 'Dry and tight', type: 'Dry' },
-        { text: 'Oily and shiny', type: 'Oily' },
-        { text: 'Balanced', type: 'Combination' },
-        { text: 'Sensitive', type: 'Sensitive' },
-      ],
-    },
-    {
-      question: 'How does your skin react to new products?',
-      answers: [
-        { text: 'Gets irritated easily', type: 'Sensitive' },
-        { text: 'Reacts well usually', type: 'Dry' },
-        { text: 'No major reactions', type: 'Oily' },
-        { text: 'Varies by area', type: 'Combination' },
-      ],
-    },
-    {
-      question: 'What is your main skin concern?',
-      answers: [
-        { text: 'Acne and oiliness', type: 'Oily' },
-        { text: 'Dryness and flaking', type: 'Dry' },
-        { text: 'Sensitivity and redness', type: 'Sensitive' },
-        { text: 'Mixed concerns', type: 'Combination' },
-      ],
-    },
-  ]
-
-  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const colors = useColors()
+  const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState([])
   const [result, setResult] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
-  const handleAnswerSelect = (skinType) => {
-    const newAnswers = [...answers, skinType]
-    setAnswers(newAnswers)
-
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-    } else {
-      calculateResult(newAnswers)
+  const choose = (type) => {
+    const next = [...answers, type]
+    setAnswers(next)
+    if (current < QUESTIONS.length - 1) {
+      setCurrent(current + 1)
+      return
     }
+    const counts = next.reduce((acc, t) => ({ ...acc, [t]: (acc[t] || 0) + 1 }), {})
+    setResult(Object.keys(counts).reduce((a, b) => (counts[a] >= counts[b] ? a : b)))
   }
 
-  const calculateResult = (allAnswers) => {
-    const counts = {}
-    allAnswers.forEach(type => {
-      counts[type] = (counts[type] || 0) + 1
-    })
-
-    const skinType = Object.keys(counts).reduce((a, b) =>
-      counts[a] > counts[b] ? a : b
-    )
-
-    setResult(skinType)
+  const restart = () => {
+    setCurrent(0)
+    setAnswers([])
+    setResult(null)
+    setSaved(false)
   }
 
-  const handleSaveResult = async () => {
-    if (!result) return
-
+  const save = async () => {
     setSaving(true)
     try {
-      const success = await updateUserProfile(userId, { skin_type: result })
-      if (success) {
-        Alert.alert('Success', `Your skin type is ${result}!`)
-        setCurrentQuestion(0)
-        setAnswers([])
-        setResult(null)
-      } else {
-        throw new Error('Failed to save result')
-      }
+      const ok = await updateUserProfile(userId, { skin_type: result })
+      if (!ok) throw new Error('Failed to save result')
+      setSaved(true)
     } catch (error) {
-      await logError('SkinTypeQuizScreen_saveResult', error, { userId, result }, 'error')
+      await logError('SkinTypeQuizScreen_save', error, { userId, result })
       Alert.alert('Error', 'Failed to save result. Please try again.')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleRetake = () => {
-    setCurrentQuestion(0)
-    setAnswers([])
-    setResult(null)
-  }
-
   if (result) {
-    const skinTypeInfo = SKIN_TYPES.find(s => s.name === result)
-
+    // SKIN_TYPES is keyed by lowercase type ({ oily: {...}, dry: {...} }), not an array.
+    const info = SKIN_TYPES[result.toLowerCase()] || Object.values(SKIN_TYPES).find(s => s.name === result)
     return (
-      <View style={[styles.container, { backgroundColor: colors.bg }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Your Skin Type</Text>
-        </View>
-
-        <ScrollView style={styles.content}>
-          <View style={[styles.resultCard, { backgroundColor: colors.card }]}>
-            <Text style={styles.resultEmoji}>{skinTypeInfo?.emoji}</Text>
-            <Text style={[styles.resultType, { color: colors.primary }]}>
-              {result}
-            </Text>
-            <Text style={[styles.resultDescription, { color: colors.muted }]}>
-              {skinTypeInfo?.description}
-            </Text>
-
-            <View style={[styles.characteristicsCard, { backgroundColor: colors.bg }]}>
-              <Text style={[styles.characteristicsTitle, { color: colors.text }]}>
-                Characteristics
-              </Text>
-              <Text style={[styles.characteristicsText, { color: colors.muted }]}>
-                {skinTypeInfo?.characteristics.join('\n')}
-              </Text>
-            </View>
+      <Screen back title="Your skin type">
+        <Card tone="soft" style={styles.resultCard}>
+          <Text style={styles.resultEmoji}>{info?.emoji || '✨'}</Text>
+          <Text style={[TYPE.display, { color: colors.primary }]}>{result}</Text>
+          <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{info?.description}</Text>
+        </Card>
+        {saved ? (
+          <View style={[styles.savedRow, { backgroundColor: colors.successSoft }]}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <Text style={[TYPE.bodyStrong, { color: colors.success }]}>Saved — your routines now use it</Text>
           </View>
-
-          <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
-            onPress={handleSaveResult}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.saveBtnText}>Save My Skin Type</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.retakeBtn, { borderColor: colors.primary }]}
-            onPress={handleRetake}
-          >
-            <Text style={[styles.retakeBtnText, { color: colors.primary }]}>Retake Quiz</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+        ) : (
+          <Button title="Save my skin type" onPress={save} loading={saving} />
+        )}
+        <Button title="Retake quiz" variant="ghost" onPress={restart} style={{ marginTop: SPACING.sm }} />
+      </Screen>
     )
   }
 
-  const question = questions[currentQuestion]
-
+  const q = QUESTIONS[current]
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Skin Type Quiz</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>
-          Question {currentQuestion + 1} of {questions.length}
-        </Text>
-      </View>
-
-      <ScrollView style={styles.content}>
-        <View style={styles.progressContainer}>
-          {questions.map((_, idx) => (
-            <View
-              key={idx}
-              style={[
-                styles.progressBar,
-                idx < currentQuestion && { backgroundColor: colors.primary },
-                idx === currentQuestion && { backgroundColor: colors.primary },
-                idx > currentQuestion && { backgroundColor: colors.border },
-              ]}
-            />
-          ))}
-        </View>
-
-        <Text style={[styles.question, { color: colors.text }]}>
-          {question.question}
-        </Text>
-
-        <View style={styles.answersContainer}>
-          {question.answers.map((answer, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[styles.answerBtn, { borderColor: colors.primary }]}
-              onPress={() => handleAnswerSelect(answer.type)}
-            >
-              <Text style={[styles.answerText, { color: colors.text }]}>
-                {answer.text}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+    <Screen back overline={`Question ${current + 1} of ${QUESTIONS.length}`} title="Skin type quiz">
+      <ProgressBar value={(current + 1) / QUESTIONS.length} style={{ marginBottom: SPACING.xxl }} />
+      <Text style={[TYPE.heading, { color: colors.text, marginBottom: SPACING.xl }]}>{q.question}</Text>
+      {q.answers.map(a => (
+        <Pressable
+          key={a.text}
+          onPress={() => choose(a.type)}
+          style={({ pressed }) => [
+            styles.answer,
+            { backgroundColor: pressed ? colors.primarySoft : colors.card, borderColor: pressed ? colors.primary : colors.border },
+          ]}
+        >
+          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{a.text}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+      ))}
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 12, marginTop: 4 },
-  content: { flex: 1, padding: 16 },
-  progressContainer: { flexDirection: 'row', gap: 4, marginBottom: 32 },
-  progressBar: { flex: 1, height: 4, borderRadius: 2 },
-  question: { fontSize: 20, fontWeight: 'bold', marginBottom: 24, lineHeight: 28 },
-  answersContainer: { gap: 12 },
-  answerBtn: { borderWidth: 2, borderRadius: 12, padding: 16, alignItems: 'center' },
-  answerText: { fontSize: 14, fontWeight: '500' },
-  resultCard: { borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 24 },
-  resultEmoji: { fontSize: 60, marginBottom: 16 },
-  resultType: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
-  resultDescription: { fontSize: 14, textAlign: 'center', marginBottom: 20 },
-  characteristicsCard: { borderRadius: 8, padding: 16, marginTop: 16, width: '100%' },
-  characteristicsTitle: { fontWeight: 'bold', fontSize: 14, marginBottom: 8 },
-  characteristicsText: { fontSize: 13, lineHeight: 20 },
-  saveBtn: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginBottom: 12 },
-  saveBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  retakeBtn: { borderWidth: 2, paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginBottom: 24 },
-  retakeBtnText: { fontWeight: '600', fontSize: 14 },
+  resultCard: { alignItems: 'center', paddingVertical: SPACING.xxxl, marginBottom: SPACING.xl },
+  resultEmoji: { fontSize: 56, marginBottom: SPACING.md },
+  savedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.lg, borderRadius: RADIUS.md },
+  answer: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, borderRadius: RADIUS.md, borderWidth: 1.5, marginBottom: SPACING.md },
 })

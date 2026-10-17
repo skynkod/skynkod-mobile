@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getCachedData, setCachedData } from './cacheManager'
 import { withRetry } from './retryManager'
 import { logError } from './errorLogger'
@@ -9,32 +9,28 @@ export function useFetchWithCache(cacheKey, fetchFn, userId) {
   const [error, setError] = useState(null)
   const [isOffline, setIsOffline] = useState(false)
 
+  // Screens pass a new inline fetchFn on every render. Keeping it in a ref keeps
+  // `fetch` stable, otherwise `useEffect(..., [fetch])` refetches in a loop.
+  const fetchFnRef = useRef(fetchFn)
+  fetchFnRef.current = fetchFn
+
   const fetch = useCallback(async () => {
     setLoading(true)
     setError(null)
     setIsOffline(false)
 
     try {
-      // Try to fetch fresh data with retry
-      const freshData = await withRetry(() => fetchFn(), 3)
+      const freshData = await withRetry(() => fetchFnRef.current(), 3)
       setData(freshData)
-      
-      // Cache it
       await setCachedData(cacheKey, freshData)
-      
-      setError(null)
     } catch (err) {
       console.error(`Fetch error for ${cacheKey}:`, err)
-      
-      // Log the error
       await logError(`useFetchWithCache_${cacheKey}`, err, { userId })
-      
-      // Try to get cached data as fallback
+
       const cached = await getCachedData(cacheKey)
       if (cached) {
         setData(cached.data)
         setIsOffline(true)
-        setError(null)
       } else {
         setData(null)
         setError(err.message || 'Failed to load data')
@@ -42,11 +38,7 @@ export function useFetchWithCache(cacheKey, fetchFn, userId) {
     } finally {
       setLoading(false)
     }
-  }, [cacheKey, fetchFn, userId])
+  }, [cacheKey, userId])
 
-  const retry = useCallback(async () => {
-    await fetch()
-  }, [fetch])
-
-  return { data, loading, error, isOffline, fetch, retry }
+  return { data, loading, error, isOffline, fetch, retry: fetch }
 }

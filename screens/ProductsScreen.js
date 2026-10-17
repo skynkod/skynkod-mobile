@@ -1,304 +1,128 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Keyboard } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, Alert, Keyboard, Modal, ScrollView } from 'react-native'
 import { getUserProducts, addUserProduct, deleteUserProduct } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
 import { logError } from '../utils/errorLogger'
-import { useTheme } from '../utils/ThemeContext'
-import { useLanguage } from '../utils/LanguageContext'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { PRODUCT_CATEGORIES } from '../utils/constants'
+import { Screen, Card, Button, Input, Chip, BottomSheet, EmptyState, Banner, LoadingView, IconButton, IconCircle, SectionHeader, useColors } from '../components/ui'
+import { SPACING, TYPE } from '../utils/theme'
+
+const CATEGORY_ICONS = {
+  Cleanser: 'water-outline',
+  Toner: 'color-fill-outline',
+  Essence: 'flask-outline',
+  Serum: 'eyedrop-outline',
+  Moisturizer: 'cloud-outline',
+  'Eye Cream': 'eye-outline',
+  Sunscreen: 'sunny-outline',
+  Mask: 'happy-outline',
+  Exfoliator: 'sparkles-outline',
+  Treatment: 'medical-outline',
+}
 
 export default function ProductsScreen({ route }) {
   const { userId } = route.params
-  const { isDark } = useTheme()
-  const { t } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
-  const scrollViewRef = useRef(null)
+  const colors = useColors()
+  const { data: products, loading, error, isOffline, fetch, retry } = useFetchWithCache('user_products', () => getUserProducts(userId), userId)
 
-  const { data: products, loading, error, isOffline, fetch, retry } = useFetchWithCache(
-    'user_products',
-    () => getUserProducts(userId),
-    userId
-  )
-
+  const [showAdd, setShowAdd] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [brandInput, setBrandInput] = useState('')
-  const [categoryInput, setCategoryInput] = useState('')
+  const [name, setName] = useState('')
+  const [brand, setBrand] = useState('')
+  const [category, setCategory] = useState('Serum')
   const [addError, setAddError] = useState(null)
-  const [mounted, setMounted] = useState(true)
 
   useEffect(() => {
-    setMounted(true)
-    
-    return () => {
-      setMounted(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return
     fetch()
-  }, [userId, fetch, mounted])
+  }, [fetch])
 
-  const handleAddProduct = async () => {
-    if (!nameInput.trim() || !brandInput.trim() || !categoryInput.trim()) {
-      setAddError('Please fill all fields')
+  const handleAdd = async () => {
+    if (!name.trim() || !brand.trim()) {
+      setAddError('Please add a name and a brand')
       return
     }
-
     setAdding(true)
     setAddError(null)
     Keyboard.dismiss()
-
     try {
-      const newProduct = {
-        user_id: userId,
-        product_name: nameInput.trim(),
-        brand: brandInput.trim(),
-        category: categoryInput.trim(),
-      }
-
-      const result = await addUserProduct(newProduct)
-      
-      if (result) {
-        if (mounted) {
-          await fetch()
-          setNameInput('')
-          setBrandInput('')
-          setCategoryInput('')
-          setAddError(null)
-          Alert.alert('Success', 'Product added!')
-        }
-      } else {
-        throw new Error('Failed to add product')
-      }
+      const result = await addUserProduct({ user_id: userId, product_name: name.trim(), brand: brand.trim(), category })
+      if (!result) throw new Error('Failed to add product')
+      setName('')
+      setBrand('')
+      setShowAdd(false)
+      await fetch()
     } catch (err) {
-      await logError('ProductsScreen_addProduct', err, { userId }, 'error')
-      if (mounted) {
-        setAddError(err.message || 'Failed to add product')
-      }
+      await logError('ProductsScreen_add', err, { userId })
+      setAddError(err.message || 'Failed to add product')
     } finally {
-      if (mounted) {
-        setAdding(false)
-      }
+      setAdding(false)
     }
   }
 
-  const handleDeleteProduct = async (productId) => {
-    if (!productId) {
-      await logError('ProductsScreen_deleteProduct', new Error('Missing productId'), { userId }, 'error')
-      return
-    }
-
-    Alert.alert('Delete Product', 'Are you sure?', [
-      { text: 'Cancel', onPress: () => {} },
+  const handleDelete = (product) => {
+    Alert.alert('Remove product?', `${product.product_name} will be removed from your shelf.`, [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Delete',
+        text: 'Remove',
+        style: 'destructive',
         onPress: async () => {
-          try {
-            const success = await deleteUserProduct(productId)
-            
-            if (success) {
-              if (mounted) {
-                await fetch()
-                Alert.alert('Success', 'Product deleted')
-              }
-            } else {
-              throw new Error('Failed to delete product')
-            }
-          } catch (err) {
-            await logError('ProductsScreen_deleteProduct', err, { userId, productId }, 'error')
-            Alert.alert('Error', err.message || 'Failed to delete product')
-          }
+          const ok = await deleteUserProduct(product.id)
+          if (ok) fetch()
+          else Alert.alert('Error', 'Failed to delete product')
         },
       },
     ])
   }
 
-  const handleRetry = async () => {
-    try {
-      await retry()
-    } catch (err) {
-      await logError('ProductsScreen_retry', err, { userId }, 'error')
-    }
-  }
+  if (loading && !products) return <LoadingView />
 
-  if (loading && !products) {
-    return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    )
-  }
+  const list = Array.isArray(products) ? products.filter(p => p?.id) : []
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>My Products</Text>
-        <Text style={[styles.subtitle, { color: colors.muted }]}>Track your skincare products</Text>
-      </View>
+    <Screen back title="My shelf" subtitle="Products you use" right={<IconButton icon="add" tone="primary" onPress={() => setShowAdd(true)} accessibilityLabel="Add product" />}>
+      {error ? <Banner message={error} actionLabel="Retry" onAction={retry} /> : null}
+      {isOffline && !error ? <Banner tone="info" message="Offline — showing saved data" /> : null}
 
-      {error && (
-        <View style={[styles.errorBanner, { backgroundColor: '#FF6B6B' }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-          <TouchableOpacity onPress={handleRetry} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isOffline && !error && (
-        <View style={[styles.offlineBanner, { backgroundColor: colors.primary }]}>
-          <Text style={styles.offlineText}>📡 Offline - Showing cached data</Text>
-        </View>
-      )}
-
-      <ScrollView ref={scrollViewRef} style={styles.content}>
-        <View style={[styles.addSection, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Add New Product</Text>
-
-          {addError && (
-            <View style={[styles.addErrorBanner, { backgroundColor: '#FF6B6B' }]}>
-              <Text style={styles.addErrorText}>{addError}</Text>
-            </View>
-          )}
-
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.bg,
-                borderColor: colors.primary,
-                color: colors.text,
-              },
-            ]}
-            placeholder="Product Name"
-            placeholderTextColor={colors.muted}
-            value={nameInput}
-            onChangeText={setNameInput}
-            editable={!adding}
-          />
-
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.bg,
-                borderColor: colors.primary,
-                color: colors.text,
-              },
-            ]}
-            placeholder="Brand"
-            placeholderTextColor={colors.muted}
-            value={brandInput}
-            onChangeText={setBrandInput}
-            editable={!adding}
-          />
-
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.bg,
-                borderColor: colors.primary,
-                color: colors.text,
-              },
-            ]}
-            placeholder="Category (Cleanser, Moisturizer, etc.)"
-            placeholderTextColor={colors.muted}
-            value={categoryInput}
-            onChangeText={setCategoryInput}
-            editable={!adding}
-          />
-
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: colors.primary, opacity: adding ? 0.6 : 1 }]}
-            onPress={handleAddProduct}
-            disabled={adding}
-          >
-            {adding ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.addBtnText}>+ Add Product</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.listSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Products</Text>
-
-          {!products || products.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🧴</Text>
-              <Text style={[styles.emptyText, { color: colors.text }]}>No products added yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.muted }]}>Add your skincare products to track them</Text>
-            </View>
-          ) : (
-            products.map(product => {
-              if (!product || !product.id) return null
-              
-              return (
-                <View key={product.id} style={[styles.productCard, { backgroundColor: colors.card }]}>
-                  <View style={styles.productInfo}>
-                    <Text style={[styles.productName, { color: colors.text }]}>
-                      {product.product_name || 'Unknown'}
-                    </Text>
-                    <Text style={[styles.productBrand, { color: colors.muted }]}>
-                      {product.brand || 'No brand'}
-                    </Text>
-                    <Text style={[styles.productCategory, { color: colors.primary, marginTop: 4 }]}>
-                      {product.category || 'No category'}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => handleDeleteProduct(product.id)}
-                  >
-                    <Text style={styles.deleteBtnText}>🗑️</Text>
-                  </TouchableOpacity>
+      {list.length === 0 ? (
+        <EmptyState icon="flask-outline" title="Your shelf is empty" description="Add the products you use to get better advice from Koda." action="Add a product" onAction={() => setShowAdd(true)} />
+      ) : (
+        <>
+          <SectionHeader title={`${list.length} product${list.length > 1 ? 's' : ''}`} />
+          <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
+            {list.map((product, idx) => (
+              <View key={product.id} style={[styles.row, idx < list.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+                <IconCircle name={CATEGORY_ICONS[product.category] || 'cube-outline'} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{product.product_name || 'Unknown'}</Text>
+                  <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>
+                    {[product.brand, product.category].filter(Boolean).join(' · ')}
+                  </Text>
                 </View>
-              )
-            })
-          )}
-        </View>
-      </ScrollView>
-    </View>
+                <IconButton icon="trash-outline" size={34} onPress={() => handleDelete(product)} accessibilityLabel="Remove product" />
+              </View>
+            ))}
+          </Card>
+        </>
+      )}
+
+      <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
+        <BottomSheet title="Add a product" onClose={() => setShowAdd(false)}>
+          {addError ? <Banner message={addError} /> : null}
+          <Input label="Name" placeholder="e.g. Niacinamide 10%" value={name} onChangeText={setName} editable={!adding} />
+          <Input label="Brand" placeholder="e.g. The Ordinary" value={brand} onChangeText={setBrand} editable={!adding} />
+          <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '600', marginBottom: SPACING.sm }]}>Category</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.sm, paddingBottom: SPACING.lg }}>
+            {PRODUCT_CATEGORIES.map(cat => (
+              <Chip key={cat} label={cat} selected={category === cat} onPress={() => setCategory(cat)} />
+            ))}
+          </ScrollView>
+          <Button title="Add to shelf" onPress={handleAdd} loading={adding} style={{ marginBottom: SPACING.xl }} />
+        </BottomSheet>
+      </Modal>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centerContent: { justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 12, marginTop: 4 },
-  errorBanner: { padding: 12, margin: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  errorText: { color: 'white', fontSize: 12, fontWeight: '600' },
-  retryBtn: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4 },
-  retryBtnText: { color: 'white', fontSize: 11, fontWeight: 'bold' },
-  offlineBanner: { padding: 10, margin: 8, borderRadius: 8 },
-  offlineText: { color: 'white', fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  content: { flex: 1, padding: 16 },
-  addSection: { borderRadius: 12, padding: 16, marginBottom: 24 },
-  listSection: { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
-  addErrorBanner: { padding: 8, borderRadius: 6, marginBottom: 12 },
-  addErrorText: { color: 'white', fontSize: 12, fontWeight: '600' },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 14 },
-  addBtn: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  addBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  emptySubtext: { fontSize: 12 },
-  productCard: { borderRadius: 12, padding: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  productInfo: { flex: 1 },
-  productName: { fontWeight: 'bold', fontSize: 14, marginBottom: 2 },
-  productBrand: { fontSize: 12, marginBottom: 2 },
-  productCategory: { fontSize: 12, fontWeight: '600' },
-  deleteBtn: { paddingLeft: 16 },
-  deleteBtnText: { fontSize: 20 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
 })

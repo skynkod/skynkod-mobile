@@ -1,123 +1,95 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native'
-import { useTheme } from '../utils/ThemeContext'
-import { useLanguage } from '../utils/LanguageContext'
+import { View, Text, StyleSheet, Alert, Pressable } from 'react-native'
 import { logError } from '../utils/errorLogger'
-import { DARK_COLORS, LIGHT_COLORS } from '../utils/theme'
+import { Screen, Button, IconCircle, useColors } from '../components/ui'
+import { SPACING, TYPE } from '../utils/theme'
+
+const STEPS = [
+  {
+    icon: 'sparkles',
+    title: 'Welcome to Skynkod',
+    subtitle: 'Your AI skin coach',
+    description: 'Get personalized skincare advice tailored to your skin type and concerns.',
+  },
+  {
+    icon: 'camera',
+    title: 'Track your progress',
+    subtitle: 'See real results',
+    description: 'Take photos and keep a daily journal to watch your skin improve over time.',
+  },
+  {
+    icon: 'water',
+    title: 'Build healthy habits',
+    subtitle: 'Consistent care',
+    description: 'Follow morning and evening routines built around your skin.',
+  },
+  {
+    icon: 'chatbubbles',
+    title: 'Ask Koda anything',
+    subtitle: 'Expert advice, instantly',
+    description: 'Chat with Koda about ingredients, products and breakouts — any time.',
+  },
+]
 
 export default function OnboardingScreen({ onComplete }) {
-  const { isDark } = useTheme()
-  const { t } = useLanguage()
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  const colors = useColors()
   const [step, setStep] = useState(0)
+  const isLast = step === STEPS.length - 1
+  const current = STEPS[step]
 
-  const steps = [
-    {
-      title: 'Welcome to Skynkod',
-      subtitle: 'Your AI Skin Coach ✨',
-      description: 'Get personalized skincare recommendations tailored to your skin type and concerns.',
-      emoji: '👋',
-    },
-    {
-      title: 'Track Your Progress',
-      subtitle: 'See Real Results',
-      description: 'Take photos and keep daily journal entries to monitor your skin improvements.',
-      emoji: '📸',
-    },
-    {
-      title: 'Build Healthy Habits',
-      subtitle: 'Consistent Care',
-      description: 'Create morning and evening routines to maintain your skincare regimen.',
-      emoji: '🔄',
-    },
-    {
-      title: 'Get Expert Advice',
-      subtitle: 'Chat with Koda',
-      description: 'Ask Koda anything about your skin and get instant personalized recommendations.',
-      emoji: '💬',
-    },
-  ]
-
-  const handleNext = async () => {
-    try {
-      if (step < steps.length - 1) {
-        setStep(step + 1)
-      } else {
-        await onComplete()
-      }
-    } catch (error) {
-      await logError('OnboardingScreen_handleNext', error, { step }, 'error')
-      Alert.alert('Error', 'Failed to complete onboarding')
-    }
-  }
-
-  const handleSkip = async () => {
+  const finish = async () => {
     try {
       await onComplete()
     } catch (error) {
-      await logError('OnboardingScreen_handleSkip', error, {}, 'error')
+      await logError('OnboardingScreen_finish', error, { step })
       Alert.alert('Error', 'Failed to complete onboarding')
     }
   }
 
-  const currentStep = steps[step]
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <ScrollView style={styles.content}>
-        <Text style={[styles.emoji, { marginTop: 60 }]}>{currentStep.emoji}</Text>
-        
-        <Text style={[styles.title, { color: colors.text }]}>{currentStep.title}</Text>
-        <Text style={[styles.subtitle, { color: colors.primary }]}>{currentStep.subtitle}</Text>
-        
-        <Text style={[styles.description, { color: colors.muted }]}>
-          {currentStep.description}
-        </Text>
-
-        <View style={styles.progressContainer}>
-          {steps.map((_, idx) => (
-            <View
-              key={idx}
-              style={[
-                styles.progressBar,
-                idx <= step && { backgroundColor: colors.primary },
-                idx > step && { backgroundColor: colors.border },
-              ]}
-            />
-          ))}
+    <Screen
+      scroll={false}
+      right={
+        !isLast ? (
+          <Pressable onPress={finish} hitSlop={10}>
+            <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>Skip</Text>
+          </Pressable>
+        ) : null
+      }
+      footer={
+        <View style={{ gap: SPACING.md, paddingVertical: SPACING.sm }}>
+          <View style={styles.dots}>
+            {STEPS.map((_, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.dot,
+                  { backgroundColor: idx === step ? colors.primary : colors.border, width: idx === step ? 24 : 8 },
+                ]}
+              />
+            ))}
+          </View>
+          <Button title={isLast ? 'Get started' : 'Next'} onPress={isLast ? finish : () => setStep(step + 1)} icon={isLast ? undefined : 'arrow-forward'} />
         </View>
-      </ScrollView>
-
-      <View style={[styles.buttons, { borderTopColor: colors.border }]}>
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-          <Text style={[styles.skipBtnText, { color: colors.primary }]}>Skip</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.nextBtn, { backgroundColor: colors.primary }]}
-          onPress={handleNext}
-        >
-          <Text style={styles.nextBtnText}>
-            {step === steps.length - 1 ? 'Get Started' : 'Next'}
-          </Text>
-        </TouchableOpacity>
+      }
+    >
+      <View style={styles.body}>
+        <View style={[styles.halo, { backgroundColor: colors.primarySoft }]}>
+          <IconCircle name={current.icon} size={96} background={colors.card} />
+        </View>
+        <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xxxl }]}>{current.subtitle}</Text>
+        <Text style={[TYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.sm }]}>{current.title}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, textAlign: 'center', marginTop: SPACING.md, maxWidth: 320 }]}>
+          {current.description}
+        </Text>
       </View>
-    </View>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, padding: 24, justifyContent: 'center' },
-  emoji: { fontSize: 80, textAlign: 'center', marginBottom: 24 },
-  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', marginBottom: 16 },
-  description: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 48 },
-  progressContainer: { flexDirection: 'row', gap: 8, marginBottom: 48 },
-  progressBar: { flex: 1, height: 4, borderRadius: 2 },
-  buttons: { flexDirection: 'row', gap: 12, padding: 16, borderTopWidth: 1 },
-  skipBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  skipBtnText: { fontWeight: '600', fontSize: 14 },
-  nextBtn: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  nextBtnText: { color: 'white', fontWeight: 'bold', fontSize: 14 },
+  body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.xl },
+  halo: { width: 180, height: 180, borderRadius: 90, alignItems: 'center', justifyContent: 'center' },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { height: 8, borderRadius: 4 },
 })
