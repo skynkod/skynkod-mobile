@@ -21,7 +21,7 @@ export default function SettingsScreen({ route }) {
   const colors = useColors()
   const { themeMode, setThemeMode } = useTheme()
   const { language, setLanguage } = useLanguage()
-  const { user, logout } = useAuth()
+  const { user, logout, replayOnboarding } = useAuth()
   const [busy, setBusy] = useState(null)
 
   const handleLogout = () => {
@@ -142,6 +142,14 @@ export default function SettingsScreen({ route }) {
           onPress={handleClearCache}
           right={busy === 'cache' ? <ActivityIndicator color={colors.primary} /> : undefined}
         />
+        {__DEV__ ? (
+          <ListRow
+            icon="refresh-outline"
+            title="Replay welcome screens"
+            subtitle="Testing only, hidden in the published app"
+            onPress={replayOnboarding}
+          />
+        ) : null}
         <ListRow
           icon="log-out-outline"
           iconColor={colors.danger}

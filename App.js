@@ -117,11 +117,11 @@ function AppContent() {
   const check = async () => {
     try {
       const saved = await AsyncStorage.getItem('skynkod_user')
-      const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
 
       if (saved) {
         const userData = JSON.parse(saved)
         setUser(userData)
+        const onboarded = await AsyncStorage.getItem(`skynkod_onboarded_${userData.userId}`)
 
         if (!onboarded) {
           setShowOnboarding(true)
@@ -144,7 +144,7 @@ function AppContent() {
     const data = { email, userId }
     await AsyncStorage.setItem('skynkod_user', JSON.stringify(data))
 
-    const onboarded = await AsyncStorage.getItem('skynkod_onboarded')
+    const onboarded = await AsyncStorage.getItem(`skynkod_onboarded_${userId}`)
     if (!onboarded) {
       setShowOnboarding(true)
     }
@@ -175,7 +175,8 @@ function AppContent() {
   }
 
   const handleOnboardingComplete = async () => {
-    await AsyncStorage.setItem('skynkod_onboarded', 'true')
+    // Per account, so a new account on the same phone still gets onboarding.
+    await AsyncStorage.setItem(`skynkod_onboarded_${user.userId}`, 'true')
     setShowOnboarding(false)
   }
 
@@ -195,10 +196,10 @@ function AppContent() {
   } else if (!user) {
     content = <LoginScreen onLogin={handleLogin} />
   } else if (showOnboarding) {
-    content = <OnboardingScreen onComplete={handleOnboardingComplete} />
+    content = <OnboardingScreen userId={user.userId} onComplete={handleOnboardingComplete} />
   } else {
     content = (
-      <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout}>
+      <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>
         <NavigationContainer theme={navTheme}>
           <AppTabs userId={user.userId} />
         </NavigationContainer>
