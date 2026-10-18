@@ -139,6 +139,15 @@ export default function HomeScreen({ navigation }) {
   // Today's check-in can point to an Emergency plan.
   const todayEntry = entries.find(e => e?.date && new Date(e.date).toDateString() === new Date().toDateString());
   const suggestion = !plan ? situationFromCheckIn(todayEntry) : null;
+  // Consecutive days with a check-in, ending today or yesterday.
+  const checkInStreak = (() => {
+    const days = new Set(entries.filter(e => e?.mood).map(e => new Date(e.date).toDateString()));
+    const d = new Date();
+    if (!days.has(d.toDateString())) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (days.has(d.toDateString())) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  })();
   const derm = dermatologistAdvice(profile, entries);
   const showDerm = derm && (!dermHiddenUntil || Date.now() > dermHiddenUntil);
   const hideDerm = async () => {
@@ -195,6 +204,7 @@ export default function HomeScreen({ navigation }) {
           key={new Date().toDateString()}
           userId={user?.id}
           entry={todayEntry}
+          streak={checkInStreak}
           onSaved={saved => setEntries(prev => [saved, ...prev.filter(e => e.id !== saved.id)])}
           onSkip={async () => {
             setCheckInSkipped(true);
