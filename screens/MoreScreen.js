@@ -26,7 +26,7 @@ export const MORE_SCREENS = [
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
-  { name: 'Skyncyclopedia', component: SkyncyclopediaScreen, label: 'Skyncyclopedia', subtitle: 'Ingredient guide', icon: 'library-outline', group: 'learn' },
+  { name: 'Skyncyclopedia', component: SkyncyclopediaScreen, label: 'Skyncyclopedia', subtitle: 'Learn to care for your skin', icon: 'library-outline', group: 'learn' },
   { name: 'Quiz', component: SkinTypeQuizScreen, label: 'Skin type quiz', subtitle: 'Find your skin type', icon: 'help-circle-outline', group: 'learn' },
   { name: 'Emergency', component: EmergencyScreen, label: 'Emergency', subtitle: '7-day recovery plan', icon: 'medkit-outline', group: 'learn' },
   { name: 'Alerts', component: NotificationsScreen, label: 'Notifications', subtitle: 'Reminders', icon: 'notifications-outline', group: 'account' },

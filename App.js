@@ -27,6 +27,7 @@ import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
 import SearchScreen from './screens/SearchScreen'
 import ProductScreen from './screens/ProductScreen'
 import IngredientScreen from './screens/IngredientScreen'
+import ArticleScreen from './screens/ArticleScreen'
 import RoutineBuilderScreen from './screens/RoutineBuilderScreen'
 import ProductPickerScreen from './screens/ProductPickerScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
@@ -129,6 +130,7 @@ function AppTabs({ userId }) {
         { name: 'Search', component: SearchScreen },
         { name: 'Product', component: ProductScreen },
         { name: 'Ingredient', component: IngredientScreen },
+        { name: 'Article', component: ArticleScreen },
         { name: 'RoutineBuilder', component: RoutineBuilderScreen },
         { name: 'ProductPicker', component: ProductPickerScreen },
         { name: 'Privacy', component: PrivacyScreen },
