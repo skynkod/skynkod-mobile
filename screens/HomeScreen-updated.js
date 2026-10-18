@@ -156,18 +156,30 @@ export default function HomeScreen({ navigation }) {
         {greeting}{firstName ? `, ${firstName}` : ''} {isNight ? '🌙' : '☀️'}
       </Text>
 
-      {/* Search; the scan icon goes straight to the camera */}
-      <Pressable
-        onPress={() => navigation.navigate('Search')}
-        style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-        accessibilityRole="search"
-      >
-        <Ionicons name="search" size={18} color={colors.muted} />
-        <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]}>{t('Search a product or ingredient')}</Text>
-        <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={12} accessibilityLabel={t('Scan a product')}>
-          <Ionicons name="scan-outline" size={22} color={colors.primary} />
+      {/* Search (scan inside) and, beside it, a discreet way into Emergency mode */}
+      <View style={styles.searchRow}>
+        <Pressable
+          onPress={() => navigation.navigate('Search')}
+          style={[styles.searchBar, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
+          accessibilityRole="search"
+        >
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]}>{t('Search a product or ingredient')}</Text>
+          <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={12} accessibilityLabel={t('Scan a product')}>
+            <Ionicons name="scan-outline" size={22} color={colors.primary} />
+          </Pressable>
         </Pressable>
-      </Pressable>
+        {!plan ? (
+          <Pressable
+            onPress={() => navigation.navigate('Emergency')}
+            style={({ pressed }) => [styles.sos, { backgroundColor: colors.primarySoft, opacity: pressed ? 0.8 : 1 }]}
+            accessibilityLabel={t('Emergency mode')}
+          >
+            <Ionicons name="medkit-outline" size={20} color={colors.primary} />
+            <Text style={[styles.sosText, { color: colors.primary }]}>SOS</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {plan ? (
         <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.planBanner, { backgroundColor: colors.primarySoft }]}>
@@ -195,7 +207,25 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
 
-      {routine ? (
+      {routine && !current && steps.length ? (
+        <Pressable
+          onPress={() => navigation.navigate('Routines', { tab: period })}
+          onLongPress={undoLast}
+          style={[styles.doneLine, { backgroundColor: colors.successSoft }]}
+        >
+          <View style={[styles.doneIcon, { backgroundColor: colors.success }]}>
+            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+          </View>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
+            {period === 'morning' ? t('Morning routine done') : t('Night routine done')}
+            <Text style={{ color: colors.textSecondary, fontWeight: '400' }}>
+              {'  ·  '}{period === 'morning' ? t('see you tonight') : t('sleep well')} {period === 'morning' ? '☀️' : '🌙'}
+            </Text>
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {routine && (current || !steps.length) ? (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHead}>
             <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : t('TONIGHT')}</Text>
@@ -321,7 +351,12 @@ const styles = StyleSheet.create({
   topSide: { width: 44 },
   logo: { flex: 1, height: 30, width: 30 * LOGO_RATIO },
   greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg, marginTop: SPACING.lg },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
+  sos: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  sosText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6, marginTop: -1 },
+  doneLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 999, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, marginTop: SPACING.xl },
+  doneIcon: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
   card: { borderRadius: RADIUS.xl, borderWidth: 1, padding: SPACING.xl, marginTop: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
