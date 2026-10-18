@@ -7,7 +7,7 @@ import { SPACING, TYPE } from '../utils/theme'
 
 const FEATURES = [
   'Daily skin tracking and journaling',
-  'AI-powered skincare advice with Koda',
+  'Personal advice from Koda, our AI',
   'Progress photo management',
   'Routine building and tracking',
   'Product tracking and analytics',
@@ -30,12 +30,12 @@ export default function AboutScreen() {
       <View style={styles.hero}>
         <IconCircle name="sparkles" size={80} />
         <Text style={[TYPE.title, { color: colors.text, marginTop: SPACING.lg }]}>Skynkod</Text>
-        <Text style={[TYPE.body, { color: colors.muted }]}>Your AI skin coach · v{APP_INFO.version}</Text>
+        <Text style={[TYPE.body, { color: colors.muted }]}>Your skin. Your code. Decoded daily. · v{APP_INFO.version}</Text>
       </View>
 
       <Card>
         <Text style={[TYPE.body, { color: colors.textSecondary }]}>
-          Skynkod is your personal AI-powered skincare companion. We combine AI with dermatological knowledge to give you advice tailored to your skin type and concerns.
+          Skynkod reads your products, follows your skin day after day and teaches you how to care for it, based on your skin type and concerns. For personal questions, Koda, our AI, is here to help.
         </Text>
       </Card>
 

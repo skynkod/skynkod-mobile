@@ -179,7 +179,7 @@ export default function SettingsScreen({ route, navigation }) {
       </Card>
 
       <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>
-        Skynkod v1.0.0 · Your AI skin coach
+        Skynkod v1.0.0 · Your skin. Your code. Decoded daily.
       </Text>
     </Screen>
   )

@@ -118,7 +118,7 @@ export const PREMIUM_FEATURES = [
 export const APP_INFO = {
   name: 'Skynkod',
   version: '1.0.0',
-  tagline: 'Your AI Skin Coach',
+  tagline: 'Your skin. Your code. Decoded daily.',
 }
 
 // Languages
