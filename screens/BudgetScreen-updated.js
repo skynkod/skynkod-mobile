@@ -1,11 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen, LoadingView, BottomSheet, useColors } from '../components/ui';
 import { useAuth } from '../utils/AuthContext';
 import { useT, useLanguage } from '../utils/LanguageContext';
-import { getMyProducts, addToMyProducts } from '../utils/catalog';
+import { getMyProducts, addToMyProducts, searchProducts } from '../utils/catalog';
 import { getMonthPurchases, addPurchase, deletePurchase, getMonthlyBudget, setMonthlyBudget, budgetInsights, formatMAD } from '../utils/skynbudget';
 import { logError } from '../utils/errorLogger';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -29,6 +29,20 @@ export default function BudgetScreen({ navigation }) {
   const [pick, setPick] = useState(null);
   const [otherName, setOtherName] = useState('');
   const [price, setPrice] = useState('');
+  // Search the whole catalogue from the Add purchase sheet.
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const searchId = useRef(0);
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return setResults([]);
+    const id = ++searchId.current;
+    const timer = setTimeout(async () => {
+      const rows = await searchProducts(q).catch(() => []);
+      if (id === searchId.current) setResults(rows.slice(0, 12));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -70,11 +84,12 @@ export default function BudgetScreen({ navigation }) {
     try {
       await addPurchase(user.id, pick ? { product: pick, price: value } : { name: otherName.trim(), price: value });
       // Bought something from the To buy list: it's now owned.
-      if (pick && toBuy.some(p => p.id === pick.id)) await addToMyProducts(user.id, pick, 'owned').catch(() => {});
+      if (pick && !owned.some(p => p.id === pick.id)) await addToMyProducts(user.id, pick, 'owned').catch(() => {});
       setAddSheet(false);
       setPick(null);
       setOtherName('');
       setPrice('');
+      setQuery('');
       load();
     } catch (error) {
       await logError('Budget_addPurchase', error, {}, 'warn');
@@ -195,24 +210,58 @@ export default function BudgetScreen({ navigation }) {
       <Modal visible={addSheet} transparent animationType="fade" onRequestClose={() => setAddSheet(false)}>
         <BottomSheet title={t('Add purchase')} onClose={() => setAddSheet(false)}>
           <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('Which product?')}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.sm, paddingVertical: SPACING.sm }}>
-            {[...toBuy, ...owned].map(p => {
-              const on = pick?.id === p.id;
-              return (
-                <Pressable key={p.id} onPress={() => { setPick(on ? null : p); setOtherName(''); }} style={[styles.pickItem, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                  {p.image_url ? <Image source={{ uri: p.image_url }} style={styles.pickImage} resizeMode="contain" /> : <Ionicons name="water-outline" size={22} color={colors.muted} />}
-                  <Text style={{ fontSize: 11, color: colors.text, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{p.name}</Text>
+          <View style={[styles.searchField, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Ionicons name="search" size={16} color={colors.muted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('Search any product or brand')}
+              placeholderTextColor={colors.muted}
+              autoCorrect={false}
+              style={[styles.searchInput, { color: colors.text }]}
+            />
+          </View>
+          {query.trim().length >= 2 ? (
+            <View style={{ marginTop: SPACING.sm }}>
+              {results.map(p => {
+                const on = pick?.id === p.id;
+                return (
+                  <Pressable key={p.id} onPress={() => { setPick(p); setOtherName(''); }} style={[styles.resultRow, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
+                    {p.image_url ? <Image source={{ uri: p.image_url }} style={styles.resultImage} resizeMode="contain" /> : <View style={[styles.resultImage, { alignItems: 'center', justifyContent: 'center' }]}><Ionicons name="water-outline" size={16} color={colors.muted} /></View>}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>{p.brand}</Text>
+                      <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]} numberOfLines={2}>{p.name}</Text>
+                    </View>
+                    {on ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+                  </Pressable>
+                );
+              })}
+              {!results.length ? (
+                <Pressable onPress={() => { setPick(null); setOtherName(query.trim()); }} style={[styles.resultRow, { borderColor: otherName ? colors.primary : colors.border, backgroundColor: colors.card }]}>
+                  <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+                  <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>
+                    {t('Not in our catalogue? Add "{name}" anyway', { name: query.trim() })}
+                  </Text>
+                  {otherName ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
                 </Pressable>
-              );
-            })}
-          </ScrollView>
-          <TextInput
-            value={otherName}
-            onChangeText={v => { setOtherName(v); if (v) setPick(null); }}
-            placeholder={t('Or type a product name')}
-            placeholderTextColor={colors.muted}
-            style={[styles.textField, { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }]}
-          />
+              ) : null}
+            </View>
+          ) : (
+            <>
+              {[...toBuy, ...owned].length ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('Or one of yours')}</Text> : null}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.sm, paddingVertical: SPACING.sm }}>
+                {[...toBuy, ...owned].map(p => {
+                  const on = pick?.id === p.id;
+                  return (
+                    <Pressable key={p.id} onPress={() => { setPick(on ? null : p); setOtherName(''); }} style={[styles.pickItem, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
+                      {p.image_url ? <Image source={{ uri: p.image_url }} style={styles.pickImage} resizeMode="contain" /> : <Ionicons name="water-outline" size={22} color={colors.muted} />}
+                      <Text style={{ fontSize: 11, color: colors.text, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{p.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </>
+          )}
           <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={t('Price')} placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text }]} />
             <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>MAD</Text>
@@ -248,6 +297,10 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 50, fontSize: 18, fontWeight: '600' },
   textField: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: SPACING.lg, height: 48, marginTop: SPACING.sm, fontSize: 15 },
   save: { height: 50, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg, marginBottom: SPACING.xl },
+  searchField: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 46, marginTop: SPACING.sm },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.sm, marginBottom: 6 },
+  resultImage: { width: 40, height: 40, borderRadius: 6, backgroundColor: '#FFFFFF' },
   pickItem: { width: 92, alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.md, padding: 8 },
   pickImage: { width: 44, height: 44, borderRadius: 6, backgroundColor: '#FFFFFF' },
 });
