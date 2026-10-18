@@ -46,10 +46,15 @@ const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date
 // Koda's one-line tip from the latest check-in (last 3 days).
 const kodaTip = (entries) => {
   const latest = entries.find(e => e?.date && Date.now() - new Date(e.date).getTime() <= 3 * 86400000);
-  if (!latest) return null;
-  if ((latest.redness_level ?? 0) >= 6 || (latest.barrier_health ?? 10) <= 4) return 'Your skin looks a bit sensitized. Skip exfoliation tonight.';
-  if ((latest.acne_level ?? 0) >= 6) return 'Breakouts are up. Keep it gentle and avoid picking.';
-  if ((latest.hydration_level ?? 10) <= 4) return 'Your skin seems thirsty. Add a hydrating serum today.';
+  if (!latest?.mood) return null;
+  // Today's answers first (mood and tags), then the levels saved with them.
+  const tags = latest.skin_conditions || [];
+  const has = list => list.some(tag => tags.includes(tag));
+  if (has(['Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking']) || (latest.redness_level ?? 0) >= 6 || (latest.barrier_health ?? 10) <= 4) return 'Your skin looks a bit sensitized. Skip exfoliation tonight.';
+  if (has(['New pimple']) || (latest.acne_level ?? 0) >= 6) return 'Breakouts are up. Keep it gentle and avoid picking.';
+  if (has(['Dryness']) || (latest.hydration_level ?? 10) <= 4) return 'Your skin seems thirsty. Add a hydrating serum today.';
+  if (['bad', 'terrible'].includes(latest.mood)) return 'A rough day for your skin. Keep your routine short and gentle, no new products.';
+  if (latest.mood === 'okay') return "A steady day. Keep your routine simple and don't skip SPF.";
   return "Your skin is doing well. Stay consistent and don't skip SPF.";
 };
 
