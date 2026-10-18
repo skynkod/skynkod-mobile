@@ -47,7 +47,7 @@ const kodaTip = (entries) => {
 // real sunrise/sunset) one step at a time, and one tip from Koda.
 export default function HomeScreen({ navigation }) {
   const colors = useColors();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const firstName = useFirstName(user?.id);
   const { isNight, updateLocation } = useTheme();
@@ -162,7 +162,10 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
-      {/* Greeting, with notifications on the same line */}
+      {/* Today's date, then the greeting with notifications on the same line */}
+      <Text style={[styles.date, { color: colors.primary }]}>
+        {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+      </Text>
       <View style={styles.greetingRow}>
         <Text style={[styles.greeting, { color: colors.text, flex: 1 }]}>
           {greeting}{firstName ? `, ${firstName}` : ''} {isNight ? '🌙' : '☀️'}
@@ -418,7 +421,8 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: SPACING.md },
+  date: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: SPACING.lg },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: 4 },
   greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
   sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   sosInvite: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
