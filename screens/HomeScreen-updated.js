@@ -16,6 +16,13 @@ const LOGO = require('../assets/images/skynkod-logo.png');
 const KODA = require('../assets/images/koda-logo.png');
 const LOGO_RATIO = 1306 / 333;
 
+const SHORTCUTS = [
+  { label: 'My routines', icon: 'water-outline', to: 'Routines' },
+  { label: 'My products', icon: 'flask-outline', to: 'Products' },
+  { label: 'My Skynbudget', icon: 'wallet-outline', to: 'Budget' },
+  { label: 'Skyncyclopedia', icon: 'library-outline', to: 'Skyncyclopedia' },
+];
+
 // Same storage key as the Routines screen, so ticks are shared.
 const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date().toDateString()}`;
 
@@ -199,6 +206,22 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
 
+      {/* The four places the user comes back to */}
+      <View style={styles.grid}>
+        {SHORTCUTS.map(s => (
+          <Pressable
+            key={s.to}
+            onPress={() => navigation.navigate(s.to)}
+            style={({ pressed }) => [styles.tile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+          >
+            <View style={[styles.tileIcon, { backgroundColor: colors.primarySoft }]}>
+              <Ionicons name={s.icon} size={22} color={colors.primary} />
+            </View>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.label)}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       {/* One line from Koda */}
       <Pressable onPress={() => navigation.navigate('Koda')} style={[styles.koda, { backgroundColor: colors.primarySoft }]}>
         <Image source={KODA} style={styles.kodaIcon} />
@@ -228,6 +251,9 @@ const styles = StyleSheet.create({
   primary: { flexDirection: 'row', gap: SPACING.sm, height: 54, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
   primaryText: { fontSize: 16, fontWeight: '600' },
   allDone: { paddingVertical: SPACING.xl },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.lg },
+  tile: { width: '47%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, gap: SPACING.md },
+  tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   koda: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   kodaIcon: { width: 26, height: 26 },
 });

@@ -38,7 +38,9 @@ export const MORE_SCREENS = [
 // Routines left the tab bar (they live on Home now), so Profile links to them too.
 const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning & evening', icon: 'water-outline', group: 'track' }
 
-const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group)
+// Progress photos are parked for now (essentials first).
+const HIDDEN = ['Photos']
+const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {
   const colors = useColors()

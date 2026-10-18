@@ -50,7 +50,6 @@ const QUICK_ACTIONS = [
   { icon: 'create-outline', title: 'Skin check-in', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
   { icon: 'scan-outline', title: 'Scan a product', subtitle: 'Check ingredients and compatibility', to: 'Scanner' },
   { icon: 'flask-outline', title: 'Add a product', subtitle: 'Add it to your collection', to: 'Products' },
-  { icon: 'camera-outline', title: 'Progress photo', subtitle: 'Track changes over time', to: 'Photos' },
   { icon: 'shield-checkmark-outline', title: 'Emergency mode', subtitle: 'A 7-day plan to calm your skin', to: 'Emergency' },
 ]
 
