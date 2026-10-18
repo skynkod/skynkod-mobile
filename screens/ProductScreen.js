@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
+import { retailersFor, openRetailer } from '../utils/shop'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -241,6 +242,28 @@ export default function ProductScreen({ navigation, route }) {
           ) : null}
         </>
       )}
+      {/* Where to buy: never shown for products the user should avoid */}
+      {!match.avoid.length && !match.triggered.length ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('WHERE TO BUY')}</Text>
+          <View style={styles.shops}>
+            {retailersFor(product).map(r => (
+              <Pressable
+                key={r.id}
+                onPress={() => openRetailer(r, product)}
+                style={({ pressed }) => [styles.shop, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{r.name}</Text>
+                <Ionicons name="open-outline" size={13} color={colors.muted} />
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>
+            {t('Skynkod may earn a small commission when you buy through these links. It never changes our verdicts.')}
+          </Text>
+        </>
+      ) : null}
+
       <View style={{ height: SPACING.lg }} />
     </Screen>
   )
@@ -262,6 +285,8 @@ const styles = StyleSheet.create({
   triggerCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.sm },
   levelChip: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   levelText: { fontSize: 11, fontWeight: '700' },
+  shops: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  shop: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.xs },
   ingredient: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.md },

@@ -201,6 +201,14 @@ export default function ProductsScreen({ navigation }) {
               ) : null}
               {product ? <ProductVerdict product={product} profile={profile} /> : null}
             </View>
+            {row.status === 'to_buy' && product ? (
+              <Pressable
+                onPress={() => navigation.navigate('Product', { id: product.id })}
+                style={[styles.buyPill, { backgroundColor: colors.primary }]}
+              >
+                <Text style={{ color: colors.onPrimary, fontSize: 12, fontWeight: '700' }}>{t('Buy')}</Text>
+              </Pressable>
+            ) : null}
             <Pressable onPress={() => openActions(row)} hitSlop={12} accessibilityLabel={t('More options')}>
               <Ionicons name="ellipsis-horizontal" size={20} color={colors.muted} />
             </Pressable>
@@ -217,6 +225,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md, marginTop: SPACING.sm },
   photo: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#FFFFFF' },
   noPhoto: { alignItems: 'center', justifyContent: 'center' },
+  buyPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   routineTag: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
   routineText: { fontSize: 11, fontWeight: '700' },
   empty: { alignItems: 'center', borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.lg, padding: SPACING.xl, marginTop: SPACING.xl },
