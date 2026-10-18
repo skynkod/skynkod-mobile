@@ -88,6 +88,15 @@ export default function EmergencyScreen({ navigation, route }) {
                 <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>
                   <Text style={{ fontWeight: '700' }}>{t('Avoid')}: </Text>{t(day.avoid)}
                 </Text>
+                {day.needs?.length ? (
+                  <Pressable
+                    onPress={() => navigation.navigate('Suggestions', { situation: situation.id, day: i })}
+                    style={[styles.suggest, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  >
+                    <Ionicons name="sparkles-outline" size={15} color={colors.primary} />
+                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Suggest products for this day')}</Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
           </Pressable>
@@ -191,6 +200,7 @@ const styles = StyleSheet.create({
   dayRow: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   dayBody: { marginTop: SPACING.sm, marginLeft: 32 },
+  suggest: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: SPACING.md },
   today: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
   note: { borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.lg },
   primary: { height: 54, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl, marginBottom: SPACING.md },

@@ -78,6 +78,8 @@ export const INGREDIENTS = [
   I('ferulic', 'Ferulic acid', ['ferulic acid'], 'Antioxidant that boosts vitamins C and E.', ['Fine lines', 'Dullness']),
   I('vitamine', 'Vitamin E', ['tocopherol', 'tocopheryl'], 'Antioxidant that protects and softens.', ['Dry', 'Fine lines']),
 
+  I('hydrocolloid', 'Hydrocolloid', ['hydrocolloid'], 'Pimple patches that absorb fluid, protect the spot and stop you picking.', ['Acne', 'Inflammatory']),
+
   // ---------- Sun filters ----------
   I('zincoxide', 'Zinc oxide (mineral SPF)', ['zinc oxide'], 'Mineral UV filter, gentle on reactive skin.', ['Sensitivity', 'Redness', 'Sensitive', 'Rosacea', 'Melasma', 'Eczema']),
   I('titanium', 'Titanium dioxide (mineral SPF)', ['titanium dioxide'], 'Mineral UV filter, well tolerated.', ['Sensitive', 'Rosacea', 'Melasma']),
