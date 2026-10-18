@@ -79,8 +79,8 @@ export default function HomeScreen({ navigation }) {
   const { isNight, isDark, updateLocation } = useTheme();
   const insets = useSafeAreaInsets();
   const heroHeight = Math.round(Dimensions.get('window').height * 0.8);
-  // The first screen: about 55% for the greeting, the rest for the first sections.
-  const introHeight = Math.round(Dimensions.get('window').height * 0.55);
+  // The first screen: about half for the greeting, the rest for the first sections.
+  const introHeight = Math.round(Dimensions.get('window').height * 0.5);
   const scrollRef = useRef(null);
   const [routineY, setRoutineY] = useState(0);
   const [bodyY, setBodyY] = useState(0);
@@ -225,7 +225,6 @@ export default function HomeScreen({ navigation }) {
 
   // The hero's single line and single action.
   let line = null;
-  const routineDone = !!routine && steps.length > 0 && !current;
   let action = null;
   if (askMood) {
     line = t('How is your skin this morning?');
@@ -237,8 +236,6 @@ export default function HomeScreen({ navigation }) {
       ? t('Your {ritual} · step {n} of {total}', { ritual, n: currentIdx + 1, total: steps.length })
       : t('Your {ritual} awaits · {total} steps', { ritual, total: steps.length });
     action = { label: doneCount ? t('Continue') : t('Begin'), onPress: scrollToRoutine };
-  } else if (routine && steps.length) {
-    line = period === 'morning' ? t('Ritual done. See you tonight.') : t('Ritual done. Sleep well.');
   }
 
 
@@ -289,7 +286,6 @@ export default function HomeScreen({ navigation }) {
             {line ? (
               <Glass radius={999} style={styles.linePill}>
                 <View style={styles.lineRow}>
-                  {routineDone ? <Ionicons name="checkmark-circle" size={16} color={isDark ? colors.primary : colors.primary} /> : null}
                   <Text style={[styles.line, { color: isDark ? colors.text : INK }]}>{line}</Text>
                 </View>
               </Glass>
@@ -591,8 +587,9 @@ const styles = StyleSheet.create({
   hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic', ...SHADOW },
   name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2, ...SHADOW },
   linePill: { alignSelf: 'flex-start', marginTop: SPACING.md },
-  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
-  line: { fontSize: 14, fontWeight: '500' },
+  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.lg, paddingVertical: 7 },
+  // Same voice as the greeting: serif italic.
+  line: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 16 },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xl },
   mood: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   begin: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 25, paddingHorizontal: SPACING.xxl, marginTop: SPACING.xl },
