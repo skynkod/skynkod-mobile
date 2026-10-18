@@ -18,6 +18,7 @@ export default function BarcodeScannerScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions()
   const [status, setStatus] = useState('scanning') // scanning | looking | notFound | error
   const busy = useRef(false)
+  const [unknown, setUnknown] = useState(null) // { barcode, brandHint }
 
   const onScanned = async ({ data }) => {
     if (busy.current) return
@@ -30,6 +31,7 @@ export default function BarcodeScannerScreen({ navigation }) {
       navigation.navigate('Product', { id: result.product.id, product: result.product })
       return
     }
+    if (result.notFound) setUnknown({ barcode: data, brandHint: result.brandHint })
     setStatus(result.notFound ? 'notFound' : 'error')
   }
 
@@ -91,10 +93,23 @@ export default function BarcodeScannerScreen({ navigation }) {
               </Text>
               <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>
                 {status === 'notFound'
-                  ? t('Soon you will be able to add it with a photo of its ingredients.')
+                  ? unknown?.brandHint
+                    ? t('It looks like a {brand} product. Find it in our list and the scanner will recognise it next time.', { brand: unknown.brandHint })
+                    : t('Find it in our list and the scanner will recognise it next time.')
                   : t('Check your connection and try again.')}
               </Text>
-              <Button title={t('Scan again')} onPress={scanAgain} style={{ marginTop: SPACING.lg }} />
+              {status === 'notFound' ? (
+                <Button
+                  title={t('Find it in our list')}
+                  icon="search"
+                  onPress={() => {
+                    scanAgain()
+                    navigation.navigate('Search', { linkBarcode: unknown.barcode, query: unknown.brandHint || '' })
+                  }}
+                  style={{ marginTop: SPACING.lg }}
+                />
+              ) : null}
+              <Button title={t('Scan again')} variant="secondary" onPress={scanAgain} style={{ marginTop: SPACING.sm }} />
             </>
           )}
         </View>

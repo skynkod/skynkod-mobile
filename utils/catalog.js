@@ -42,7 +42,7 @@ export const lookupBarcode = async (barcode) => {
       body: JSON.stringify({ barcode }),
     })
     const data = await response.json().catch(() => ({}))
-    if (response.status === 404) return { notFound: true }
+    if (response.status === 404) return { notFound: true, brandHint: data.brandHint || null }
     if (!response.ok || !data.product) return { error: data.error || `HTTP ${response.status}` }
     return { product: data.product }
   } catch (error) {
@@ -60,4 +60,21 @@ export const addToMyProducts = async (userId, product) => {
     category: product.category,
   })
   if (error) throw error
+}
+
+// Tells the catalogue which product an unknown barcode belongs to.
+export const linkBarcode = async (barcode, productId) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const response = await fetch(`${API_URL.replace(/\/$/, '')}/products/link-barcode`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ barcode, productId }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) return { error: data.error || `HTTP ${response.status}` }
+    return { product: data.product }
+  } catch (error) {
+    return { error: error.message }
+  }
 }

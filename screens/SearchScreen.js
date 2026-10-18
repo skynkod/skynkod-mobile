@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, TextInput, Pressable, StyleSheet, Image, ActivityIndicator } from 'react-native'
+import { View, Text, TextInput, Pressable, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, useColors } from '../components/ui'
 import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { searchProducts } from '../utils/catalog'
+import { searchProducts, linkBarcode } from '../utils/catalog'
 import { searchIngredients, ingredientFit, productMatch } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -24,6 +24,32 @@ export default function SearchScreen({ navigation, route }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const requestId = useRef(0)
+  // Coming from an unknown scan: picking a product attaches the barcode to it.
+  const pendingBarcode = route?.params?.linkBarcode || null
+
+  // A new search from the scanner replaces what was typed before.
+  useEffect(() => {
+    if (route?.params?.query !== undefined) setQuery(route.params.query)
+  }, [route?.params?.query, route?.params?.linkBarcode])
+
+  const openProduct = (product) => {
+    if (!pendingBarcode) return navigation.navigate('Product', { id: product.id })
+    Alert.alert(t('Is this your product?'), `${product.brand} · ${product.name}`, [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Yes, link it'),
+        onPress: async () => {
+          const result = await linkBarcode(pendingBarcode, product.id)
+          navigation.setParams({ linkBarcode: undefined })
+          if (result.error && result.error !== 'barcode_taken') {
+            Alert.alert(t('Error'), t("Couldn't save this barcode. Try again."))
+            return
+          }
+          navigation.navigate('Product', { id: product.id })
+        },
+      },
+    ])
+  }
 
   const ingredients = searchIngredients(query).slice(0, 3)
 
@@ -74,6 +100,13 @@ export default function SearchScreen({ navigation, route }) {
           <Ionicons name="scan-outline" size={22} color={colors.primary} />
         </Pressable>
       </View>
+
+      {pendingBarcode ? (
+        <View style={[styles.linkBanner, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name="barcode-outline" size={18} color={colors.primary} />
+          <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t('Tap your product to teach the scanner its barcode.')}</Text>
+        </View>
+      ) : null}
 
       {!hasQuery ? (
         <>
@@ -137,7 +170,7 @@ export default function SearchScreen({ navigation, route }) {
             return (
               <Pressable
                 key={product.id}
-                onPress={() => navigation.navigate('Product', { id: product.id })}
+                onPress={() => openProduct(product)}
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 {product.image_url ? (
@@ -171,5 +204,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md, marginBottom: SPACING.sm },
   thumb: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   photo: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#FFFFFF' },
+  linkBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.md },
   empty: { borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.md, padding: SPACING.xl },
 })
