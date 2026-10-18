@@ -15,6 +15,7 @@ import { todaySteps } from '../utils/routine-checks';
 import { logStep } from '../utils/routine-log';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn } from '../utils/journal-day';
+import MorningCheckIn from '../components/MorningCheckIn';
 import { getProductsByIds, getNewestProductId } from '../utils/catalog';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -63,6 +64,7 @@ export default function HomeScreen({ navigation }) {
   const profile = useSkinProfile(user?.id);
   const [dermHiddenUntil, setDermHiddenUntil] = useState(null);
   const [dermOpen, setDermOpen] = useState(false);
+  const [checkInSkipped, setCheckInSkipped] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -71,11 +73,12 @@ export default function HomeScreen({ navigation }) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [routines, ticks, journal, dermHidden] = await Promise.all([
+    const [routines, ticks, journal, dermHidden, skipped] = await Promise.all([
       getUserRoutines(user.id),
       AsyncStorage.getItem(doneKey(user.id, period)).catch(() => null),
       getJournalEntries(user.id, 14),
       AsyncStorage.getItem(`skynkod_derm_hidden_${user.id}`).catch(() => null),
+      AsyncStorage.getItem(`skynkod_checkin_skip_${user.id}_${new Date().toDateString()}`).catch(() => null),
     ]);
     const mine = routines.success ? (routines.data || []).find(r => r.type === period && Array.isArray(r.steps) && r.steps.length) : null;
     setRoutine(mine || null);
@@ -92,6 +95,7 @@ export default function HomeScreen({ navigation }) {
     setDone(JSON.parse(ticks || '{}'));
     if (journal.success) setEntries(journal.data || []);
     setDermHiddenUntil(Number(dermHidden) || null);
+    setCheckInSkipped(!!skipped);
     setLoaded(true);
   }, [user?.id, period]);
 
@@ -183,6 +187,21 @@ export default function HomeScreen({ navigation }) {
           </Text>
           <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </Pressable>
+      ) : null}
+
+      {/* Morning check-in, before the morning routine (same entry as the Journal) */}
+      {!isNight && loaded && !checkInSkipped ? (
+        <MorningCheckIn
+          key={new Date().toDateString()}
+          userId={user?.id}
+          entry={todayEntry}
+          onSaved={saved => setEntries(prev => [saved, ...prev.filter(e => e.id !== saved.id)])}
+          onSkip={async () => {
+            setCheckInSkipped(true);
+            await AsyncStorage.setItem(`skynkod_checkin_skip_${user.id}_${new Date().toDateString()}`, '1').catch(() => {});
+          }}
+          onOpenJournal={() => navigation.navigate('Journal')}
+        />
       ) : null}
 
       {/* The one big card: the routine for right now */}
