@@ -49,7 +49,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     getProductsByIds(saved.map(s => s.product_id).filter(Boolean))
       .then(products => {
         const byId = Object.fromEntries(products.map(p => [p.id, p]))
-        setSlots(saved.map((s, i) => ({ uid: `${s.key || 'step'}-saved-${i}`, key: STEP_TYPES[s.key] ? s.key : 'serum', product: byId[s.product_id] || null, days: s.days || null })))
+        setSlots(saved.map((s, i) => ({ uid: `${s.key || 'step'}-saved-${i}`, key: STEP_TYPES[s.key] ? s.key : 'serum', product: byId[s.product_id] || null, days: s.days || null, acks: s.acks || [] })))
       })
       .catch(error => logError('RoutineBuilder_loadSaved', error, { period }, 'warn'))
   }, [route?.params?.startedAt])
@@ -156,11 +156,19 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const chosenSlots = slots.filter(slot => slot.product)
   const issues = checkRoutine({
     period,
-    steps: chosenSlots.map(slot => ({ product_id: slot.product.id, days: slot.days })),
+    steps: chosenSlots.map(slot => ({ product_id: slot.product.id, days: slot.days, acks: slot.acks || [] })),
     productsById: Object.fromEntries(chosenSlots.map(slot => [slot.product.id, slot.product])),
     otherSteps: other.steps,
     otherProductsById: other.productsById,
   })
+  // "I'm used to this": the warning stays quiet for that product.
+  const acknowledge = issue => {
+    const uid = chosenSlots[issue.stepIndex]?.uid
+    if (!uid) return
+    setSlots(prev => prev.map(slot => (slot.uid === uid ? { ...slot, acks: [...new Set([...(slot.acks || []), issue.key])] } : slot)))
+    Alert.alert(t("Got it, we won't remind you"), t('If your skin gets red, tight or stings, space it out a little.'))
+  }
+
   const applyFix = fix => {
     const uid = chosenSlots[fix.stepIndex]?.uid
     if (uid && fix.days?.length) setSlots(prev => prev.map(slot => (slot.uid === uid ? { ...slot, days: fix.days } : slot)))
@@ -186,13 +194,14 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     }
     setSaving(true)
     try {
-      const routineSteps = chosen.map(({ key, product, days }) => ({
+      const routineSteps = chosen.map(({ key, product, days, acks }) => ({
         key,
         action: STEP_TYPES[key].label,
         product: `${product.brand} ${product.name}`.trim(),
         product_id: product.id,
         image_url: product.image_url || null,
         days: days && days.length < 7 ? days : null,
+        acks: acks && acks.length ? acks : null,
       }))
       const result = await saveRoutine(user.id, period, routineSteps)
       if (!result.success) throw new Error(result.error)
@@ -343,13 +352,20 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                         <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(issue.title)}</Text>
                       </View>
                       <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(issue.text)}</Text>
-                      {issue.fix ? (
-                        <Pressable onPress={() => applyFix(issue.fix)} style={[styles.fixButton, { backgroundColor: colors.card }]}>
-                          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
-                            {t('Fix: use it on {days}', { days: describeDays(issue.fix.days) })}
-                          </Text>
-                        </Pressable>
-                      ) : null}
+                      <View style={styles.issueActions}>
+                        {issue.fix ? (
+                          <Pressable onPress={() => applyFix(issue.fix)} style={[styles.fixButton, { backgroundColor: colors.card }]}>
+                            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
+                              {t('Fix: use it on {days}', { days: describeDays(issue.fix.days) })}
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                        {issue.stepIndex !== undefined ? (
+                          <Pressable onPress={() => acknowledge(issue)} style={[styles.fixButton, { backgroundColor: 'transparent' }]}>
+                            <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t("I'm used to this")}</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -440,6 +456,7 @@ const styles = StyleSheet.create({
   daysChip: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, marginTop: 6 },
   issue: { borderRadius: RADIUS.md, padding: SPACING.lg },
   issueHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  issueActions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   fixButton: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: SPACING.sm },
   dayRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
   day: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

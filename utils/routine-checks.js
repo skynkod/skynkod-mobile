@@ -61,6 +61,8 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
   if (period === 'morning') {
     for (const r of retinoids) {
       issues.push({
+        key: 'retinol-morning',
+        stepIndex: r.index,
         level: 'warning',
         title: 'Retinol works best at night',
         text: `${r.product.name} contains retinol. Sunlight breaks it down and makes skin more sensitive, so move it to your night routine.`,
@@ -75,6 +77,8 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
       if (!same.length) continue
       const acidDays = daysOf(c.step).filter(d => !daysOf(r.step).includes(d))
       issues.push({
+        key: `retinol-acid-${r.product.id}`,
+        stepIndex: c.index,
         level: 'warning',
         title: 'Retinol and acids on the same day',
         text: `Using ${r.product.name} and ${c.product.name} together (${describeDays(same)}) can irritate your skin. Alternate them instead.`,
@@ -87,6 +91,8 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
   for (const e of exfoliants) {
     if (daysOf(e.step).length > 3 && !e.a.retinoid) {
       issues.push({
+        key: 'exfoliating-often',
+        stepIndex: e.index,
         level: 'warning',
         title: 'Exfoliating too often',
         text: `${e.product.name} exfoliates. Most skin does best with it 2–3 times a week.`,
@@ -99,6 +105,8 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
       const same = overlap(exfoliants[i].step, exfoliants[j].step)
       if (same.length) {
         issues.push({
+          key: `two-exfoliants-${exfoliants[i].product.id}`,
+          stepIndex: exfoliants[j].index,
           level: 'warning',
           title: 'Two exfoliants on the same day',
           text: `${exfoliants[i].product.name} and ${exfoliants[j].product.name} both exfoliate (${describeDays(same)}). Use them on different days.`,
@@ -113,6 +121,8 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
     for (const b of items.filter(i => i.a.benzoyl)) {
       if (overlap(v.step, b.step).length) {
         issues.push({
+          key: `vitc-benzoyl-${v.product.id}`,
+          stepIndex: b.index,
           level: 'info',
           title: 'Vitamin C and benzoyl peroxide',
           text: `Benzoyl peroxide can deactivate vitamin C. Use ${v.product.name} in the morning and ${b.product.name} at night.`,
@@ -136,5 +146,6 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
     }
   }
 
-  return issues
+  // Warnings the user said they're used to stay quiet for that product.
+  return issues.filter(i => i.stepIndex === undefined || !(steps[i.stepIndex]?.acks || []).includes(i.key))
 }
