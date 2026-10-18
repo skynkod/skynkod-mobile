@@ -6,7 +6,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
-import { getDayProgress, getRecentRegularity, localDay } from '../utils/routine-log';
+import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, getEntriesBetween, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { Screen, useColors } from '../components/ui';
@@ -69,6 +69,7 @@ export default function JournalScreen({ route, navigation }) {
   const loadRoutines = useCallback(async () => {
     if (!user?.id) return;
     try {
+      await syncTodayTicks(user.id);
       const [routines, progress, regularity] = await Promise.all([
         getUserRoutines(user.id),
         getDayProgress(user.id, localDay(selected)),

@@ -15,7 +15,7 @@ import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { dermatologistAdvice } from '../utils/dermatologist';
 import { todaySteps } from '../utils/routine-checks';
-import { logStep } from '../utils/routine-log';
+import { logStep, syncTodayTicks } from '../utils/routine-log';
 import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
@@ -135,6 +135,8 @@ export default function HomeScreen({ navigation }) {
       setNewestId(newest);
     }
     setDone(JSON.parse(ticks || '{}'));
+    const allRoutines = routines.success ? routines.data || [] : [];
+    syncTodayTicks(user.id, Object.fromEntries(allRoutines.map(r => [r.type, r.id])));
     if (journal.success) setEntries(journal.data || []);
     setDermHiddenUntil(Number(dermHidden) || null);
     setCheckInSkipped(!!skipped);

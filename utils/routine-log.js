@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './supabase'
 
 // Each ticked routine step is one row in routine_completions, so the Journal
@@ -60,4 +61,23 @@ export const getRecentRegularity = async (userId, days = 7) => {
     .gte('date', since)
   if (error) throw error
   return { done: new Set((data || []).map(r => r.date)).size, days }
+}
+
+// Steps ticked while offline stay on the phone; send the missing ones so the
+// Journal shows the same count as Home. Same storage key as Home and Routines.
+export const syncTodayTicks = async (userId, routinesById = {}) => {
+  try {
+    const progress = await getDayProgress(userId, localDay())
+    for (const type of ['morning', 'evening']) {
+      const raw = await AsyncStorage.getItem(`routine_done_${userId}_${type}_${new Date().toDateString()}`)
+      const ticks = JSON.parse(raw || '{}')
+      for (const [idx, isDone] of Object.entries(ticks)) {
+        if (isDone && !progress[type].has(Number(idx))) {
+          await logStep({ userId, routineId: routinesById[type] || null, type, stepIndex: Number(idx), done: true })
+        }
+      }
+    }
+  } catch {
+    // Offline again: it will sync next time.
+  }
 }
