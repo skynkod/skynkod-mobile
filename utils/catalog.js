@@ -89,7 +89,7 @@ export const addToMyProducts = async (userId, product, status = 'owned') => {
 export const getMyProducts = async (userId) => {
   const { data, error } = await supabase
     .from('user_products')
-    .select('id, product_id, product_name, brand, category, status, created_at')
+    .select('id, product_id, product_name, brand, category, status, created_at, opened_at, expires_at, pao_months')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error

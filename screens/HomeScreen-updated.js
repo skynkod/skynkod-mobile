@@ -13,10 +13,11 @@ import { useSkinProfile } from '../utils/useSkinProfile';
 import { dermatologistAdvice } from '../utils/dermatologist';
 import { todaySteps } from '../utils/routine-checks';
 import { logStep } from '../utils/routine-log';
+import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn } from '../utils/journal-day';
 import MorningCheckIn from '../components/MorningCheckIn';
-import { getProductsByIds, getNewestProductId } from '../utils/catalog';
+import { getProductsByIds, getNewestProductId, getMyProducts } from '../utils/catalog';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -64,6 +65,7 @@ export default function HomeScreen({ navigation }) {
   const [dermHiddenUntil, setDermHiddenUntil] = useState(null);
   const [dermOpen, setDermOpen] = useState(false);
   const [checkInSkipped, setCheckInSkipped] = useState(false);
+  const [shelf, setShelf] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function HomeScreen({ navigation }) {
     if (journal.success) setEntries(journal.data || []);
     setDermHiddenUntil(Number(dermHidden) || null);
     setCheckInSkipped(!!skipped);
+    getMyProducts(user.id).then(rows => setShelf(rows.filter(r => r.status === 'owned'))).catch(() => {});
     setLoaded(true);
   }, [user?.id, period]);
 
@@ -123,6 +126,7 @@ export default function HomeScreen({ navigation }) {
     setDone(next);
     await AsyncStorage.setItem(doneKey(user.id, period), JSON.stringify(next)).catch(() => {});
     logStep({ userId: user.id, routineId: routine?.id, type: period, stepIndex: currentIdx, done: true });
+    markOpenedIfNeeded(user.id, current?.product_id).catch(() => {});
   };
 
   const undoLast = async () => {
@@ -149,6 +153,11 @@ export default function HomeScreen({ navigation }) {
     while (days.has(d.toDateString())) { n++; d.setDate(d.getDate() - 1); }
     return n;
   })();
+  // The product most in need of replacing (expired first, then soonest).
+  const toReplace = shelf
+    .map(row => ({ row, life: shelfLife(row) }))
+    .filter(x => x.life.status === 'expired' || x.life.status === 'soon')
+    .sort((a, b) => a.life.daysLeft - b.life.daysLeft)[0];
   const derm = dermatologistAdvice(profile, entries);
   const showDerm = derm && (!dermHiddenUntil || Date.now() > dermHiddenUntil);
   const hideDerm = async () => {
@@ -364,6 +373,20 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
 
+      {toReplace ? (
+        <Pressable onPress={() => navigation.navigate('Products')} style={[styles.replace, { backgroundColor: toReplace.life.status === 'expired' ? colors.dangerSoft : colors.warningSoft }]}>
+          <Ionicons name="hourglass-outline" size={20} color={toReplace.life.status === 'expired' ? colors.danger : colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{toReplace.row.product?.name || toReplace.row.product_name}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>
+              {toReplace.life.openedMonths !== null ? `${t('Open for {n} months', { n: toReplace.life.openedMonths })} · ` : ''}
+              {toReplace.life.status === 'expired' ? t('time to replace it') : t('replace it soon')}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+        </Pressable>
+      ) : null}
+
       {showDerm ? (
         <View style={[styles.derm, { backgroundColor: derm.level === 'recommended' ? colors.dangerSoft : colors.surface, borderColor: colors.border }]}>
           <View style={styles.dermHead}>
@@ -450,6 +473,7 @@ const styles = StyleSheet.create({
   primary: { flexDirection: 'row', gap: SPACING.sm, height: 54, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
   primaryText: { fontSize: 16, fontWeight: '600' },
   allDone: { paddingVertical: SPACING.xl },
+  replace: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   derm: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, marginTop: SPACING.lg },
   dermHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   dermActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md },

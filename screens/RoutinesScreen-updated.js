@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getUserRoutines } from '../utils/routines-service';
 import { logStep } from '../utils/routine-log';
+import { markOpenedIfNeeded } from '../utils/shelf-life';
 import { getUserProfile } from '../utils/supabase';
 import { buildRoutine } from '../utils/routine-builder';
 import { useAuth } from '../utils/AuthContext';
@@ -85,6 +86,7 @@ export default function RoutinesScreen({ route, navigation }) {
     setDone(next);
     AsyncStorage.setItem(todayKey(user.id, tab), JSON.stringify(next)).catch(() => {});
     if (saved) logStep({ userId: user.id, routineId: saved.id, type: tab, stepIndex: idx, done: !!next[idx] });
+    if (next[idx]) markOpenedIfNeeded(user.id, steps[idx]?.product_id).catch(() => {});
   };
 
   if (loading) return <LoadingView />;
