@@ -66,8 +66,10 @@ export default function IngredientScreen({ navigation, route }) {
       <Text style={[styles.section, { color: colors.muted }]}>{t('PRODUCTS WITH IT')}</Text>
       {loading ? <ActivityIndicator color={colors.primary} /> : null}
       {!loading && !products.length ? <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('No products found yet.')}</Text> : null}
-      {products.map(product => {
-        const match = productMatch(product, profile)
+      {products
+        .map(product => ({ product, match: productMatch(product, profile) }))
+        .sort((a, b) => a.match.avoid.length - b.match.avoid.length || b.match.score - a.match.score)
+        .map(({ product, match }) => {
         return (
           <Pressable
             key={product.id}
@@ -85,7 +87,7 @@ export default function IngredientScreen({ navigation, route }) {
               <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
             </View>
-            <MatchBadge tone={match.tone} label={`${match.score}%`} />
+            <MatchBadge tone={match.tone} label={match.avoid.length ? t('Avoid') : `${match.score}%`} />
           </Pressable>
         )
       })}

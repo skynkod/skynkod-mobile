@@ -52,11 +52,13 @@ export default function ProductPickerScreen({ navigation, route }) {
     return () => clearTimeout(timer)
   }, [query])
 
-  // Best matches first; products with a photo win ties.
+  // Best matches first; products with a photo win ties. Never suggest a
+  // product the user should avoid (allergy, pregnancy...).
   const topPicks = useMemo(
     () =>
       picks
         .map(p => ({ product: p, match: productMatch(p, profile) }))
+        .filter(({ match }) => !match.avoid.length)
         .sort((a, b) => b.match.score - a.match.score || Number(!!b.product.image_url) - Number(!!a.product.image_url))
         .slice(0, 12),
     [picks, profile]
@@ -65,7 +67,9 @@ export default function ProductPickerScreen({ navigation, route }) {
   // merge keeps the builder's period and progress; a plain navigate would wipe them.
   const choose = product => navigation.navigate('RoutineBuilder', { picked: { stepKey, uid, product } }, { merge: true })
   const searching = query.trim().length >= 2
-  const list = searching ? results.map(p => ({ product: p, match: productMatch(p, profile) })) : topPicks
+  const list = searching
+    ? results.map(p => ({ product: p, match: productMatch(p, profile) })).sort((a, b) => a.match.avoid.length - b.match.avoid.length)
+    : topPicks
 
   return (
     <Screen back keyboard title={t(step.title)} subtitle={t('Which one do you use?')}>
@@ -114,7 +118,7 @@ export default function ProductPickerScreen({ navigation, route }) {
             <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           </View>
-          <MatchBadge tone={match.tone} label={`${match.score}%`} />
+          <MatchBadge tone={match.tone} label={match.avoid.length ? t('Avoid') : `${match.score}%`} />
         </Pressable>
       ))}
     </Screen>

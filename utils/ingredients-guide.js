@@ -168,6 +168,16 @@ const profileFacts = (profile) => {
   }
 }
 
+// Why pregnancy rules exist, in plain words, and safer swaps (guide ids).
+const PREGNANCY_DETAIL = {
+  retinol: 'Vitamin A in high doses can affect a baby\'s development, so doctors advise stopping retinoids (retinol, retinal, adapalene, tretinoin) while pregnant or breastfeeding, even in skincare.',
+  hydroquinone: 'A large share of hydroquinone is absorbed through the skin, so it isn\'t recommended while pregnant or breastfeeding.',
+}
+const PREGNANCY_ALTERNATIVES = {
+  retinol: ['azelaic', 'niacinamide', 'vitaminc', 'peptides'],
+  hydroquinone: ['azelaic', 'vitaminc', 'niacinamide'],
+}
+
 const AVOID_TAGS = { Fragrance: ['fragrance'], 'Essential oils': ['essential-oil'], Nuts: ['nut'], Lanolin: ['lanolin'], Alcohol: ['drying-alcohol'] }
 
 // Cautions an ingredient raises for this user: { level: 'avoid' | 'care', text }.
@@ -177,11 +187,30 @@ const cautionsFor = (entry, facts, isRinseOff) => {
   const name = entry.name
   const lower = name.charAt(0).toLowerCase() + name.slice(1)
   for (const [answer, tags] of Object.entries(AVOID_TAGS)) {
-    if (facts.avoid.includes(answer) && tags.some(has)) out.push({ level: 'avoid', text: `Contains ${lower}, which you want to avoid` })
+    if (facts.avoid.includes(answer) && tags.some(has)) {
+      out.push({
+        level: 'avoid',
+        text: `Contains ${lower}, which you want to avoid`,
+        detail: `You told us to avoid ${answer.toLowerCase()}. We check every ingredient of every product for you, so you don't have to read the small print.`,
+      })
+    }
   }
   if (facts.avoid.includes('Fragrance') && has('eu-allergen')) out.push({ level: 'care', text: 'Contains fragrance allergens' })
-  if (facts.pregnant && has('pregnancy-avoid')) out.push({ level: 'avoid', text: `${name} is best avoided while pregnant or breastfeeding` })
-  if (facts.pregnant && has('pregnancy-care')) out.push({ level: 'care', text: `Ask your doctor about ${lower} while pregnant or breastfeeding` })
+  if (facts.pregnant && has('pregnancy-avoid')) {
+    out.push({
+      level: 'avoid',
+      text: `${name} is best avoided while pregnant or breastfeeding`,
+      detail: PREGNANCY_DETAIL[entry.id] || `${name} is not recommended while pregnant or breastfeeding. Check with your doctor or midwife.`,
+      alternatives: PREGNANCY_ALTERNATIVES[entry.id] || [],
+    })
+  }
+  if (facts.pregnant && has('pregnancy-care')) {
+    out.push({
+      level: 'care',
+      text: `Ask your doctor about ${lower} while pregnant or breastfeeding`,
+      detail: 'Low-strength salicylic acid in skincare is generally considered fine, but peels and high strengths are not. Check with your doctor or midwife.',
+    })
+  }
   if (facts.fungal && has('fungal-trigger')) out.push({ level: 'care', text: `${name} can feed fungal acne` })
   if (facts.rosacea && has('rosacea-trigger')) out.push({ level: 'care', text: `${name} can trigger rosacea flare-ups` })
   if (facts.eczema && has('eczema-trigger')) out.push({ level: 'care', text: `${name} can irritate eczema-prone skin` })
@@ -232,7 +261,7 @@ export const productMatch = (product, profile) => {
       good.push({ entry, weight, text: `${entry.name} helps with ${[...new Set(helps.map(phrase))].join(', ')}` })
     }
     for (const c of cautionsFor(entry, facts, isRinseOff)) {
-      if (c.level === 'avoid') avoid.push({ entry, text: c.text })
+      if (c.level === 'avoid') avoid.push({ entry, text: c.text, detail: c.detail, alternatives: c.alternatives || [] })
       else {
         penalty += 14 * weight * (isRinseOff ? 0.6 : 1)
         care.push({ entry, weight, text: c.text })

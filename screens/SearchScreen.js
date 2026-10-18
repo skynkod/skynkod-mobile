@@ -165,8 +165,10 @@ export default function SearchScreen({ navigation, route }) {
               </Text>
             </View>
           ) : null}
-          {products.map(product => {
-            const match = productMatch(product, profile)
+          {products
+            .map(product => ({ product, match: productMatch(product, profile) }))
+            .sort((a, b) => a.match.avoid.length - b.match.avoid.length)
+            .map(({ product, match }) => {
             return (
               <Pressable
                 key={product.id}
@@ -184,7 +186,7 @@ export default function SearchScreen({ navigation, route }) {
                   <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
                   <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
                 </View>
-                <MatchBadge tone={match.tone} label={`${match.score}%`} />
+                <MatchBadge tone={match.tone} label={match.avoid.length ? t('Avoid') : `${match.score}%`} />
               </Pressable>
             )
           })}

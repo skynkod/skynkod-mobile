@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getProduct, addToMyProducts } from '../utils/catalog'
-import { productMatch } from '../utils/ingredients-guide'
+import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -38,6 +38,16 @@ export default function ProductScreen({ navigation, route }) {
   if (!product) return <Screen back><EmptyState icon="alert-circle-outline" title={t('Product not found')} /></Screen>
 
   const match = productMatch(product, profile)
+
+  // Adding a product the user should avoid needs a clear, explained warning.
+  const confirmAdd = () => {
+    if (!match.avoid.length) return add()
+    const first = match.avoid[0]
+    Alert.alert(t('Not recommended for you'), `${t(first.text)}.\n\n${t(first.detail || '')}`, [
+      { text: t('Add anyway'), style: 'destructive', onPress: add },
+      { text: t("Don't add"), style: 'cancel' },
+    ])
+  }
 
   const add = async () => {
     setAdding(true)
@@ -92,6 +102,37 @@ export default function ProductScreen({ navigation, route }) {
         ) : null}
       </View>
 
+      {match.avoid.length ? (
+        <View style={[styles.avoidCard, { backgroundColor: colors.dangerSoft }]}>
+          <View style={styles.avoidHead}>
+            <Ionicons name="close-circle" size={20} color={colors.danger} />
+            <Text style={[TYPE.bodyStrong, { color: colors.danger }]}>{t('Why we say avoid')}</Text>
+          </View>
+          {match.avoid.map((a, idx) => (
+            <View key={idx} style={{ marginTop: SPACING.sm }}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(a.text)}</Text>
+              {a.detail ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(a.detail)}</Text> : null}
+              {a.alternatives.length ? (
+                <>
+                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700', marginTop: SPACING.md }]}>{t('Safer alternatives')}</Text>
+                  <View style={styles.altRow}>
+                    {a.alternatives.map(id => (
+                      <Pressable
+                        key={id}
+                        onPress={() => navigation.navigate('Ingredient', { id })}
+                        style={[styles.altChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                      >
+                        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(getIngredient(id)?.name || id)}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       {match.found.length ? (
         <>
           <Text style={[styles.section, { color: colors.muted }]}>{t('KEY INGREDIENTS')}</Text>
@@ -121,7 +162,7 @@ export default function ProductScreen({ navigation, route }) {
       ) : null}
 
       <Pressable
-        onPress={add}
+        onPress={confirmAdd}
         disabled={adding || added}
         style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, opacity: added ? 0.6 : pressed ? 0.85 : 1 }]}
       >
@@ -141,6 +182,10 @@ const styles = StyleSheet.create({
   matchHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: 4 },
   matchScore: { fontSize: 32, fontWeight: '800', letterSpacing: -1 },
   reason: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  avoidCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.md },
+  avoidHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  altRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
+  altChip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.xs },
   ingredient: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.xl, marginBottom: SPACING.md },

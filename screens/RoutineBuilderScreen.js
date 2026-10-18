@@ -69,7 +69,18 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       return
     }
     const match = productMatch(picked.product, profile)
-    if (match.tone === 'warning' || match.tone === 'danger') {
+    if (match.avoid.length) {
+      // Something the user must not use (allergy, pregnancy...): explain why.
+      const first = match.avoid[0]
+      Alert.alert(
+        t('Not recommended for you'),
+        `${t(first.text)}.\n\n${t(first.detail || '')}`,
+        [
+          { text: t('Keep anyway'), style: 'destructive' },
+          { text: t('Choose another'), style: 'cancel', onPress: () => pick(picked.stepKey, picked.uid) },
+        ]
+      )
+    } else if (match.tone === 'warning') {
       Alert.alert(
         t('Heads up'),
         t('{product} may not suit your skin: {reason}.', { product: picked.product.name, reason: t(match.care[0]?.text || match.label).toLowerCase() }),
