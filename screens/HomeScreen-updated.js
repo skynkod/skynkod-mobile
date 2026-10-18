@@ -279,7 +279,7 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          <View style={styles.heroTop}>
+          <View style={[styles.heroTop, { paddingBottom: Math.round(introHeight * 0.3) }]}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
             {/* The line sits on a frosted pill so it reads the same over light and deep parts of the sky */}
@@ -567,7 +567,8 @@ const styles = StyleSheet.create({
   sosChips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
   sosChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   sosAll: { paddingHorizontal: 4, paddingVertical: 7 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
+  // A touch closer to the greeting, a touch more space before the cards.
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: -SPACING.lg, marginBottom: SPACING.sm },
   doneLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 999, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, marginTop: SPACING.xl },
   doneIcon: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, paddingHorizontal: SPACING.lg },
