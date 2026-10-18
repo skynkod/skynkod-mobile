@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, SectionHeader, ListRow, useColors } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
+import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import ProgressScreen from './ProgressScreen'
 import ProgressAnalysisScreen from './ProgressAnalysisScreen'
@@ -34,17 +35,34 @@ export const MORE_SCREENS = [
   { name: 'About', component: AboutScreen, label: 'About', subtitle: 'Skynkod v1.0', icon: 'information-circle-outline', group: 'account' },
 ]
 
-const byGroup = group => MORE_SCREENS.filter(s => s.group === group)
+// Routines left the tab bar (they live on Home now), so Profile links to them too.
+const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning & evening', icon: 'water-outline', group: 'track' }
+
+const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group)
 
 export default function MoreScreen({ navigation }) {
   const colors = useColors()
   const { user } = useAuth()
+  const firstName = useFirstName(user?.id)
   const open = name => navigation.navigate(name)
   const tracking = byGroup('track')
 
   return (
-    <Screen title="More" subtitle={user?.email}>
-      <SectionHeader title="Track" />
+    <Screen title="Profile">
+      <View style={[styles.profile, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.avatar, { backgroundColor: colors.primarySoft }]}>
+          <Text style={[TYPE.heading, { color: colors.primary }]}>{(firstName || user?.email || '?')[0].toUpperCase()}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{firstName || (user?.email || '').split('@')[0]}</Text>
+          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{user?.email}</Text>
+        </View>
+        <Pressable onPress={() => open('Settings')} hitSlop={10} accessibilityLabel="Settings">
+          <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
+        </Pressable>
+      </View>
+
+      <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
       <View style={styles.grid}>
         {tracking.map(item => (
           <Pressable
@@ -83,6 +101,8 @@ export default function MoreScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  profile: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
+  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md },
   tile: { width: '48%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.md },

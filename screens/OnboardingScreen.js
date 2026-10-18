@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -44,8 +44,8 @@ const GOALS = [
   { value: 'simple', label: 'A routine I actually stick to' },
 ]
 
-const STEPS = ['welcome', 'features', 'skinType', 'concerns', 'goal', 'summary']
-const QUESTION_STEPS = ['skinType', 'concerns', 'goal', 'summary']
+const STEPS = ['welcome', 'features', 'name', 'skinType', 'concerns', 'goal', 'summary']
+const QUESTION_STEPS = ['name', 'skinType', 'concerns', 'goal', 'summary']
 
 // Glossier-inspired: lots of air, big plain headlines, pill buttons and soft
 // transitions. The first page picks up the splash screen's mauve.
@@ -54,6 +54,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
   const t = useT()
   const insets = useSafeAreaInsets()
   const [step, setStep] = useState(0)
+  const [firstName, setFirstName] = useState('')
   const [skinType, setSkinType] = useState(undefined)
   const [concerns, setConcerns] = useState([])
   const [goal, setGoal] = useState(null)
@@ -98,10 +99,12 @@ export default function OnboardingScreen({ userId, onComplete }) {
     setSaving(true)
     try {
       if (save) {
-        const answers = { skinType: skinType ?? null, concerns, goal }
+        const answers = { firstName: firstName.trim() || null, skinType: skinType ?? null, concerns, goal }
         await AsyncStorage.setItem('skynkod_skin_profile', JSON.stringify(answers))
+        if (userId && answers.firstName) await AsyncStorage.setItem(`skynkod_first_name_${userId}`, answers.firstName)
         if (userId) {
           const saved = await updateUserProfile(userId, {
+            first_name: answers.firstName,
             skin_type: answers.skinType,
             skin_concerns: answers.concerns,
             skin_goal: answers.goal,
@@ -220,6 +223,27 @@ export default function OnboardingScreen({ userId, onComplete }) {
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} />
+  } else if (name === 'name') {
+    content = (
+      <>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('What should we call you?')}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t("We'll use it to say hello.")}</Text>
+        <TextInput
+          value={firstName}
+          onChangeText={setFirstName}
+          placeholder={t('Your first name')}
+          placeholderTextColor={colors.muted}
+          autoCapitalize="words"
+          autoComplete="given-name"
+          textContentType="givenName"
+          returnKeyType="next"
+          maxLength={40}
+          onSubmitEditing={() => firstName.trim() && next()}
+          style={[styles.nameInput, { color: colors.text, backgroundColor: colors.card, borderColor: firstName.trim() ? colors.primary : colors.border }]}
+        />
+      </>
+    )
+    footer = <Pill title={t('Continue')} onPress={next} disabled={!firstName.trim()} />
   } else if (name === 'skinType') {
     content = (
       <>
@@ -268,7 +292,9 @@ export default function OnboardingScreen({ userId, onComplete }) {
     content = (
       <>
         <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Your skin profile')}</Text>
-        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.sm }]}>{t('Nice to meet your skin.')}</Text>
+        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.sm }]}>
+          {firstName.trim() ? t('Nice to meet you, {name}.', { name: firstName.trim() }) : t('Nice to meet your skin.')}
+        </Text>
         <View style={[styles.summary, { backgroundColor: BRAND_MAUVE }]}>
           <Text style={styles.summaryLabel}>{t('Skin type')}</Text>
           <Text style={styles.summaryValue}>{typeLabel && skinType ? typeLabel : t('To discover')}</Text>
@@ -286,7 +312,10 @@ export default function OnboardingScreen({ userId, onComplete }) {
   }
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}
+    >
       <View style={styles.topBar}>
         <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('Back')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -309,12 +338,12 @@ export default function OnboardingScreen({ userId, onComplete }) {
         </View>
       ) : null}
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Animated.View style={animatedStyle}>{content}</Animated.View>
       </ScrollView>
 
       {footer ? <View style={styles.footer}>{footer}</View> : null}
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -335,6 +364,7 @@ const styles = StyleSheet.create({
   pill: { height: 56, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.xxl },
   pillText: { fontSize: 16, fontWeight: '600', letterSpacing: 0.2 },
 
+  nameInput: { marginTop: SPACING.xxl, height: 58, borderRadius: 999, borderWidth: 1.5, paddingHorizontal: SPACING.xl, fontSize: 18, fontWeight: '600' },
   choices: { marginTop: SPACING.xxl, gap: SPACING.sm },
   choice: { borderRadius: 999, borderWidth: 1, paddingVertical: 16, paddingHorizontal: SPACING.xl, gap: 2 },
   choiceLabel: { fontSize: 16, fontWeight: '600' },

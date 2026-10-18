@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { View, ActivityIndicator, Platform } from 'react-native'
+import { View, ActivityIndicator, Platform, Pressable, Modal, StyleSheet, Image } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
+import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
@@ -15,6 +15,8 @@ import { requestNotificationPermissions, getExpoPushToken, scheduleMorningRemind
 import { logError } from './utils/errorLogger'
 import * as SplashScreen from 'expo-splash-screen'
 import AnimatedSplash from './components/AnimatedSplash'
+import { BottomSheet, ListRow, Card } from './components/ui'
+import { SPACING } from './utils/theme'
 import LoginScreen from './screens/LoginScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import HomeScreen from './screens/HomeScreen-updated'
@@ -27,20 +29,36 @@ import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
 const Tab = createBottomTabNavigator()
+const navigationRef = createNavigationContainerRef()
 
+// Bottom bar from the mockup: Home · Journal · (+) · Koda · Profile.
 const TABS = [
   { name: 'Home', component: HomeScreen, label: 'Home', icon: 'home' },
   { name: 'Journal', component: JournalScreen, label: 'Journal', icon: 'book' },
-  { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'sparkles' },
-  { name: 'Routines', component: RoutinesScreen, label: 'Routines', icon: 'water' },
-  { name: 'More', component: MoreScreen, label: 'More', icon: 'grid' },
+  { name: 'Add', label: '', icon: 'add' },
+  { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'koda' },
+  { name: 'More', component: MoreScreen, label: 'Profile', icon: 'person' },
 ]
+
+// What the big (+) button offers.
+const QUICK_ACTIONS = [
+  { icon: 'create-outline', title: 'Skin check-in', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
+  { icon: 'scan-outline', title: 'Scan a product', subtitle: 'Check ingredients and compatibility', to: 'Scanner' },
+  { icon: 'flask-outline', title: 'Add a product', subtitle: 'Add it to your collection', to: 'Products' },
+  { icon: 'camera-outline', title: 'Progress photo', subtitle: 'Track changes over time', to: 'Photos' },
+  { icon: 'shield-checkmark-outline', title: 'Emergency mode', subtitle: 'A 7-day plan to calm your skin', to: 'Emergency' },
+]
+
+const Empty = () => null
+const KODA_ICON = require('./assets/images/koda-logo-white.png')
 
 function AppTabs({ userId }) {
   const { colors } = useTheme()
   const t = useT()
+  const [quickOpen, setQuickOpen] = useState(false)
 
   return (
+    <>
     <Tab.Navigator
       backBehavior="history"
       screenOptions={{
@@ -57,23 +75,50 @@ function AppTabs({ userId }) {
         },
       }}
     >
-      {TABS.map(tab => (
-        <Tab.Screen
-          key={tab.name}
-          name={tab.name}
-          component={tab.component}
-          initialParams={{ userId }}
-          options={{
-            tabBarLabel: t(tab.label),
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
-            ),
-          }}
-        />
-      ))}
+      {TABS.map(tab =>
+        tab.name === 'Add' ? (
+          <Tab.Screen
+            key="Add"
+            name="Add"
+            component={Empty}
+            options={{
+              tabBarLabel: () => null,
+              tabBarAccessibilityLabel: t('Quick actions'),
+              tabBarButton: () => (
+                <View style={styles.addSlot}>
+                  <Pressable
+                    onPress={() => setQuickOpen(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Quick actions')}
+                    style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, shadowColor: colors.shadow, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+                  >
+                    <Ionicons name="add" size={30} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+              ),
+            }}
+          />
+        ) : (
+          <Tab.Screen
+            key={tab.name}
+            name={tab.name}
+            component={tab.component}
+            initialParams={{ userId }}
+            options={{
+              tabBarLabel: t(tab.label),
+              tabBarIcon: ({ color, focused, size }) =>
+                tab.icon === 'koda' ? (
+                  <Image source={KODA_ICON} style={{ width: size, height: size, tintColor: color }} />
+                ) : (
+                  <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
+                ),
+            }}
+          />
+        )
+      )}
 
-      {/* Feature screens opened from "More": hidden from the tab bar, back button returns there. */}
-      {MORE_SCREENS.map(screen => (
+      {/* Screens opened from Home, (+) or Profile: hidden from the tab bar. */}
+      {[{ name: 'Routines', component: RoutinesScreen }, ...MORE_SCREENS].map(screen => (
         <Tab.Screen
           key={screen.name}
           name={screen.name}
@@ -83,8 +128,45 @@ function AppTabs({ userId }) {
         />
       ))}
     </Tab.Navigator>
+
+    <Modal visible={quickOpen} transparent animationType="fade" onRequestClose={() => setQuickOpen(false)}>
+      <BottomSheet title={t('Quick actions')} onClose={() => setQuickOpen(false)}>
+        <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg }}>
+          {QUICK_ACTIONS.map((action, idx) => (
+            <ListRow
+              key={action.to}
+              icon={action.icon}
+              title={t(action.title)}
+              subtitle={t(action.subtitle)}
+              last={idx === QUICK_ACTIONS.length - 1}
+              onPress={() => {
+                setQuickOpen(false)
+                if (navigationRef.isReady()) navigationRef.navigate(action.to, action.params?.())
+              }}
+            />
+          ))}
+        </Card>
+      </BottomSheet>
+    </Modal>
+    </>
   )
 }
+
+const styles = StyleSheet.create({
+  addSlot: { flex: 1, alignItems: 'center' },
+  addButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    marginTop: -18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+})
 
 function AppContent() {
   const [user, setUser] = useState(null)
@@ -201,7 +283,7 @@ function AppContent() {
   } else {
     content = (
       <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>
-        <NavigationContainer theme={navTheme}>
+        <NavigationContainer ref={navigationRef} theme={navTheme}>
           <AppTabs userId={user.userId} />
         </NavigationContainer>
       </AuthProvider>

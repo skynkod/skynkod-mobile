@@ -7,6 +7,7 @@ import { getKodaSuggestion } from '../utils/koda-ai';
 import { getJournalEntries } from '../utils/journal-service';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
+import { useFirstName } from '../utils/useFirstName';
 import { Screen, Card, SectionHeader, ProgressBar, IconCircle, IconButton, Button, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -60,7 +61,7 @@ export default function HomeScreen({ navigation }) {
   const isEvening = new Date().getHours() >= 17;
   const scoreColor = v => (v >= 70 ? colors.success : v >= 45 ? colors.warning : colors.danger);
   const trend = TREND[scores?.trend] || TREND.stable;
-  const firstName = (user?.email || '').split('@')[0];
+  const firstName = useFirstName(user?.id);
 
   return (
     <Screen
