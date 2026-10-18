@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing,
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as WebBrowser from 'expo-web-browser'
 import { updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { useColors } from '../components/ui'
@@ -80,7 +81,14 @@ const PREGNANCY = [
 
 const MAX_GOALS = 3
 
-const ALL_STEPS = ['welcome', 'features', 'name', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
+// Bump when the terms or privacy policy change, so users are asked again.
+export const CONSENT_VERSION = 'v1-2026-10'
+const TERMS_URL = 'https://skynkod.com/terms'
+const PRIVACY_URL = 'https://skynkod.com/privacy'
+// Questions about health-related skin data, only asked with explicit consent.
+const SENSITIVE_STEPS = ['acneType', 'conditions', 'avoid', 'pregnancy']
+
+const ALL_STEPS = ['welcome', 'features', 'name', 'consent', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
 
 // Glossier-inspired: lots of air, big plain headlines, pill buttons and soft
 // transitions. The first page picks up the splash screen's mauve.
@@ -90,6 +98,10 @@ export default function OnboardingScreen({ userId, onComplete }) {
   const insets = useSafeAreaInsets()
   const [step, setStep] = useState(0)
   const [firstName, setFirstName] = useState('')
+  const [terms, setTerms] = useState(false)
+  const [health, setHealth] = useState(false)
+  const [research, setResearch] = useState(false)
+  const [offers, setOffers] = useState(false)
   const [skinType, setSkinType] = useState(undefined)
   const [concerns, setConcerns] = useState([])
   const [goals, setGoals] = useState([]) // up to MAX_GOALS
@@ -100,7 +112,9 @@ export default function OnboardingScreen({ userId, onComplete }) {
   const [saving, setSaving] = useState(false)
 
   // The acne question only shows when acne was picked as a concern.
-  const STEPS = ALL_STEPS.filter(s => s !== 'acneType' || concerns.includes('Acne'))
+  const STEPS = ALL_STEPS
+    .filter(s => s !== 'acneType' || concerns.includes('Acne'))
+    .filter(s => health || !SENSITIVE_STEPS.includes(s))
   const QUESTION_STEPS = STEPS.slice(STEPS.indexOf('name'))
   const name = STEPS[step]
   const enter = useRef(new Animated.Value(0)).current
@@ -164,6 +178,23 @@ export default function OnboardingScreen({ userId, onComplete }) {
   const toggleConcern = (c) =>
     setConcerns(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]))
 
+  const now = () => new Date().toISOString()
+  const consentFields = () => ({
+    consent_version: CONSENT_VERSION,
+    consent_terms_at: terms ? now() : null,
+    consent_health_at: health ? now() : null,
+    consent_research: research,
+    consent_offers: offers,
+  })
+
+  // "Skip" can't jump past the consent page; after it, it saves the consents
+  // and the answers given so far.
+  const skip = () => {
+    const consentIdx = STEPS.indexOf('consent')
+    if (step < consentIdx) return goTo(consentIdx)
+    finish(true)
+  }
+
   // Answers are saved to the profile so routines and Koda can use them; a
   // failed save never blocks the user from getting into the app.
   const finish = async (save) => {
@@ -176,10 +207,10 @@ export default function OnboardingScreen({ userId, onComplete }) {
           skinType: skinType ?? null,
           concerns,
           goals,
-          acneTypes: concerns.includes('Acne') ? acneTypes : [],
-          conditions: clean(conditions),
-          avoid: clean(avoid),
-          pregnancy,
+          acneTypes: health && concerns.includes('Acne') ? acneTypes : [],
+          conditions: health ? clean(conditions) : [],
+          avoid: health ? clean(avoid) : [],
+          pregnancy: health ? pregnancy : null,
         }
         await AsyncStorage.setItem('skynkod_skin_profile', JSON.stringify(answers))
         if (userId && answers.firstName) await AsyncStorage.setItem(`skynkod_first_name_${userId}`, answers.firstName)
@@ -195,6 +226,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
             avoid_ingredients: answers.avoid,
             pregnancy: answers.pregnancy,
             onboarding_complete: true,
+            ...consentFields(),
           })
           if (!saved) await logError('OnboardingScreen_saveProfile', new Error('Profile not saved'), { userId }, 'warn')
         }
@@ -256,7 +288,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
       <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
         <View style={styles.topBar}>
           <View />
-          <Pressable onPress={() => finish(false)} hitSlop={12}>
+          <Pressable onPress={skip} hitSlop={12}>
             <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip')}</Text>
           </Pressable>
         </View>
@@ -330,6 +362,51 @@ export default function OnboardingScreen({ userId, onComplete }) {
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} disabled={!firstName.trim()} />
+  } else if (name === 'consent') {
+    const Check = ({ value, onChange, children, required }) => (
+      <Pressable onPress={() => onChange(!value)} style={styles.checkRow} accessibilityRole="checkbox" accessibilityState={{ checked: value }}>
+        <View style={[styles.checkBox, { borderColor: value ? colors.primary : colors.border, backgroundColor: value ? colors.primary : colors.card }]}>
+          {value ? <Ionicons name="checkmark" size={16} color={colors.onPrimary} /> : null}
+        </View>
+        <View style={{ flex: 1 }}>
+          {children}
+          {required ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Required')}</Text> : null}
+        </View>
+      </Pressable>
+    )
+    content = (
+      <>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('Your data, your choice')}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>
+          {t('We never sell your personal data. You can change these choices anytime in Settings.')}
+        </Text>
+        <View style={{ marginTop: SPACING.xl, gap: SPACING.lg }}>
+          <Check value={terms} onChange={setTerms} required>
+            <Text style={[TYPE.body, { color: colors.text }]}>
+              {t('I accept the ')}
+              <Text style={{ color: colors.primary, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)}>{t('Terms of use')}</Text>
+              {t(' and the ')}
+              <Text style={{ color: colors.primary, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)}>{t('Privacy policy')}</Text>
+            </Text>
+          </Check>
+          <Check value={health} onChange={setHealth}>
+            <Text style={[TYPE.body, { color: colors.text }]}>
+              {t('Use my sensitive skin information (skin conditions, acne type, allergies, pregnancy) to personalise my advice')}
+            </Text>
+            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Without it, we skip those questions.')}</Text>
+          </Check>
+          <Check value={research} onChange={setResearch}>
+            <Text style={[TYPE.body, { color: colors.text }]}>{t('Help improve Skynkod with anonymous statistics')}</Text>
+            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Never linked to your name or email.')}</Text>
+          </Check>
+          <Check value={offers} onChange={setOffers}>
+            <Text style={[TYPE.body, { color: colors.text }]}>{t('Get offers and product tests from brands')}</Text>
+            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Brands never see who you are.')}</Text>
+          </Check>
+        </View>
+      </>
+    )
+    footer = <Pill title={t('Continue')} onPress={next} disabled={!terms} />
   } else if (name === 'skinType') {
     content = (
       <>
@@ -438,8 +515,8 @@ export default function OnboardingScreen({ userId, onComplete }) {
         <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('Back')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        {name !== 'summary' ? (
-          <Pressable onPress={() => finish(false)} hitSlop={12}>
+        {name !== 'summary' && name !== 'consent' ? (
+          <Pressable onPress={skip} hitSlop={12}>
             <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip')}</Text>
           </Pressable>
         ) : <View />}
@@ -484,6 +561,8 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 16, fontWeight: '600', letterSpacing: 0.2 },
 
   nameInput: { marginTop: SPACING.xxl, height: 58, borderRadius: 999, borderWidth: 1.5, paddingHorizontal: SPACING.xl, fontSize: 18, fontWeight: '600' },
+  checkRow: { flexDirection: 'row', gap: SPACING.md, alignItems: 'flex-start' },
+  checkBox: { width: 26, height: 26, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   choices: { marginTop: SPACING.xxl, gap: SPACING.sm },
   choice: { borderRadius: 999, borderWidth: 1, paddingVertical: 16, paddingHorizontal: SPACING.xl, gap: 2 },
   choiceLabel: { fontSize: 16, fontWeight: '600' },

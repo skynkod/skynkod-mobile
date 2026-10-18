@@ -29,6 +29,7 @@ import ProductScreen from './screens/ProductScreen'
 import IngredientScreen from './screens/IngredientScreen'
 import RoutineBuilderScreen from './screens/RoutineBuilderScreen'
 import ProductPickerScreen from './screens/ProductPickerScreen'
+import PrivacyScreen from './screens/PrivacyScreen'
 
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -129,6 +130,7 @@ function AppTabs({ userId }) {
         { name: 'Ingredient', component: IngredientScreen },
         { name: 'RoutineBuilder', component: RoutineBuilderScreen },
         { name: 'ProductPicker', component: ProductPickerScreen },
+        { name: 'Privacy', component: PrivacyScreen },
         ...MORE_SCREENS,
       ].map(screen => (
         <Tab.Screen

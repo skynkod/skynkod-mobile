@@ -16,7 +16,7 @@ const LANGS = [
   { code: 'es', label: 'Español', flag: '🇪🇸' },
 ]
 
-export default function SettingsScreen({ route }) {
+export default function SettingsScreen({ route, navigation }) {
   const userId = route?.params?.userId
   const colors = useColors()
   const { themeMode, setThemeMode } = useTheme()
@@ -135,6 +135,12 @@ export default function SettingsScreen({ route }) {
 
       <SectionHeader title="Data & account" style={{ marginTop: SPACING.xxl }} />
       <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
+        <ListRow
+          icon="shield-checkmark-outline"
+          title="Privacy & data"
+          subtitle="Your consents and how we use your data"
+          onPress={() => navigation.navigate('Privacy')}
+        />
         <ListRow
           icon="trash-outline"
           title="Clear cache"
