@@ -116,7 +116,7 @@ export default function SettingsScreen({ route }) {
         ]}
       />
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>
-        Auto switches to dark mode between 8 pm and 6 am.
+        Auto switches to dark mode at sunset and back at sunrise.
       </Text>
 
       <SectionHeader title="Language" style={{ marginTop: SPACING.xxl }} />

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { getJournalEntries } from '../utils/journal-service';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { useFirstName } from '../utils/useFirstName';
+import { useTheme } from '../utils/ThemeContext';
 import { Screen, Card, SectionHeader, ProgressBar, IconCircle, IconButton, Button, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -24,12 +25,6 @@ const TREND = {
   stable: { label: 'Stable', icon: 'remove', tone: 'primary' },
 };
 
-const greeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-};
 
 export default function HomeScreen({ navigation }) {
   const colors = useColors();
@@ -62,11 +57,18 @@ export default function HomeScreen({ navigation }) {
   const scoreColor = v => (v >= 70 ? colors.success : v >= 45 ? colors.warning : colors.danger);
   const trend = TREND[scores?.trend] || TREND.stable;
   const firstName = useFirstName(user?.id);
+  // Day and night follow the real sunrise/sunset, same as night mode.
+  const { isNight, updateLocation } = useTheme();
+  useEffect(() => {
+    updateLocation();
+  }, []);
+  const greeting = isNight ? t('Good evening') : t('Good morning');
+  const greetingEmoji = isNight ? '🌙' : '☀️';
 
   return (
     <Screen
       overline={new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
-      title={`${t(greeting())}${firstName ? `,\n${firstName}` : ''}`}
+      title={`${greeting}${firstName ? `,\n${firstName}` : ''} ${greetingEmoji}`}
       right={<IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} accessibilityLabel={t('Settings')} />}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >

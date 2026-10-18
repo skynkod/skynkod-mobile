@@ -312,10 +312,8 @@ export default function OnboardingScreen({ userId, onComplete }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}
-    >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.flex, { backgroundColor: colors.bg }]}>
+    <View style={[styles.flex, { paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
       <View style={styles.topBar}>
         <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('Back')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -343,6 +341,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
       </ScrollView>
 
       {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </View>
     </KeyboardAvoidingView>
   )
 }
