@@ -9,6 +9,8 @@ import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { useFirstName } from '../utils/useFirstName';
 import { useTheme } from '../utils/ThemeContext';
+import { useSkinProfile } from '../utils/useSkinProfile';
+import { dermatologistAdvice } from '../utils/dermatologist';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -49,6 +51,9 @@ export default function HomeScreen({ navigation }) {
   const [done, setDone] = useState({});
   const [entries, setEntries] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const profile = useSkinProfile(user?.id);
+  const [dermHiddenUntil, setDermHiddenUntil] = useState(null);
+  const [dermOpen, setDermOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -57,15 +62,17 @@ export default function HomeScreen({ navigation }) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [routines, ticks, journal] = await Promise.all([
+    const [routines, ticks, journal, dermHidden] = await Promise.all([
       getUserRoutines(user.id),
       AsyncStorage.getItem(doneKey(user.id, period)).catch(() => null),
-      getJournalEntries(user.id, 7),
+      getJournalEntries(user.id, 14),
+      AsyncStorage.getItem(`skynkod_derm_hidden_${user.id}`).catch(() => null),
     ]);
     const mine = routines.success ? (routines.data || []).find(r => r.type === period && Array.isArray(r.steps) && r.steps.length) : null;
     setRoutine(mine || null);
     setDone(JSON.parse(ticks || '{}'));
     if (journal.success) setEntries(journal.data || []);
+    setDermHiddenUntil(Number(dermHidden) || null);
     setLoaded(true);
   }, [user?.id, period]);
 
@@ -99,6 +106,15 @@ export default function HomeScreen({ navigation }) {
     const next = { ...done, [last]: false };
     setDone(next);
     await AsyncStorage.setItem(doneKey(user.id, period), JSON.stringify(next)).catch(() => {});
+  };
+
+  // "See a dermatologist" when skincare isn't enough; hidden for a while once read.
+  const derm = dermatologistAdvice(profile, entries);
+  const showDerm = derm && (!dermHiddenUntil || Date.now() > dermHiddenUntil);
+  const hideDerm = async () => {
+    const until = Date.now() + (derm?.level === 'recommended' ? 7 : 30) * 86400000;
+    setDermHiddenUntil(until);
+    await AsyncStorage.setItem(`skynkod_derm_hidden_${user.id}`, String(until)).catch(() => {});
   };
 
   const build = () => navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() });
@@ -206,6 +222,36 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
 
+      {showDerm ? (
+        <View style={[styles.derm, { backgroundColor: derm.level === 'recommended' ? colors.dangerSoft : colors.surface, borderColor: colors.border }]}>
+          <View style={styles.dermHead}>
+            <Ionicons name="medkit-outline" size={20} color={derm.level === 'recommended' ? colors.danger : colors.primary} />
+            <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
+              {derm.level === 'recommended' ? t("We'd recommend seeing a dermatologist") : t('Worth seeing a dermatologist')}
+            </Text>
+          </View>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6, lineHeight: 18 }]}>{t(derm.reasons[0])}</Text>
+          {dermOpen
+            ? derm.reasons.slice(1).map((r, i) => (
+                <Text key={i} style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6, lineHeight: 18 }]}>{t(r)}</Text>
+              ))
+            : null}
+          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 8, lineHeight: 17 }]}>
+            {t('Skynkod helps with skincare, but it doesn\'t replace a doctor.')}
+          </Text>
+          <View style={styles.dermActions}>
+            {derm.reasons.length > 1 ? (
+              <Pressable onPress={() => setDermOpen(!dermOpen)} hitSlop={8}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{dermOpen ? t('Show less') : t('Why?')}</Text>
+              </Pressable>
+            ) : <View />}
+            <Pressable onPress={hideDerm} hitSlop={8}>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('Got it')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {/* The four places the user comes back to */}
       <View style={styles.grid}>
         {SHORTCUTS.map(s => (
@@ -251,6 +297,9 @@ const styles = StyleSheet.create({
   primary: { flexDirection: 'row', gap: SPACING.sm, height: 54, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
   primaryText: { fontSize: 16, fontWeight: '600' },
   allDone: { paddingVertical: SPACING.xl },
+  derm: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, marginTop: SPACING.lg },
+  dermHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  dermActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.lg },
   tile: { width: '47%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, gap: SPACING.md },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

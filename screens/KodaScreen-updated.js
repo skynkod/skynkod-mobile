@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicat
 import { Ionicons } from '@expo/vector-icons';
 import { askKoda, generateKodaIntroduction } from '../utils/koda-ai';
 import { useLanguage } from '../utils/LanguageContext';
+import { useSkinProfile } from '../utils/useSkinProfile';
 import { saveChatMessage, getChatHistory } from '../utils/chat-service';
 import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
@@ -22,6 +23,7 @@ export default function KodaScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const profile = useSkinProfile(user?.id);
   const [messages, setMessages] = useState([intro(t)]);
   const [inputText, setInputText] = useState('');
 
@@ -77,7 +79,7 @@ export default function KodaScreen({ route, navigation }) {
 
     let reply;
     try {
-      const response = await askKoda(content, history, language);
+      const response = await askKoda(content, history, language, profile);
       reply = response.error
         ? { role: 'assistant', content: t(response.message) || t('Sorry, something went wrong.'), timestamp: new Date().toISOString(), error: true }
         : response;

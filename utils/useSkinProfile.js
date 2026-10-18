@@ -16,6 +16,7 @@ export const useSkinProfile = (userId) => {
         skin_conditions: p.skin_conditions || [],
         avoid_ingredients: p.avoid_ingredients || [],
         pregnancy: p.pregnancy || null,
+        skin_goals: p.skin_goals || [],
       } : null)
     })
     return () => { active = false }
