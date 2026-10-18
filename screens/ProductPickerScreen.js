@@ -61,7 +61,8 @@ export default function ProductPickerScreen({ navigation, route }) {
     [picks, profile]
   )
 
-  const choose = product => navigation.navigate('RoutineBuilder', { picked: { stepKey, product } })
+  // merge keeps the builder's period and progress; a plain navigate would wipe them.
+  const choose = product => navigation.navigate({ name: 'RoutineBuilder', params: { picked: { stepKey, product } }, merge: true })
   const searching = query.trim().length >= 2
   const list = searching ? results.map(p => ({ product: p, match: productMatch(p, profile) })) : topPicks
 

@@ -53,12 +53,15 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   }, [index])
 
   const inSummary = index >= essentials.length
+  // Leaving always lands on Routines, not on the picker or Koda visited before.
+  const leave = () => navigation.navigate({ name: 'Routines', params: { tab: period }, merge: true })
   const stepKey = essentials[index]
   const step = STEP_TYPES[stepKey]
 
   const pick = key => navigation.navigate('ProductPicker', { stepKey: key, period })
   const askKoda = key =>
     navigation.navigate('Koda', {
+      returnTo: 'RoutineBuilder',
       prefill: t("I'm building my {period} routine. Which {step} would you recommend for my skin?", {
         period: t(period === 'morning' ? 'morning' : 'night'),
         step: t(STEP_TYPES[key].label).toLowerCase(),
@@ -142,7 +145,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => (index > 0 ? setIndex(index - 1) : navigation.goBack())}
+          onPress={() => (index > 0 ? setIndex(index - 1) : leave())}
           hitSlop={12}
           accessibilityLabel={t('Back')}
         >
@@ -151,7 +154,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         <Text style={[TYPE.bodyStrong, { color: colors.text }]}>
           {period === 'morning' ? t('Morning routine') : t('Night routine')}
         </Text>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityLabel={t('Close')}>
+        <Pressable onPress={leave} hitSlop={12} accessibilityLabel={t('Close')}>
           <Ionicons name="close" size={24} color={colors.muted} />
         </Pressable>
       </View>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { askKoda, generateKodaIntroduction } from '../utils/koda-ai';
@@ -17,7 +18,7 @@ const SUGGESTIONS = [
 
 const intro = (t) => ({ role: 'assistant', content: t(generateKodaIntroduction()), timestamp: new Date().toISOString() });
 
-export default function KodaScreen({ route }) {
+export default function KodaScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -26,6 +27,14 @@ export default function KodaScreen({ route }) {
 
   // Opened from Home's "Why?": start with the question typed in, ready to send.
   const prefill = route?.params?.prefill;
+  // Opened from another flow (routine builder): show a back arrow to it, and
+  // forget it once the user leaves so the Koda tab opens normally next time.
+  const returnTo = route?.params?.returnTo;
+  useFocusEffect(
+    useCallback(() => () => {
+      if (navigation?.getState?.()) navigation.setParams({ returnTo: undefined, prefill: undefined });
+    }, [navigation])
+  );
   useEffect(() => {
     if (prefill) setInputText(prefill);
   }, [prefill]);
@@ -113,7 +122,7 @@ export default function KodaScreen({ route }) {
   const canSend = inputText.trim().length > 0 && !loading;
 
   return (
-    <Screen scroll={false} keyboard title="Koda" subtitle={t('Your AI skin coach')} contentStyle={{ paddingHorizontal: 0 }}>
+    <Screen scroll={false} keyboard back={!!returnTo} title="Koda" subtitle={t('Your AI skin coach')} contentStyle={{ paddingHorizontal: 0 }}>
       <FlatList
         ref={listRef}
         data={messages}
