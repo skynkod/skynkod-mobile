@@ -73,3 +73,23 @@ export const saveDay = async (userId, day, { mood, tags, notes }, existingId) =>
   if (error) throw error
   return data.id
 }
+
+// From a day's check-in, the Emergency situation that fits (or null).
+// Used by Home to suggest a plan when the skin isn't doing well.
+export const situationFromCheckIn = (entry) => {
+  if (!entry) return null
+  const tags = entry.skin_conditions || []
+  const bad = entry.mood === 'bad' || entry.mood === 'terrible'
+  const has = t => tags.includes(t)
+  const problem = has('Redness') || has('Itchiness / Sensitivity') || has('New pimple') || has('Dryness') || has('Peeling / Flaking')
+  if (!problem && !bad) return null
+  if (!problem && bad) return { id: 'irritation', text: "Your skin isn't at its best today" }
+  if (has('Used new product') && (has('Redness') || has('Itchiness / Sensitivity') || has('New pimple'))) {
+    return { id: 'reaction', text: 'Looks like a reaction to something new' }
+  }
+  if (has('Redness') || has('Itchiness / Sensitivity')) return { id: 'irritation', text: 'Your skin seems irritated today' }
+  if (has('Peeling / Flaking')) return { id: 'peeling', text: 'Your skin is peeling today' }
+  if (has('New pimple') && bad) return { id: 'breakout', text: 'Breakouts are bothering you today' }
+  if (has('Dryness') && bad) return { id: 'barrier', text: 'Your skin feels dry and uncomfortable' }
+  return null
+}

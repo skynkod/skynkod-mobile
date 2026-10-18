@@ -14,6 +14,7 @@ import { dermatologistAdvice } from '../utils/dermatologist';
 import { todaySteps } from '../utils/routine-checks';
 import { logStep } from '../utils/routine-log';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
+import { situationFromCheckIn } from '../utils/journal-day';
 import { getProductsByIds, getNewestProductId } from '../utils/catalog';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -131,6 +132,9 @@ export default function HomeScreen({ navigation }) {
   };
 
   // "See a dermatologist" when skincare isn't enough; hidden for a while once read.
+  // Today's check-in can point to an Emergency plan.
+  const todayEntry = entries.find(e => e?.date && new Date(e.date).toDateString() === new Date().toDateString());
+  const suggestion = !plan ? situationFromCheckIn(todayEntry) : null;
   const derm = dermatologistAdvice(profile, entries);
   const showDerm = derm && (!dermHiddenUntil || Date.now() > dermHiddenUntil);
   const hideDerm = async () => {
@@ -156,7 +160,7 @@ export default function HomeScreen({ navigation }) {
         {greeting}{firstName ? `, ${firstName}` : ''} {isNight ? '🌙' : '☀️'}
       </Text>
 
-      {/* Search (scan inside) and, beside it, a discreet way into Emergency mode */}
+      {/* Search; the scan icon goes straight to the camera */}
       <View style={styles.searchRow}>
         <Pressable
           onPress={() => navigation.navigate('Search')}
@@ -169,16 +173,6 @@ export default function HomeScreen({ navigation }) {
             <Ionicons name="scan-outline" size={22} color={colors.primary} />
           </Pressable>
         </Pressable>
-        {!plan ? (
-          <Pressable
-            onPress={() => navigation.navigate('Emergency')}
-            style={({ pressed }) => [styles.sos, { backgroundColor: colors.primarySoft, opacity: pressed ? 0.8 : 1 }]}
-            accessibilityLabel={t('Emergency mode')}
-          >
-            <Ionicons name="medkit-outline" size={20} color={colors.primary} />
-            <Text style={[styles.sosText, { color: colors.primary }]}>SOS</Text>
-          </Pressable>
-        ) : null}
       </View>
 
       {plan ? (
@@ -290,6 +284,29 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
 
+      {/* Emergency mode: a smart card when today's check-in shows a problem,
+          otherwise a discreet line. Hidden while a plan runs (banner above). */}
+      {!plan && suggestion ? (
+        <Pressable
+          onPress={() => navigation.navigate('Emergency', { situation: suggestion.id, openedAt: Date.now() })}
+          style={({ pressed }) => [styles.sosCard, { backgroundColor: colors.dangerSoft, opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Ionicons name="medkit-outline" size={20} color={colors.danger} />
+          <View style={{ flex: 1 }}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(suggestion.text)}</Text>
+            <Text style={[TYPE.caption, { color: colors.danger, fontWeight: '700', marginTop: 2 }]}>{t('Start a 7-day plan')} →</Text>
+          </View>
+        </Pressable>
+      ) : null}
+      {!plan && !suggestion && loaded ? (
+        <Pressable onPress={() => navigation.navigate('Emergency')} hitSlop={6} style={styles.sosLine}>
+          <Ionicons name="medkit-outline" size={14} color={colors.muted} />
+          <Text style={[TYPE.caption, { color: colors.textSecondary }]}>
+            {t('Skin acting up?')} <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('Emergency mode')} →</Text>
+          </Text>
+        </Pressable>
+      ) : null}
+
       {showDerm ? (
         <View style={[styles.derm, { backgroundColor: derm.level === 'recommended' ? colors.dangerSoft : colors.surface, borderColor: colors.border }]}>
           <View style={styles.dermHead}>
@@ -351,6 +368,8 @@ const styles = StyleSheet.create({
   topSide: { width: 44 },
   logo: { flex: 1, height: 30, width: 30 * LOGO_RATIO },
   greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
+  sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
+  sosLine: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: SPACING.lg },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
   sos: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   sosText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6, marginTop: -1 },
