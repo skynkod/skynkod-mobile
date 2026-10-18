@@ -55,6 +55,19 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   useEffect(() => {
     const picked = route?.params?.picked
     if (!picked?.uid || !picked?.product) return
+    navigation.setParams({ picked: undefined })
+    // The same product only once per routine.
+    const duplicate = slots.find(slot => slot.product?.id === picked.product.id && slot.uid !== picked.uid)
+    if (duplicate) {
+      Alert.alert(
+        t('Already in your routine'),
+        t('{product} is already in this routine as your {step}.', {
+          product: picked.product.name,
+          step: t(STEP_TYPES[duplicate.key].label).toLowerCase(),
+        })
+      )
+      return
+    }
     setSlots(prev => {
       if (prev.some(slot => slot.uid === picked.uid)) {
         return prev.map(slot => (slot.uid === picked.uid ? { ...slot, product: picked.product } : slot))
@@ -66,7 +79,6 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         .sort((a, b) => STEP_ORDER.indexOf(a.slot.key) - STEP_ORDER.indexOf(b.slot.key) || a.i - b.i)
         .map(({ slot }) => slot)
     })
-    navigation.setParams({ picked: undefined })
   }, [route?.params?.picked])
 
   useEffect(() => {
