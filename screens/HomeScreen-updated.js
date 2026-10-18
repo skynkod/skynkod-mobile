@@ -225,6 +225,7 @@ export default function HomeScreen({ navigation }) {
 
   // The hero's single line and single action.
   let line = null;
+  const routineDone = !!routine && steps.length > 0 && !current;
   let action = null;
   if (askMood) {
     line = t('How is your skin this morning?');
@@ -284,7 +285,15 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.heroTop}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
-            {line ? <Text style={[styles.line, { color: 'rgba(255,255,255,0.92)' }]}>{line}</Text> : null}
+            {/* The line sits on a frosted pill so it reads the same over light and deep parts of the sky */}
+            {line ? (
+              <Glass radius={999} style={styles.linePill}>
+                <View style={styles.lineRow}>
+                  {routineDone ? <Ionicons name="checkmark-circle" size={16} color={isDark ? colors.primary : colors.primary} /> : null}
+                  <Text style={[styles.line, { color: isDark ? colors.text : INK }]}>{line}</Text>
+                </View>
+              </Glass>
+            ) : null}
 
             {askMood ? (
               <>
@@ -581,7 +590,9 @@ const styles = StyleSheet.create({
   heroTop: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xl },
   hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic', ...SHADOW },
   name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2, ...SHADOW },
-  line: { fontSize: 16, lineHeight: 23, marginTop: SPACING.sm, ...SHADOW },
+  linePill: { alignSelf: 'flex-start', marginTop: SPACING.md },
+  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
+  line: { fontSize: 14, fontWeight: '500' },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xl },
   mood: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   begin: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 25, paddingHorizontal: SPACING.xxl, marginTop: SPACING.xl },
