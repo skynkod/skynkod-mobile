@@ -11,6 +11,7 @@ import { useFirstName } from '../utils/useFirstName';
 import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { dermatologistAdvice } from '../utils/dermatologist';
+import { todaySteps } from '../utils/routine-checks';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -88,7 +89,8 @@ export default function HomeScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const steps = routine?.steps || [];
+  // Only the products scheduled for today (e.g. exfoliant twice a week).
+  const steps = todaySteps(routine?.steps || []);
   const doneCount = steps.filter((_, idx) => done[idx]).length;
   const currentIdx = steps.findIndex((_, idx) => !done[idx]);
   const current = currentIdx >= 0 ? steps[currentIdx] : null;

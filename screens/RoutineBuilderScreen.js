@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator, Alert, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColors } from '../components/ui'
@@ -11,6 +11,9 @@ import { productMatch } from '../utils/ingredients-guide'
 import { addToMyProducts, getProductsByIds } from '../utils/catalog'
 import { saveRoutine } from '../utils/routines-service'
 import { STEP_TYPES, STEP_ORDER, ESSENTIALS } from '../utils/routine-steps'
+import { checkRoutine, suggestedDays, describeDays, EVERY_DAY, DAY_LABELS } from '../utils/routine-checks'
+import { getUserRoutines } from '../utils/routines-service'
+import { BottomSheet } from '../components/ui'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -46,7 +49,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     getProductsByIds(saved.map(s => s.product_id).filter(Boolean))
       .then(products => {
         const byId = Object.fromEntries(products.map(p => [p.id, p]))
-        setSlots(saved.map((s, i) => ({ uid: `${s.key || 'step'}-saved-${i}`, key: STEP_TYPES[s.key] ? s.key : 'serum', product: byId[s.product_id] || null })))
+        setSlots(saved.map((s, i) => ({ uid: `${s.key || 'step'}-saved-${i}`, key: STEP_TYPES[s.key] ? s.key : 'serum', product: byId[s.product_id] || null, days: s.days || null })))
       })
       .catch(error => logError('RoutineBuilder_loadSaved', error, { period }, 'warn'))
   }, [route?.params?.startedAt])
@@ -102,10 +105,10 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     }
     setSlots(prev => {
       if (prev.some(slot => slot.uid === picked.uid)) {
-        return prev.map(slot => (slot.uid === picked.uid ? { ...slot, product: picked.product } : slot))
+        return prev.map(slot => (slot.uid === picked.uid ? { ...slot, product: picked.product, days: suggestedDays(picked.product, period) } : slot))
       }
       // New slot goes after the others of its kind, in routine order.
-      const next = [...prev, { uid: picked.uid, key: picked.stepKey, product: picked.product }]
+      const next = [...prev, { uid: picked.uid, key: picked.stepKey, product: picked.product, days: suggestedDays(picked.product, period) }]
       return next
         .map((slot, i) => ({ slot, i }))
         .sort((a, b) => STEP_ORDER.indexOf(a.slot.key) - STEP_ORDER.indexOf(b.slot.key) || a.i - b.i)
@@ -138,6 +141,43 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       }),
     })
 
+  // The other routine (morning ↔ night), so checks can see the whole day.
+  const [other, setOther] = useState({ steps: [], productsById: {} })
+  useEffect(() => {
+    if (!user?.id) return
+    const otherType = period === 'morning' ? 'evening' : 'morning'
+    getUserRoutines(user.id).then(async res => {
+      const steps = (res.success ? res.data : []).find(r => r.type === otherType)?.steps || []
+      const products = await getProductsByIds(steps.map(s => s.product_id).filter(Boolean)).catch(() => [])
+      setOther({ steps, productsById: Object.fromEntries(products.map(p => [p.id, p])) })
+    })
+  }, [user?.id, period, route?.params?.startedAt])
+
+  const chosenSlots = slots.filter(slot => slot.product)
+  const issues = checkRoutine({
+    period,
+    steps: chosenSlots.map(slot => ({ product_id: slot.product.id, days: slot.days })),
+    productsById: Object.fromEntries(chosenSlots.map(slot => [slot.product.id, slot.product])),
+    otherSteps: other.steps,
+    otherProductsById: other.productsById,
+  })
+  const applyFix = fix => {
+    const uid = chosenSlots[fix.stepIndex]?.uid
+    if (uid && fix.days?.length) setSlots(prev => prev.map(slot => (slot.uid === uid ? { ...slot, days: fix.days } : slot)))
+  }
+
+  // Which days a product is used, edited in a small sheet.
+  const [daysFor, setDaysFor] = useState(null) // slot uid
+  const editingSlot = slots.find(slot => slot.uid === daysFor)
+  const toggleDay = d =>
+    setSlots(prev => prev.map(slot => {
+      if (slot.uid !== daysFor) return slot
+      const current = slot.days && slot.days.length ? slot.days : EVERY_DAY
+      const next = current.includes(d) ? current.filter(x => x !== d) : [...current, d].sort()
+      return { ...slot, days: next.length ? next : current }
+    }))
+  const setDays = days => setSlots(prev => prev.map(slot => (slot.uid === daysFor ? { ...slot, days } : slot)))
+
   const save = async () => {
     const chosen = slots.filter(slot => slot.product)
     if (!chosen.length) {
@@ -146,12 +186,13 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     }
     setSaving(true)
     try {
-      const routineSteps = chosen.map(({ key, product }) => ({
+      const routineSteps = chosen.map(({ key, product, days }) => ({
         key,
         action: STEP_TYPES[key].label,
         product: `${product.brand} ${product.name}`.trim(),
         product_id: product.id,
         image_url: product.image_url || null,
+        days: days && days.length < 7 ? days : null,
       }))
       const result = await saveRoutine(user.id, period, routineSteps)
       if (!result.success) throw new Error(result.error)
@@ -275,7 +316,14 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                   <View key={slot.uid}>
                     <Text style={[styles.stepLabel, { color: colors.muted }]}>{`${i + 1}. ${t(STEP_TYPES[slot.key].label).toUpperCase()}`}</Text>
                     {slot.product ? (
-                      <ProductCard product={slot.product} onChange={() => pick(slot.key, slot.uid)} onRemove={() => removeSlot(slot.uid)} />
+                      <>
+                        <ProductCard product={slot.product} onChange={() => pick(slot.key, slot.uid)} onRemove={() => removeSlot(slot.uid)} />
+                        <Pressable onPress={() => setDaysFor(slot.uid)} style={[styles.daysChip, { backgroundColor: colors.primarySoft }]}>
+                          <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+                          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(describeDays(slot.days))}</Text>
+                          <Ionicons name="chevron-down" size={12} color={colors.primary} />
+                        </Pressable>
+                      </>
                     ) : (
                       <Pressable onPress={() => pick(slot.key, slot.uid)} style={[styles.emptyStep, { borderColor: colors.border }]}>
                         <Ionicons name="add" size={18} color={colors.primary} />
@@ -285,6 +333,27 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                   </View>
                 ))}
               </View>
+
+              {issues.length ? (
+                <View style={{ marginTop: SPACING.xl, gap: SPACING.sm }}>
+                  {issues.map((issue, idx) => (
+                    <View key={idx} style={[styles.issue, { backgroundColor: issue.level === 'warning' ? colors.warningSoft : colors.surface }]}>
+                      <View style={styles.issueHead}>
+                        <Ionicons name={issue.level === 'warning' ? 'alert-circle' : 'information-circle'} size={18} color={issue.level === 'warning' ? colors.warning : colors.primary} />
+                        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(issue.title)}</Text>
+                      </View>
+                      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(issue.text)}</Text>
+                      {issue.fix ? (
+                        <Pressable onPress={() => applyFix(issue.fix)} style={[styles.fixButton, { backgroundColor: colors.card }]}>
+                          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
+                            {t('Fix: use it on {days}', { days: describeDays(issue.fix.days) })}
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
 
               {addable.length ? (
                 <>
@@ -303,6 +372,38 @@ export default function RoutineBuilderScreen({ navigation, route }) {
           )}
         </Animated.View>
       </ScrollView>
+
+      <Modal visible={!!editingSlot} transparent animationType="fade" onRequestClose={() => setDaysFor(null)}>
+        <BottomSheet title={t('When do you use it?')} onClose={() => setDaysFor(null)}>
+          {editingSlot ? (
+            <>
+              <Text style={[TYPE.body, { color: colors.textSecondary }]}>{editingSlot.product?.name}</Text>
+              <View style={styles.dayRow}>
+                {DAY_LABELS.map((label, d) => {
+                  const on = (editingSlot.days && editingSlot.days.length ? editingSlot.days : EVERY_DAY).includes(d)
+                  return (
+                    <Pressable key={label} onPress={() => toggleDay(d)} style={[styles.day, { backgroundColor: on ? colors.primary : colors.card, borderColor: on ? colors.primary : colors.border }]}>
+                      <Text style={{ color: on ? colors.onPrimary : colors.text, fontWeight: '700', fontSize: 12 }}>{t(label)}</Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+              <View style={[styles.chips, { marginTop: SPACING.lg, marginBottom: SPACING.xl }]}>
+                {[
+                  { label: 'Every day', days: EVERY_DAY },
+                  { label: '3 times a week', days: [1, 3, 5] },
+                  { label: '2 times a week', days: [2, 6] },
+                  { label: 'Once a week', days: [0] },
+                ].map(p => (
+                  <Pressable key={p.label} onPress={() => setDays(p.days)} style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                    <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{t(p.label)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : null}
+        </BottomSheet>
+      </Modal>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.lg }]}>
         {!inSummary ? (
@@ -336,6 +437,12 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 16, fontWeight: '600' },
   stepLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginBottom: 6 },
   emptyStep: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.md, padding: SPACING.lg },
+  daysChip: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, marginTop: 6 },
+  issue: { borderRadius: RADIUS.md, padding: SPACING.lg },
+  issueHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  fixButton: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: SPACING.sm },
+  dayRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
+  day: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md },

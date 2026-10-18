@@ -12,6 +12,7 @@ import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { getProductsByIds } from '../utils/catalog';
 import ProductVerdict from '../components/ProductVerdict';
+import { todaySteps } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -74,7 +75,7 @@ export default function RoutinesScreen({ route, navigation }) {
       .catch(() => {});
   }, [savedIds]);
   const generated = buildRoutine(skinType || 'Combination', []);
-  const steps = saved ? saved.steps : generated[tab] || [];
+  const steps = saved ? todaySteps(saved.steps) : generated[tab] || [];
   const completed = steps.filter((_, idx) => done[idx]).length;
   const progress = steps.length ? completed / steps.length : 0;
 
