@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { updateUserProfile } from '../utils/supabase'
@@ -10,14 +9,19 @@ import { useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
 import { SPACING, TYPE } from '../utils/theme'
 
-const LOGO_WHITE = require('../assets/images/skynkod-logo-white.png')
+const LOGO = require('../assets/images/skynkod-logo.png')
+const KODA = require('../assets/images/koda-logo.png')
 const LOGO_RATIO = 1306 / 333
 const BRAND_MAUVE = '#C5A8BB'
 
+// Same six features, wording and order as the left column of the mockup.
 const FEATURES = [
-  { title: 'Your skin journal', text: 'Log how your skin feels and see it change, day after day.' },
-  { title: 'Routines that fit', text: 'Morning and evening steps made for your skin.' },
-  { title: 'Meet Koda', text: 'Your AI skin coach, here for every question.' },
+  { icon: 'koda', title: 'AI Skin Coach', text: 'Koda analyzes your skin and gives personalized advice.' },
+  { icon: 'sync-outline', title: 'Dynamic Routines', text: "Smart routines that adapt to your skin's real-time needs." },
+  { icon: 'speedometer-outline', title: 'Skin Score', text: 'Track your skin health with advanced scoring.' },
+  { icon: 'shield-checkmark-outline', title: 'Emergency Mode', text: 'Get a 7-day plan to repair, calm or prepare your skin.' },
+  { icon: 'wallet-outline', title: 'Skynbudget', text: 'Track your collection, spending and get smart buying advice.' },
+  { icon: 'scan-outline', title: 'Product Scan', text: 'Scan any product to analyze ingredients and compatibility.' },
 ]
 
 // Skin types match the names used by the routine builder and the quiz.
@@ -120,7 +124,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
 
   const Pill = ({ title, onPress, variant = 'dark', disabled, loading, style }) => {
     const v = {
-      dark: { bg: colors.text, fg: colors.bg },
+      dark: { bg: colors.primary, fg: colors.onPrimary },
       light: { bg: '#FFFFFF', fg: colors.text },
       ghost: { bg: 'transparent', fg: colors.textSecondary },
     }[variant]
@@ -146,35 +150,36 @@ export default function OnboardingScreen({ userId, onComplete }) {
       style={({ pressed }) => [
         styles.choice,
         {
-          backgroundColor: selected ? colors.text : colors.card,
-          borderColor: selected ? colors.text : colors.border,
+          backgroundColor: selected ? colors.primarySoft : colors.card,
+          borderColor: selected ? colors.primary : colors.border,
           transform: [{ scale: pressed ? 0.98 : 1 }],
         },
       ]}
     >
-      <Text style={[styles.choiceLabel, { color: selected ? colors.bg : colors.text }]}>{label}</Text>
-      {hint ? <Text style={[TYPE.caption, { color: selected ? colors.border : colors.muted }]}>{hint}</Text> : null}
+      <Text style={[styles.choiceLabel, { color: selected ? colors.primary : colors.text }]}>{label}</Text>
+      {hint ? <Text style={[TYPE.caption, { color: colors.muted }]}>{hint}</Text> : null}
     </Pressable>
   )
 
-  // ---------- Page 1: mauve welcome, same look as the splash ----------
+  // ---------- Page 1: the mockup's intro: logo, tagline, promise ----------
   if (name === 'welcome') {
     return (
-      <View style={[styles.flex, { backgroundColor: BRAND_MAUVE, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
-        <StatusBar style="light" />
+      <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
         <View style={styles.topBar}>
           <View />
           <Pressable onPress={() => finish(false)} hitSlop={12}>
-            <Text style={[TYPE.bodyStrong, { color: '#FFFFFF' }]}>{t('Skip')}</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip')}</Text>
           </Pressable>
         </View>
         <Animated.View style={[styles.welcomeBody, { opacity: enter }]}>
-          <Image source={LOGO_WHITE} resizeMode="contain" style={{ width: 220, height: 220 / LOGO_RATIO }} />
-          <Text style={styles.welcomeTitle}>{t('Good skin starts\nwith knowing yours.')}</Text>
-          <Text style={styles.welcomeText}>{t('A few quick questions, then we set everything up for you.')}</Text>
+          <Image source={LOGO} resizeMode="contain" style={{ width: 230, height: 230 / LOGO_RATIO }} />
+          <Text style={[styles.welcomeTitle, { color: colors.text }]}>{t('Your skin. Your code.\nDecoded daily.')}</Text>
+          <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
+            {t('The app that helps you understand your skin, your products, and your lifestyle.')}
+          </Text>
         </Animated.View>
         <View style={styles.footer}>
-          <Pill title={t("Let's start")} variant="light" onPress={next} />
+          <Pill title={t("Let's start")} onPress={next} />
         </View>
       </View>
     )
@@ -190,16 +195,27 @@ export default function OnboardingScreen({ userId, onComplete }) {
     content = (
       <>
         <Text style={[styles.headline, { color: colors.text }]}>{t('Everything your skin needs, in one place.')}</Text>
-        <View style={{ marginTop: SPACING.xxxl, gap: SPACING.xxl }}>
-          {FEATURES.map((f, i) => (
+        <View style={{ marginTop: SPACING.xxl, gap: SPACING.xl }}>
+          {FEATURES.map(f => (
             <View key={f.title} style={styles.feature}>
-              <Text style={[styles.featureNumber, { color: BRAND_MAUVE }]}>{String(i + 1).padStart(2, '0')}</Text>
+              <View style={[styles.featureIcon, { backgroundColor: colors.primarySoft }]}>
+                {f.icon === 'koda'
+                  ? <Image source={KODA} style={{ width: 24, height: 24 }} />
+                  : <Ionicons name={f.icon} size={22} color={BRAND_MAUVE} />}
+              </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>{t(f.title)}</Text>
-                <Text style={[TYPE.body, { color: colors.muted, marginTop: 4 }]}>{t(f.text)}</Text>
+                <Text style={[styles.featureTitle, { color: colors.text }]}>{t(f.title).toUpperCase()}</Text>
+                <Text style={[TYPE.caption, { color: colors.muted, marginTop: 3, lineHeight: 18 }]}>{t(f.text)}</Text>
               </View>
             </View>
           ))}
+        </View>
+        <View style={[styles.poweredCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          <Image source={KODA} style={{ width: 30, height: 30 }} />
+          <View>
+            <Text style={[TYPE.caption, { color: colors.muted }]}>{t('Powered by')}</Text>
+            <Text style={[styles.poweredKoda, { color: BRAND_MAUVE }]}>KODA</Text>
+          </View>
         </View>
       </>
     )
@@ -227,9 +243,9 @@ export default function OnboardingScreen({ userId, onComplete }) {
               <Pressable
                 key={c}
                 onPress={() => toggleConcern(c)}
-                style={[styles.tag, { backgroundColor: selected ? colors.text : colors.card, borderColor: selected ? colors.text : colors.border }]}
+                style={[styles.tag, { backgroundColor: selected ? colors.primarySoft : colors.card, borderColor: selected ? colors.primary : colors.border }]}
               >
-                <Text style={[styles.tagText, { color: selected ? colors.bg : colors.text }]}>{t(c)}</Text>
+                <Text style={[styles.tagText, { color: selected ? colors.primary : colors.text }]}>{t(c)}</Text>
               </Pressable>
             )
           })}
@@ -311,8 +327,8 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md },
 
   welcomeBody: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xxl },
-  welcomeTitle: { color: '#FFFFFF', fontSize: 34, fontWeight: '700', letterSpacing: -0.8, lineHeight: 40, marginTop: SPACING.xxxl },
-  welcomeText: { color: 'rgba(255,255,255,0.85)', fontSize: 17, lineHeight: 24, marginTop: SPACING.lg },
+  welcomeTitle: { fontSize: 30, fontWeight: '700', letterSpacing: -0.6, lineHeight: 37, marginTop: SPACING.xxxl },
+  welcomeText: { fontSize: 16, lineHeight: 23, marginTop: SPACING.lg },
 
   headline: { fontSize: 32, fontWeight: '700', letterSpacing: -0.8, lineHeight: 38 },
 
@@ -327,9 +343,11 @@ const styles = StyleSheet.create({
   tag: { borderRadius: 999, borderWidth: 1, paddingVertical: 12, paddingHorizontal: SPACING.lg },
   tagText: { fontSize: 15, fontWeight: '600' },
 
-  feature: { flexDirection: 'row', gap: SPACING.lg },
-  featureNumber: { fontSize: 15, fontWeight: '700', width: 28, marginTop: 2 },
-  featureTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
+  feature: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg },
+  featureIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  featureTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.6 },
+  poweredCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, alignSelf: 'flex-start', marginTop: SPACING.xxl, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, borderRadius: 18, borderWidth: 1 },
+  poweredKoda: { fontSize: 18, fontWeight: '700', letterSpacing: 1.2 },
 
   summary: { borderRadius: 28, padding: SPACING.xxl, marginTop: SPACING.xxl },
   summaryLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
