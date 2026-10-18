@@ -159,15 +159,7 @@ export default function JournalScreen({ route, navigation }) {
   const isToday = sameDay(selected, today);
 
   return (
-    <Screen
-      title={t('Journal')}
-      right={
-        <Pressable onPress={() => setSelected(new Date())} hitSlop={10} accessibilityLabel={t('Today')}>
-          <Ionicons name="calendar-outline" size={24} color={colors.text} />
-        </Pressable>
-      }
-      keyboard
-    >
+    <Screen back title={t('Journal')} keyboard>
       {/* Week strip */}
       <View style={styles.week}>
         <Pressable

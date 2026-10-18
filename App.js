@@ -41,7 +41,7 @@ const navigationRef = createNavigationContainerRef()
 // Bottom bar from the mockup: Home · Journal · (+) · Koda · Profile.
 const TABS = [
   { name: 'Home', component: HomeScreen, label: 'Home', icon: 'home' },
-  { name: 'Journal', component: JournalScreen, label: 'Journal', icon: 'book' },
+  { name: 'Journal', component: JournalScreen, label: 'Journal', icon: 'calendar' },
   { name: 'Add', label: '', icon: 'add' },
   { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'koda' },
   { name: 'More', component: MoreScreen, label: 'Profile', icon: 'person' },
