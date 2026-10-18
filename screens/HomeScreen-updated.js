@@ -139,6 +139,8 @@ export default function HomeScreen({ navigation }) {
   // Today's check-in can point to an Emergency plan.
   const todayEntry = entries.find(e => e?.date && new Date(e.date).toDateString() === new Date().toDateString());
   const suggestion = !plan ? situationFromCheckIn(todayEntry) : null;
+  // A great or good morning with nothing ticked: no need to offer Emergency mode.
+  const skinIsFine = (todayEntry?.mood === 'great' || todayEntry?.mood === 'good') && !(todayEntry?.skin_conditions || []).some(tag => ['New pimple', 'Redness', 'Dryness', 'Itchiness / Sensitivity', 'Peeling / Flaking'].includes(tag));
   // Consecutive days with a check-in, ending today or yesterday.
   const checkInStreak = (() => {
     const days = new Set(entries.filter(e => e?.mood).map(e => new Date(e.date).toDateString()));
@@ -327,7 +329,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </Pressable>
       ) : null}
-      {!plan && !suggestion && loaded ? (
+      {!plan && !suggestion && loaded && !skinIsFine ? (
         <View style={[styles.sosInvite, { backgroundColor: colors.primarySoft }]}>
           <View style={styles.sosHead}>
             <View style={[styles.sosIcon, { backgroundColor: colors.card }]}>
