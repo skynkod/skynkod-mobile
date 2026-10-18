@@ -13,6 +13,8 @@ import { useSkinProfile } from '../utils/useSkinProfile';
 import { dermatologistAdvice } from '../utils/dermatologist';
 import { todaySteps } from '../utils/routine-checks';
 import { logStep } from '../utils/routine-log';
+import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
+import { getProductsByIds, getNewestProductId } from '../utils/catalog';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -50,6 +52,10 @@ export default function HomeScreen({ navigation }) {
   const { isNight, updateLocation } = useTheme();
   const period = isNight ? 'evening' : 'morning';
   const [routine, setRoutine] = useState(null);
+  // A running Emergency plan pauses some products in today's routine.
+  const [plan, setPlan] = useState(null);
+  const [routineProducts, setRoutineProducts] = useState({});
+  const [newestId, setNewestId] = useState(null);
   const [done, setDone] = useState({});
   const [entries, setEntries] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -72,6 +78,16 @@ export default function HomeScreen({ navigation }) {
     ]);
     const mine = routines.success ? (routines.data || []).find(r => r.type === period && Array.isArray(r.steps) && r.steps.length) : null;
     setRoutine(mine || null);
+    const active = await getActivePlan(user.id);
+    setPlan(active);
+    if (active && mine) {
+      const [products, newest] = await Promise.all([
+        getProductsByIds(mine.steps.map(s => s.product_id).filter(Boolean)).catch(() => []),
+        active.situation.pause.includes('newest') ? getNewestProductId(user.id).catch(() => null) : null,
+      ]);
+      setRoutineProducts(Object.fromEntries(products.map(p => [p.id, p])));
+      setNewestId(newest);
+    }
     setDone(JSON.parse(ticks || '{}'));
     if (journal.success) setEntries(journal.data || []);
     setDermHiddenUntil(Number(dermHidden) || null);
@@ -91,7 +107,8 @@ export default function HomeScreen({ navigation }) {
   };
 
   // Only the products scheduled for today (e.g. exfoliant twice a week).
-  const steps = todaySteps(routine?.steps || []);
+  const adjusted = adjustForPlan(todaySteps(routine?.steps || []), routineProducts, plan, newestId);
+  const steps = adjusted.steps;
   const doneCount = steps.filter((_, idx) => done[idx]).length;
   const currentIdx = steps.findIndex((_, idx) => !done[idx]);
   const current = currentIdx >= 0 ? steps[currentIdx] : null;
@@ -152,6 +169,16 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       </Pressable>
 
+      {plan ? (
+        <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.planBanner, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name="medkit-outline" size={18} color={colors.primary} />
+          <Text style={[TYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>
+            {t('Day {n} of 7', { n: plan.dayIndex + 1 })} · {t(plan.situation.title)}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+        </Pressable>
+      ) : null}
+
       {/* The one big card: the routine for right now */}
       {loaded && !routine ? (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.accent }]}>
@@ -178,6 +205,12 @@ export default function HomeScreen({ navigation }) {
               </Text>
             </Pressable>
           </View>
+
+          {adjusted.paused.length ? (
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>
+              {t('Paused during your plan:')} {adjusted.paused.map(p => p.step.product).join(', ')}
+            </Text>
+          ) : null}
 
           {/* Progress dots, one per step */}
           <View style={styles.dots}>
@@ -305,6 +338,7 @@ const styles = StyleSheet.create({
   derm: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, marginTop: SPACING.lg },
   dermHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   dermActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md },
+  planBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.lg },
   tile: { width: '47%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, gap: SPACING.md },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

@@ -99,6 +99,14 @@ export const getMyProducts = async (userId) => {
   return (data || []).map(r => ({ ...r, status: r.status || 'owned', product: byId[r.product_id] || null }))
 }
 
+// The product the user added most recently (a suspect after a reaction).
+export const getNewestProductId = async (userId) => {
+  const { data } = await supabase
+    .from('user_products').select('product_id').eq('user_id', userId).not('product_id', 'is', null)
+    .order('created_at', { ascending: false }).limit(1)
+  return data?.[0]?.product_id || null
+}
+
 // Status of one catalogue product in the user's collection, or null.
 export const myProductStatus = async (userId, productId) => {
   const { data } = await supabase
