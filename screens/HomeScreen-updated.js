@@ -20,6 +20,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import MorningCheckIn from '../components/MorningCheckIn';
+import Glass from '../components/Glass';
 import { getProductsByIds, getNewestProductId, getMyProducts } from '../utils/catalog';
 import { useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -31,7 +32,6 @@ const SKY = require('../assets/images/home-sky.jpg');
 const NIGHT_SKY = require('../assets/images/home-night.jpg');
 // Deep plum from the logo family, for text over the light clouds.
 const INK = '#4A2F42';
-const INK_SOFT = '#6E5266';
 
 const SHORTCUTS = [
   { label: 'My routines', icon: 'water-outline', to: 'Routines' },
@@ -46,7 +46,7 @@ const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date
 // Koda's one-line tip from the latest check-in (last 3 days).
 const kodaTip = (entries) => {
   const latest = entries.find(e => e?.date && Date.now() - new Date(e.date).getTime() <= 3 * 86400000);
-  if (!latest) return "Tell me how your skin feels today and I'll tailor my advice.";
+  if (!latest) return null;
   if ((latest.redness_level ?? 0) >= 6 || (latest.barrier_health ?? 10) <= 4) return 'Your skin looks a bit sensitized. Skip exfoliation tonight.';
   if ((latest.acne_level ?? 0) >= 6) return 'Breakouts are up. Keep it gentle and avoid picking.';
   if ((latest.hydration_level ?? 10) <= 4) return 'Your skin seems thirsty. Add a hydrating serum today.';
@@ -62,9 +62,12 @@ export default function HomeScreen({ navigation }) {
   const firstName = useFirstName(user?.id);
   const { isNight, isDark, updateLocation } = useTheme();
   const insets = useSafeAreaInsets();
-  const heroHeight = Math.round(Dimensions.get('window').height * 0.72);
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.8);
+  // The first screen: about 55% for the greeting, the rest for the first sections.
+  const introHeight = Math.round(Dimensions.get('window').height * 0.55);
   const scrollRef = useRef(null);
   const [routineY, setRoutineY] = useState(0);
+  const [bodyY, setBodyY] = useState(0);
   const [justPicked, setJustPicked] = useState(false);
   const period = isNight ? 'evening' : 'morning';
   const [routine, setRoutine] = useState(null);
@@ -222,7 +225,8 @@ export default function HomeScreen({ navigation }) {
   }
 
 
-  const ink = isDark ? colors.text : INK;
+  // White over the sky: the text sits on its deeper top part.
+  const ink = '#FFFFFF';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -233,8 +237,10 @@ export default function HomeScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
       >
         {/* The calm hero: the sky, the greeting, one thing to do */}
-        <ImageBackground source={isNight || isDark ? NIGHT_SKY : SKY} resizeMode="cover" style={{ height: heroHeight }}>
-          <Svg style={styles.fade} width="100%" height={heroHeight * 0.55}>
+        {/* The sky sits behind the top of the page; the sections float over it as glass */}
+        <View>
+        <ImageBackground source={isNight || isDark ? NIGHT_SKY : SKY} resizeMode="cover" style={[styles.sky, { height: heroHeight }]}>
+          <Svg style={styles.fade} width="100%" height={heroHeight * 0.5}>
             <Defs>
               <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor={colors.bg} stopOpacity="0" />
@@ -244,7 +250,10 @@ export default function HomeScreen({ navigation }) {
             </Defs>
             <Rect width="100%" height="100%" fill="url(#fade)" />
           </Svg>
+        </ImageBackground>
 
+          {/* Date and bell on top, the greeting centred in the space above the sections */}
+          <View style={{ minHeight: introHeight }}>
           <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
             <Text style={styles.date}>
               {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -256,10 +265,10 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          <View style={styles.heroBottom}>
+          <View style={styles.heroTop}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
-            {line ? <Text style={[styles.line, { color: isDark ? colors.textSecondary : INK_SOFT }]}>{line}</Text> : null}
+            {line ? <Text style={[styles.line, { color: 'rgba(255,255,255,0.92)' }]}>{line}</Text> : null}
 
             {askMood ? (
               <>
@@ -271,27 +280,28 @@ export default function HomeScreen({ navigation }) {
                   ))}
                 </View>
                 <Pressable onPress={skipCheckIn} hitSlop={10} style={{ marginTop: SPACING.md }}>
-                  <Text style={[TYPE.caption, { color: isDark ? colors.muted : INK_SOFT }]}>{t('Not now')}</Text>
+                  <Text style={[TYPE.caption, { color: 'rgba(255,255,255,0.85)' }]}>{t('Not now')}</Text>
                 </Pressable>
               </>
             ) : null}
 
             {action ? (
-              <Pressable onPress={action.onPress} style={({ pressed }) => [styles.begin, { backgroundColor: isDark ? colors.primary : INK, opacity: pressed ? 0.88 : 1 }]}>
-                <Text style={[styles.beginText, { color: isDark ? colors.onPrimary : '#FFFFFF' }]}>{action.label}</Text>
-                <Ionicons name="arrow-forward" size={16} color={isDark ? colors.onPrimary : '#FFFFFF'} />
+              <Pressable onPress={action.onPress} style={({ pressed }) => [styles.begin, { backgroundColor: '#FFFFFF', opacity: pressed ? 0.88 : 1 }]}>
+                <Text style={[styles.beginText, { color: INK }]}>{action.label}</Text>
+                <Ionicons name="arrow-forward" size={16} color={INK} />
               </Pressable>
             ) : null}
 
           </View>
-        </ImageBackground>
+          </View>
 
-        <View style={styles.body}>
+        <View style={styles.body} onLayout={e => setBodyY(e.nativeEvent.layout.y)}>
           {/* Search; the scan icon goes straight to the camera */}
           <View style={styles.searchRow}>
+            <Glass radius={999} style={{ flex: 1 }}>
             <Pressable
               onPress={() => navigation.navigate('Search')}
-              style={[styles.searchBar, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
+              style={styles.searchBar}
               accessibilityRole="search"
             >
               <Ionicons name="search" size={18} color={colors.muted} />
@@ -300,6 +310,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="scan-outline" size={22} color={colors.primary} />
               </Pressable>
             </Pressable>
+            </Glass>
           </View>
 
           {plan ? (
@@ -314,7 +325,9 @@ export default function HomeScreen({ navigation }) {
 
           {/* After the mood in the sky: what's going on today (same entry as the Journal) */}
           {!isNight && loaded && !checkInSkipped && todayEntry?.mood ? (
+            <Glass style={{ marginTop: SPACING.lg }}>
             <MorningCheckIn
+              glass
               key={justPicked ? 'picked' : 'today'}
               startExpanded={justPicked}
               userId={user?.id}
@@ -323,11 +336,13 @@ export default function HomeScreen({ navigation }) {
               onSaved={saved => setEntries(prev => [saved, ...prev.filter(e => e.id !== saved.id && e !== todayEntry)])}
               onOpenJournal={() => navigation.navigate('Journal')}
             />
+            </Glass>
           ) : null}
 
           {/* The routine, one step at a time */}
           {routine && current ? (
-            <View onLayout={e => setRoutineY(e.nativeEvent.layout.y + heroHeight)} style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Glass style={styles.card}>
+            <View onLayout={e => setRoutineY(e.nativeEvent.layout.y + bodyY)} style={styles.cardIn}>
               <View style={styles.cardHead}>
                 <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : t('TONIGHT')}</Text>
                 <Pressable onPress={() => navigation.navigate('Routines', { tab: period })} hitSlop={10}>
@@ -373,6 +388,7 @@ export default function HomeScreen({ navigation }) {
                 </Pressable>
               ) : null}
             </View>
+            </Glass>
           ) : null}
 
           {routine && !current && steps.length ? (
@@ -489,19 +505,21 @@ export default function HomeScreen({ navigation }) {
           {/* The four places the user comes back to */}
           <View style={styles.grid}>
             {SHORTCUTS.map(s => (
+              <Glass key={s.to} radius={RADIUS.lg} style={styles.tileGlass}>
               <Pressable
-                key={s.to}
                 onPress={() => navigation.navigate(s.to)}
-                style={({ pressed }) => [styles.tile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.85 : 1 }]}
               >
                 <View style={[styles.tileIcon, { backgroundColor: colors.primarySoft }]}>
                   <Ionicons name={s.icon} size={22} color={colors.primary} />
                 </View>
                 <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.label)}</Text>
               </Pressable>
+              </Glass>
             ))}
           </View>
-          {/* Koda's word for today */}
+          {/* Koda's word for today, once there's a recent check-in */}
+          {kodaTip(entries) ? (
           <Pressable onPress={() => navigation.navigate('Koda')} style={styles.quote}>
             <Text style={[styles.quoteText, { color: colors.text }]}>“{t(kodaTip(entries))}”</Text>
             <View style={styles.quoteBy}>
@@ -509,13 +527,16 @@ export default function HomeScreen({ navigation }) {
               <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>Koda</Text>
             </View>
           </Pressable>
+          ) : null}
 
+        </View>
         </View>
       </ScrollView>
     </View>
   );
 }
 
+const SHADOW = { textShadowColor: 'rgba(60,35,55,0.25)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
 
 const styles = StyleSheet.create({
@@ -529,28 +550,31 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
   doneLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 999, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, marginTop: SPACING.xl },
   doneIcon: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, paddingHorizontal: SPACING.lg },
   replace: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   derm: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, marginTop: SPACING.lg },
   dermHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.lg },
-  tile: { width: '47%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, gap: SPACING.md },
+  tileGlass: { width: '47%', flexGrow: 1 },
+  tile: { padding: SPACING.lg, gap: SPACING.md },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sky: { position: 'absolute', top: 0, left: 0, right: 0 },
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl },
   date: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
   glass: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.22)' },
-  heroBottom: { position: 'absolute', left: SPACING.xl, right: SPACING.xl, bottom: SPACING.xxl },
-  hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic' },
-  name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2 },
-  line: { fontSize: 16, lineHeight: 23, marginTop: SPACING.sm },
+  heroTop: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xl },
+  hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic', ...SHADOW },
+  name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2, ...SHADOW },
+  line: { fontSize: 16, lineHeight: 23, marginTop: SPACING.sm, ...SHADOW },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xl },
   mood: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   begin: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 25, paddingHorizontal: SPACING.xxl, marginTop: SPACING.xl },
   beginText: { fontSize: 16, fontWeight: '600', letterSpacing: 0.2 },
   body: { paddingHorizontal: SPACING.xl },
   soft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
-  card: { borderRadius: RADIUS.xl, padding: SPACING.xl, marginTop: SPACING.lg, shadowOpacity: 0.06, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
+  card: { marginTop: SPACING.lg },
+  cardIn: { padding: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 1 },
   dots: { flexDirection: 'row', gap: 6, marginTop: SPACING.md },

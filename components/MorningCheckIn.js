@@ -20,7 +20,7 @@ const moodColors = colors => ({
 
 // Home's morning check-in: one tap on a face, optional tags, then it folds
 // into a slim line. Writes the same daily entry as the Journal.
-export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onSkip, onOpenJournal, startExpanded = false }) {
+export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onSkip, onOpenJournal, startExpanded = false, glass = false }) {
   const colors = useColors()
   const t = useT()
   const [mood, setMood] = useState(entry?.mood || null)
@@ -67,7 +67,7 @@ export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onS
     const m = MOODS.find(x => x.value === mood)
     const c = palette[mood] || palette.okay
     return (
-      <Pressable onPress={onOpenJournal} style={[styles.doneCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable onPress={onOpenJournal} style={[styles.doneCard, glass ? styles.inGlass : { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.doneFace, { backgroundColor: c.bg }]}>
           <MaterialCommunityIcons name={m?.icon || 'emoticon-neutral-outline'} size={28} color={c.fg} />
         </View>
@@ -94,7 +94,7 @@ export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onS
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.primarySoft }]}>
+    <View style={[styles.card, glass ? styles.inGlass : { backgroundColor: colors.primarySoft }]}>
       <View style={styles.head}>
         <View style={styles.asker}>
           <Image source={KODA} style={styles.koda} />
@@ -156,6 +156,8 @@ export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onS
 
 const styles = StyleSheet.create({
   card: { borderRadius: RADIUS.xl, padding: SPACING.xl, marginTop: SPACING.xl },
+  // Inside a Glass card on Home: the glass gives the background and spacing.
+  inGlass: { marginTop: 0, borderWidth: 0, backgroundColor: 'transparent' },
   asker: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   koda: { width: 18, height: 18 },
   question: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, marginTop: SPACING.md },
