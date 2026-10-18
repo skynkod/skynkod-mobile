@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
   topSide: { width: 44 },
   logo: { flex: 1, height: 30, width: 30 * LOGO_RATIO },
-  greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
+  greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: SPACING.xl },
   sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   sosInvite: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   sosHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
