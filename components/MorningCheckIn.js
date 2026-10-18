@@ -20,12 +20,12 @@ const moodColors = colors => ({
 
 // Home's morning check-in: one tap on a face, optional tags, then it folds
 // into a slim line. Writes the same daily entry as the Journal.
-export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onSkip, onOpenJournal }) {
+export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onSkip, onOpenJournal, startExpanded = false }) {
   const colors = useColors()
   const t = useT()
   const [mood, setMood] = useState(entry?.mood || null)
   const [tags, setTags] = useState(entry?.skin_conditions || [])
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(startExpanded)
   const palette = moodColors(colors)
   const entryId = useRef(entry?.id || null)
 

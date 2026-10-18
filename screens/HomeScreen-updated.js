@@ -19,6 +19,7 @@ import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
+import MorningCheckIn from '../components/MorningCheckIn';
 import { getProductsByIds, getNewestProductId, getMyProducts } from '../utils/catalog';
 import { useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -26,6 +27,8 @@ import { SPACING, RADIUS, TYPE } from '../utils/theme';
 const KODA = require('../assets/images/koda-logo.png');
 // Photo: Unsplash (photo-1460411794035-42aac080490a, "cloudy sky"), Unsplash License.
 const SKY = require('../assets/images/home-sky.jpg');
+// Photo: Unsplash (photo-1618814941106-07c927b7078d, lavender sky with a crescent moon), Unsplash License.
+const NIGHT_SKY = require('../assets/images/home-night.jpg');
 // Deep plum from the logo family, for text over the light clouds.
 const INK = '#4A2F42';
 const INK_SOFT = '#6E5266';
@@ -62,6 +65,7 @@ export default function HomeScreen({ navigation }) {
   const heroHeight = Math.round(Dimensions.get('window').height * 0.72);
   const scrollRef = useRef(null);
   const [routineY, setRoutineY] = useState(0);
+  const [justPicked, setJustPicked] = useState(false);
   const period = isNight ? 'evening' : 'morning';
   const [routine, setRoutine] = useState(null);
   // A running Emergency plan pauses some products in today's routine.
@@ -181,6 +185,7 @@ export default function HomeScreen({ navigation }) {
 
   // Mood from the hero: one tap saves today's entry (same as the Journal).
   const pickMood = async (value) => {
+    setJustPicked(true);
     const optimistic = { ...(todayEntry || {}), date: new Date().toISOString(), mood: value, skin_conditions: todayEntry?.skin_conditions || [] };
     setEntries(prev => [optimistic, ...prev.filter(e => e !== todayEntry)]);
     try {
@@ -216,8 +221,6 @@ export default function HomeScreen({ navigation }) {
     line = period === 'morning' ? t('Ritual done. See you tonight.') : t('Ritual done. Sleep well.');
   }
 
-  // One alert at a time, the most useful first.
-  const alert = !plan && suggestion ? 'sos' : showDerm ? 'derm' : toReplace ? 'replace' : !plan && loaded && !skinIsFine && !askMood ? 'invite' : null;
 
   const ink = isDark ? colors.text : INK;
 
@@ -230,8 +233,7 @@ export default function HomeScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
       >
         {/* The calm hero: the sky, the greeting, one thing to do */}
-        <ImageBackground source={SKY} resizeMode="cover" style={{ height: heroHeight }}>
-          {isDark ? <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(21,18,21,0.45)' }]} /> : null}
+        <ImageBackground source={isNight || isDark ? NIGHT_SKY : SKY} resizeMode="cover" style={{ height: heroHeight }}>
           <Svg style={styles.fade} width="100%" height={heroHeight * 0.55}>
             <Defs>
               <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
@@ -248,9 +250,6 @@ export default function HomeScreen({ navigation }) {
               {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
             <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-              <Pressable onPress={() => navigation.navigate('Search')} style={styles.glass} accessibilityLabel={t('Search')}>
-                <Ionicons name="search-outline" size={19} color="#FFFFFF" />
-              </Pressable>
               <Pressable onPress={() => navigation.navigate('Alerts')} style={styles.glass} accessibilityLabel={t('Notifications')}>
                 <Ionicons name="notifications-outline" size={19} color="#FFFFFF" />
               </Pressable>
@@ -284,15 +283,25 @@ export default function HomeScreen({ navigation }) {
               </Pressable>
             ) : null}
 
-            {!askMood && todayEntry?.mood && ['bad', 'terrible'].includes(todayEntry.mood) && !(todayEntry.skin_conditions || []).length ? (
-              <Pressable onPress={() => navigation.navigate('Journal')} hitSlop={8} style={{ marginTop: SPACING.md }}>
-                <Text style={[TYPE.caption, { color: isDark ? colors.primary : colors.primary, fontWeight: '700' }]}>{t("Tell me what's going on")} →</Text>
-              </Pressable>
-            ) : null}
           </View>
         </ImageBackground>
 
         <View style={styles.body}>
+          {/* Search; the scan icon goes straight to the camera */}
+          <View style={styles.searchRow}>
+            <Pressable
+              onPress={() => navigation.navigate('Search')}
+              style={[styles.searchBar, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
+              accessibilityRole="search"
+            >
+              <Ionicons name="search" size={18} color={colors.muted} />
+              <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]}>{t('Search a product or ingredient')}</Text>
+              <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={12} accessibilityLabel={t('Scan a product')}>
+                <Ionicons name="scan-outline" size={22} color={colors.primary} />
+              </Pressable>
+            </Pressable>
+          </View>
+
           {plan ? (
             <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.soft, { backgroundColor: colors.primarySoft }]}>
               <Ionicons name="medkit-outline" size={18} color={colors.primary} />
@@ -301,6 +310,19 @@ export default function HomeScreen({ navigation }) {
               </Text>
               <Ionicons name="chevron-forward" size={16} color={colors.primary} />
             </Pressable>
+          ) : null}
+
+          {/* After the mood in the sky: what's going on today (same entry as the Journal) */}
+          {!isNight && loaded && !checkInSkipped && todayEntry?.mood ? (
+            <MorningCheckIn
+              key={justPicked ? 'picked' : 'today'}
+              startExpanded={justPicked}
+              userId={user?.id}
+              entry={todayEntry}
+              streak={checkInStreak}
+              onSaved={saved => setEntries(prev => [saved, ...prev.filter(e => e.id !== saved.id && e !== todayEntry)])}
+              onOpenJournal={() => navigation.navigate('Journal')}
+            />
           ) : null}
 
           {/* The routine, one step at a time */}
@@ -353,11 +375,30 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : null}
 
-          {/* One alert at a time */}
-          {alert === 'sos' ? (
+          {routine && !current && steps.length ? (
+            <Pressable
+              onPress={() => navigation.navigate('Routines', { tab: period })}
+              onLongPress={undoLast}
+              style={[styles.doneLine, { backgroundColor: colors.successSoft }]}
+            >
+              <View style={[styles.doneIcon, { backgroundColor: colors.success }]}>
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+              </View>
+              <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
+                {period === 'morning' ? t('Morning routine done') : t('Night routine done')}
+                <Text style={{ color: colors.textSecondary, fontWeight: '400' }}>
+                  {'  ·  '}{period === 'morning' ? t('see you tonight') : t('sleep well')} {period === 'morning' ? '☀️' : '🌙'}
+                </Text>
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {/* Emergency mode: a smart card when today's check-in shows a problem,
+              otherwise a discreet line. Hidden while a plan runs (banner above). */}
+          {!plan && suggestion ? (
             <Pressable
               onPress={() => navigation.navigate('Emergency', { situation: suggestion.id, openedAt: Date.now() })}
-              style={[styles.soft, { backgroundColor: colors.dangerSoft }]}
+              style={({ pressed }) => [styles.sosCard, { backgroundColor: colors.dangerSoft, opacity: pressed ? 0.85 : 1 }]}
             >
               <Ionicons name="medkit-outline" size={20} color={colors.danger} />
               <View style={{ flex: 1 }}>
@@ -366,36 +407,43 @@ export default function HomeScreen({ navigation }) {
               </View>
             </Pressable>
           ) : null}
-
-          {alert === 'derm' ? (
-            <View style={[styles.soft, { backgroundColor: derm.level === 'recommended' ? colors.dangerSoft : colors.surface, alignItems: 'flex-start' }]}>
-              <Ionicons name="medkit-outline" size={20} color={derm.level === 'recommended' ? colors.danger : colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>
-                  {derm.level === 'recommended' ? t("We'd recommend seeing a dermatologist") : t('Worth seeing a dermatologist')}
-                </Text>
-                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(derm.reasons[0])}</Text>
-                {dermOpen
-                  ? derm.reasons.slice(1).map((r, i) => (
-                      <Text key={i} style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(r)}</Text>
-                    ))
-                  : null}
-                <View style={styles.dermActions}>
-                  {derm.reasons.length > 1 ? (
-                    <Pressable onPress={() => setDermOpen(!dermOpen)} hitSlop={8}>
-                      <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{dermOpen ? t('Show less') : t('Why?')}</Text>
-                    </Pressable>
-                  ) : <View />}
-                  <Pressable onPress={hideDerm} hitSlop={8}>
-                    <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('Got it')}</Text>
-                  </Pressable>
+          {!plan && !suggestion && loaded && !skinIsFine ? (
+            <View style={[styles.sosInvite, { backgroundColor: colors.primarySoft }]}>
+              <View style={styles.sosHead}>
+                <View style={[styles.sosIcon, { backgroundColor: colors.card }]}>
+                  <Ionicons name="medkit" size={20} color={colors.primary} />
                 </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Skin acting up?')}</Text>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 17 }]}>
+                    {t('Get a 7-day plan to calm, repair or prepare your skin.')}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.sosChips}>
+                {[
+                  { id: 'breakout', label: 'Breakout', icon: 'ellipse' },
+                  { id: 'irritation', label: 'Redness', icon: 'flower-outline' },
+                  { id: 'event', label: 'Big event soon', icon: 'sparkles' },
+                ].map(c => (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => navigation.navigate('Emergency', { situation: c.id, openedAt: Date.now() })}
+                    style={({ pressed }) => [styles.sosChip, { backgroundColor: colors.card, opacity: pressed ? 0.8 : 1 }]}
+                  >
+                    <Ionicons name={c.icon} size={13} color={colors.primary} />
+                    <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{t(c.label)}</Text>
+                  </Pressable>
+                ))}
+                <Pressable onPress={() => navigation.navigate('Emergency')} hitSlop={8} style={styles.sosAll}>
+                  <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('See all')} →</Text>
+                </Pressable>
               </View>
             </View>
           ) : null}
 
-          {alert === 'replace' ? (
-            <Pressable onPress={() => navigation.navigate('Products')} style={[styles.soft, { backgroundColor: toReplace.life.status === 'expired' ? colors.dangerSoft : colors.warningSoft }]}>
+          {toReplace ? (
+            <Pressable onPress={() => navigation.navigate('Products')} style={[styles.replace, { backgroundColor: toReplace.life.status === 'expired' ? colors.dangerSoft : colors.warningSoft }]}>
               <Ionicons name="hourglass-outline" size={20} color={toReplace.life.status === 'expired' ? colors.danger : colors.warning} />
               <View style={{ flex: 1 }}>
                 <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{toReplace.row.product?.name || toReplace.row.product_name}</Text>
@@ -408,17 +456,51 @@ export default function HomeScreen({ navigation }) {
             </Pressable>
           ) : null}
 
-          {alert === 'invite' ? (
-            <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.soft, { backgroundColor: colors.primarySoft }]}>
-              <Ionicons name="medkit-outline" size={20} color={colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Skin acting up?')}</Text>
-                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Get a 7-day plan to calm, repair or prepare your skin.')}</Text>
+          {showDerm ? (
+            <View style={[styles.derm, { backgroundColor: derm.level === 'recommended' ? colors.dangerSoft : colors.surface, borderColor: colors.border }]}>
+              <View style={styles.dermHead}>
+                <Ionicons name="medkit-outline" size={20} color={derm.level === 'recommended' ? colors.danger : colors.primary} />
+                <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
+                  {derm.level === 'recommended' ? t("We'd recommend seeing a dermatologist") : t('Worth seeing a dermatologist')}
+                </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-            </Pressable>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6, lineHeight: 18 }]}>{t(derm.reasons[0])}</Text>
+              {dermOpen
+                ? derm.reasons.slice(1).map((r, i) => (
+                    <Text key={i} style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6, lineHeight: 18 }]}>{t(r)}</Text>
+                  ))
+                : null}
+              <Text style={[TYPE.caption, { color: colors.muted, marginTop: 8, lineHeight: 17 }]}>
+                {t('Skynkod helps with skincare, but it doesn\'t replace a doctor.')}
+              </Text>
+              <View style={styles.dermActions}>
+                {derm.reasons.length > 1 ? (
+                  <Pressable onPress={() => setDermOpen(!dermOpen)} hitSlop={8}>
+                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{dermOpen ? t('Show less') : t('Why?')}</Text>
+                  </Pressable>
+                ) : <View />}
+                <Pressable onPress={hideDerm} hitSlop={8}>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('Got it')}</Text>
+                </Pressable>
+              </View>
+            </View>
           ) : null}
 
+          {/* The four places the user comes back to */}
+          <View style={styles.grid}>
+            {SHORTCUTS.map(s => (
+              <Pressable
+                key={s.to}
+                onPress={() => navigation.navigate(s.to)}
+                style={({ pressed }) => [styles.tile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: colors.primarySoft }]}>
+                  <Ionicons name={s.icon} size={22} color={colors.primary} />
+                </View>
+                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.label)}</Text>
+              </Pressable>
+            ))}
+          </View>
           {/* Koda's word for today */}
           <Pressable onPress={() => navigation.navigate('Koda')} style={styles.quote}>
             <Text style={[styles.quoteText, { color: colors.text }]}>“{t(kodaTip(entries))}”</Text>
@@ -428,17 +510,6 @@ export default function HomeScreen({ navigation }) {
             </View>
           </Pressable>
 
-          {/* The places the user comes back to */}
-          <View style={styles.shortcuts}>
-            {SHORTCUTS.map(s => (
-              <Pressable key={s.to} onPress={() => navigation.navigate(s.to)} style={({ pressed }) => [styles.shortcut, { opacity: pressed ? 0.7 : 1 }]}>
-                <View style={[styles.shortcutIcon, { backgroundColor: colors.primarySoft }]}>
-                  <Ionicons name={s.icon} size={22} color={colors.primary} />
-                </View>
-                <Text style={[TYPE.caption, { color: colors.textSecondary, textAlign: 'center' }]} numberOfLines={2}>{t(s.label)}</Text>
-              </Pressable>
-            ))}
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -448,6 +519,23 @@ export default function HomeScreen({ navigation }) {
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
 
 const styles = StyleSheet.create({
+  sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
+  sosInvite: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
+  sosHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  sosIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  sosChips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
+  sosChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  sosAll: { paddingHorizontal: 4, paddingVertical: 7 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
+  doneLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 999, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, marginTop: SPACING.xl },
+  doneIcon: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
+  replace: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
+  derm: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, marginTop: SPACING.lg },
+  dermHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.lg },
+  tile: { width: '47%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, gap: SPACING.md },
+  tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl },
   date: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
@@ -477,7 +565,4 @@ const styles = StyleSheet.create({
   quote: { marginTop: SPACING.xxl, paddingHorizontal: SPACING.sm },
   quoteText: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 19, lineHeight: 27, textAlign: 'center' },
   quoteBy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: SPACING.sm },
-  shortcuts: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xxl },
-  shortcut: { width: '23%', alignItems: 'center', gap: SPACING.sm },
-  shortcutIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
 });
