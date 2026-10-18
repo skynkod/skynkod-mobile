@@ -44,9 +44,20 @@ const SHORTCUTS = [
 const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date().toDateString()}`;
 
 // Koda's one-line tip from the latest check-in (last 3 days).
+// Without a check-in, Koda shares a gentle tip of the day.
+const DAILY_TIPS = [
+  "Don't skip SPF, even when it's cloudy.",
+  'Pat your skin dry, never rub.',
+  'Lukewarm water is kinder to your skin than hot.',
+  'One new product at a time, two weeks apart.',
+  'Change your pillowcase often, your skin will thank you.',
+  'A pea-sized amount of retinol is enough for the whole face.',
+  'Drinking water helps, but your moisturizer does the real work.',
+];
+
 const kodaTip = (entries) => {
   const latest = entries.find(e => e?.date && Date.now() - new Date(e.date).getTime() <= 3 * 86400000);
-  if (!latest?.mood) return null;
+  if (!latest?.mood) return DAILY_TIPS[Math.floor(Date.now() / 86400000) % DAILY_TIPS.length];
   // Today's answers first (mood and tags), then the levels saved with them.
   const tags = latest.skin_conditions || [];
   const has = list => list.some(tag => tags.includes(tag));
@@ -523,16 +534,15 @@ export default function HomeScreen({ navigation }) {
               </Glass>
             ))}
           </View>
-          {/* Koda's word for today, once there's a recent check-in */}
-          {kodaTip(entries) ? (
+          {/* Koda's word for today, quiet at the bottom */}
           <Pressable onPress={() => navigation.navigate('Koda')} style={styles.quote}>
-            <Text style={[styles.quoteText, { color: colors.text }]}>“{t(kodaTip(entries))}”</Text>
+            <View style={[styles.quoteRule, { backgroundColor: colors.border }]} />
+            <Text style={[styles.quoteText, { color: colors.textSecondary }]}>{t(kodaTip(entries))}</Text>
             <View style={styles.quoteBy}>
-              <Image source={KODA} style={{ width: 16, height: 16, tintColor: colors.primary }} />
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>Koda</Text>
+              <Image source={KODA} style={{ width: 12, height: 12, tintColor: colors.muted }} />
+              <Text style={[TYPE.caption, { color: colors.muted, fontSize: 11, letterSpacing: 0.6 }]}>Koda</Text>
             </View>
           </Pressable>
-          ) : null}
 
         </View>
         </View>
@@ -591,7 +601,8 @@ const styles = StyleSheet.create({
   primary: { flexDirection: 'row', gap: SPACING.sm, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
   primaryText: { fontSize: 15, fontWeight: '600' },
   dermActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md },
-  quote: { marginTop: SPACING.xxl, paddingHorizontal: SPACING.sm },
-  quoteText: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 19, lineHeight: 27, textAlign: 'center' },
+  quote: { marginTop: SPACING.xxl, paddingHorizontal: SPACING.xl },
+  quoteText: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 15, lineHeight: 22, textAlign: 'center' },
+  quoteRule: { width: 32, height: StyleSheet.hairlineWidth, alignSelf: 'center', marginBottom: SPACING.md },
   quoteBy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: SPACING.sm },
 });
