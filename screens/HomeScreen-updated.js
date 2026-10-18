@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, RefreshControl, Pressable, Image, ImageBackground, ScrollView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, Pressable, Image, ImageBackground, Platform, Dimensions, Animated } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
@@ -82,6 +83,13 @@ export default function HomeScreen({ navigation }) {
   // The first screen: about half for the greeting, the rest for the first sections.
   const introHeight = Math.round(Dimensions.get('window').height * 0.5);
   const scrollRef = useRef(null);
+  // Once the greeting scrolls away, a slim frosted header fades in.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [headerOn, setHeaderOn] = useState(false);
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => setHeaderOn(on => (value > introHeight * 0.5) !== on ? !on : on));
+    return () => scrollY.removeListener(id);
+  }, [scrollY, introHeight]);
   const [routineY, setRoutineY] = useState(0);
   const [bodyY, setBodyY] = useState(0);
   const [justPicked, setJustPicked] = useState(false);
@@ -221,7 +229,7 @@ export default function HomeScreen({ navigation }) {
 
   const askMood = !isNight && loaded && !checkInSkipped && !todayEntry?.mood;
   const ritual = period === 'morning' ? t('morning ritual') : t('evening ritual');
-  const scrollToRoutine = () => scrollRef.current?.scrollTo({ y: Math.max(0, routineY - SPACING.xl), animated: true });
+  const scrollToRoutine = () => scrollRef.current?.scrollTo({ y: Math.max(0, routineY - insets.top - 78), animated: true });
 
   // The hero's single line and single action.
   let line = null;
@@ -244,8 +252,10 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: SPACING.xxxl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
@@ -551,7 +561,33 @@ export default function HomeScreen({ navigation }) {
 
         </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* Header that appears once the greeting has scrolled away */}
+      <Animated.View
+        pointerEvents={headerOn ? 'auto' : 'none'}
+        style={[styles.header, {
+          paddingTop: insets.top + SPACING.xs,
+          borderBottomColor: colors.border,
+          opacity: scrollY.interpolate({ inputRange: [introHeight * 0.4, introHeight * 0.55], outputRange: [0, 1], extrapolate: 'clamp' }),
+        }]}
+      >
+        <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,18,21,0.6)' : 'rgba(251,248,250,0.7)' }]} />
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1, marginRight: SPACING.md }}>
+            <Text style={[styles.headerDate, { color: colors.primary }]} numberOfLines={1}>
+              {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+            </Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+              {greeting}{firstName ? `, ${firstName}` : ''}
+            </Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
+            <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          </Pressable>
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -580,6 +616,10 @@ const styles = StyleSheet.create({
   tile: { padding: SPACING.lg, gap: SPACING.md },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sky: { position: 'absolute', top: 0, left: 0, right: 0 },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden', borderBottomWidth: StyleSheet.hairlineWidth },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
+  headerDate: { fontSize: 10, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
+  headerTitle: { fontFamily: SERIF, fontSize: 20, marginTop: 2 },
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl },
   date: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
