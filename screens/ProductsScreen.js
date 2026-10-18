@@ -1,128 +1,214 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, Alert, Keyboard, Modal, ScrollView } from 'react-native'
-import { getUserProducts, addUserProduct, deleteUserProduct } from '../utils/supabase'
-import { useFetchWithCache } from '../utils/useFetchWithCache'
+import React, { useCallback, useMemo, useState } from 'react'
+import { View, Text, Pressable, StyleSheet, Image, Alert, RefreshControl } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
+import { Screen, LoadingView, SegmentedControl, useColors } from '../components/ui'
+import ProductVerdict from '../components/ProductVerdict'
+import { useAuth } from '../utils/AuthContext'
+import { useT } from '../utils/LanguageContext'
+import { useSkinProfile } from '../utils/useSkinProfile'
+import { getMyProducts, setMyProductStatus, removeMyProduct } from '../utils/catalog'
+import { getUserRoutines } from '../utils/routines-service'
 import { logError } from '../utils/errorLogger'
-import { PRODUCT_CATEGORIES } from '../utils/constants'
-import { Screen, Card, Button, Input, Chip, BottomSheet, EmptyState, Banner, LoadingView, IconButton, IconCircle, SectionHeader, useColors } from '../components/ui'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
-const CATEGORY_ICONS = {
-  Cleanser: 'water-outline',
-  Toner: 'color-fill-outline',
-  Essence: 'flask-outline',
-  Serum: 'eyedrop-outline',
-  Moisturizer: 'cloud-outline',
-  'Eye Cream': 'eye-outline',
-  Sunscreen: 'sunny-outline',
-  Mask: 'happy-outline',
-  Exfoliator: 'sparkles-outline',
-  Treatment: 'medical-outline',
-}
+// Filter chips, in routine order; only categories the user has are shown.
+const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'cleanser', label: 'Cleansers' },
+  { value: 'toner', label: 'Toners' },
+  { value: 'serum', label: 'Serums' },
+  { value: 'eye care', label: 'Eye care' },
+  { value: 'moisturizer', label: 'Moisturizers' },
+  { value: 'sunscreen', label: 'SPF' },
+  { value: 'exfoliant', label: 'Exfoliants' },
+  { value: 'mask', label: 'Masks' },
+  { value: 'other', label: 'Other' },
+]
 
-export default function ProductsScreen({ route }) {
-  const { userId } = route.params
+// The user's shelf ("I own") and wishlist ("To buy"), with how well each
+// product suits their skin and whether it's already in a routine.
+export default function ProductsScreen({ navigation }) {
   const colors = useColors()
-  const { data: products, loading, error, isOffline, fetch, retry } = useFetchWithCache('user_products', () => getUserProducts(userId), userId)
+  const t = useT()
+  const { user } = useAuth()
+  const profile = useSkinProfile(user?.id)
+  const [rows, setRows] = useState([])
+  const [inRoutine, setInRoutine] = useState(new Set())
+  const [tab, setTab] = useState('owned')
+  const [filter, setFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const [showAdd, setShowAdd] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [name, setName] = useState('')
-  const [brand, setBrand] = useState('')
-  const [category, setCategory] = useState('Serum')
-  const [addError, setAddError] = useState(null)
-
-  useEffect(() => {
-    fetch()
-  }, [fetch])
-
-  const handleAdd = async () => {
-    if (!name.trim() || !brand.trim()) {
-      setAddError('Please add a name and a brand')
-      return
-    }
-    setAdding(true)
-    setAddError(null)
-    Keyboard.dismiss()
+  const load = useCallback(async () => {
+    if (!user?.id) return
     try {
-      const result = await addUserProduct({ user_id: userId, product_name: name.trim(), brand: brand.trim(), category })
-      if (!result) throw new Error('Failed to add product')
-      setName('')
-      setBrand('')
-      setShowAdd(false)
-      await fetch()
-    } catch (err) {
-      await logError('ProductsScreen_add', err, { userId })
-      setAddError(err.message || 'Failed to add product')
+      const [mine, routines] = await Promise.all([getMyProducts(user.id), getUserRoutines(user.id)])
+      setRows(mine)
+      const ids = (routines.success ? routines.data : []).flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean)
+      setInRoutine(new Set(ids))
+    } catch (error) {
+      await logError('ProductsScreen_load', error, {}, 'warn')
     } finally {
-      setAdding(false)
+      setLoading(false)
     }
+  }, [user?.id])
+
+  useFocusEffect(useCallback(() => { load() }, [load]))
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
   }
 
-  const handleDelete = (product) => {
-    Alert.alert('Remove product?', `${product.product_name} will be removed from your shelf.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          const ok = await deleteUserProduct(product.id)
-          if (ok) fetch()
-          else Alert.alert('Error', 'Failed to delete product')
-        },
-      },
+  const inTab = rows.filter(r => r.status === tab)
+  const categoryOf = r => r.product?.category || r.category || 'other'
+  const available = useMemo(() => new Set(inTab.map(categoryOf)), [rows, tab])
+  const shown = filter === 'all' ? inTab : inTab.filter(r => categoryOf(r) === filter)
+  const counts = { owned: rows.filter(r => r.status === 'owned').length, to_buy: rows.filter(r => r.status === 'to_buy').length }
+
+  const openActions = (row) => {
+    const name = row.product?.name || row.product_name
+    const move = row.status === 'owned'
+      ? { text: t('Move to To buy'), onPress: () => update(row, 'to_buy') }
+      : { text: t('I bought it'), onPress: () => update(row, 'owned') }
+    Alert.alert(name, null, [
+      move,
+      { text: t('Remove'), style: 'destructive', onPress: () => remove(row) },
+      { text: t('Cancel'), style: 'cancel' },
     ])
   }
 
-  if (loading && !products) return <LoadingView />
+  const update = async (row, status) => {
+    setRows(prev => prev.map(r => (r.id === row.id ? { ...r, status } : r)))
+    try {
+      await setMyProductStatus(row.id, status)
+    } catch (error) {
+      await logError('ProductsScreen_status', error, {}, 'warn')
+      load()
+    }
+  }
 
-  const list = Array.isArray(products) ? products.filter(p => p?.id) : []
+  const remove = async (row) => {
+    setRows(prev => prev.filter(r => r.id !== row.id))
+    try {
+      await removeMyProduct(row.id)
+    } catch (error) {
+      await logError('ProductsScreen_remove', error, {}, 'warn')
+      load()
+    }
+  }
+
+  if (loading) return <LoadingView />
 
   return (
-    <Screen back title="My shelf" subtitle="Products you use" right={<IconButton icon="add" tone="primary" onPress={() => setShowAdd(true)} accessibilityLabel="Add product" />}>
-      {error ? <Banner message={error} actionLabel="Retry" onAction={retry} /> : null}
-      {isOffline && !error ? <Banner tone="info" message="Offline — showing saved data" /> : null}
+    <Screen
+      back
+      title={t('My products')}
+      right={
+        <Pressable onPress={() => navigation.navigate('Search')} hitSlop={10} accessibilityLabel={t('Add a product')}>
+          <Ionicons name="add-circle" size={30} color={colors.primary} />
+        </Pressable>
+      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+    >
+      <SegmentedControl
+        value={tab}
+        onChange={value => { setTab(value); setFilter('all') }}
+        options={[
+          { value: 'owned', label: `${t('I own')} · ${counts.owned}` },
+          { value: 'to_buy', label: `${t('To buy')} · ${counts.to_buy}` },
+        ]}
+      />
 
-      {list.length === 0 ? (
-        <EmptyState icon="flask-outline" title="Your shelf is empty" description="Add the products you use to get better advice from Koda." action="Add a product" onAction={() => setShowAdd(true)} />
-      ) : (
-        <>
-          <SectionHeader title={`${list.length} product${list.length > 1 ? 's' : ''}`} />
-          <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
-            {list.map((product, idx) => (
-              <View key={product.id} style={[styles.row, idx < list.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <IconCircle name={CATEGORY_ICONS[product.category] || 'cube-outline'} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{product.product_name || 'Unknown'}</Text>
-                  <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>
-                    {[product.brand, product.category].filter(Boolean).join(' · ')}
-                  </Text>
-                </View>
-                <IconButton icon="trash-outline" size={34} onPress={() => handleDelete(product)} accessibilityLabel="Remove product" />
+      {inTab.length ? (
+        <View style={styles.filters}>
+          {FILTERS.filter(f => f.value === 'all' || available.has(f.value)).map(f => {
+            const on = filter === f.value
+            return (
+              <Pressable
+                key={f.value}
+                onPress={() => setFilter(f.value)}
+                style={[styles.filter, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primary : colors.border }]}
+              >
+                <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600' }]}>{t(f.label)}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      ) : null}
+
+      {!inTab.length ? (
+        <View style={[styles.empty, { borderColor: colors.border }]}>
+          <Ionicons name={tab === 'owned' ? 'flask-outline' : 'bag-handle-outline'} size={34} color={colors.primary} />
+          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md, textAlign: 'center' }]}>
+            {tab === 'owned' ? t('Add the products you use') : t('Your To buy list is empty')}
+          </Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
+            {tab === 'owned'
+              ? t('Scan or search them to see how well each one suits your skin.')
+              : t("Products you'd like to try, or that Koda recommends, will land here.")}
+          </Text>
+          <View style={styles.emptyActions}>
+            <Pressable onPress={() => navigation.navigate('Scanner')} style={[styles.emptyButton, { backgroundColor: colors.primary }]}>
+              <Ionicons name="scan-outline" size={18} color={colors.onPrimary} />
+              <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{t('Scan')}</Text>
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('Search')} style={[styles.emptyButton, { backgroundColor: colors.primarySoft }]}>
+              <Ionicons name="search" size={18} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('Search')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {shown.map(row => {
+        const product = row.product
+        return (
+          <Pressable
+            key={row.id}
+            onPress={() => (product ? navigation.navigate('Product', { id: product.id }) : openActions(row))}
+            onLongPress={() => openActions(row)}
+            style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            {product?.image_url ? (
+              <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+            ) : (
+              <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
+                <Ionicons name="water-outline" size={20} color={colors.muted} />
               </View>
-            ))}
-          </Card>
-        </>
-      )}
-
-      <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
-        <BottomSheet title="Add a product" onClose={() => setShowAdd(false)}>
-          {addError ? <Banner message={addError} /> : null}
-          <Input label="Name" placeholder="e.g. Niacinamide 10%" value={name} onChangeText={setName} editable={!adding} />
-          <Input label="Brand" placeholder="e.g. The Ordinary" value={brand} onChangeText={setBrand} editable={!adding} />
-          <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '600', marginBottom: SPACING.sm }]}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.sm, paddingBottom: SPACING.lg }}>
-            {PRODUCT_CATEGORIES.map(cat => (
-              <Chip key={cat} label={cat} selected={category === cat} onPress={() => setCategory(cat)} />
-            ))}
-          </ScrollView>
-          <Button title="Add to shelf" onPress={handleAdd} loading={adding} style={{ marginBottom: SPACING.xl }} />
-        </BottomSheet>
-      </Modal>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product?.brand || row.brand}</Text>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product?.name || row.product_name}</Text>
+              {product && inRoutine.has(product.id) ? (
+                <View style={[styles.routineTag, { backgroundColor: colors.primarySoft }]}>
+                  <Ionicons name="water" size={11} color={colors.primary} />
+                  <Text style={[styles.routineText, { color: colors.primary }]}>{t('In your routine')}</Text>
+                </View>
+              ) : null}
+              {product ? <ProductVerdict product={product} profile={profile} /> : null}
+            </View>
+            <Pressable onPress={() => openActions(row)} hitSlop={12} accessibilityLabel={t('More options')}>
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.muted} />
+            </Pressable>
+          </Pressable>
+        )
+      })}
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.lg, marginBottom: SPACING.sm },
+  filter: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md, marginTop: SPACING.sm },
+  photo: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#FFFFFF' },
+  noPhoto: { alignItems: 'center', justifyContent: 'center' },
+  routineTag: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
+  routineText: { fontSize: 11, fontWeight: '700' },
+  empty: { alignItems: 'center', borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.lg, padding: SPACING.xl, marginTop: SPACING.xl },
+  emptyActions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
+  emptyButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10 },
 })

@@ -64,18 +64,55 @@ export const lookupBarcode = async (barcode) => {
   }
 }
 
-// Adds a catalogue product to the user's collection (once).
-export const addToMyProducts = async (userId, product) => {
+// Adds a catalogue product to the user's collection as 'owned' or 'to_buy'.
+// Already there: only the status changes.
+export const addToMyProducts = async (userId, product, status = 'owned') => {
   const { data: existing } = await supabase
     .from('user_products').select('id').eq('user_id', userId).eq('product_id', product.id).limit(1)
-  if (existing?.length) return
+  if (existing?.length) {
+    const { error } = await supabase.from('user_products').update({ status }).eq('id', existing[0].id)
+    if (error) throw error
+    return
+  }
   const { error } = await supabase.from('user_products').insert({
     user_id: userId,
     product_id: product.id,
     product_name: product.name,
     brand: product.brand,
     category: product.category,
+    status,
   })
+  if (error) throw error
+}
+
+// The user's collection, each row with its catalogue product (when known).
+export const getMyProducts = async (userId) => {
+  const { data, error } = await supabase
+    .from('user_products')
+    .select('id, product_id, product_name, brand, category, status, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  const ids = [...new Set((data || []).map(r => r.product_id).filter(Boolean))]
+  const products = await getProductsByIds(ids)
+  const byId = Object.fromEntries(products.map(p => [p.id, p]))
+  return (data || []).map(r => ({ ...r, status: r.status || 'owned', product: byId[r.product_id] || null }))
+}
+
+// Status of one catalogue product in the user's collection, or null.
+export const myProductStatus = async (userId, productId) => {
+  const { data } = await supabase
+    .from('user_products').select('status').eq('user_id', userId).eq('product_id', productId).limit(1)
+  return data?.length ? data[0].status || 'owned' : null
+}
+
+export const setMyProductStatus = async (rowId, status) => {
+  const { error } = await supabase.from('user_products').update({ status }).eq('id', rowId)
+  if (error) throw error
+}
+
+export const removeMyProduct = async (rowId) => {
+  const { error } = await supabase.from('user_products').delete().eq('id', rowId)
   if (error) throw error
 }
 

@@ -6,7 +6,7 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getProduct, addToMyProducts } from '../utils/catalog'
+import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -22,7 +22,13 @@ export default function ProductScreen({ navigation, route }) {
   const [loading, setLoading] = useState(!product)
   const [showAll, setShowAll] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [added, setAdded] = useState(false)
+  const [status, setStatus] = useState(null) // null | 'owned' | 'to_buy'
+
+  // Is it already on the user's shelf or wishlist?
+  useEffect(() => {
+    if (!user?.id || !product?.id) return
+    myProductStatus(user.id, product.id).then(setStatus).catch(() => {})
+  }, [user?.id, product?.id])
 
   useEffect(() => {
     const id = route?.params?.id
@@ -40,20 +46,20 @@ export default function ProductScreen({ navigation, route }) {
   const match = productMatch(product, profile)
 
   // Adding a product the user should avoid needs a clear, explained warning.
-  const confirmAdd = () => {
-    if (!match.avoid.length) return add()
+  const confirmAdd = (nextStatus) => {
+    if (!match.avoid.length) return add(nextStatus)
     const first = match.avoid[0]
     Alert.alert(t('Not recommended for you'), `${t(first.text)}.\n\n${t(first.detail || '')}`, [
-      { text: t('Add anyway'), style: 'destructive', onPress: add },
+      { text: t('Add anyway'), style: 'destructive', onPress: () => add(nextStatus) },
       { text: t("Don't add"), style: 'cancel' },
     ])
   }
 
-  const add = async () => {
+  const add = async (nextStatus) => {
     setAdding(true)
     try {
-      await addToMyProducts(user.id, product)
-      setAdded(true)
+      await addToMyProducts(user.id, product, nextStatus)
+      setStatus(nextStatus)
     } catch (error) {
       await logError('ProductScreen_add', error, { id: product.id }, 'warn')
       Alert.alert(t('Error'), t("Couldn't add this product. Try again."))
@@ -161,14 +167,41 @@ export default function ProductScreen({ navigation, route }) {
         </Pressable>
       ) : null}
 
-      <Pressable
-        onPress={confirmAdd}
-        disabled={adding || added}
-        style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, opacity: added ? 0.6 : pressed ? 0.85 : 1 }]}
-      >
-        <Ionicons name={added ? 'checkmark' : 'add'} size={20} color="#FFFFFF" />
-        <Text style={styles.addText}>{added ? t('Added to my products') : adding ? t('Adding…') : t('Add to my products')}</Text>
-      </Pressable>
+      {status === 'owned' ? (
+        <Pressable onPress={() => navigation.navigate('Products')} style={[styles.statusBar, { backgroundColor: colors.successSoft }]}>
+          <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+          <Text style={[TYPE.bodyStrong, { color: colors.success, flex: 1 }]}>{t('In my products')}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.success} />
+        </Pressable>
+      ) : (
+        <>
+          {status === 'to_buy' ? (
+            <View style={[styles.statusBar, { backgroundColor: colors.primarySoft }]}>
+              <Ionicons name="bag-handle" size={18} color={colors.primary} />
+              <Text style={[TYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>{t('In your To buy list')}</Text>
+            </View>
+          ) : null}
+          <Pressable
+            onPress={() => confirmAdd('owned')}
+            disabled={adding}
+            style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+            <Text style={styles.addText}>{adding ? t('Adding…') : status === 'to_buy' ? t('I bought it') : t('I have it')}</Text>
+          </Pressable>
+          {status !== 'to_buy' ? (
+            <Pressable
+              onPress={() => confirmAdd('to_buy')}
+              disabled={adding}
+              style={({ pressed }) => [styles.secondaryButton, { backgroundColor: colors.primarySoft, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Ionicons name="bag-add-outline" size={20} color={colors.primary} />
+              <Text style={[styles.addText, { color: colors.primary }]}>{t('Add to To buy')}</Text>
+            </Pressable>
+          ) : null}
+        </>
+      )}
+      <View style={{ height: SPACING.lg }} />
     </Screen>
   )
 }
@@ -188,6 +221,8 @@ const styles = StyleSheet.create({
   altChip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.xs },
   ingredient: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.xl, marginBottom: SPACING.md },
+  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.md },
+  secondaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.sm },
+  statusBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.xl },
   addText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 })
