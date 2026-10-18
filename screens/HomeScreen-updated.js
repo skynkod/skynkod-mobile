@@ -20,7 +20,6 @@ import { getProductsByIds, getNewestProductId } from '../utils/catalog';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
-const LOGO = require('../assets/images/skynkod-logo.png');
 const KODA = require('../assets/images/koda-logo.png');
 const LOGO_RATIO = 1306 / 333;
 
@@ -163,17 +162,15 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
-      <View style={styles.topBar}>
-        <View style={styles.topSide} />
-        <Image source={LOGO} resizeMode="contain" style={styles.logo} accessibilityLabel="Skynkod" />
-        <Pressable style={[styles.topSide, { alignItems: 'flex-end' }]} onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
+      {/* Greeting, with notifications on the same line */}
+      <View style={styles.greetingRow}>
+        <Text style={[styles.greeting, { color: colors.text, flex: 1 }]}>
+          {greeting}{firstName ? `, ${firstName}` : ''} {isNight ? '🌙' : '☀️'}
+        </Text>
+        <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
           <Ionicons name="notifications-outline" size={24} color={colors.text} />
         </Pressable>
       </View>
-
-      <Text style={[styles.greeting, { color: colors.text }]}>
-        {greeting}{firstName ? `, ${firstName}` : ''} {isNight ? '🌙' : '☀️'}
-      </Text>
 
       {/* Search; the scan icon goes straight to the camera */}
       <View style={styles.searchRow}>
@@ -421,10 +418,8 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  topBar: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
-  topSide: { width: 44 },
-  logo: { flex: 1, height: 30, width: 30 * LOGO_RATIO },
-  greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: SPACING.xl },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: SPACING.md },
+  greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
   sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   sosInvite: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
   sosHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
