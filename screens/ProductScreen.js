@@ -69,9 +69,9 @@ export default function ProductScreen({ navigation, route }) {
         </View>
       </View>
 
-      <View style={[styles.matchCard, { backgroundColor: match.tone === 'warning' ? colors.warningSoft : colors.successSoft }]}>
+      <View style={[styles.matchCard, { backgroundColor: { danger: colors.dangerSoft, warning: colors.warningSoft, neutral: colors.surface }[match.tone] || colors.successSoft }]}>
         <View style={styles.matchHead}>
-          <Text style={[styles.matchScore, { color: match.tone === 'warning' ? colors.warning : colors.success }]}>{match.score}%</Text>
+          <Text style={[styles.matchScore, { color: { danger: colors.danger, warning: colors.warning, neutral: colors.textSecondary }[match.tone] || colors.success }]}>{match.score}%</Text>
           <View style={{ flex: 1 }}>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.label)}</Text>
             <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>
@@ -81,7 +81,7 @@ export default function ProductScreen({ navigation, route }) {
         </View>
         {[...match.good.map(g => ({ ...g, ok: true })), ...match.care.map(c => ({ ...c, ok: false }))].map((r, idx) => (
           <View key={idx} style={styles.reason}>
-            <Ionicons name={r.ok ? 'checkmark-circle' : 'alert-circle'} size={16} color={r.ok ? colors.success : colors.warning} />
+            <Ionicons name={r.ok ? 'checkmark-circle' : 'alert-circle'} size={16} color={r.ok ? colors.success : match.avoid.length ? colors.danger : colors.warning} />
             <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}

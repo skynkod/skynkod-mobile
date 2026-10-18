@@ -44,8 +44,41 @@ const GOALS = [
   { value: 'simple', label: 'A routine I actually stick to' },
 ]
 
-const STEPS = ['welcome', 'features', 'name', 'skinType', 'concerns', 'goal', 'summary']
-const QUESTION_STEPS = ['name', 'skinType', 'concerns', 'goal', 'summary']
+// Optional follow-ups that sharpen the compatibility score. Values are stored
+// in English (users.acne_types / skin_conditions / avoid_ingredients / pregnancy).
+const ACNE_TYPES = [
+  { value: 'Comedonal', label: 'Blackheads & whiteheads' },
+  { value: 'Inflammatory', label: 'Red, inflamed spots' },
+  { value: 'Cystic', label: 'Deep, painful cysts' },
+  { value: 'Hormonal', label: 'Hormonal (jawline, around periods)' },
+  { value: 'Fungal', label: 'Tiny itchy bumps (fungal acne)' },
+  { value: 'Unsure', label: 'Not sure' },
+]
+const CONDITIONS = [
+  { value: 'Rosacea', label: 'Rosacea' },
+  { value: 'Eczema', label: 'Eczema or atopic skin' },
+  { value: 'Perioral dermatitis', label: 'Perioral dermatitis' },
+  { value: 'Seborrheic dermatitis', label: 'Seborrheic dermatitis' },
+  { value: 'Psoriasis', label: 'Psoriasis' },
+  { value: 'Melasma', label: 'Melasma' },
+  { value: 'None', label: 'None of these' },
+]
+const AVOID = [
+  { value: 'Fragrance', label: 'Fragrance' },
+  { value: 'Essential oils', label: 'Essential oils' },
+  { value: 'Nuts', label: 'Nuts' },
+  { value: 'Lanolin', label: 'Lanolin' },
+  { value: 'Alcohol', label: 'Alcohol' },
+  { value: 'None', label: 'Nothing in particular' },
+]
+const PREGNANCY = [
+  { value: 'no', label: 'No' },
+  { value: 'pregnant', label: "I'm pregnant" },
+  { value: 'breastfeeding', label: "I'm breastfeeding" },
+  { value: 'unsaid', label: "I'd rather not say" },
+]
+
+const ALL_STEPS = ['welcome', 'features', 'name', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
 
 // Glossier-inspired: lots of air, big plain headlines, pill buttons and soft
 // transitions. The first page picks up the splash screen's mauve.
@@ -58,8 +91,15 @@ export default function OnboardingScreen({ userId, onComplete }) {
   const [skinType, setSkinType] = useState(undefined)
   const [concerns, setConcerns] = useState([])
   const [goal, setGoal] = useState(null)
+  const [acneTypes, setAcneTypes] = useState([])
+  const [conditions, setConditions] = useState([])
+  const [avoid, setAvoid] = useState([])
+  const [pregnancy, setPregnancy] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  // The acne question only shows when acne was picked as a concern.
+  const STEPS = ALL_STEPS.filter(s => s !== 'acneType' || concerns.includes('Acne'))
+  const QUESTION_STEPS = STEPS.slice(STEPS.indexOf('name'))
   const name = STEPS[step]
   const enter = useRef(new Animated.Value(0)).current
   const progress = useRef(new Animated.Value(0)).current
@@ -90,6 +130,35 @@ export default function OnboardingScreen({ userId, onComplete }) {
     setTimeout(next, 260)
   }
 
+  // Multi-select where "None" clears the rest (and the rest clear "None").
+  const toggleIn = (setter, value) =>
+    setter(prev => {
+      if (value === 'None') return prev.includes('None') ? [] : ['None']
+      const without = prev.filter(v => v !== 'None')
+      return without.includes(value) ? without.filter(v => v !== value) : [...without, value]
+    })
+
+  const tagsQuestion = (title, subtitle, options, selected, setter) => (
+    <>
+      <Text style={[styles.headline, { color: colors.text }]}>{t(title)}</Text>
+      <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t(subtitle)}</Text>
+      <View style={styles.tags}>
+        {options.map(o => {
+          const on = selected.includes(o.value)
+          return (
+            <Pressable
+              key={o.value}
+              onPress={() => toggleIn(setter, o.value)}
+              style={[styles.tag, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primary : colors.border }]}
+            >
+              <Text style={[styles.tagText, { color: on ? colors.primary : colors.text }]}>{t(o.label)}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
+    </>
+  )
+
   const toggleConcern = (c) =>
     setConcerns(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]))
 
@@ -99,7 +168,17 @@ export default function OnboardingScreen({ userId, onComplete }) {
     setSaving(true)
     try {
       if (save) {
-        const answers = { firstName: firstName.trim() || null, skinType: skinType ?? null, concerns, goal }
+        const clean = list => list.filter(v => v !== 'None')
+        const answers = {
+          firstName: firstName.trim() || null,
+          skinType: skinType ?? null,
+          concerns,
+          goal,
+          acneTypes: concerns.includes('Acne') ? acneTypes : [],
+          conditions: clean(conditions),
+          avoid: clean(avoid),
+          pregnancy,
+        }
         await AsyncStorage.setItem('skynkod_skin_profile', JSON.stringify(answers))
         if (userId && answers.firstName) await AsyncStorage.setItem(`skynkod_first_name_${userId}`, answers.firstName)
         if (userId) {
@@ -108,6 +187,10 @@ export default function OnboardingScreen({ userId, onComplete }) {
             skin_type: answers.skinType,
             skin_concerns: answers.concerns,
             skin_goal: answers.goal,
+            acne_types: answers.acneTypes,
+            skin_conditions: answers.conditions,
+            avoid_ingredients: answers.avoid,
+            pregnancy: answers.pregnancy,
             onboarding_complete: true,
           })
           if (!saved) await logError('OnboardingScreen_saveProfile', new Error('Profile not saved'), { userId }, 'warn')
@@ -277,6 +360,28 @@ export default function OnboardingScreen({ userId, onComplete }) {
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} disabled={concerns.length === 0} />
+  } else if (name === 'acneType') {
+    content = tagsQuestion('What kind of breakouts do you get?', 'Optional. It changes which ingredients help.', ACNE_TYPES, acneTypes, setAcneTypes)
+    footer = <Pill title={acneTypes.length ? t('Continue') : t('Skip')} onPress={next} />
+  } else if (name === 'conditions') {
+    content = tagsQuestion('Any skin conditions?', 'Optional. We use it to flag ingredients that can trigger flare-ups.', CONDITIONS, conditions, setConditions)
+    footer = <Pill title={conditions.length ? t('Continue') : t('Skip')} onPress={next} />
+  } else if (name === 'avoid') {
+    content = tagsQuestion('Anything you need to avoid?', 'Optional. Products with these will be flagged.', AVOID, avoid, setAvoid)
+    footer = <Pill title={avoid.length ? t('Continue') : t('Skip')} onPress={next} />
+  } else if (name === 'pregnancy') {
+    content = (
+      <>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('Are you pregnant or breastfeeding?')}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Optional. Some ingredients, like retinol, are best avoided during this time.')}</Text>
+        <View style={styles.choices}>
+          {PREGNANCY.map(o => (
+            <Choice key={o.value} label={t(o.label)} selected={pregnancy === o.value} onPress={() => pickAndContinue(setPregnancy, o.value)} />
+          ))}
+        </View>
+      </>
+    )
+    footer = <Pill title={t('Skip')} variant="ghost" onPress={next} />
   } else if (name === 'goal') {
     content = (
       <>

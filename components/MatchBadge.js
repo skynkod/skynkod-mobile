@@ -8,6 +8,7 @@ export default function MatchBadge({ tone = 'neutral', label, size = 'sm' }) {
   const palette = {
     success: { bg: colors.successSoft, fg: colors.success },
     warning: { bg: colors.warningSoft, fg: colors.warning },
+    danger: { bg: colors.dangerSoft, fg: colors.danger },
     neutral: { bg: colors.surface, fg: colors.textSecondary },
   }[tone] || { bg: colors.surface, fg: colors.textSecondary }
   return (

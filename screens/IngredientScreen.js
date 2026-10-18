@@ -34,7 +34,7 @@ export default function IngredientScreen({ navigation, route }) {
 
   const fit = ingredientFit(entry, profile)
   const why = fit.warns.length
-    ? t('It {why}.', { why: t(entry.cautionWhy) })
+    ? `${t(fit.warns[0])}.`
     : fit.helps.length
       ? t('Good for your {list}.', { list: fit.helps.map(h => t(h).toLowerCase()).join(', ') })
       : null

@@ -69,7 +69,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       return
     }
     const match = productMatch(picked.product, profile)
-    if (match.tone === 'warning') {
+    if (match.tone === 'warning' || match.tone === 'danger') {
       Alert.alert(
         t('Heads up'),
         t('{product} may not suit your skin: {reason}.', { product: picked.product.name, reason: t(match.care[0]?.text || match.label).toLowerCase() }),

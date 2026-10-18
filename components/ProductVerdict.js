@@ -13,8 +13,8 @@ export default function ProductVerdict({ product, profile }) {
   const colors = useColors()
   const t = useT()
   const match = productMatch(product, profile)
-  const icon = match.tone === 'warning' ? 'alert-circle' : match.tone === 'success' ? 'checkmark-circle' : 'ellipse-outline'
-  const tint = match.tone === 'warning' ? colors.warning : match.tone === 'success' ? colors.success : colors.muted
+  const icon = { danger: 'close-circle', warning: 'alert-circle', success: 'checkmark-circle' }[match.tone] || 'ellipse-outline'
+  const tint = { danger: colors.danger, warning: colors.warning, success: colors.success }[match.tone] || colors.muted
   return (
     <View style={styles.wrap}>
       <MatchBadge tone={match.tone} label={`${match.score}% · ${t(match.label)}`} />
