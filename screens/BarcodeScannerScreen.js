@@ -1,150 +1,116 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { analyzeProduct } from '../utils/product-scanner';
-import { addUserProduct } from '../utils/supabase';
-import { useAuth } from '../utils/AuthContext';
-import { Screen, Card, Button, Input, SectionHeader, ListRow, Badge, EmptyState, useColors } from '../components/ui';
-import { SPACING, TYPE } from '../utils/theme';
+import React, { useRef, useState } from 'react'
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
+import { CameraView, useCameraPermissions } from 'expo-camera'
+import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useIsFocused } from '@react-navigation/native'
+import { Screen, Button, EmptyState, useColors } from '../components/ui'
+import { useT } from '../utils/LanguageContext'
+import { lookupBarcode } from '../utils/catalog'
+import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
-// Demo catalogue until a real product database / camera scanning is connected.
-const DEMO_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Hyaluronic Serum',
-    brand: 'Skincare Pro',
-    barcode: '8801234567890',
-    price: 25,
-    category: 'Serum',
-    ingredients: [
-      { name: 'Hyaluronic Acid', benefitScore: 5 },
-      { name: 'Glycerin', benefitScore: 4 },
-      { name: 'Panthenol', benefitScore: 3 },
-    ],
-    benefits: ['hydration', 'plumping'],
-    rating: 4.5,
-    reviews: 324,
-  },
-  {
-    id: 2,
-    name: 'Retinol Night Cream',
-    brand: 'Anti-Aging Inc',
-    barcode: '8809876543210',
-    price: 45,
-    category: 'Moisturizer',
-    ingredients: [
-      { name: 'Retinol', benefitScore: 5 },
-      { name: 'Ceramides', benefitScore: 4 },
-      { name: 'Peptides', benefitScore: 4 },
-    ],
-    benefits: ['anti_aging', 'barrier_repair'],
-    rating: 4.8,
-    reviews: 512,
-  },
-];
+// Full-screen camera that reads a product barcode and opens its page.
+export default function BarcodeScannerScreen({ navigation }) {
+  const colors = useColors()
+  const t = useT()
+  const insets = useSafeAreaInsets()
+  const isFocused = useIsFocused()
+  const [permission, requestPermission] = useCameraPermissions()
+  const [status, setStatus] = useState('scanning') // scanning | looking | notFound | error
+  const busy = useRef(false)
 
-export default function BarcodeScannerScreen() {
-  const colors = useColors();
-  const { user } = useAuth();
-  const [query, setQuery] = useState('');
-  const [result, setResult] = useState(null);
-  const [adding, setAdding] = useState(false);
+  const onScanned = async ({ data }) => {
+    if (busy.current) return
+    busy.current = true
+    setStatus('looking')
+    const result = await lookupBarcode(data)
+    if (result.product) {
+      setStatus('scanning')
+      busy.current = false
+      navigation.navigate('Product', { id: result.product.id, product: result.product })
+      return
+    }
+    setStatus(result.notFound ? 'notFound' : 'error')
+  }
 
-  const lookup = (value) => {
-    const q = String(value || '').trim().toLowerCase();
-    if (!q) return;
-    const product = DEMO_PRODUCTS.find(p => p.barcode === q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
-    setResult(product ? analyzeProduct(product) : { found: false });
-  };
+  const scanAgain = () => {
+    busy.current = false
+    setStatus('scanning')
+  }
 
-  const addToShelf = async () => {
-    if (!user?.id || !result?.found) return;
-    setAdding(true);
-    const ok = await addUserProduct({ user_id: user.id, product_name: result.name, brand: result.brand, category: result.category });
-    setAdding(false);
-    Alert.alert(ok ? 'Added' : 'Error', ok ? `${result.name} is now on your shelf.` : 'Could not add this product.');
-  };
+  if (!permission) return <Screen back />
+  if (!permission.granted) {
+    return (
+      <Screen back>
+        <EmptyState
+          icon="camera-outline"
+          title={t('Allow the camera')}
+          description={t('Skynkod needs your camera to read product barcodes.')}
+          action={t('Allow camera')}
+          onAction={requestPermission}
+        />
+      </Screen>
+    )
+  }
 
   return (
-    <Screen back title="Scanner" subtitle="Check what's inside a product" keyboard>
-      <Input
-        placeholder="Barcode or product name"
-        value={query}
-        onChangeText={setQuery}
-        onSubmitEditing={() => lookup(query)}
-        returnKeyType="search"
-        autoCapitalize="none"
-      />
-      <Button title="Search" icon="search" onPress={() => lookup(query)} />
-
-      {result ? (
-        result.found ? (
-          <View style={{ marginTop: SPACING.xxl }}>
-            <Card>
-              <View style={styles.rowBetween}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.heading, { color: colors.text }]}>{result.name}</Text>
-                  <Text style={[TYPE.body, { color: colors.muted }]}>{result.brand}</Text>
-                </View>
-                <Text style={[TYPE.heading, { color: colors.primary }]}>${result.price}</Text>
-              </View>
-              <View style={[styles.row, { marginTop: SPACING.md }]}>
-                <Ionicons name="star" size={14} color={colors.warning} />
-                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{result.rating}</Text>
-                <Text style={[TYPE.caption, { color: colors.muted }]}>({result.reviews} reviews)</Text>
-              </View>
-            </Card>
-
-            <SectionHeader title="Key ingredients" style={{ marginTop: SPACING.xl }} />
-            <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
-              {result.ingredientAnalysis.map((ing, idx, arr) => (
-                <ListRow
-                  key={ing.name}
-                  icon="flask-outline"
-                  title={ing.name}
-                  subtitle={ing.concerns?.length ? `⚠️ ${ing.concerns[0]}` : ing.benefit}
-                  last={idx === arr.length - 1}
-                />
-              ))}
-            </Card>
-
-            {result.compatibility.goodWith.length > 0 ? (
-              <>
-                <SectionHeader title="Pairs well with" style={{ marginTop: SPACING.xl }} />
-                <View style={styles.tags}>
-                  {result.compatibility.goodWith.slice(0, 4).map(i => <Badge key={i} label={i} tone="success" />)}
-                </View>
-              </>
-            ) : null}
-
-            {result.compatibility.avoidWith.length > 0 ? (
-              <>
-                <SectionHeader title="Avoid mixing with" style={{ marginTop: SPACING.xl }} />
-                <View style={styles.tags}>
-                  {result.compatibility.avoidWith.slice(0, 4).map(i => <Badge key={i} label={i} tone="danger" />)}
-                </View>
-              </>
-            ) : null}
-
-            <Button title="Add to my shelf" icon="add" variant="secondary" onPress={addToShelf} loading={adding} style={{ marginTop: SPACING.xxl }} />
-          </View>
-        ) : (
-          <EmptyState icon="search-outline" title="Product not found" description="Try another barcode or name, or pick one of the demo products below." />
-        )
+    <View style={styles.flex}>
+      {isFocused ? (
+        <CameraView
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
+          onBarcodeScanned={status === 'scanning' ? onScanned : undefined}
+        />
       ) : null}
 
-      <SectionHeader title="Try a demo product" style={{ marginTop: SPACING.xxl }} />
-      <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
-        {DEMO_PRODUCTS.map((p, idx) => (
-          <ListRow key={p.id} icon="cube-outline" title={p.name} subtitle={p.brand} onPress={() => { setQuery(p.barcode); lookup(p.barcode); }} last={idx === DEMO_PRODUCTS.length - 1} />
-        ))}
-      </Card>
-    </Screen>
-  );
+      <View style={[styles.top, { paddingTop: insets.top + SPACING.sm }]}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.round} accessibilityLabel={t('Back')}>
+          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+        </Pressable>
+        <Text style={styles.title}>{t('Scan Product')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <View style={styles.frameWrap} pointerEvents="none">
+        <View style={styles.frame} />
+        <Text style={styles.hint}>{t('Align the barcode in the frame')}</Text>
+      </View>
+
+      {status !== 'scanning' ? (
+        <View style={[styles.sheet, { backgroundColor: colors.bg, paddingBottom: insets.bottom + SPACING.lg }]}>
+          {status === 'looking' ? (
+            <View style={styles.sheetRow}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Looking up this product…')}</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>
+                {status === 'notFound' ? t("We don't know this product yet") : t("Couldn't look up this product")}
+              </Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>
+                {status === 'notFound'
+                  ? t('Soon you will be able to add it with a photo of its ingredients.')
+                  : t('Check your connection and try again.')}
+              </Text>
+              <Button title={t('Scan again')} onPress={scanAgain} style={{ marginTop: SPACING.lg }} />
+            </>
+          )}
+        </View>
+      ) : null}
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rowBetween: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACING.md },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-});
+  flex: { flex: 1, backgroundColor: '#000000' },
+  top: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg },
+  round: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  title: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+  frameWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  frame: { width: '72%', height: 170, borderRadius: RADIUS.lg, borderWidth: 3, borderColor: 'rgba(255,255,255,0.9)' },
+  hint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, fontWeight: '500' },
+  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: SPACING.xl },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+})

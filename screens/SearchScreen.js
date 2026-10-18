@@ -1,0 +1,175 @@
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, TextInput, Pressable, StyleSheet, Image, ActivityIndicator } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { Screen, useColors } from '../components/ui'
+import MatchBadge from '../components/MatchBadge'
+import { useAuth } from '../utils/AuthContext'
+import { useT } from '../utils/LanguageContext'
+import { useSkinProfile } from '../utils/useSkinProfile'
+import { searchProducts } from '../utils/catalog'
+import { searchIngredients, ingredientFit, productMatch } from '../utils/ingredients-guide'
+import { logError } from '../utils/errorLogger'
+import { SPACING, RADIUS, TYPE } from '../utils/theme'
+
+const POPULAR = ['Niacinamide', 'Retinol', 'Vitamin C', 'Hyaluronic acid', 'Centella', 'Salicylic acid']
+
+// One search box for products and ingredients; each result shows how well it
+// suits the user's skin. Scanning is one tap away.
+export default function SearchScreen({ navigation, route }) {
+  const colors = useColors()
+  const t = useT()
+  const { user } = useAuth()
+  const profile = useSkinProfile(user?.id)
+  const [query, setQuery] = useState(route?.params?.query || '')
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(false)
+  const requestId = useRef(0)
+
+  const ingredients = searchIngredients(query).slice(0, 3)
+
+  // Searches 300 ms after the user stops typing; ignores stale answers.
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 2) {
+      setProducts([])
+      return
+    }
+    const id = ++requestId.current
+    setLoading(true)
+    const timer = setTimeout(async () => {
+      try {
+        const rows = await searchProducts(q)
+        if (id === requestId.current) setProducts(rows)
+      } catch (error) {
+        await logError('SearchScreen_search', error, { q }, 'warn')
+      } finally {
+        if (id === requestId.current) setLoading(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  const hasQuery = query.trim().length >= 2
+
+  return (
+    <Screen back keyboard>
+      <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Ionicons name="search" size={18} color={colors.muted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t('Search a product or ingredient')}
+          placeholderTextColor={colors.muted}
+          autoFocus
+          autoCorrect={false}
+          returnKeyType="search"
+          style={[styles.input, { color: colors.text }]}
+        />
+        {query ? (
+          <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel={t('Clear')}>
+            <Ionicons name="close-circle" size={18} color={colors.muted} />
+          </Pressable>
+        ) : null}
+        <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={10} accessibilityLabel={t('Scan a product')}>
+          <Ionicons name="scan-outline" size={22} color={colors.primary} />
+        </Pressable>
+      </View>
+
+      {!hasQuery ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('POPULAR INGREDIENTS')}</Text>
+          <View style={styles.chips}>
+            {POPULAR.map(p => (
+              <Pressable key={p} onPress={() => setQuery(p)} style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{t(p)}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable onPress={() => navigation.navigate('Scanner')} style={[styles.scanCard, { backgroundColor: colors.primarySoft }]}>
+            <Ionicons name="barcode-outline" size={28} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Scan a product')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Point your camera at the barcode')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </Pressable>
+        </>
+      ) : null}
+
+      {hasQuery && ingredients.length ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('INGREDIENTS')}</Text>
+          {ingredients.map(entry => {
+            const fit = ingredientFit(entry, profile)
+            return (
+              <Pressable
+                key={entry.id}
+                onPress={() => navigation.navigate('Ingredient', { id: entry.id })}
+                style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={[styles.thumb, { backgroundColor: colors.primarySoft }]}>
+                  <Ionicons name="flask-outline" size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>{t(entry.what)}</Text>
+                </View>
+                <MatchBadge tone={fit.tone} label={t(fit.label)} />
+              </Pressable>
+            )
+          })}
+        </>
+      ) : null}
+
+      {hasQuery ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('PRODUCTS')}</Text>
+          {loading && !products.length ? <ActivityIndicator color={colors.primary} style={{ marginTop: SPACING.lg }} /> : null}
+          {!loading && !products.length ? (
+            <View style={[styles.empty, { borderColor: colors.border }]}>
+              <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center' }]}>
+                {t("We couldn't find this product yet. Try scanning its barcode.")}
+              </Text>
+            </View>
+          ) : null}
+          {products.map(product => {
+            const match = productMatch(product, profile)
+            return (
+              <Pressable
+                key={product.id}
+                onPress={() => navigation.navigate('Product', { id: product.id })}
+                style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                {product.image_url ? (
+                  <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+                ) : (
+                  <View style={[styles.thumb, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="water-outline" size={20} color={colors.muted} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+                </View>
+                <MatchBadge tone={match.tone} label={`${match.score}%`} />
+              </Pressable>
+            )
+          })}
+        </>
+      ) : null}
+    </Screen>
+  )
+}
+
+const styles = StyleSheet.create({
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
+  input: { flex: 1, fontSize: 16, height: '100%' },
+  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  chip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
+  scanCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.xl },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md, marginBottom: SPACING.sm },
+  thumb: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  photo: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#FFFFFF' },
+  empty: { borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.md, padding: SPACING.xl },
+})

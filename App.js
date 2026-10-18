@@ -24,6 +24,9 @@ import JournalScreen from './screens/JournalScreen'
 import KodaScreen from './screens/KodaScreen-updated'
 import RoutinesScreen from './screens/RoutinesScreen-updated'
 import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
+import SearchScreen from './screens/SearchScreen'
+import ProductScreen from './screens/ProductScreen'
+import IngredientScreen from './screens/IngredientScreen'
 
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -118,13 +121,23 @@ function AppTabs({ userId }) {
       )}
 
       {/* Screens opened from Home, (+) or Profile: hidden from the tab bar. */}
-      {[{ name: 'Routines', component: RoutinesScreen }, ...MORE_SCREENS].map(screen => (
+      {[
+        { name: 'Routines', component: RoutinesScreen },
+        { name: 'Search', component: SearchScreen },
+        { name: 'Product', component: ProductScreen },
+        { name: 'Ingredient', component: IngredientScreen },
+        ...MORE_SCREENS,
+      ].map(screen => (
         <Tab.Screen
           key={screen.name}
           name={screen.name}
           component={screen.component}
           initialParams={{ userId }}
-          options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+          options={{
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: 'none' },
+            ...(screen.name === 'Scanner' ? { tabBarStyle: { display: 'none' } } : {}),
+          }}
         />
       ))}
     </Tab.Navigator>

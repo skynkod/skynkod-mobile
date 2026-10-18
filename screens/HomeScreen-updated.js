@@ -1,42 +1,96 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, Pressable, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scoresFromJournal } from '../utils/skin-score-calculator';
-import { getKodaSuggestion } from '../utils/koda-ai';
 import { getJournalEntries } from '../utils/journal-service';
+import { getUserProfile } from '../utils/supabase';
+import { buildRoutine } from '../utils/routine-builder';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { useFirstName } from '../utils/useFirstName';
 import { useTheme } from '../utils/ThemeContext';
-import { Screen, Card, SectionHeader, ProgressBar, IconCircle, IconButton, Button, Badge, useColors } from '../components/ui';
+import { Screen, useColors } from '../components/ui';
+import ScoreRing from '../components/ScoreRing';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
+const LOGO = require('../assets/images/skynkod-logo.png');
+const LOGO_RATIO = 1306 / 333;
+
 const METRICS = [
-  { key: 'hydration', label: 'Hydration', icon: 'water-outline' },
-  { key: 'barrier', label: 'Barrier', icon: 'shield-checkmark-outline' },
-  { key: 'acne', label: 'Clarity', icon: 'sparkles-outline' },
-  { key: 'redness', label: 'Calm', icon: 'leaf-outline' },
+  { key: 'hydration', label: 'Hydration' },
+  { key: 'barrier', label: 'Barrier' },
+  { key: 'acne', label: 'Acne' },
+  { key: 'redness', label: 'Redness' },
+  { key: 'consistency', label: 'Consistency' },
 ];
 
-const TREND = {
-  improving: { label: 'Improving', icon: 'trending-up', tone: 'success' },
-  worsening: { label: 'Needs care', icon: 'trending-down', tone: 'warning' },
-  stable: { label: 'Stable', icon: 'remove', tone: 'primary' },
+// Short names for routine steps, as listed on the mockup's "Today's plan".
+const STEP_NAMES = {
+  'Remove makeup': 'Makeup remover',
+  Cleanse: 'Cleanser',
+  Balance: 'Toner',
+  Treat: 'Treatment serum',
+  Hydrate: 'Hydrating serum',
+  Moisturize: 'Moisturizer',
+  'Eye care': 'Eye cream',
+  Protect: 'SPF 30+',
 };
 
+// Same storage key as the Routines screen, so ticks are shared.
+const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date().toDateString()}`;
+
+const rating = (value, colors) => {
+  if (value >= 85) return { label: 'Great', color: colors.success };
+  if (value >= 70) return { label: 'Good', color: colors.success };
+  if (value >= 50) return { label: 'Fair', color: colors.warning };
+  return { label: 'Low', color: colors.danger };
+};
+
+// Koda's tip from the latest check-in (last 3 days).
+const kodaTip = (entries) => {
+  const latest = entries.find(e => e?.date && Date.now() - new Date(e.date).getTime() <= 3 * 86400000);
+  if (!latest) return "Log today's check-in so Koda can tailor your routine to your skin.";
+  if ((latest.redness_level ?? 0) >= 6 || (latest.barrier_health ?? 10) <= 4) {
+    return 'Your skin looks slightly sensitized today. Skip exfoliation tonight and focus on barrier support.';
+  }
+  if ((latest.acne_level ?? 0) >= 6) {
+    return 'Breakouts are up. Keep your routine gentle, avoid picking, and use a spot treatment tonight.';
+  }
+  if ((latest.hydration_level ?? 10) <= 4) {
+    return 'Your skin seems dehydrated. Layer a hydrating serum under your moisturizer today.';
+  }
+  return "Your skin is doing well. Stay consistent with your routine and don't skip SPF.";
+};
 
 export default function HomeScreen({ navigation }) {
   const colors = useColors();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
+  const firstName = useFirstName(user?.id);
+  // Day and night follow the real sunrise/sunset, same as night mode.
+  const { isNight, updateLocation } = useTheme();
   const [entries, setEntries] = useState([]);
+  const [skinType, setSkinType] = useState(null);
+  const [done, setDone] = useState({ morning: {}, evening: {} });
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    updateLocation();
+  }, []);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const result = await getJournalEntries(user.id, 30);
-    if (result.success) setEntries(result.data || []);
+    const [journal, profile, morning, evening] = await Promise.all([
+      getJournalEntries(user.id, 30),
+      getUserProfile(user.id),
+      AsyncStorage.getItem(doneKey(user.id, 'morning')).catch(() => null),
+      AsyncStorage.getItem(doneKey(user.id, 'evening')).catch(() => null),
+    ]);
+    if (journal.success) setEntries(journal.data || []);
+    setSkinType(profile?.skin_type || null);
+    setDone({ morning: JSON.parse(morning || '{}'), evening: JSON.parse(evening || '{}') });
   }, [user?.id]);
 
   useFocusEffect(
@@ -52,153 +106,181 @@ export default function HomeScreen({ navigation }) {
   };
 
   const scores = scoresFromJournal(entries);
-  const loggedToday = entries.some(e => e?.date && new Date(e.date).toDateString() === new Date().toDateString());
-  const isEvening = new Date().getHours() >= 17;
-  const scoreColor = v => (v >= 70 ? colors.success : v >= 45 ? colors.warning : colors.danger);
-  const trend = TREND[scores?.trend] || TREND.stable;
-  const firstName = useFirstName(user?.id);
-  // Day and night follow the real sunrise/sunset, same as night mode.
-  const { isNight, updateLocation } = useTheme();
-  useEffect(() => {
-    updateLocation();
-  }, []);
+  const startOfToday = new Date().setHours(0, 0, 0, 0);
+  const yesterdayScores = scoresFromJournal(entries.filter(e => e?.date && new Date(e.date).getTime() < startOfToday));
+  const delta = scores && yesterdayScores ? scores.overall - yesterdayScores.overall : null;
+
+  const routine = buildRoutine(skinType || 'Combination', []);
+  const plans = [
+    { period: 'morning', title: 'Morning Routine', icon: 'sunny', iconColor: '#E8B04A', steps: routine.morning || [] },
+    { period: 'evening', title: 'Tonight Routine', icon: 'moon-outline', iconColor: colors.secondary, steps: routine.evening || [] },
+  ];
+  const current = isNight ? 'evening' : 'morning';
+  const currentPlan = plans.find(p => p.period === current);
+  const currentDone = currentPlan.steps.length > 0 && currentPlan.steps.every((_, idx) => done[current][idx]);
+
+  const completeRoutine = async () => {
+    const all = Object.fromEntries(currentPlan.steps.map((_, idx) => [idx, true]));
+    setDone(prev => ({ ...prev, [current]: all }));
+    await AsyncStorage.setItem(doneKey(user.id, current), JSON.stringify(all)).catch(() => {});
+  };
+
+  const tip = kodaTip(entries);
   const greeting = isNight ? t('Good evening') : t('Good morning');
-  const greetingEmoji = isNight ? '🌙' : '☀️';
 
   return (
-    <Screen
-      overline={new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
-      title={`${greeting}${firstName ? `,\n${firstName}` : ''} ${greetingEmoji}`}
-      right={<IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} accessibilityLabel={t('Settings')} />}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-    >
+    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      {/* Header: logo centred, bell on the right */}
+      <View style={styles.topBar}>
+        <View style={styles.topSide} />
+        <Image source={LOGO} resizeMode="contain" style={styles.logo} accessibilityLabel="Skynkod" />
+        <Pressable style={[styles.topSide, { alignItems: 'flex-end' }]} onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
+          <Ionicons name="notifications-outline" size={24} color={colors.text} />
+        </Pressable>
+      </View>
+
+      <Text style={[styles.greeting, { color: colors.text }]}>
+        {greeting}{firstName ? `, ${firstName}` : ''} {isNight ? '🌙' : '☀️'}
+      </Text>
+      <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: 2 }]}>{t("Here's your skin overview")}</Text>
+
+      {/* Search products and ingredients; the scan icon goes straight to the camera */}
+      <Pressable
+        onPress={() => navigation.navigate('Search')}
+        style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
+        accessibilityRole="search"
+      >
+        <Ionicons name="search" size={18} color={colors.muted} />
+        <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]}>{t('Search a product or ingredient')}</Text>
+        <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={12} accessibilityLabel={t('Scan a product')}>
+          <Ionicons name="scan-outline" size={22} color={colors.primary} />
+        </Pressable>
+      </Pressable>
+
       {/* Skin score */}
-      <Card tone="primary" style={styles.hero}>
-        {scores ? (
-          <>
-            <View style={styles.heroTop}>
-              <View>
-                <Text style={[TYPE.overline, { color: colors.onPrimary, opacity: 0.8 }]}>{t('Skin score')}</Text>
-                <Text style={[styles.heroScore, { color: colors.onPrimary }]}>{scores.overall}</Text>
-              </View>
-              <View style={[styles.trendPill, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-                <Ionicons name={trend.icon} size={14} color={colors.onPrimary} />
-                <Text style={[TYPE.caption, { color: colors.onPrimary, fontWeight: '700' }]}>{t(trend.label)}</Text>
-              </View>
-            </View>
-            <View style={[styles.heroBar, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
-              <View style={[styles.heroBarFill, { width: `${scores.overall}%`, backgroundColor: colors.onPrimary }]} />
-            </View>
-            <Text style={[TYPE.caption, { color: colors.onPrimary, opacity: 0.85, marginTop: SPACING.sm }]}>
-              {t(scores.entries === 1 ? 'Based on 1 journal entry in the last 30 days' : 'Based on {count} journal entries in the last 30 days', { count: scores.entries })}
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={[TYPE.overline, { color: colors.onPrimary, opacity: 0.8 }]}>{t('Skin score')}</Text>
-            <Text style={[TYPE.heading, { color: colors.onPrimary, marginTop: SPACING.sm }]}>{t('Log your first entry to unlock your score')}</Text>
-            <Button
-              title={t("Write today's entry")}
-              icon="create-outline"
-              onPress={() => navigation.navigate('Journal', { openNew: Date.now() })}
-              style={{ marginTop: SPACING.lg, backgroundColor: colors.card, borderColor: colors.card }}
-              variant="ghost"
-            />
-          </>
-        )}
-      </Card>
-
-      {/* Today */}
-      <SectionHeader title={t('Today')} />
-      <View style={styles.todayRow}>
-        <Card style={styles.todayCard} onPress={() => navigation.navigate('Routines', { tab: isEvening ? 'evening' : 'morning' })}>
-          <IconCircle name={isEvening ? 'moon-outline' : 'sunny-outline'} />
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{isEvening ? t('Evening routine') : t('Morning routine')}</Text>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Tap to start')}</Text>
-        </Card>
-        <Card style={styles.todayCard} onPress={() => navigation.navigate('Journal', { openNew: Date.now() })}>
-          <IconCircle
-            name={loggedToday ? 'checkmark' : 'create-outline'}
-            color={loggedToday ? colors.success : colors.primary}
-            background={loggedToday ? colors.successSoft : colors.primarySoft}
-          />
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{t('Skin check-in')}</Text>
-          <Text style={[TYPE.caption, { color: loggedToday ? colors.success : colors.muted, marginTop: 2 }]}>
-            {loggedToday ? t('Done for today') : t('Not logged yet')}
-          </Text>
-        </Card>
-      </View>
-
-      {/* Metrics */}
-      {scores ? (
-        <>
-          <SectionHeader title={t('Your skin')} action={t('Analysis')} onAction={() => navigation.navigate('Analysis')} style={{ marginTop: SPACING.xl }} />
-          <Card>
-            {METRICS.map((m, idx) => (
-              <View key={m.key} style={[styles.metric, idx === METRICS.length - 1 && { marginBottom: 0 }]}>
-                <View style={styles.metricHead}>
-                  <Ionicons name={m.icon} size={16} color={colors.textSecondary} />
-                  <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(m.label)}</Text>
-                  <Text style={[TYPE.bodyStrong, { color: scoreColor(scores[m.key]) }]}>{scores[m.key]}</Text>
-                </View>
-                <ProgressBar value={scores[m.key] / 100} color={scoreColor(scores[m.key])} height={6} />
-              </View>
-            ))}
-          </Card>
-        </>
-      ) : null}
-
-      {/* Koda */}
-      <SectionHeader title={t("Koda's tip")} style={{ marginTop: SPACING.xl }} />
-      <Card tone="soft" onPress={() => navigation.navigate('Koda')}>
-        <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-          <IconCircle name="sparkles" background={colors.card} />
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginTop: SPACING.xl }]}>
+        <View style={styles.scoreRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.body, { color: colors.text }]}>{t(getKodaSuggestion().replace('💡 ', ''))}</Text>
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', marginTop: SPACING.sm }]}>{t('Ask Koda →')}</Text>
+            <Text style={[styles.cardLabel, { color: colors.text }]}>{t('SKIN SCORE')}</Text>
+            <View style={styles.scoreLine}>
+              <Text style={[styles.score, { color: colors.text }]}>{scores ? scores.overall : '–'}</Text>
+              <Text style={[TYPE.body, { color: colors.textSecondary, marginBottom: 10 }]}>/100</Text>
+              {delta !== null && delta !== 0 ? (
+                <View style={{ marginLeft: SPACING.lg, marginBottom: 6 }}>
+                  <Text style={[TYPE.caption, { color: delta > 0 ? colors.success : colors.danger, fontWeight: '700' }]}>
+                    {delta > 0 ? '↑' : '↓'} {t('{count} pts', { count: Math.abs(delta) })}
+                  </Text>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('vs yesterday')}</Text>
+                </View>
+              ) : null}
+            </View>
+            {!scores ? (
+              <Pressable onPress={() => navigation.navigate('Journal', { openNew: Date.now() })}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Log your first check-in to get your score →')}</Text>
+              </Pressable>
+            ) : null}
           </View>
+          <ScoreRing value={scores?.overall || 0} size={92} stroke={12} color={colors.accent} trackColor={colors.primarySoft} />
         </View>
-      </Card>
 
-      {/* Shortcuts */}
-      <SectionHeader title={t('Shortcuts')} style={{ marginTop: SPACING.xl }} />
-      <View style={styles.shortcuts}>
-        {[
-          { label: 'Photos', icon: 'camera-outline', to: 'Photos' },
-          { label: 'Products', icon: 'flask-outline', to: 'Products' },
-          { label: 'Scanner', icon: 'barcode-outline', to: 'Scanner' },
-          { label: 'SOS', icon: 'medkit-outline', to: 'Emergency' },
-        ].map(s => (
-          <Card key={s.to} style={styles.shortcut} onPress={() => navigation.navigate(s.to)}>
-            <Ionicons name={s.icon} size={22} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600', marginTop: 6 }]}>{t(s.label)}</Text>
-          </Card>
-        ))}
+        <View style={styles.metrics}>
+          {METRICS.map(m => {
+            const value = scores ? scores[m.key] : null;
+            const r = value !== null ? rating(value, colors) : null;
+            return (
+              <View key={m.key} style={[styles.metric, { borderColor: colors.border }]}>
+                <Text style={[styles.metricLabel, { color: colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>{t(m.label)}</Text>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{value ?? '–'}</Text>
+                <Text style={[styles.metricRating, { color: r ? r.color : colors.muted }]}>{r ? t(r.label) : ' '}</Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
 
-      {scores?.trend === 'worsening' ? (
-        <View style={{ marginTop: SPACING.lg }}>
-          <Badge label={t('Tip')} tone="warning" />
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6 }]}>
-            {t('Your skin looks more reactive this week. Emergency mode can help you build a gentle 7-day plan.')}
-          </Text>
+      {/* Today's plan */}
+      <Text style={[styles.section, { color: colors.primary }]}>{t("TODAY'S PLAN")}</Text>
+      <Pressable
+        onPress={() => navigation.navigate('Routines', { tab: current })}
+        style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      >
+        {plans.map((plan, pIdx) => (
+          <View key={plan.period} style={pIdx > 0 && [styles.planDivider, { borderTopColor: colors.border }]}>
+            <View style={styles.planHead}>
+              <Ionicons name={plan.icon} size={20} color={plan.iconColor} />
+              <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(plan.title)}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary }]}>
+                {t(plan.steps.length === 1 ? '1 step' : '{count} steps', { count: plan.steps.length })}
+              </Text>
+            </View>
+            {plan.steps.map((step, idx) => {
+              const ticked = !!done[plan.period][idx];
+              return (
+                <View key={idx} style={styles.stepRow}>
+                  <View style={[styles.tick, { backgroundColor: ticked ? colors.accent : colors.primarySoft }]}>
+                    <Ionicons name="checkmark" size={11} color={ticked ? '#FFFFFF' : colors.accent} />
+                  </View>
+                  <Text style={[TYPE.body, { color: ticked ? colors.muted : colors.text, textDecorationLine: ticked ? 'line-through' : 'none' }]}>
+                    {t(STEP_NAMES[step.action] || step.action)}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </Pressable>
+
+      {/* Koda recommends */}
+      <View style={[styles.kodaCard, { backgroundColor: colors.primarySoft }]}>
+        <Text style={[styles.cardLabel, { color: colors.primary }]}>{t('KODA RECOMMENDS')}</Text>
+        <View style={styles.kodaRow}>
+          <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(tip)}</Text>
+          <Pressable
+            onPress={() => navigation.navigate('Koda', { prefill: t('Why do you recommend this: "{tip}"?', { tip: t(tip) }) })}
+            style={[styles.whyPill, { backgroundColor: colors.accent }]}
+          >
+            <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700' }]}>{t('Why?')}</Text>
+          </Pressable>
         </View>
-      ) : null}
+      </View>
+
+      {/* Complete routine */}
+      <Pressable
+        onPress={completeRoutine}
+        disabled={currentDone}
+        style={({ pressed }) => [styles.completeButton, { backgroundColor: colors.accent, opacity: currentDone ? 0.6 : pressed ? 0.85 : 1 }]}
+      >
+        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+        <Text style={styles.completeText}>{currentDone ? t('Routine completed') : t('Complete Routine')}</Text>
+      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { padding: SPACING.xl, marginBottom: SPACING.xl, borderRadius: RADIUS.xl },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  heroScore: { fontSize: 64, fontWeight: '800', letterSpacing: -2, marginTop: 2 },
-  trendPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADIUS.pill },
-  heroBar: { height: 8, borderRadius: 4, overflow: 'hidden', marginTop: SPACING.md },
-  heroBarFill: { height: '100%', borderRadius: 4 },
-  todayRow: { flexDirection: 'row', gap: SPACING.md },
-  todayCard: { flex: 1 },
-  metric: { marginBottom: SPACING.lg },
-  metricHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm },
-  shortcuts: { flexDirection: 'row', gap: SPACING.sm },
-  shortcut: { flex: 1, alignItems: 'center', paddingVertical: SPACING.lg, paddingHorizontal: 4 },
+  topBar: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
+  topSide: { width: 44 },
+  logo: { flex: 1, height: 30, width: 30 * LOGO_RATIO },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg, marginTop: SPACING.lg },
+  greeting: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg },
+  cardLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
+  scoreRow: { flexDirection: 'row', alignItems: 'center' },
+  scoreLine: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 2 },
+  score: { fontSize: 56, fontWeight: '700', letterSpacing: -2, lineHeight: 62 },
+  metrics: { flexDirection: 'row', gap: 6, marginTop: SPACING.lg },
+  metric: { flex: 1, alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.sm, paddingVertical: SPACING.sm, paddingHorizontal: 2 },
+  metricLabel: { fontSize: 10, fontWeight: '500' },
+  metricValue: { fontSize: 22, fontWeight: '700', marginTop: 2 },
+  metricRating: { fontSize: 11, fontWeight: '600', marginTop: 1 },
+  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  planDivider: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: SPACING.lg, paddingTop: SPACING.lg },
+  planHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.sm },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: 5, paddingLeft: 2 },
+  tick: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  kodaCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
+  kodaRow: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.md, marginTop: SPACING.sm },
+  whyPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  completeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.lg, marginBottom: SPACING.md },
+  completeText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });
