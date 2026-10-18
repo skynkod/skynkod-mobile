@@ -421,7 +421,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  date: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: SPACING.lg },
+  date: { fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginTop: SPACING.xxxl },
   greetingRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: 4 },
   greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
   sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
