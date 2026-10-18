@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing,
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColors } from '../components/ui'
-import MatchBadge from '../components/MatchBadge'
+import ProductVerdict from '../components/ProductVerdict'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
@@ -67,6 +67,17 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         })
       )
       return
+    }
+    const match = productMatch(picked.product, profile)
+    if (match.tone === 'warning') {
+      Alert.alert(
+        t('Heads up'),
+        t('{product} may not suit your skin: {reason}.', { product: picked.product.name, reason: t(match.care[0]?.text || match.label).toLowerCase() }),
+        [
+          { text: t('Choose another'), onPress: () => pick(picked.stepKey, picked.uid) },
+          { text: t('Keep it'), style: 'cancel' },
+        ]
+      )
     }
     setSlots(prev => {
       if (prev.some(slot => slot.uid === picked.uid)) {
@@ -135,7 +146,6 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   }
 
   const ProductCard = ({ product, onChange, onRemove }) => {
-    const match = productMatch(product, profile)
     return (
       <View style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {product.image_url ? (
@@ -148,7 +158,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         <View style={{ flex: 1 }}>
           <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
-          <View style={{ marginTop: 4 }}><MatchBadge tone={match.tone} label={`${match.score}% · ${t(match.label)}`} /></View>
+          <ProductVerdict product={product} profile={profile} />
         </View>
         <View style={{ alignItems: 'flex-end', gap: SPACING.md }}>
           {onRemove ? (

@@ -84,3 +84,11 @@ export const productMatch = (product, profile) => {
   const partial = !product?.ingredients_text
   return { score, label, tone, good, care, found, partial }
 }
+
+// One sentence explaining a product match, the most important reason first.
+export const matchReason = (match, profile) => {
+  if (!profile?.skin_type && !(profile?.skin_concerns || []).length) return 'Add your skin type for a personal match'
+  if (match.care.length) return match.care[0].text
+  if (match.good.length) return match.good[0].text
+  return 'Nothing in it clashes with your skin'
+}

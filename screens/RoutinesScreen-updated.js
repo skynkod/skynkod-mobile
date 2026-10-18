@@ -9,6 +9,9 @@ import { buildRoutine } from '../utils/routine-builder';
 import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
+import { useSkinProfile } from '../utils/useSkinProfile';
+import { getProductsByIds } from '../utils/catalog';
+import ProductVerdict from '../components/ProductVerdict';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -24,6 +27,8 @@ export default function RoutinesScreen({ route, navigation }) {
   const [skinType, setSkinType] = useState(null);
   const [done, setDone] = useState({});
   const [loading, setLoading] = useState(true);
+  const profile = useSkinProfile(user?.id);
+  const [productsById, setProductsById] = useState({});
 
   useEffect(() => {
     if (route?.params?.tab) setTab(route.params.tab);
@@ -59,6 +64,15 @@ export default function RoutinesScreen({ route, navigation }) {
   }, [user?.id, tab]);
 
   const saved = savedRoutines.find(r => r.type === tab && Array.isArray(r.steps) && r.steps.length);
+
+  // Full product records, to say whether each one suits the user's skin.
+  const savedIds = (saved?.steps || []).map(s => s.product_id).filter(Boolean).join(',');
+  useEffect(() => {
+    if (!savedIds) return;
+    getProductsByIds(savedIds.split(',').map(Number))
+      .then(rows => setProductsById(Object.fromEntries(rows.map(p => [p.id, p]))))
+      .catch(() => {});
+  }, [savedIds]);
   const generated = buildRoutine(skinType || 'Combination', []);
   const steps = saved ? saved.steps : generated[tab] || [];
   const completed = steps.filter((_, idx) => done[idx]).length;
@@ -172,6 +186,7 @@ export default function RoutinesScreen({ route, navigation }) {
                     <Text style={[TYPE.body, { color: colors.textSecondary, flex: 1 }]}>{t(step.product)}</Text>
                   </View>
                 ) : null}
+                {productsById[step.product_id] ? <ProductVerdict product={productsById[step.product_id]} profile={profile} /> : null}
                 {step.tip ? (
                   <View style={styles.tipRow}>
                     <Ionicons name="bulb-outline" size={14} color={colors.primary} />
