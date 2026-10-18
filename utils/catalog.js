@@ -25,6 +25,13 @@ export const productsWithIngredient = async (entry, limit = 20) => {
   return data || []
 }
 
+// Products of the given categories, for a routine step's top picks.
+export const productsByCategory = async (categories, limit = 80) => {
+  const { data, error } = await supabase.from('products').select(FIELDS).in('category', categories).limit(limit)
+  if (error) throw error
+  return data || []
+}
+
 export const getProduct = async (id) => {
   const { data, error } = await supabase.from('products').select(FIELDS).eq('id', id).single()
   if (error) throw error
@@ -50,8 +57,11 @@ export const lookupBarcode = async (barcode) => {
   }
 }
 
-// Adds a catalogue product to the user's collection.
+// Adds a catalogue product to the user's collection (once).
 export const addToMyProducts = async (userId, product) => {
+  const { data: existing } = await supabase
+    .from('user_products').select('id').eq('user_id', userId).eq('product_id', product.id).limit(1)
+  if (existing?.length) return
   const { error } = await supabase.from('user_products').insert({
     user_id: userId,
     product_id: product.id,

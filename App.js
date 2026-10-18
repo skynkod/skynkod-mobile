@@ -27,6 +27,8 @@ import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
 import SearchScreen from './screens/SearchScreen'
 import ProductScreen from './screens/ProductScreen'
 import IngredientScreen from './screens/IngredientScreen'
+import RoutineBuilderScreen from './screens/RoutineBuilderScreen'
+import ProductPickerScreen from './screens/ProductPickerScreen'
 
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -126,6 +128,8 @@ function AppTabs({ userId }) {
         { name: 'Search', component: SearchScreen },
         { name: 'Product', component: ProductScreen },
         { name: 'Ingredient', component: IngredientScreen },
+        { name: 'RoutineBuilder', component: RoutineBuilderScreen },
+        { name: 'ProductPicker', component: ProductPickerScreen },
         ...MORE_SCREENS,
       ].map(screen => (
         <Tab.Screen
@@ -136,7 +140,7 @@ function AppTabs({ userId }) {
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
-            ...(screen.name === 'Scanner' ? { tabBarStyle: { display: 'none' } } : {}),
+            ...(['Scanner', 'RoutineBuilder'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
           }}
         />
       ))}

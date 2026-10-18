@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { getUserProfile } from '../utils/supabase';
 import { buildRoutine } from '../utils/routine-builder';
 import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
+import { useTheme } from '../utils/ThemeContext';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -17,7 +18,8 @@ export default function RoutinesScreen({ route, navigation }) {
   const colors = useColors();
   const t = useT();
   const { user } = useAuth();
-  const [tab, setTab] = useState(new Date().getHours() >= 17 ? 'evening' : 'morning');
+  const { isNight } = useTheme();
+  const [tab, setTab] = useState(isNight ? 'evening' : 'morning');
   const [savedRoutines, setSavedRoutines] = useState([]);
   const [skinType, setSkinType] = useState(null);
   const [done, setDone] = useState({});
@@ -71,8 +73,16 @@ export default function RoutinesScreen({ route, navigation }) {
 
   if (loading) return <LoadingView />;
 
+  const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now() });
+
   return (
-    <Screen title={t('Routines')} subtitle={saved ? saved.name : skinType ? t('Built by Koda for {type} skin', { type: t(skinType).toLowerCase() }) : t('Built by Koda for you')}>
+    <Screen
+      right={saved ? (
+        <Pressable onPress={build} hitSlop={10}>
+          <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Edit')}</Text>
+        </Pressable>
+      ) : null}
+      title={t('Routines')} subtitle={saved ? saved.name : skinType ? t('Built by Koda for {type} skin', { type: t(skinType).toLowerCase() }) : t('Built by Koda for you')}>
       <SegmentedControl
         value={tab}
         onChange={setTab}
@@ -82,6 +92,22 @@ export default function RoutinesScreen({ route, navigation }) {
         ]}
       />
 
+      {!saved ? (
+        <Card style={{ marginTop: SPACING.xl, padding: SPACING.xl }}>
+          <Text style={[TYPE.overline, { color: colors.primary }]}>{t('Start here')}</Text>
+          <Text style={[TYPE.heading, { color: colors.text, marginTop: SPACING.sm }]}>
+            {tab === 'morning' ? t('Build your morning routine') : t('Build your night routine')}
+          </Text>
+          <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+            {t('3 quick steps. Tell us what you use, or let Koda help you choose.')}
+          </Text>
+          <Pressable onPress={build} style={[styles.buildButton, { backgroundColor: colors.primary }]}>
+            <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '600' }}>{t('Start')}</Text>
+          </Pressable>
+        </Card>
+      ) : null}
+
+      {saved ? (
       <Card style={{ marginTop: SPACING.xl }}>
         <View style={styles.progressHead}>
           <View>
@@ -94,6 +120,7 @@ export default function RoutinesScreen({ route, navigation }) {
         </View>
         <ProgressBar value={progress} style={{ marginTop: SPACING.md }} />
       </Card>
+      ) : null}
 
       {!skinType && !saved ? (
         <Card tone="soft" style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('Quiz')}>
@@ -107,6 +134,7 @@ export default function RoutinesScreen({ route, navigation }) {
         </Card>
       ) : null}
 
+      {saved ? (
       <View style={{ marginTop: SPACING.xl }}>
         {steps.map((step, idx) => {
           const isDone = !!done[idx];
@@ -138,7 +166,12 @@ export default function RoutinesScreen({ route, navigation }) {
                   </Text>
                   {step.time ? <Badge label={t(step.time)} /> : null}
                 </View>
-                {step.product ? <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: 4 }]}>{t(step.product)}</Text> : null}
+                {step.product ? (
+                  <View style={styles.productRow}>
+                    {step.image_url ? <Image source={{ uri: step.image_url }} style={styles.productPhoto} resizeMode="contain" /> : null}
+                    <Text style={[TYPE.body, { color: colors.textSecondary, flex: 1 }]}>{t(step.product)}</Text>
+                  </View>
+                ) : null}
                 {step.tip ? (
                   <View style={styles.tipRow}>
                     <Ionicons name="bulb-outline" size={14} color={colors.primary} />
@@ -150,11 +183,15 @@ export default function RoutinesScreen({ route, navigation }) {
           );
         })}
       </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  buildButton: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
+  productRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 6 },
+  productPhoto: { width: 36, height: 36, borderRadius: 6, backgroundColor: '#FFFFFF' },
   progressHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   quizRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   stepRow: { flexDirection: 'row', gap: SPACING.md },

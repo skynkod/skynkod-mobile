@@ -10,7 +10,7 @@ import { lookupBarcode } from '../utils/catalog'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // Full-screen camera that reads a product barcode and opens its page.
-export default function BarcodeScannerScreen({ navigation }) {
+export default function BarcodeScannerScreen({ navigation, route }) {
   const colors = useColors()
   const t = useT()
   const insets = useSafeAreaInsets()
@@ -28,7 +28,14 @@ export default function BarcodeScannerScreen({ navigation }) {
     if (result.product) {
       setStatus('scanning')
       busy.current = false
-      navigation.navigate('Product', { id: result.product.id, product: result.product })
+      // Opened from the routine builder: the product goes straight into the step.
+      const pickFor = route?.params?.pickFor
+      if (pickFor) {
+        navigation.setParams({ pickFor: undefined })
+        navigation.navigate('RoutineBuilder', { picked: { stepKey: pickFor, product: result.product } })
+      } else {
+        navigation.navigate('Product', { id: result.product.id, product: result.product })
+      }
       return
     }
     if (result.notFound) setUnknown({ barcode: data, brandHint: result.brandHint })

@@ -21,6 +21,22 @@ export const createRoutine = async (userId, routine) => {
   }
 };
 
+// Replaces the user's morning or evening routine with these steps.
+export const saveRoutine = async (userId, type, steps) => {
+  try {
+    const { error: delError } = await supabase.from('routines').delete().eq('user_id', userId).eq('type', type);
+    if (delError) throw delError;
+    const { data, error } = await supabase
+      .from('routines')
+      .insert([{ user_id: userId, name: type === 'morning' ? 'Morning routine' : 'Night routine', type, steps }])
+      .select();
+    if (error) throw error;
+    return { success: true, data: data?.[0] };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
 export const getUserRoutines = async (userId) => {
   try {
     const { data, error } = await supabase
