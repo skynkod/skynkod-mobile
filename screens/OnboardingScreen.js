@@ -78,6 +78,8 @@ const PREGNANCY = [
   { value: 'unsaid', label: "I'd rather not say" },
 ]
 
+const MAX_GOALS = 3
+
 const ALL_STEPS = ['welcome', 'features', 'name', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
 
 // Glossier-inspired: lots of air, big plain headlines, pill buttons and soft
@@ -90,7 +92,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
   const [firstName, setFirstName] = useState('')
   const [skinType, setSkinType] = useState(undefined)
   const [concerns, setConcerns] = useState([])
-  const [goal, setGoal] = useState(null)
+  const [goals, setGoals] = useState([]) // up to MAX_GOALS
   const [acneTypes, setAcneTypes] = useState([])
   const [conditions, setConditions] = useState([])
   const [avoid, setAvoid] = useState([])
@@ -173,7 +175,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
           firstName: firstName.trim() || null,
           skinType: skinType ?? null,
           concerns,
-          goal,
+          goals,
           acneTypes: concerns.includes('Acne') ? acneTypes : [],
           conditions: clean(conditions),
           avoid: clean(avoid),
@@ -186,7 +188,8 @@ export default function OnboardingScreen({ userId, onComplete }) {
             first_name: answers.firstName,
             skin_type: answers.skinType,
             skin_concerns: answers.concerns,
-            skin_goal: answers.goal,
+            skin_goal: answers.goals[0] || null,
+            skin_goals: answers.goals,
             acne_types: answers.acneTypes,
             skin_conditions: answers.conditions,
             avoid_ingredients: answers.avoid,
@@ -273,7 +276,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
 
   const isQuestion = QUESTION_STEPS.includes(name)
   const typeLabel = t(SKIN_TYPES.find(type => type.value === skinType)?.label)
-  const goalLabel = t(GOALS.find(g => g.value === goal)?.label)
+  const goalLabel = goals.map(v => t(GOALS.find(g => g.value === v)?.label)).join(' · ')
 
   let content
   let footer = null
@@ -383,16 +386,28 @@ export default function OnboardingScreen({ userId, onComplete }) {
     )
     footer = <Pill title={t('Skip')} variant="ghost" onPress={next} />
   } else if (name === 'goal') {
+    const toggleGoal = value =>
+      setGoals(prev => (prev.includes(value) ? prev.filter(v => v !== value) : prev.length < MAX_GOALS ? [...prev, value] : prev))
     content = (
       <>
-        <Text style={[styles.headline, { color: colors.text }]}>{t('And your main goal?')}</Text>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('And your goals?')}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>
+          {t('Pick up to 3.')}{goals.length ? ` ${goals.length}/3` : ''}
+        </Text>
         <View style={styles.choices}>
-          {GOALS.map(g => (
-            <Choice key={g.value} label={t(g.label)} selected={goal === g.value} onPress={() => pickAndContinue(setGoal, g.value)} />
-          ))}
+          {GOALS.map(g => {
+            const selected = goals.includes(g.value)
+            const full = !selected && goals.length >= MAX_GOALS
+            return (
+              <View key={g.value} style={{ opacity: full ? 0.45 : 1 }}>
+                <Choice label={t(g.label)} selected={selected} onPress={() => toggleGoal(g.value)} />
+              </View>
+            )
+          })}
         </View>
       </>
     )
+    footer = <Pill title={t('Continue')} onPress={next} disabled={!goals.length} />
   } else {
     content = (
       <>
@@ -405,7 +420,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
           <Text style={styles.summaryValue}>{typeLabel && skinType ? typeLabel : t('To discover')}</Text>
           <Text style={styles.summaryLabel}>{t('Working on')}</Text>
           <Text style={styles.summaryValue}>{concerns.map(c => t(c)).join(' · ')}</Text>
-          <Text style={styles.summaryLabel}>{t('Goal')}</Text>
+          <Text style={styles.summaryLabel}>{goals.length > 1 ? t('Goals') : t('Goal')}</Text>
           <Text style={[styles.summaryValue, { marginBottom: 0 }]}>{goalLabel}</Text>
         </View>
         <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.xl }]}>
