@@ -6,7 +6,7 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { searchProducts, linkBarcode } from '../utils/catalog'
+import { searchProducts, linkBarcode, photoOf } from '../utils/catalog'
 import { requestProduct } from '../utils/community-data'
 import { searchIngredients, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
@@ -178,8 +178,8 @@ export default function SearchScreen({ navigation, route }) {
                 onPress={() => openProduct(product)}
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
-                {product.image_url ? (
-                  <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+                {photoOf(product) ? (
+                  <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
                 ) : (
                   <View style={[styles.thumb, { backgroundColor: colors.surface }]}>
                     <Ionicons name="water-outline" size={20} color={colors.muted} />

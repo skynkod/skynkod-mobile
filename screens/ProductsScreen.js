@@ -8,7 +8,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT, useLanguage } from '../utils/LanguageContext'
 import { shelfLife, setOpened, setExpiry, setPao } from '../utils/shelf-life'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts } from '../utils/catalog'
+import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, photoOf } from '../utils/catalog'
 import { getUserRoutines } from '../utils/routines-service'
 import { SHOP_LINKS_ENABLED } from '../utils/shop'
 import { logError } from '../utils/errorLogger'
@@ -228,8 +228,8 @@ export default function ProductsScreen({ navigation }) {
             onLongPress={() => openActions(row)}
             style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            {product?.image_url ? (
-              <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+            {photoOf(product) ? (
+              <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
             ) : (
               <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
                 <Ionicons name="water-outline" size={20} color={colors.muted} />

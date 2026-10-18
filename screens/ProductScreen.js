@@ -6,7 +6,7 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
+import { getProduct, addToMyProducts, myProductStatus, photoOf } from '../utils/catalog'
 import { retailersFor, openRetailer, SHOP_LINKS_ENABLED } from '../utils/shop'
 import { getPriceStats } from '../utils/community-data'
 import { formatMAD } from '../utils/skynbudget'
@@ -79,8 +79,8 @@ export default function ProductScreen({ navigation, route }) {
   return (
     <Screen back>
       <View style={styles.hero}>
-        {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={styles.image} resizeMode="contain" />
+        {photoOf(product) ? (
+          <Image source={{ uri: photoOf(product) }} style={styles.image} resizeMode="contain" />
         ) : (
           <View style={[styles.image, styles.noImage, { backgroundColor: colors.surface }]}>
             <Ionicons name="water-outline" size={36} color={colors.muted} />

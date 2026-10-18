@@ -6,7 +6,7 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { productsByCategory, searchProducts } from '../utils/catalog'
+import { productsByCategory, searchProducts, photoOf } from '../utils/catalog'
 import { productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { STEP_TYPES } from '../utils/routine-steps'
 import { logError } from '../utils/errorLogger'
@@ -107,8 +107,8 @@ export default function ProductPickerScreen({ navigation, route }) {
           onPress={() => choose(product)}
           style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
-          {product.image_url ? (
-            <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+          {photoOf(product) ? (
+            <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
           ) : (
             <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
               <Ionicons name="water-outline" size={18} color={colors.muted} />

@@ -21,7 +21,7 @@ import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import MorningCheckIn from '../components/MorningCheckIn';
 import Glass from '../components/Glass';
-import { getProductsByIds, getNewestProductId, getMyProducts } from '../utils/catalog';
+import { getProductsByIds, getNewestProductId, getMyProducts, photoOf } from '../utils/catalog';
 import { useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -362,8 +362,8 @@ export default function HomeScreen({ navigation }) {
                 ))}
               </View>
               <View style={styles.stepRow}>
-                {current.image_url ? (
-                  <Image source={{ uri: current.image_url }} style={styles.photo} resizeMode="contain" />
+                {photoOf(current) ? (
+                  <Image source={{ uri: photoOf(current) }} style={styles.photo} resizeMode="contain" />
                 ) : (
                   <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.primarySoft }]}>
                     <Ionicons name="water-outline" size={24} color={colors.primary} />

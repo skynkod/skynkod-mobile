@@ -12,7 +12,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
-import { getProductsByIds } from '../utils/catalog';
+import { getProductsByIds, photoOf } from '../utils/catalog';
 import ProductVerdict from '../components/ProductVerdict';
 import { todaySteps } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
@@ -187,7 +187,7 @@ export default function RoutinesScreen({ route, navigation }) {
                 </View>
                 {step.product ? (
                   <View style={styles.productRow}>
-                    {step.image_url ? <Image source={{ uri: step.image_url }} style={styles.productPhoto} resizeMode="contain" /> : null}
+                    {photoOf(step) ? <Image source={{ uri: photoOf(step) }} style={styles.productPhoto} resizeMode="contain" /> : null}
                     <Text style={[TYPE.body, { color: colors.textSecondary, flex: 1 }]}>{t(step.product)}</Text>
                   </View>
                 ) : null}

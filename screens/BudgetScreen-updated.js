@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen, LoadingView, BottomSheet, useColors } from '../components/ui';
 import { useAuth } from '../utils/AuthContext';
 import { useT, useLanguage } from '../utils/LanguageContext';
-import { getMyProducts, addToMyProducts, searchProducts } from '../utils/catalog';
+import { getMyProducts, addToMyProducts, searchProducts, photoOf } from '../utils/catalog';
 import {
   getPurchasesBetween, getSixMonths, getYearTotal, addPurchase, updatePurchase, deletePurchase,
   getMonthlyBudget, setMonthlyBudget, budgetInsights, formatMAD, costPerUse,
@@ -283,8 +283,8 @@ export default function BudgetScreen({ navigation }) {
         </View>
         <View style={styles.thumbs}>
           {owned.slice(0, 6).map(p => (
-            p.image_url
-              ? <Image key={p.id} source={{ uri: p.image_url }} style={styles.thumb} resizeMode="contain" />
+            photoOf(p)
+              ? <Image key={p.id} source={{ uri: photoOf(p) }} style={styles.thumb} resizeMode="contain" />
               : <View key={p.id} style={[styles.thumb, styles.noThumb, { backgroundColor: colors.surface }]}><Ionicons name="water-outline" size={16} color={colors.muted} /></View>
           ))}
           {owned.length > 6 ? (
@@ -372,7 +372,7 @@ export default function BudgetScreen({ navigation }) {
                     const on = pick?.id === p.id;
                     return (
                       <Pressable key={p.id} onPress={() => { setPick(p); setOtherName(''); }} style={[styles.resultRow, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                        {p.image_url ? <Image source={{ uri: p.image_url }} style={styles.resultImage} resizeMode="contain" /> : <View style={[styles.resultImage, styles.noThumb]}><Ionicons name="water-outline" size={16} color={colors.muted} /></View>}
+                        {photoOf(p) ? <Image source={{ uri: photoOf(p) }} style={styles.resultImage} resizeMode="contain" /> : <View style={[styles.resultImage, styles.noThumb]}><Ionicons name="water-outline" size={16} color={colors.muted} /></View>}
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>{p.brand}</Text>
                           <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]} numberOfLines={2}>{p.name}</Text>
@@ -397,7 +397,7 @@ export default function BudgetScreen({ navigation }) {
                       const on = pick?.id === p.id;
                       return (
                         <Pressable key={p.id} onPress={() => { setPick(on ? null : p); setOtherName(''); }} style={[styles.pickItem, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                          {p.image_url ? <Image source={{ uri: p.image_url }} style={styles.pickImage} resizeMode="contain" /> : <Ionicons name="water-outline" size={22} color={colors.muted} />}
+                          {photoOf(p) ? <Image source={{ uri: photoOf(p) }} style={styles.pickImage} resizeMode="contain" /> : <Ionicons name="water-outline" size={22} color={colors.muted} />}
                           <Text style={{ fontSize: 11, color: colors.text, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{p.name}</Text>
                         </Pressable>
                       );

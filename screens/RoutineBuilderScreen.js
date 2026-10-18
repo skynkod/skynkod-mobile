@@ -8,7 +8,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productMatch } from '../utils/ingredients-guide'
-import { addToMyProducts, getProductsByIds } from '../utils/catalog'
+import { addToMyProducts, getProductsByIds, photoOf } from '../utils/catalog'
 import { saveRoutine } from '../utils/routines-service'
 import { STEP_TYPES, STEP_ORDER, ESSENTIALS } from '../utils/routine-steps'
 import { checkRoutine, suggestedDays, describeDays, EVERY_DAY, DAY_LABELS } from '../utils/routine-checks'
@@ -221,8 +221,8 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const ProductCard = ({ product, onChange, onRemove }) => {
     return (
       <View style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+        {photoOf(product) ? (
+          <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
         ) : (
           <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
             <Ionicons name="water-outline" size={18} color={colors.muted} />

@@ -6,7 +6,7 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { productsWithIngredient, getMyProducts } from '../utils/catalog'
+import { productsWithIngredient, getMyProducts, photoOf } from '../utils/catalog'
 import { getIngredient, findIngredients, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { getSituation, NEEDS } from '../utils/emergency-plans'
 import { logError } from '../utils/errorLogger'
@@ -69,8 +69,8 @@ export default function SuggestionsScreen({ navigation, route }) {
       onPress={() => navigation.navigate('Product', { id: product.id })}
       style={[styles.row, { backgroundColor: colors.card, borderColor: owned ? colors.success : colors.border }]}
     >
-      {product.image_url ? (
-        <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+      {photoOf(product) ? (
+        <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
       ) : (
         <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
           <Ionicons name="water-outline" size={18} color={colors.muted} />

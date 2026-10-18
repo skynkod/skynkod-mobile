@@ -6,7 +6,7 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { productsWithIngredient } from '../utils/catalog'
+import { productsWithIngredient, photoOf } from '../utils/catalog'
 import { getIngredient, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { HOWTO, PREGNANCY } from '../utils/encyclopedia/howto'
 import { ARTICLES } from '../utils/encyclopedia'
@@ -133,8 +133,8 @@ export default function IngredientScreen({ navigation, route }) {
             onPress={() => navigation.navigate('Product', { id: product.id })}
             style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            {product.image_url ? (
-              <Image source={{ uri: product.image_url }} style={styles.photo} resizeMode="contain" />
+            {photoOf(product) ? (
+              <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
             ) : (
               <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
                 <Ionicons name="water-outline" size={18} color={colors.muted} />

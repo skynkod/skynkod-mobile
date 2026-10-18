@@ -140,3 +140,8 @@ export const linkBarcode = async (barcode, productId) => {
     return { error: error.message }
   }
 }
+
+// Product photos: the imported (Open Beauty Facts) pictures are hidden until
+// Skynkod's own clean product photos are added (`photo_url`).
+export const SHOW_IMPORTED_PHOTOS = false
+export const photoOf = item => item?.photo_url || (SHOW_IMPORTED_PHOTOS ? item?.image_url || null : null)
