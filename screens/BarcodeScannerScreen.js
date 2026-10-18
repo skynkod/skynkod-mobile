@@ -32,7 +32,7 @@ export default function BarcodeScannerScreen({ navigation, route }) {
       const pickFor = route?.params?.pickFor
       if (pickFor) {
         navigation.setParams({ pickFor: undefined })
-        navigation.navigate({ name: 'RoutineBuilder', params: { picked: { ...pickFor, product: result.product } }, merge: true })
+        navigation.navigate('RoutineBuilder', { picked: { ...pickFor, product: result.product } }, { merge: true })
       } else {
         navigation.navigate('Product', { id: result.product.id, product: result.product })
       }

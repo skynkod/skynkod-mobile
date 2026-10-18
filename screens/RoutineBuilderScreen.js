@@ -88,7 +88,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
 
   const inSummary = index >= essentials.length
   // Leaving always lands on Routines, not on the picker or Koda visited before.
-  const leave = () => navigation.navigate({ name: 'Routines', params: { tab: period }, merge: true })
+  const leave = () => navigation.navigate('Routines', { tab: period }, { merge: true })
   const stepKey = essentials[index]
   const step = STEP_TYPES[stepKey]
   const currentSlot = slots.find(slot => slot.uid === stepKey)
@@ -126,6 +126,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       await Promise.all(chosen.map(({ product }) => addToMyProducts(user.id, product).catch(() => {})))
       navigation.navigate('Routines', { tab: period, savedAt: Date.now() })
     } catch (error) {
+      console.log('Routine save failed:', error?.message)
       await logError('RoutineBuilder_save', error, { period }, 'warn')
       Alert.alert(t('Error'), t("Couldn't save your routine. Try again."))
     } finally {

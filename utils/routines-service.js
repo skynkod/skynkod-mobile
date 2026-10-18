@@ -21,15 +21,23 @@ export const createRoutine = async (userId, routine) => {
   }
 };
 
-// Replaces the user's morning or evening routine with these steps.
+// Saves the user's morning or evening routine. Updates the existing row
+// (past ticks in routine_completions point to it) or creates the first one.
 export const saveRoutine = async (userId, type, steps) => {
   try {
-    const { error: delError } = await supabase.from('routines').delete().eq('user_id', userId).eq('type', type);
-    if (delError) throw delError;
-    const { data, error } = await supabase
+    const { data: existing, error: findError } = await supabase
       .from('routines')
-      .insert([{ user_id: userId, name: type === 'morning' ? 'Morning routine' : 'Night routine', type, steps }])
-      .select();
+      .select('id')
+      .eq('user_id', userId)
+      .eq('type', type)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (findError) throw findError;
+
+    const row = { name: type === 'morning' ? 'Morning routine' : 'Night routine', steps, updated_at: new Date().toISOString() };
+    const { data, error } = existing?.length
+      ? await supabase.from('routines').update(row).eq('id', existing[0].id).select()
+      : await supabase.from('routines').insert([{ ...row, user_id: userId, type }]).select();
     if (error) throw error;
     return { success: true, data: data?.[0] };
   } catch (error) {
