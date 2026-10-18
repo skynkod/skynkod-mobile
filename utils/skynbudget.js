@@ -9,12 +9,11 @@ export const formatMAD = (amount) => `${Math.round(Number(amount) || 0).toLocale
 
 const monthStart = (date = new Date()) => new Date(date.getFullYear(), date.getMonth(), 1)
 
-export const getMonthPurchases = async (userId, date = new Date()) => {
-  const start = monthStart(date)
-  const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
+// Purchases between two dates, newest first.
+export const getPurchasesBetween = async (userId, start, end) => {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, name, product_name, brand, category, price, date, product_id')
+    .select('id, name, product_name, brand, category, price, date, product_id, store')
     .eq('user_id', userId)
     .gte('date', start.toISOString())
     .lt('date', end.toISOString())
@@ -23,7 +22,40 @@ export const getMonthPurchases = async (userId, date = new Date()) => {
   return data || []
 }
 
-export const addPurchase = async (userId, { product, name, brand, category, price, store }) => {
+// Totals for the 6 months ending with `date`'s month: [{ month: Date, total }].
+export const getSixMonths = async (userId, date = new Date()) => {
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 1)
+  const start = new Date(date.getFullYear(), date.getMonth() - 5, 1)
+  const rows = await getPurchasesBetween(userId, start, end)
+  return [...Array(6)].map((_, i) => {
+    const month = new Date(start.getFullYear(), start.getMonth() + i, 1)
+    const total = rows
+      .filter(r => { const d = new Date(r.date); return d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth() })
+      .reduce((sum, r) => sum + Number(r.price || 0), 0)
+    return { month, total }
+  })
+}
+
+export const getYearTotal = async (userId, year = new Date().getFullYear()) => {
+  const rows = await getPurchasesBetween(userId, new Date(year, 0, 1), new Date(year + 1, 0, 1))
+  return rows.reduce((sum, r) => sum + Number(r.price || 0), 0)
+}
+
+export const getMonthPurchases = async (userId, date = new Date()) => {
+  const start = monthStart(date)
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('id, name, product_name, brand, category, price, date, product_id, store')
+    .eq('user_id', userId)
+    .gte('date', start.toISOString())
+    .lt('date', end.toISOString())
+    .order('date', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export const addPurchase = async (userId, { product, name, brand, category, price, store, date }) => {
   const { error } = await supabase.from('expenses').insert({
     user_id: userId,
     product_id: product?.id || null,
@@ -35,9 +67,24 @@ export const addPurchase = async (userId, { product, name, brand, category, pric
     amount: Number(price),
     currency: 'MAD',
     store: store || null,
-    date: new Date().toISOString(),
+    date: (date || new Date()).toISOString(),
   })
   if (error) throw error
+}
+
+export const updatePurchase = async (id, { price, store, date }) => {
+  const { error } = await supabase
+    .from('expenses')
+    .update({ price: Number(price), amount: Number(price), store: store || null, date: date.toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// Roughly how many uses a typical pack lasts, by category (estimate).
+const USES = { serum: 120, moisturizer: 100, cleanser: 150, sunscreen: 60, toner: 150, 'eye care': 150, exfoliant: 40, mask: 25, other: 80 }
+export const costPerUse = (price, category) => {
+  const uses = USES[category] || USES.other
+  return Number(price) / uses
 }
 
 export const deletePurchase = async (id) => {
