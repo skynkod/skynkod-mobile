@@ -1,260 +1,272 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Alert } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { addJournalEntry, getJournalEntries, deleteJournalEntry } from '../utils/journal-service';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
-import { getDayProgress, getRecentRegularity } from '../utils/routine-log';
-import { Screen, Card, Button, Input, Stepper, BottomSheet, EmptyState, LoadingView, Banner, SectionHeader, IconButton, useColors } from '../components/ui';
+import { getDayProgress, getRecentRegularity, localDay } from '../utils/routine-log';
+import { MOODS, TAGS, getEntriesBetween, saveDay } from '../utils/journal-day';
+import { logError } from '../utils/errorLogger';
+import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
-const MOODS = ['😭', '😕', '😐', '🙂', '😄'];
-
-const EMPTY_ENTRY = {
-  hydrationLevel: 5,
-  barrierHealth: 5,
-  acneLevel: 0,
-  rednessLevel: 0,
-  textureQuality: 5,
-  mood: '🙂',
-  routineCompleted: false,
-  notes: '',
-  overallSatisfaction: 5,
+const startOfWeek = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+  return d;
 };
+const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
-const formatDay = (iso, t, language) => {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return t('Today');
-  if (d.toDateString() === yesterday.toDateString()) return t('Yesterday');
-  return d.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' });
-};
-
+// Journal from the mockup: pick a day of the week, a quick check-in (mood,
+// what's going on, a note) saved automatically, and today's routines.
 export default function JournalScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  const [entries, setEntries] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [newEntry, setNewEntry] = useState(EMPTY_ENTRY);
-  // "Log today": how much of each routine is done today, and regularity.
+  const today = new Date();
+  const [selected, setSelected] = useState(today);
+  const [weekEntries, setWeekEntries] = useState([]);
+  const [entryId, setEntryId] = useState(null);
+  const [mood, setMood] = useState(null);
+  const [tags, setTags] = useState([]);
+  const [note, setNote] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | saving | saved
   const [routineLog, setRoutineLog] = useState(null);
+  const dirty = useRef(false);
 
-  const loadEntries = useCallback(async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
+  const weekStart = startOfWeek(selected);
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  // Entries of the visible week, then the selected day's answers.
+  const loadWeek = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const end = new Date(weekStart);
+      end.setDate(end.getDate() + 7);
+      const rows = await getEntriesBetween(user.id, weekStart, end);
+      setWeekEntries(rows);
+      const entry = rows.find(r => sameDay(new Date(r.date), selected));
+      dirty.current = false;
+      setEntryId(entry?.id || null);
+      setMood(MOODS.some(m => m.value === entry?.mood) ? entry.mood : null);
+      setTags(entry?.skin_conditions || []);
+      setNote(entry?.notes || '');
+      setStatus('idle');
+    } catch (error) {
+      await logError('Journal_loadWeek', error, {}, 'warn');
     }
-    Promise.all([getUserRoutines(user.id), getDayProgress(user.id), getRecentRegularity(user.id, 7)])
-      .then(([routines, progress, regularity]) => {
-        const list = routines.success ? routines.data || [] : [];
-        const rows = ['morning', 'evening']
-          .map(type => {
-            const steps = todaySteps(list.find(r => r.type === type)?.steps || []);
-            return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
-          })
-          .filter(Boolean);
-        setRoutineLog({ rows, regularity });
-      })
-      .catch(() => setRoutineLog(null));
-    const result = await getJournalEntries(user.id);
-    if (result.success) {
-      setEntries(result.data || []);
-      setError(null);
-    } else {
-      setError(result.error || t('Could not load your journal'));
+  }, [user?.id, selected.toDateString()]);
+
+  // Routine progress for the selected day.
+  const loadRoutines = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const [routines, progress, regularity] = await Promise.all([
+        getUserRoutines(user.id),
+        getDayProgress(user.id, localDay(selected)),
+        getRecentRegularity(user.id, 7),
+      ]);
+      const list = routines.success ? routines.data || [] : [];
+      const rows = ['morning', 'evening']
+        .map(type => {
+          const steps = todaySteps(list.find(r => r.type === type)?.steps || [], selected);
+          return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
+        })
+        .filter(Boolean);
+      setRoutineLog({ rows, regularity });
+    } catch (error) {
+      await logError('Journal_loadRoutines', error, {}, 'warn');
     }
-    setLoading(false);
-  }, [user?.id]);
+  }, [user?.id, selected.toDateString()]);
 
   useFocusEffect(
     useCallback(() => {
-      loadEntries();
-    }, [loadEntries])
+      loadWeek();
+      loadRoutines();
+    }, [loadWeek, loadRoutines])
   );
 
-  // Home's "check-in" shortcut opens the new-entry sheet directly.
+  // Home's check-in shortcut lands on today.
   useEffect(() => {
-    if (route?.params?.openNew) setShowModal(true);
+    if (route?.params?.openNew) setSelected(new Date());
   }, [route?.params?.openNew]);
 
-  const update = (patch) => setNewEntry(prev => ({ ...prev, ...patch }));
+  // Saves 700 ms after the last change.
+  useEffect(() => {
+    if (!dirty.current || !user?.id) return;
+    setStatus('saving');
+    const timer = setTimeout(async () => {
+      try {
+        const id = await saveDay(user.id, selected, { mood, tags, notes: note }, entryId);
+        setEntryId(id);
+        setStatus('saved');
+        setWeekEntries(prev => (prev.some(e => e.id === id) ? prev : [...prev, { id, date: selected.toISOString() }]));
+      } catch (error) {
+        setStatus('idle');
+        await logError('Journal_save', error, {}, 'warn');
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [mood, tags, note]);
 
-  const handleSaveEntry = async () => {
-    if (!user?.id) return;
-    setSaving(true);
-    const result = await addJournalEntry(user.id, newEntry);
-    setSaving(false);
-
-    if (result.success) {
-      setNewEntry(EMPTY_ENTRY);
-      setShowModal(false);
-      await loadEntries();
-    } else {
-      Alert.alert(t('Could not save'), result.error || t('Please try again.'));
-    }
+  const change = (setter) => (value) => {
+    dirty.current = true;
+    setter(value);
   };
+  const toggleTag = (tag) => change(setTags)(tags.includes(tag) ? tags.filter(x => x !== tag) : [...tags, tag]);
 
-  const handleDelete = (entry) => {
-    Alert.alert(t('Delete entry?'), t('This cannot be undone.'), [
-      { text: t('Cancel'), style: 'cancel' },
-      {
-        text: t('Delete'),
-        style: 'destructive',
-        onPress: async () => {
-          const result = await deleteJournalEntry(entry.id);
-          if (result.success) loadEntries();
-          else Alert.alert(t('Could not delete'), result.error || t('Please try again.'));
-        },
-      },
-    ]);
-  };
-
-  if (loading) return <LoadingView label={t('Loading your journal…')} />;
+  const isToday = sameDay(selected, today);
 
   return (
     <Screen
       title={t('Journal')}
-      subtitle={t('How is your skin feeling?')}
-      right={<IconButton icon="add" tone="primary" onPress={() => setShowModal(true)} accessibilityLabel="New entry" />}
+      right={
+        <Pressable onPress={() => setSelected(new Date())} hitSlop={10} accessibilityLabel={t('Today')}>
+          <Ionicons name="calendar-outline" size={24} color={colors.text} />
+        </Pressable>
+      }
+      keyboard
     >
-      {error ? <Banner message={error} actionLabel={t('Retry')} onAction={loadEntries} /> : null}
+      {/* Week strip */}
+      <View style={styles.week}>
+        <Pressable
+          onPress={() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() - 7); return x; })}
+          hitSlop={8}
+          accessibilityLabel={t('Previous week')}
+        >
+          <Ionicons name="chevron-back" size={18} color={colors.muted} />
+        </Pressable>
+        {days.map(d => {
+          const on = sameDay(d, selected);
+          const future = d > today && !sameDay(d, today);
+          const logged = weekEntries.some(e => sameDay(new Date(e.date), d));
+          return (
+            <Pressable
+              key={d.toISOString()}
+              disabled={future}
+              onPress={() => setSelected(d)}
+              style={[styles.day, on && { backgroundColor: colors.accent }]}
+            >
+              <Text style={[styles.dayName, { color: on ? '#FFFFFF' : colors.textSecondary }]}>
+                {d.toLocaleDateString(language, { weekday: 'short' }).replace('.', '')}
+              </Text>
+              <Text style={[styles.dayNum, { color: on ? '#FFFFFF' : future ? colors.muted : colors.text }]}>{d.getDate()}</Text>
+              <View style={[styles.dot, { backgroundColor: logged ? (on ? '#FFFFFF' : colors.accent) : 'transparent' }]} />
+            </Pressable>
+          );
+        })}
+        <Pressable
+          disabled={sameDay(weekStart, startOfWeek(today))}
+          onPress={() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x > today ? new Date() : x; })}
+          hitSlop={8}
+          accessibilityLabel={t('Next week')}
+        >
+          <Ionicons name="chevron-forward" size={18} color={sameDay(weekStart, startOfWeek(today)) ? 'transparent' : colors.muted} />
+        </Pressable>
+      </View>
 
+      {/* Check-in */}
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.cardHead}>
+          <Text style={[styles.overline, { color: colors.primary }]}>{t('CHECK-IN')}</Text>
+          {status === 'saving' ? <ActivityIndicator size="small" color={colors.muted} /> : null}
+          {status === 'saved' ? <Text style={[TYPE.caption, { color: colors.success, fontWeight: '600' }]}>{t('Saved')}</Text> : null}
+        </View>
+        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>
+          {isToday ? t('How is your skin today?') : t('How was your skin that day?')}
+        </Text>
+        <View style={styles.moods}>
+          {MOODS.map(m => {
+            const on = mood === m.value;
+            return (
+              <Pressable key={m.value} onPress={() => change(setMood)(on ? null : m.value)} style={styles.mood}>
+                <View style={[styles.face, on && { backgroundColor: colors.primarySoft }]}>
+                  <MaterialCommunityIcons name={m.icon} size={34} color={on ? colors.primary : colors.textSecondary} />
+                </View>
+                <Text style={[TYPE.caption, { color: on ? colors.primary : colors.textSecondary, fontWeight: on ? '700' : '500' }]}>{t(m.label)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
+        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
+        <View style={styles.tags}>
+          {TAGS.map(tag => {
+            const on = tags.includes(tag);
+            return (
+              <Pressable
+                key={tag}
+                onPress={() => toggleTag(tag)}
+                style={[styles.tag, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primarySoft : colors.border }]}
+              >
+                <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600' }]}>{t(tag)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <TextInput
+          value={note}
+          onChangeText={change(setNote)}
+          placeholder={t('Add a note…')}
+          placeholderTextColor={colors.muted}
+          multiline
+          style={[styles.note, { backgroundColor: colors.surface, color: colors.text }]}
+        />
+      </View>
+
+      {/* Routines of that day */}
       {routineLog?.rows.length ? (
-        <>
-          <SectionHeader title={t('Log today')} />
-          <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg }}>
-            {routineLog.rows.map((row, idx) => {
-              const complete = row.done >= row.total;
-              return (
-                <Pressable
-                  key={row.type}
-                  onPress={() => navigation?.navigate('Routines', { tab: row.type })}
-                  style={[styles.logRow, idx < routineLog.rows.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-                >
-                  <Ionicons name={row.type === 'morning' ? 'sunny' : 'moon'} size={20} color={row.type === 'morning' ? '#E8B04A' : colors.secondary} />
-                  <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{row.type === 'morning' ? t('Morning routine') : t('Night routine')}</Text>
-                  {complete ? <Ionicons name="checkmark-circle" size={18} color={colors.success} /> : null}
-                  <Text style={[TYPE.caption, { color: complete ? colors.success : colors.textSecondary, fontWeight: '700' }]}>
-                    {t('{done}/{total} steps', { done: row.done, total: row.total })}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </Card>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: -SPACING.sm, marginBottom: SPACING.lg }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.overline, { color: colors.primary }]}>{isToday ? t('LOG TODAY') : t('ROUTINES THAT DAY')}</Text>
+          {routineLog.rows.map(row => {
+            const complete = row.done >= row.total;
+            return (
+              <Pressable
+                key={row.type}
+                onPress={() => navigation?.navigate('Routines', { tab: row.type })}
+                style={[styles.logRow, { backgroundColor: colors.surface }]}
+              >
+                <Ionicons name={row.type === 'morning' ? 'sunny' : 'moon-outline'} size={20} color={row.type === 'morning' ? '#E8B04A' : colors.secondary} />
+                <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{row.type === 'morning' ? t('Morning Routine') : t('Tonight Routine')}</Text>
+                {complete ? <Ionicons name="checkmark" size={16} color={colors.success} /> : null}
+                <Text style={[TYPE.caption, { color: complete ? colors.success : colors.textSecondary, fontWeight: '700' }]}>
+                  {t('{done}/{total} steps', { done: row.done, total: row.total })}
+                </Text>
+              </Pressable>
+            );
+          })}
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
             {t('Routine done {done} of the last {days} days', { done: routineLog.regularity.done, days: routineLog.regularity.days })}
           </Text>
-        </>
+        </View>
       ) : null}
-
-      {entries.length === 0 ? (
-        <EmptyState
-          icon="book-outline"
-          title={t('No entries yet')}
-          description={t('A quick daily check-in is the best way to understand what your skin needs.')}
-          action={t('Write your first entry')}
-          onAction={() => setShowModal(true)}
-        />
-      ) : (
-        <>
-          <SectionHeader title={t(entries.length === 1 ? '1 entry · last 30 days' : '{count} entries · last 30 days', { count: entries.length })} />
-          {entries.map(entry => (
-            <Card key={entry.id} style={styles.entryCard} onPress={() => handleDelete(entry)}>
-              <View style={styles.entryHeader}>
-                <View style={[styles.moodBubble, { backgroundColor: colors.primarySoft }]}>
-                  <Text style={{ fontSize: 22 }}>{entry.mood || '🙂'}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{formatDay(entry.date, t, language)}</Text>
-                  <Text style={[TYPE.caption, { color: colors.muted }]}>
-                    {new Date(entry.date).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
-                <Ionicons name="ellipsis-horizontal" size={18} color={colors.muted} />
-              </View>
-
-              <View style={styles.metrics}>
-                {[
-                  { label: 'Hydration', value: entry.hydration_level },
-                  { label: 'Barrier', value: entry.barrier_health },
-                  { label: 'Acne', value: entry.acne_level },
-                  { label: 'Redness', value: entry.redness_level },
-                ].map(m => (
-                  <View key={m.label} style={[styles.metric, { backgroundColor: colors.surface }]}>
-                    <Text style={[TYPE.subheading, { color: colors.primary }]}>{m.value ?? '–'}</Text>
-                    <Text style={[TYPE.caption, { color: colors.muted, fontSize: 11 }]}>{t(m.label)}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {entry.notes ? (
-                <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>{entry.notes}</Text>
-              ) : null}
-            </Card>
-          ))}
-          <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>
-            {t('Tap an entry to delete it')}
-          </Text>
-        </>
-      )}
-
-      <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <BottomSheet title={t("Today's check-in")} onClose={() => setShowModal(false)}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginBottom: SPACING.md }]}>{t('Overall mood')}</Text>
-          <View style={styles.moods}>
-            {MOODS.map(mood => {
-              const active = newEntry.mood === mood;
-              return (
-                <Pressable
-                  key={mood}
-                  onPress={() => update({ mood })}
-                  style={[
-                    styles.moodButton,
-                    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primarySoft : colors.card },
-                  ]}
-                >
-                  <Text style={{ fontSize: 26 }}>{mood}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Stepper label={t('Hydration')} hint={t('0 = very dry · 10 = plump')} value={newEntry.hydrationLevel} onChange={v => update({ hydrationLevel: v })} />
-          <Stepper label={t('Barrier health')} hint={t('0 = stinging · 10 = resilient')} value={newEntry.barrierHealth} onChange={v => update({ barrierHealth: v })} />
-          <Stepper label={t('Acne')} hint={t('0 = none · 10 = severe')} value={newEntry.acneLevel} onChange={v => update({ acneLevel: v })} />
-          <Stepper label={t('Redness')} hint={t('0 = none · 10 = severe')} value={newEntry.rednessLevel} onChange={v => update({ rednessLevel: v })} />
-
-          <Input
-            label={t('Notes')}
-            placeholder={t('New product, stress, sleep, weather…')}
-            value={newEntry.notes}
-            onChangeText={notes => update({ notes })}
-            multiline
-          />
-
-          <Button title={t('Save entry')} onPress={handleSaveEntry} loading={saving} style={{ marginBottom: SPACING.xl }} />
-        </BottomSheet>
-      </Modal>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  logRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.lg },
-  entryCard: { marginBottom: SPACING.md },
-  entryHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  moodBubble: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  metrics: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md },
-  metric: { flex: 1, alignItems: 'center', paddingVertical: SPACING.sm, borderRadius: RADIUS.sm },
-  moods: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.xl },
-  moodButton: { width: 54, height: 54, borderRadius: 18, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  week: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
+  day: { width: 40, alignItems: 'center', paddingVertical: 8, borderRadius: 14 },
+  dayName: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
+  dayNum: { fontSize: 17, fontWeight: '700', marginTop: 4 },
+  dot: { width: 5, height: 5, borderRadius: 3, marginTop: 4 },
+  card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
+  moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
+  mood: { alignItems: 'center', gap: 6, width: 58 },
+  face: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
+  tag: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 8 },
+  note: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.xl, minHeight: 52, fontSize: 15 },
+  logRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.md },
 });
