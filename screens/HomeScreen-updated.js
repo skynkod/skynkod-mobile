@@ -318,12 +318,38 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       ) : null}
       {!plan && !suggestion && loaded ? (
-        <Pressable onPress={() => navigation.navigate('Emergency')} hitSlop={6} style={styles.sosLine}>
-          <Ionicons name="medkit-outline" size={14} color={colors.muted} />
-          <Text style={[TYPE.caption, { color: colors.textSecondary }]}>
-            {t('Skin acting up?')} <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('Emergency mode')} →</Text>
-          </Text>
-        </Pressable>
+        <View style={[styles.sosInvite, { backgroundColor: colors.primarySoft }]}>
+          <View style={styles.sosHead}>
+            <View style={[styles.sosIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="medkit" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Skin acting up?')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 17 }]}>
+                {t('Get a 7-day plan to calm, repair or prepare your skin.')}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.sosChips}>
+            {[
+              { id: 'breakout', label: 'Breakout', icon: 'ellipse' },
+              { id: 'irritation', label: 'Redness', icon: 'flower-outline' },
+              { id: 'event', label: 'Big event soon', icon: 'sparkles' },
+            ].map(c => (
+              <Pressable
+                key={c.id}
+                onPress={() => navigation.navigate('Emergency', { situation: c.id, openedAt: Date.now() })}
+                style={({ pressed }) => [styles.sosChip, { backgroundColor: colors.card, opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Ionicons name={c.icon} size={13} color={colors.primary} />
+                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{t(c.label)}</Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => navigation.navigate('Emergency')} hitSlop={8} style={styles.sosAll}>
+              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('See all')} →</Text>
+            </Pressable>
+          </View>
+        </View>
       ) : null}
 
       {showDerm ? (
@@ -388,7 +414,12 @@ const styles = StyleSheet.create({
   logo: { flex: 1, height: 30, width: 30 * LOGO_RATIO },
   greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4 },
   sosCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
-  sosLine: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: SPACING.lg },
+  sosInvite: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.lg },
+  sosHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  sosIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  sosChips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
+  sosChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  sosAll: { paddingHorizontal: 4, paddingVertical: 7 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
   sos: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   sosText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6, marginTop: -1 },
