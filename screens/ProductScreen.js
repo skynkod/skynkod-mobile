@@ -85,14 +85,16 @@ export default function ProductScreen({ navigation, route }) {
         </View>
       </View>
 
-      <View style={[styles.matchCard, { backgroundColor: { danger: colors.dangerSoft, warning: colors.warningSoft, neutral: colors.surface }[match.tone] || colors.successSoft }]}>
+      <View style={[styles.matchCard, { backgroundColor: { danger: colors.dangerSoft, warning: colors.warningSoft, watch: colors.cautionSoft, neutral: colors.surface }[match.tone] || colors.successSoft }]}>
         <View style={styles.matchHead}>
-          {match.tone === 'danger' ? (
-            <Ionicons name="close-circle" size={40} color={colors.danger} />
-          ) : match.unverified.length ? (
-            <Ionicons name="help-circle" size={40} color={colors.warning} />
+          {match.tone === 'success' ? (
+            <Text style={[styles.matchScore, { color: colors.success }]}>{match.score}%</Text>
           ) : (
-            <Text style={[styles.matchScore, { color: { warning: colors.warning, neutral: colors.textSecondary }[match.tone] || colors.success }]}>{match.score}%</Text>
+            <Ionicons
+              name={{ danger: 'close-circle', warning: 'flask', watch: 'eye' }[match.tone] || 'help-circle'}
+              size={40}
+              color={{ danger: colors.danger, warning: colors.warning, watch: colors.caution }[match.tone] || colors.muted}
+            />
           )}
           <View style={{ flex: 1 }}>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.label)}</Text>
@@ -101,9 +103,15 @@ export default function ProductScreen({ navigation, route }) {
             </Text>
           </View>
         </View>
-        {[...match.good.map(g => ({ ...g, ok: true })), ...match.care.map(c => ({ ...c, ok: false }))].map((r, idx) => (
-          <View key={idx} style={styles.reason}>
-            <Ionicons name={r.ok ? 'checkmark-circle' : 'alert-circle'} size={16} color={r.ok ? colors.success : match.tone === 'danger' ? colors.danger : colors.warning} />
+        {match.good.map((r, idx) => (
+          <View key={`g${idx}`} style={styles.reason}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
+          </View>
+        ))}
+        {match.unverified.map((r, idx) => (
+          <View key={`u${idx}`} style={styles.reason}>
+            <Ionicons name="help-circle" size={16} color={colors.muted} />
             <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}
@@ -143,6 +151,32 @@ export default function ProductScreen({ navigation, route }) {
             </View>
           ))}
         </View>
+      ) : null}
+
+      {match.triggers.length ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('INGREDIENTS TO KNOW')}</Text>
+          {match.triggers.map((tr, idx) => {
+            const lv = {
+              avoid: { label: 'Avoid', bg: colors.dangerSoft, fg: colors.danger, icon: 'close-circle' },
+              patch: { label: 'Patch test first', bg: colors.warningSoft, fg: colors.warning, icon: 'flask' },
+              watch: { label: 'Keep an eye', bg: colors.cautionSoft, fg: colors.caution, icon: 'eye' },
+            }[tr.level]
+            return (
+              <View key={idx} style={[styles.triggerCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <View style={[styles.levelChip, { backgroundColor: lv.bg }]}>
+                  <Ionicons name={lv.icon} size={13} color={lv.fg} />
+                  <Text style={[styles.levelText, { color: lv.fg }]}>{t(lv.label)}</Text>
+                </View>
+                <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t(tr.text)}</Text>
+                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(tr.detail)}</Text>
+                {tr.about ? (
+                  <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6, lineHeight: 17 }]}>{t('What it is:')} {t(tr.about)}</Text>
+                ) : null}
+              </View>
+            )
+          })}
+        </>
       ) : null}
 
       {match.found.length ? (
@@ -225,6 +259,9 @@ const styles = StyleSheet.create({
   avoidHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   altRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
   altChip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
+  triggerCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.sm },
+  levelChip: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  levelText: { fontSize: 11, fontWeight: '700' },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.xs },
   ingredient: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.md },

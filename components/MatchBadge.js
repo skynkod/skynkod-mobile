@@ -9,6 +9,7 @@ export default function MatchBadge({ tone = 'neutral', label, size = 'sm' }) {
     success: { bg: colors.successSoft, fg: colors.success },
     warning: { bg: colors.warningSoft, fg: colors.warning },
     danger: { bg: colors.dangerSoft, fg: colors.danger },
+    watch: { bg: colors.cautionSoft, fg: colors.caution },
     neutral: { bg: colors.surface, fg: colors.textSecondary },
   }[tone] || { bg: colors.surface, fg: colors.textSecondary }
   return (

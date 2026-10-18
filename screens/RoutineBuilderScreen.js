@@ -83,16 +83,17 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     } else if (match.triggered.length) {
       Alert.alert(
         t('Not for your skin'),
-        `${t(match.triggered[0].text)}.`,
+        `${t(match.triggered[0].text)}.\n\n${t(match.triggered[0].detail)}`,
         [
           { text: t('Keep anyway'), style: 'destructive' },
           { text: t('Choose another'), style: 'cancel', onPress: () => pick(picked.stepKey, picked.uid) },
         ]
       )
     } else if (match.tone === 'warning') {
+      const first = match.triggers.find(tr => tr.level === 'patch') || match.care[0]
       Alert.alert(
-        t('Heads up'),
-        t('{product} may not suit your skin: {reason}.', { product: picked.product.name, reason: t(match.care[0]?.text || match.label).toLowerCase() }),
+        t('Patch test first'),
+        `${t(first?.text || '')}.\n\n${t(first?.detail || '')}`,
         [
           { text: t('Choose another'), onPress: () => pick(picked.stepKey, picked.uid) },
           { text: t('Keep it'), style: 'cancel' },

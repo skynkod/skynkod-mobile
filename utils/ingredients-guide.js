@@ -223,19 +223,87 @@ const personalFlags = (entry, facts) => {
   return out
 }
 
-// One check per skin issue the user has. Any trigger in the formula makes the
-// product red for them; a full ingredient list with no trigger makes it green;
-// a list we only partly know can't be confirmed, so it stays orange.
+// ---------- Skin-issue triggers, graded ----------
+//
+// Each issue the user has gets a check. An ingredient's base risk for that
+// issue (1 mild, 2 moderate, 3 strong) is adjusted by how much of it there is:
+// near the top of the INCI list counts more, the tail (usually under 1%) less,
+// and rinse-off products less. The result is a level the user can act on:
+//   avoid  – strong trigger in a real amount: skip it
+//   patch  – may be fine: patch test first
+//   watch  – trace amount or rinsed off: usually fine, keep an eye on it
+
 const has = (entry, tag) => entry.tags.includes(tag)
+
+const FA_STRONG = /polysorbate|seed oil|kernel oil|fruit oil|nut oil|butter\b|olea europaea/
+const FA_MILD = /lauroyl|sarcosinate|lactylate/
+
 const CONDITION_CHECKS = [
-  { id: 'fungal', active: f => f.fungal, isTrigger: e => has(e, 'fungal-trigger'), badge: 'Not FA safe', safe: 'Fungal-acne safe', trigger: n => `${n} can trigger fungal acne` },
-  { id: 'rosacea', active: f => f.rosacea, isTrigger: e => has(e, 'rosacea-trigger'), badge: 'Rosacea trigger', safe: 'Rosacea friendly', trigger: n => `${n} can trigger rosacea flare-ups` },
-  { id: 'eczema', active: f => f.eczema, isTrigger: e => has(e, 'eczema-trigger'), badge: 'Eczema trigger', safe: 'Eczema friendly', trigger: n => `${n} can irritate eczema-prone skin` },
-  { id: 'perioral', active: f => f.perioral, isTrigger: e => has(e, 'heavy-occlusive') || has(e, 'fragrance'), badge: 'Perioral dermatitis trigger', safe: 'Perioral-dermatitis friendly', trigger: n => `${n} can aggravate perioral dermatitis` },
-  { id: 'pores', active: f => f.breakoutProne, isTrigger: e => e.comedogenic >= 3, badge: 'Pore-clogging', safe: 'Non-comedogenic', trigger: n => `${n} can clog pores`, softWhenRinsed: true },
-  { id: 'sensitive', active: f => f.sensitive, isTrigger: e => e.irritancy >= 3 || has(e, 'fragrance'), badge: 'Irritating', safe: 'Gentle on sensitive skin', trigger: n => `${n} can irritate sensitive skin` },
-  { id: 'dry', active: f => f.dry, isTrigger: (e, pos) => has(e, 'drying') && pos < 10, badge: 'Drying', safe: null, trigger: n => `${n} can dry out your skin` },
+  {
+    id: 'fungal', label: 'fungal acne', active: f => f.fungal,
+    risk: (e, inci) => {
+      if (!has(e, 'fungal-trigger')) return 0
+      if (e.id !== 'fungalfood') return { nutoils: 3, coconut: 3, cocoabutter: 3, heavyoils: 3, poreclog: 3, rosehip: 3, jojoba: 2, shea: 2 }[e.id] || 2
+      if (FA_STRONG.test(inci)) return 3
+      if (FA_MILD.test(inci)) return 1
+      return 2
+    },
+    badge: 'Not FA safe', safe: 'Fungal-acne safe', effect: 'can feed the yeast behind fungal acne',
+  },
+  {
+    id: 'rosacea', label: 'rosacea', active: f => f.rosacea,
+    risk: e => ({ alcohol: 3, menthol: 3, essentialoils: 3, scrub: 3, fragrance: 2, witchhazel: 2, glycolic: 2, retinol: 2, sls: 2, allergens: 1 }[e.id] || 0),
+    badge: 'Rosacea trigger', safe: 'Rosacea friendly', effect: 'can trigger rosacea flare-ups',
+  },
+  {
+    id: 'eczema', label: 'eczema', active: f => f.eczema,
+    risk: e => ({ sls: 3, essentialoils: 3, fragrance: 3, alcohol: 2, menthol: 2, glycolic: 2, retinol: 2, allergens: 1 }[e.id] || 0),
+    badge: 'Eczema trigger', safe: 'Eczema friendly', effect: 'can irritate eczema-prone skin',
+  },
+  {
+    id: 'perioral', label: 'perioral dermatitis', active: f => f.perioral,
+    risk: e => (has(e, 'heavy-occlusive') || has(e, 'fragrance') ? 2 : 0),
+    badge: 'Perioral dermatitis trigger', safe: 'Perioral-dermatitis friendly', effect: 'can aggravate perioral dermatitis',
+  },
+  {
+    id: 'pores', label: 'breakouts', active: f => f.breakoutProne,
+    risk: e => (e.comedogenic >= 4 ? 3 : e.comedogenic === 3 ? 2 : 0),
+    badge: 'Pore-clogging', safe: 'Non-comedogenic', effect: 'can clog pores',
+  },
+  {
+    id: 'sensitive', label: 'sensitive skin', active: f => f.sensitive,
+    risk: e => (e.irritancy >= 4 ? 3 : e.irritancy === 3 || has(e, 'fragrance') ? 2 : 0),
+    badge: 'Irritating', safe: 'Gentle on sensitive skin', effect: 'can irritate sensitive skin',
+  },
+  {
+    id: 'dry', label: 'dry skin', active: f => f.dry,
+    risk: e => (has(e, 'drying') ? 2 : 0),
+    badge: 'Drying', safe: null, effect: 'can dry out your skin',
+  },
 ]
+
+const levelFor = (risk, pos, partial, rinseOff) => {
+  const amount = partial ? 0 : pos < 5 ? 1 : pos < 10 ? 0 : pos < 20 ? -1 : -2
+  const v = risk + amount - (rinseOff ? 1 : 0)
+  return v >= 3 ? 'avoid' : v === 2 ? 'patch' : 'watch'
+}
+
+const amountWords = (pos, partial, rinseOff) => {
+  if (rinseOff) return "It's in a product you rinse off"
+  if (partial) return "It's one of the key ingredients"
+  if (pos < 5) return "It's one of the main ingredients"
+  if (pos < 10) return "It's there in a moderate amount"
+  if (pos < 20) return "It's there in a small amount"
+  return "There's only a trace of it, near the end of the list"
+}
+
+// Plain explanation of what to do about one trigger.
+const explainLevel = (level, item) => {
+  const amount = amountWords(item.pos, item.partial, item.rinseOff)
+  if (level === 'avoid') return `${amount}, so it's likely to ${item.check.effect.replace(/^can /, '')}. We'd skip this one.`
+  if (level === 'patch') return `${amount}. Many people with ${item.check.label} tolerate it, so patch test first: apply a little on your jaw or behind your ear for 3–5 days before using it all over.`
+  return `${amount}, so it's usually fine. Just keep an eye on how your skin reacts.`
+}
 
 // ---------- Verdicts ----------
 
@@ -246,15 +314,20 @@ const PHRASES = {
 }
 const phrase = value => PHRASES[value] || value.toLowerCase()
 
-// How well one guide ingredient suits the user's skin.
+const LEVEL_RANK = { avoid: 3, patch: 2, watch: 1 }
+
+// How one guide ingredient suits the user's skin (no formula context).
 export const ingredientFit = (entry, profile) => {
   const facts = profileFacts(profile)
   const helps = entry.goodFor.filter(g => facts.mine.includes(g))
   const flags = personalFlags(entry, facts)
-  const triggers = CONDITION_CHECKS.filter(c => c.active(facts) && c.isTrigger(entry, 0))
-  const warns = [...flags.map(f => f.text), ...triggers.map(c => c.trigger(entry.name))]
+  const risks = CONDITION_CHECKS.filter(c => c.active(facts)).map(c => ({ c, r: c.risk(entry, entry.match[0] || '') })).filter(x => x.r > 0)
+  const warns = [...flags.map(f => f.text), ...risks.map(({ c }) => `${entry.name} ${c.effect}`)]
+  const top = Math.max(0, ...risks.map(x => x.r))
   if (flags.some(f => f.level === 'avoid')) return { label: 'Avoid', tone: 'danger', helps, warns }
-  if (triggers.length) return { label: triggers[0].badge, tone: 'danger', helps, warns }
+  if (top >= 3) return { label: 'Strong trigger for you', tone: 'danger', helps, warns }
+  if (top === 2) return { label: 'Patch test first', tone: 'warning', helps, warns }
+  if (top === 1) return { label: 'Usually fine', tone: 'watch', helps, warns }
   if (flags.length) return { label: 'Use with care', tone: 'warning', helps, warns }
   if (helps.length) return { label: 'Great for you', tone: 'success', helps, warns }
   if (!entry.goodFor.length) return { label: 'Not needed', tone: 'neutral', helps, warns }
@@ -266,7 +339,7 @@ export const productMatch = (product, profile) => {
   const facts = profileFacts(profile)
   const found = findIngredients(product)
   const partial = !product?.ingredients_text
-  const isRinseOff = product?.category === 'cleanser'
+  const rinseOff = product?.category === 'cleanser'
 
   // What it does for this skin
   const benefits = []
@@ -287,43 +360,47 @@ export const productMatch = (product, profile) => {
   for (const { entry } of found) {
     for (const f of personalFlags(entry, facts)) {
       if (f.level === 'avoid') avoid.push({ entry, text: f.text, detail: f.detail, alternatives: f.alternatives || [] })
-      else cares.push({ entry, text: f.text, detail: f.detail })
+      else cares.push({ entry, text: f.text, detail: f.detail, level: 'patch' })
     }
   }
 
-  // Each skin issue: trigger (red), safe (green) or can't confirm (orange)
-  const triggered = []
-  const softened = []
+  // Each skin issue: graded triggers, safe, or can't confirm
+  const triggers = []
   const safe = []
   const unverified = []
   for (const check of CONDITION_CHECKS.filter(c => c.active(facts))) {
-    const hit = found.find(f => check.isTrigger(f.entry, f.pos))
-    if (hit) {
-      // Name the actual ingredient for groups ("Polysorbate 20", not "Fungal-acne triggers").
-      const group = ['fungalfood', 'poreclog', 'heavyoils', 'allergens', 'essentialoils', 'nutoils'].includes(hit.entry.id)
-      const shown = group && hit.inci ? hit.inci.charAt(0).toUpperCase() + hit.inci.slice(1) : hit.entry.name
-      const item = { check, entry: hit.entry, text: check.trigger(shown) }
-      if (check.softWhenRinsed && isRinseOff) softened.push(item)
-      else triggered.push(item)
-    } else if (partial) {
-      if (check.safe) unverified.push({ check, text: `Full ingredient list missing, so we can't confirm it's ${check.safe.toLowerCase()}` })
-    } else if (check.safe) {
-      safe.push({ check, text: check.safe })
+    const hits = found
+      .map(f => ({ ...f, risk: check.risk(f.entry, f.inci || '') }))
+      .filter(f => f.risk > 0)
+    for (const h of hits) {
+      const group = ['fungalfood', 'poreclog', 'heavyoils', 'allergens', 'essentialoils', 'nutoils'].includes(h.entry.id)
+      const shown = group && h.inci ? h.inci.charAt(0).toUpperCase() + h.inci.slice(1) : h.entry.name
+      const item = { check, entry: h.entry, shown, pos: h.pos, partial, rinseOff }
+      const level = levelFor(h.risk, h.pos, partial, rinseOff)
+      triggers.push({ ...item, level, text: `${shown} ${check.effect}`, detail: explainLevel(level, item), about: h.entry.what })
+    }
+    if (!hits.length && check.safe) {
+      if (partial) unverified.push({ check, text: `Full ingredient list missing, so we can't confirm it's ${check.safe.toLowerCase()}` })
+      else safe.push({ check, text: check.safe })
     }
   }
+  triggers.sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level] || a.pos - b.pos)
 
-  let score = (facts.hasProfile ? 70 : 75) + Math.min(26, benefit) - softened.length * 8 - cares.length * 6
+  const worst = triggers[0]?.level || null
+  let score = (facts.hasProfile ? 70 : 75) + Math.min(26, benefit) - triggers.filter(t => t.level === 'watch').length * 4 - cares.length * 6
   score = Math.round(Math.max(30, Math.min(98, score)))
   if (unverified.length) score = Math.min(score, 68)
-  if (triggered.length) score = Math.min(score, 35)
+  if (worst === 'patch' || cares.length) score = Math.min(score, 58)
+  if (worst === 'avoid') score = Math.min(score, 30)
   if (avoid.length) score = Math.min(score, 20)
 
   let label
   let tone
   if (avoid.length) { label = 'Avoid'; tone = 'danger' }
-  else if (triggered.length) { label = triggered[0].check.badge; tone = 'danger' }
-  else if (unverified.length) { label = 'Not verified'; tone = 'warning' }
-  else if (softened.length || cares.length) { label = 'Use with care'; tone = 'warning' }
+  else if (worst === 'avoid') { label = triggers[0].check.badge; tone = 'danger' }
+  else if (worst === 'patch' || cares.length) { label = 'Patch test first'; tone = 'warning' }
+  else if (unverified.length) { label = 'Not verified'; tone = 'neutral' }
+  else if (worst === 'watch') { label = 'Keep an eye'; tone = 'watch' }
   else if (score >= 85) { label = 'Great for you'; tone = 'success' }
   else if (score >= 70) { label = 'Good match'; tone = 'success' }
   else { label = 'OK for you'; tone = 'neutral' }
@@ -333,9 +410,10 @@ export const productMatch = (product, profile) => {
     label,
     tone,
     good: [...safe, ...benefits],
-    care: [...avoid, ...triggered, ...cares, ...softened, ...unverified],
+    care: [...avoid, ...triggers, ...cares, ...unverified],
     avoid,
-    triggered,
+    triggers,
+    triggered: triggers.filter(t => t.level === 'avoid'),
     unverified,
     found: found.map(f => f.entry),
     partial,
@@ -350,9 +428,9 @@ export const matchReason = (match, profile) => {
   return 'Nothing in it clashes with your skin'
 }
 
-// Short badge for lists: the problem when there is one ("Not FA safe",
-// "Not verified"), the match percentage otherwise.
-export const badgeText = match => (match.tone === 'danger' || match.unverified.length ? match.label : `${match.score}%`)
+// Short badge for lists: the verdict when there's something to know, the
+// match percentage otherwise.
+export const badgeText = match => (['danger', 'warning', 'watch'].includes(match.tone) || match.unverified.length ? match.label : `${match.score}%`)
 
 // Products that must never be suggested to this user.
 export const isUnsuitable = match => match.avoid.length > 0 || match.triggered.length > 0

@@ -13,11 +13,11 @@ export default function ProductVerdict({ product, profile }) {
   const colors = useColors()
   const t = useT()
   const match = productMatch(product, profile)
-  const icon = { danger: 'close-circle', warning: 'alert-circle', success: 'checkmark-circle' }[match.tone] || 'ellipse-outline'
-  const tint = { danger: colors.danger, warning: colors.warning, success: colors.success }[match.tone] || colors.muted
+  const icon = { danger: 'close-circle', warning: 'flask', watch: 'eye-outline', success: 'checkmark-circle' }[match.tone] || 'help-circle-outline'
+  const tint = { danger: colors.danger, warning: colors.warning, watch: colors.caution, success: colors.success }[match.tone] || colors.muted
   return (
     <View style={styles.wrap}>
-      <MatchBadge tone={match.tone} label={match.tone === 'danger' || match.unverified.length ? t(match.label) : `${match.score}% · ${t(match.label)}`} />
+      <MatchBadge tone={match.tone} label={match.tone === 'success' ? `${match.score}% · ${t(match.label)}` : t(match.label)} />
       <View style={styles.reason}>
         <Ionicons name={icon} size={13} color={tint} style={{ marginTop: 1 }} />
         <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={2}>{t(matchReason(match, profile))}</Text>
