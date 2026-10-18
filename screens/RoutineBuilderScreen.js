@@ -145,7 +145,9 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       }))
       const result = await saveRoutine(user.id, period, routineSteps)
       if (!result.success) throw new Error(result.error)
-      await Promise.all(chosen.map(({ product }) => addToMyProducts(user.id, product).catch(() => {})))
+      await Promise.all(chosen.map(({ product }) =>
+        addToMyProducts(user.id, product, 'owned').catch(error => logError('RoutineBuilder_addProduct', error, { id: product.id }, 'warn'))
+      ))
       navigation.navigate('Routines', { tab: period, savedAt: Date.now() })
     } catch (error) {
       console.log('Routine save failed:', error?.message)

@@ -7,7 +7,7 @@ import ProductVerdict from '../components/ProductVerdict'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getMyProducts, setMyProductStatus, removeMyProduct } from '../utils/catalog'
+import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts } from '../utils/catalog'
 import { getUserRoutines } from '../utils/routines-service'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -43,10 +43,20 @@ export default function ProductsScreen({ navigation }) {
   const load = useCallback(async () => {
     if (!user?.id) return
     try {
-      const [mine, routines] = await Promise.all([getMyProducts(user.id), getUserRoutines(user.id)])
-      setRows(mine)
-      const ids = (routines.success ? routines.data : []).flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean)
+      const [firstLoad, routines] = await Promise.all([getMyProducts(user.id), getUserRoutines(user.id)])
+      const ids = [...new Set((routines.success ? routines.data : []).flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean))]
       setInRoutine(new Set(ids))
+
+      // Every product in a routine belongs on the shelf: add any that's missing.
+      const have = new Set(firstLoad.map(r => r.product_id))
+      const missing = ids.filter(id => !have.has(id))
+      let mine = firstLoad
+      if (missing.length) {
+        const products = await getProductsByIds(missing)
+        await Promise.all(products.map(p => addToMyProducts(user.id, p, 'owned').catch(error => logError('ProductsScreen_sync', error, { id: p.id }, 'warn'))))
+        mine = await getMyProducts(user.id)
+      }
+      setRows(mine)
     } catch (error) {
       await logError('ProductsScreen_load', error, {}, 'warn')
     } finally {
