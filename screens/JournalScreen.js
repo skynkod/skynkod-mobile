@@ -53,8 +53,9 @@ export default function JournalScreen({ route, navigation }) {
       const rows = await getEntriesBetween(user.id, weekStart, end);
       setWeekEntries(rows);
       const entry = rows.find(r => sameDay(new Date(r.date), selected));
-      dirty.current = false;
-      setEntryId(entry?.id || null);
+      setEntryId(prev => entry?.id || prev);
+      // The user already changed something while this was loading: keep it.
+      if (dirty.current) return;
       setMood(MOODS.some(m => m.value === entry?.mood) ? entry.mood : null);
       setTags(entry?.skin_conditions || []);
       setNote(entry?.notes || '');
@@ -98,29 +99,62 @@ export default function JournalScreen({ route, navigation }) {
     if (route?.params?.openNew) setSelected(new Date());
   }, [route?.params?.openNew]);
 
-  // Saves 700 ms after the last change.
-  useEffect(() => {
+  // Writes the current answers. Mood and tags save at once, the note after a
+  // short pause; anything pending is saved when leaving the screen.
+  const latest = useRef({ mood, tags, note });
+  latest.current = { mood, tags, note };
+  const entryRef = useRef(entryId);
+  entryRef.current = entryId;
+  const noteTimer = useRef(null);
+
+  // Saves run one after another, so quick taps never create two entries.
+  const queue = useRef(Promise.resolve());
+  const saveNow = () => {
+    queue.current = queue.current.then(saveOnce);
+    return queue.current;
+  };
+  const saveOnce = async () => {
     if (!dirty.current || !user?.id) return;
     setStatus('saving');
-    const timer = setTimeout(async () => {
-      try {
-        const id = await saveDay(user.id, selected, { mood, tags, notes: note }, entryId);
-        setEntryId(id);
-        setStatus('saved');
-        setWeekEntries(prev => (prev.some(e => e.id === id) ? prev : [...prev, { id, date: selected.toISOString() }]));
-      } catch (error) {
-        setStatus('idle');
-        await logError('Journal_save', error, {}, 'warn');
-      }
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [mood, tags, note]);
-
-  const change = (setter) => (value) => {
-    dirty.current = true;
-    setter(value);
+    try {
+      const id = await saveDay(user.id, selected, { ...latest.current, notes: latest.current.note }, entryRef.current);
+      entryRef.current = id;
+      setEntryId(id);
+      dirty.current = false;
+      setStatus('saved');
+      setWeekEntries(prev => (prev.some(e => e.id === id) ? prev : [...prev, { id, date: selected.toISOString() }]));
+    } catch (error) {
+      setStatus('idle');
+      await logError('Journal_save', error, {}, 'warn');
+    }
   };
-  const toggleTag = (tag) => change(setTags)(tags.includes(tag) ? tags.filter(x => x !== tag) : [...tags, tag]);
+
+  useFocusEffect(
+    useCallback(() => () => {
+      clearTimeout(noteTimer.current);
+      saveNow();
+    }, [selected.toDateString(), user?.id])
+  );
+
+  const setMoodNow = value => {
+    dirty.current = true;
+    latest.current = { ...latest.current, mood: value };
+    setMood(value);
+    saveNow();
+  };
+  const toggleTag = (tag) => {
+    const next = tags.includes(tag) ? tags.filter(x => x !== tag) : [...tags, tag];
+    dirty.current = true;
+    latest.current = { ...latest.current, tags: next };
+    setTags(next);
+    saveNow();
+  };
+  const setNoteLater = value => {
+    dirty.current = true;
+    setNote(value);
+    clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(saveNow, 700);
+  };
 
   const isToday = sameDay(selected, today);
 
@@ -151,7 +185,7 @@ export default function JournalScreen({ route, navigation }) {
             <Pressable
               key={d.toISOString()}
               disabled={future}
-              onPress={() => setSelected(d)}
+              onPress={async () => { await saveNow(); dirty.current = false; setSelected(d); }}
               style={[styles.day, on && { backgroundColor: colors.accent }]}
             >
               <Text style={[styles.dayName, { color: on ? '#FFFFFF' : colors.textSecondary }]}>
@@ -186,7 +220,7 @@ export default function JournalScreen({ route, navigation }) {
           {MOODS.map(m => {
             const on = mood === m.value;
             return (
-              <Pressable key={m.value} onPress={() => change(setMood)(on ? null : m.value)} style={styles.mood}>
+              <Pressable key={m.value} onPress={() => setMoodNow(on ? null : m.value)} style={styles.mood}>
                 <View style={[styles.face, on && { backgroundColor: colors.primarySoft }]}>
                   <MaterialCommunityIcons name={m.icon} size={34} color={on ? colors.primary : colors.textSecondary} />
                 </View>
@@ -215,7 +249,7 @@ export default function JournalScreen({ route, navigation }) {
 
         <TextInput
           value={note}
-          onChangeText={change(setNote)}
+          onChangeText={setNoteLater}
           placeholder={t('Add a note…')}
           placeholderTextColor={colors.muted}
           multiline

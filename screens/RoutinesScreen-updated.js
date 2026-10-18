@@ -93,6 +93,7 @@ export default function RoutinesScreen({ route, navigation }) {
 
   return (
     <Screen
+      back
       right={saved ? (
         <Pressable onPress={build} hitSlop={10}>
           <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Edit')}</Text>

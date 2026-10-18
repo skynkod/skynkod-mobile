@@ -29,11 +29,18 @@ export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onS
   const palette = moodColors(colors)
   const entryId = useRef(entry?.id || null)
 
+  // The answer may have changed in the Journal: follow it.
   useEffect(() => {
     entryId.current = entry?.id || null
-  }, [entry?.id])
+    setMood(entry?.mood || null)
+    setTags(entry?.skin_conditions || [])
+  }, [entry?.id, entry?.mood, (entry?.skin_conditions || []).join('|')])
 
-  const save = async (nextMood, nextTags) => {
+  const queue = useRef(Promise.resolve())
+  const save = (nextMood, nextTags) => {
+    queue.current = queue.current.then(() => saveOnce(nextMood, nextTags))
+  }
+  const saveOnce = async (nextMood, nextTags) => {
     try {
       const id = await saveDay(userId, new Date(), { mood: nextMood, tags: nextTags, notes: entry?.notes || '' }, entryId.current)
       entryId.current = id
