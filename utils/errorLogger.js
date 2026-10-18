@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 const MAX_LOGS = 100
 
 export async function logError(source, error, context = {}) {
+  // While developing, show it in the Metro logs too.
+  if (__DEV__) console.warn(`[${source}]`, error?.message || String(error))
   try {
     const errorLog = {
       timestamp: new Date().toISOString(),

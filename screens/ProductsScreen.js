@@ -50,6 +50,7 @@ export default function ProductsScreen({ navigation }) {
       // Every product in a routine belongs on the shelf: add any that's missing.
       const have = new Set(firstLoad.map(r => r.product_id))
       const missing = ids.filter(id => !have.has(id))
+      if (__DEV__) console.log('[MyProducts] routine products:', ids.length, '| on shelf:', firstLoad.length, '| missing:', missing.length)
       let mine = firstLoad
       if (missing.length) {
         const products = await getProductsByIds(missing)
