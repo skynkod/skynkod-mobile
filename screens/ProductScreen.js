@@ -8,6 +8,8 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
 import { retailersFor, openRetailer, SHOP_LINKS_ENABLED } from '../utils/shop'
+import { getPriceStats } from '../utils/community-data'
+import { formatMAD } from '../utils/skynbudget'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -24,6 +26,11 @@ export default function ProductScreen({ navigation, route }) {
   const [showAll, setShowAll] = useState(false)
   const [adding, setAdding] = useState(false)
   const [status, setStatus] = useState(null) // null | 'owned' | 'to_buy'
+  const [prices, setPrices] = useState(null)
+  useEffect(() => {
+    if (!product?.id) return
+    getPriceStats(product.id).then(setPrices).catch(() => setPrices(null))
+  }, [product?.id])
 
   // Is it already on the user's shelf or wishlist?
   useEffect(() => {
@@ -83,6 +90,12 @@ export default function ProductScreen({ navigation, route }) {
           <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{product.brand}</Text>
           <Text style={[styles.name, { color: colors.text }]}>{product.name}</Text>
           <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4, textTransform: 'capitalize' }]}>{t(product.category)}</Text>
+          {prices ? (
+            <Text style={[TYPE.caption, { color: colors.text, marginTop: 6 }]}>
+              <Text style={{ fontWeight: '700' }}>~{formatMAD(prices.typical)}</Text>
+              <Text style={{ color: colors.textSecondary }}> {t('in Morocco')} · {t('{n} purchases', { n: prices.purchases })}{prices.top_store ? ` · ${t('often at {store}', { store: t(prices.top_store) })}` : ''}</Text>
+            </Text>
+          ) : null}
         </View>
       </View>
 

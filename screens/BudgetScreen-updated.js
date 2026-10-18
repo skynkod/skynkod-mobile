@@ -8,6 +8,7 @@ import { useT, useLanguage } from '../utils/LanguageContext';
 import { getMyProducts, addToMyProducts, searchProducts } from '../utils/catalog';
 import { getMonthPurchases, addPurchase, deletePurchase, getMonthlyBudget, setMonthlyBudget, budgetInsights, formatMAD } from '../utils/skynbudget';
 import { logError } from '../utils/errorLogger';
+import { recordPrice, requestProduct, STORES } from '../utils/community-data';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
 // Skynbudget from the mockup: this month's spending against a budget, the
@@ -29,6 +30,7 @@ export default function BudgetScreen({ navigation }) {
   const [pick, setPick] = useState(null);
   const [otherName, setOtherName] = useState('');
   const [price, setPrice] = useState('');
+  const [store, setStore] = useState(null);
   // Search the whole catalogue from the Add purchase sheet.
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -82,7 +84,10 @@ export default function BudgetScreen({ navigation }) {
     if (!pick && !otherName.trim()) return Alert.alert(t('Choose a product'), t('Pick one of your products or type a name.'));
     if (!value || value <= 0) return Alert.alert(t('Enter the price'), t('How much did you pay, in MAD?'));
     try {
-      await addPurchase(user.id, pick ? { product: pick, price: value } : { name: otherName.trim(), price: value });
+      await addPurchase(user.id, pick ? { product: pick, price: value, store } : { name: otherName.trim(), price: value, store });
+      // Feeds the shared price base, or the list of products to add to the catalogue.
+      if (pick) recordPrice({ productId: pick.id, price: value, store }).catch(e => logError('Budget_recordPrice', e, {}, 'warn'));
+      else requestProduct('name', otherName).catch(e => logError('Budget_requestProduct', e, {}, 'warn'));
       // Bought something from the To buy list: it's now owned.
       if (pick && !owned.some(p => p.id === pick.id)) await addToMyProducts(user.id, pick, 'owned').catch(() => {});
       setAddSheet(false);
@@ -90,6 +95,7 @@ export default function BudgetScreen({ navigation }) {
       setOtherName('');
       setPrice('');
       setQuery('');
+      setStore(null);
       load();
     } catch (error) {
       await logError('Budget_addPurchase', error, {}, 'warn');
@@ -266,6 +272,17 @@ export default function BudgetScreen({ navigation }) {
             <TextInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={t('Price')} placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text }]} />
             <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>MAD</Text>
           </View>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('Where did you buy it? (optional)')}</Text>
+          <View style={styles.storeRow}>
+            {STORES.map(st => {
+              const on = store === st;
+              return (
+                <Pressable key={st} onPress={() => setStore(on ? null : st)} style={[styles.storeChip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
+                  <Text style={{ fontSize: 12, color: on ? colors.primary : colors.text, fontWeight: '600' }}>{t(st)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
           <Pressable onPress={savePurchase} style={[styles.save, { backgroundColor: colors.primary }]}>
             <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{t('Add purchase')}</Text>
           </Pressable>
@@ -301,6 +318,8 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 15, height: '100%' },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.sm, marginBottom: 6 },
   resultImage: { width: 40, height: 40, borderRadius: 6, backgroundColor: '#FFFFFF' },
+  storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.sm },
+  storeChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
   pickItem: { width: 92, alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: RADIUS.md, padding: 8 },
   pickImage: { width: 44, height: 44, borderRadius: 6, backgroundColor: '#FFFFFF' },
 });

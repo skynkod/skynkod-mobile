@@ -7,6 +7,7 @@ import { useIsFocused } from '@react-navigation/native'
 import { Screen, Button, EmptyState, useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
 import { lookupBarcode } from '../utils/catalog'
+import { requestProduct } from '../utils/community-data'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // Full-screen camera that reads a product barcode and opens its page.
@@ -38,7 +39,10 @@ export default function BarcodeScannerScreen({ navigation, route }) {
       }
       return
     }
-    if (result.notFound) setUnknown({ barcode: data, brandHint: result.brandHint })
+    if (result.notFound) {
+      setUnknown({ barcode: data, brandHint: result.brandHint })
+      requestProduct('barcode', data).catch(() => {})
+    }
     setStatus(result.notFound ? 'notFound' : 'error')
   }
 

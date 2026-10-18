@@ -23,7 +23,7 @@ export const getMonthPurchases = async (userId, date = new Date()) => {
   return data || []
 }
 
-export const addPurchase = async (userId, { product, name, brand, category, price }) => {
+export const addPurchase = async (userId, { product, name, brand, category, price, store }) => {
   const { error } = await supabase.from('expenses').insert({
     user_id: userId,
     product_id: product?.id || null,
@@ -34,6 +34,7 @@ export const addPurchase = async (userId, { product, name, brand, category, pric
     price: Number(price),
     amount: Number(price),
     currency: 'MAD',
+    store: store || null,
     date: new Date().toISOString(),
   })
   if (error) throw error
