@@ -69,6 +69,12 @@ const getIngredientConcerns = (ingredient) => {
   return concerns[ingredient] || [];
 };
 
+// Every caution that applies to the product's ingredients, without duplicates.
+const getWarnings = (ingredients) => {
+  const names = ingredients.map(ing => ing?.name || ing);
+  return [...new Set(names.flatMap(getIngredientConcerns))];
+};
+
 const getGoodPairs = (ingredients) => {
   const pairs = [];
   const synergies = {
