@@ -6,6 +6,10 @@ import * as WebBrowser from 'expo-web-browser'
 //   EXPO_PUBLIC_AMAZON_TAG       Amazon Associates tag (amazon.fr)
 //   EXPO_PUBLIC_AWIN_ID          Awin publisher ID (Sephora, Lookfantastic)
 //   EXPO_PUBLIC_YESSTYLE_RCO     YesStyle affiliate code
+// Shop links stay hidden until the owner decides (no retailer partnership yet).
+// Turn on with EXPO_PUBLIC_SHOP_LINKS=true.
+export const SHOP_LINKS_ENABLED = process.env.EXPO_PUBLIC_SHOP_LINKS === 'true'
+
 const AMAZON_TAG = process.env.EXPO_PUBLIC_AMAZON_TAG
 const AWIN_ID = process.env.EXPO_PUBLIC_AWIN_ID
 const YESSTYLE_RCO = process.env.EXPO_PUBLIC_YESSTYLE_RCO

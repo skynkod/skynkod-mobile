@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
-import { retailersFor, openRetailer } from '../utils/shop'
+import { retailersFor, openRetailer, SHOP_LINKS_ENABLED } from '../utils/shop'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -243,7 +243,7 @@ export default function ProductScreen({ navigation, route }) {
         </>
       )}
       {/* Where to buy: never shown for products the user should avoid */}
-      {!match.avoid.length && !match.triggered.length ? (
+      {SHOP_LINKS_ENABLED && !match.avoid.length && !match.triggered.length ? (
         <>
           <Text style={[styles.section, { color: colors.muted }]}>{t('WHERE TO BUY')}</Text>
           <View style={styles.shops}>

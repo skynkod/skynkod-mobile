@@ -9,6 +9,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts } from '../utils/catalog'
 import { getUserRoutines } from '../utils/routines-service'
+import { SHOP_LINKS_ENABLED } from '../utils/shop'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -201,7 +202,7 @@ export default function ProductsScreen({ navigation }) {
               ) : null}
               {product ? <ProductVerdict product={product} profile={profile} /> : null}
             </View>
-            {row.status === 'to_buy' && product ? (
+            {SHOP_LINKS_ENABLED && row.status === 'to_buy' && product ? (
               <Pressable
                 onPress={() => navigation.navigate('Product', { id: product.id })}
                 style={[styles.buyPill, { backgroundColor: colors.primary }]}
