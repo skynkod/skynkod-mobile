@@ -7,7 +7,7 @@ import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
-import { MOODS, TAGS, getEntriesBetween, saveDay } from '../utils/journal-day';
+import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -35,6 +35,7 @@ export default function JournalScreen({ route, navigation }) {
   const [note, setNote] = useState('');
   const [status, setStatus] = useState('idle'); // idle | saving | saved
   const [routineLog, setRoutineLog] = useState(null);
+  const [skinPatterns, setSkinPatterns] = useState(null);
   const dirty = useRef(false);
 
   const weekStart = startOfWeek(selected);
@@ -92,7 +93,8 @@ export default function JournalScreen({ route, navigation }) {
     useCallback(() => {
       loadWeek();
       loadRoutines();
-    }, [loadWeek, loadRoutines])
+      if (user?.id) getSkinPatterns(user.id).then(setSkinPatterns).catch(error => logError('Journal_patterns', error, {}, 'warn'));
+    }, [loadWeek, loadRoutines, user?.id])
   );
 
   // Home's check-in shortcut lands on today.
@@ -250,6 +252,45 @@ export default function JournalScreen({ route, navigation }) {
         />
       </View>
 
+      {/* What your skin tells you: links that keep coming back (observations, no advice) */}
+      {skinPatterns ? (
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.overline, { color: colors.primary }]}>{t('WHAT YOUR SKIN TELLS YOU')}</Text>
+          {!skinPatterns.ready ? (
+            <>
+              <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.md }]}>
+                {t('Keep checking in: {n} of {total} days.', { n: skinPatterns.checkIns, total: skinPatterns.needed })}
+              </Text>
+              <View style={[styles.progressTrack, { backgroundColor: colors.surface }]}>
+                <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${Math.round((skinPatterns.checkIns / skinPatterns.needed) * 100)}%` }]} />
+              </View>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+                {t("Then we'll tell you what makes your skin react.")}
+              </Text>
+            </>
+          ) : skinPatterns.patterns.length ? (
+            skinPatterns.patterns.map(p => (
+              <View key={p.id} style={styles.patternRow}>
+                <View style={[styles.patternIcon, { backgroundColor: p.positive ? colors.successSoft : colors.primarySoft }]}>
+                  <Ionicons name={p.icon} size={18} color={p.positive ? colors.success : colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.body, { color: colors.text }]}>{t(p.text)}</Text>
+                  <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Noticed {n} of {total} times', { n: p.times, total: p.total })}</Text>
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+              {t('Nothing stands out yet. Keep checking in, it gets clearer over time.')}
+            </Text>
+          )}
+          {skinPatterns.ready ? (
+            <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('These are trends, not a diagnosis.')}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {/* Routines of that day */}
       {routineLog?.rows.length ? (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -286,6 +327,10 @@ const styles = StyleSheet.create({
   dayName: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   dayNum: { fontSize: 17, fontWeight: '700', marginTop: 4 },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 4 },
+  progressTrack: { height: 6, borderRadius: 3, marginTop: SPACING.md, overflow: 'hidden' },
+  progressFill: { height: 6, borderRadius: 3 },
+  patternRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
+  patternIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },

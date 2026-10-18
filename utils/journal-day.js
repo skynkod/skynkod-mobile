@@ -1,3 +1,4 @@
+import { findPatterns } from './skin-patterns'
 import { supabase } from './supabase'
 
 // The Journal keeps one entry per day. Mood and "what's going on" tags are
@@ -92,4 +93,25 @@ export const situationFromCheckIn = (entry) => {
   if (has('New pimple') && bad) return { id: 'breakout', text: 'Breakouts are bothering you today' }
   if (has('Dryness') && bad) return { id: 'barrier', text: 'Your skin feels dry and uncomfortable' }
   return null
+}
+
+// "What your skin tells you": the last 90 days of check-ins, product openings
+// and routine days, read by findPatterns (utils/skin-patterns.js).
+export const getSkinPatterns = async (userId) => {
+  const since = new Date(Date.now() - 90 * 86400000)
+  const [entries, opened, routineDays, routines] = await Promise.all([
+    supabase.from('journal_entries').select('date, mood, skin_conditions').eq('user_id', userId).gte('date', since.toISOString()),
+    supabase.from('user_products').select('opened_at').eq('user_id', userId).gte('opened_at', since.toISOString()),
+    supabase.from('routine_completions').select('date').eq('user_id', userId).gte('date', since.toISOString().slice(0, 10)),
+    supabase.from('routines').select('id').eq('user_id', userId).limit(1),
+  ])
+  for (const r of [entries, opened, routineDays, routines]) if (r.error) throw r.error
+  // routine_completions.date is a plain day: read it as local noon.
+  const routineDates = (routineDays.data || []).map(r => new Date(`${r.date}T12:00:00`))
+  return findPatterns({
+    entries: entries.data || [],
+    openedDates: (opened.data || []).map(r => r.opened_at),
+    routineDates,
+    hasRoutine: (routines.data || []).length > 0,
+  })
 }
