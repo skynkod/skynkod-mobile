@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { addJournalEntry, getJournalEntries, deleteJournalEntry } from '../utils/journal-service';
 import { useAuth } from '../utils/AuthContext';
+import { useLanguage } from '../utils/LanguageContext';
 import { Screen, Card, Button, Input, Stepper, BottomSheet, EmptyState, LoadingView, Banner, SectionHeader, IconButton, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -21,18 +22,19 @@ const EMPTY_ENTRY = {
   overallSatisfaction: 5,
 };
 
-const formatDay = (iso) => {
+const formatDay = (iso, t, language) => {
   const d = new Date(iso);
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  if (d.toDateString() === today.toDateString()) return t('Today');
+  if (d.toDateString() === yesterday.toDateString()) return t('Yesterday');
+  return d.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' });
 };
 
 export default function JournalScreen({ route }) {
   const colors = useColors();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -51,7 +53,7 @@ export default function JournalScreen({ route }) {
       setEntries(result.data || []);
       setError(null);
     } else {
-      setError(result.error || 'Could not load your journal');
+      setError(result.error || t('Could not load your journal'));
     }
     setLoading(false);
   }, [user?.id]);
@@ -80,46 +82,46 @@ export default function JournalScreen({ route }) {
       setShowModal(false);
       await loadEntries();
     } else {
-      Alert.alert('Could not save', result.error || 'Please try again.');
+      Alert.alert(t('Could not save'), result.error || t('Please try again.'));
     }
   };
 
   const handleDelete = (entry) => {
-    Alert.alert('Delete entry?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('Delete entry?'), t('This cannot be undone.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('Delete'),
         style: 'destructive',
         onPress: async () => {
           const result = await deleteJournalEntry(entry.id);
           if (result.success) loadEntries();
-          else Alert.alert('Could not delete', result.error || 'Please try again.');
+          else Alert.alert(t('Could not delete'), result.error || t('Please try again.'));
         },
       },
     ]);
   };
 
-  if (loading) return <LoadingView label="Loading your journal…" />;
+  if (loading) return <LoadingView label={t('Loading your journal…')} />;
 
   return (
     <Screen
-      title="Journal"
-      subtitle="How is your skin feeling?"
+      title={t('Journal')}
+      subtitle={t('How is your skin feeling?')}
       right={<IconButton icon="add" tone="primary" onPress={() => setShowModal(true)} accessibilityLabel="New entry" />}
     >
-      {error ? <Banner message={error} actionLabel="Retry" onAction={loadEntries} /> : null}
+      {error ? <Banner message={error} actionLabel={t('Retry')} onAction={loadEntries} /> : null}
 
       {entries.length === 0 ? (
         <EmptyState
           icon="book-outline"
-          title="No entries yet"
-          description="A quick daily check-in is the best way to understand what your skin needs."
-          action="Write your first entry"
+          title={t('No entries yet')}
+          description={t('A quick daily check-in is the best way to understand what your skin needs.')}
+          action={t('Write your first entry')}
           onAction={() => setShowModal(true)}
         />
       ) : (
         <>
-          <SectionHeader title={`${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} · last 30 days`} />
+          <SectionHeader title={t(entries.length === 1 ? '1 entry · last 30 days' : '{count} entries · last 30 days', { count: entries.length })} />
           {entries.map(entry => (
             <Card key={entry.id} style={styles.entryCard} onPress={() => handleDelete(entry)}>
               <View style={styles.entryHeader}>
@@ -127,9 +129,9 @@ export default function JournalScreen({ route }) {
                   <Text style={{ fontSize: 22 }}>{entry.mood || '🙂'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{formatDay(entry.date)}</Text>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{formatDay(entry.date, t, language)}</Text>
                   <Text style={[TYPE.caption, { color: colors.muted }]}>
-                    {new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(entry.date).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
                 <Ionicons name="ellipsis-horizontal" size={18} color={colors.muted} />
@@ -144,7 +146,7 @@ export default function JournalScreen({ route }) {
                 ].map(m => (
                   <View key={m.label} style={[styles.metric, { backgroundColor: colors.surface }]}>
                     <Text style={[TYPE.subheading, { color: colors.primary }]}>{m.value ?? '–'}</Text>
-                    <Text style={[TYPE.caption, { color: colors.muted, fontSize: 11 }]}>{m.label}</Text>
+                    <Text style={[TYPE.caption, { color: colors.muted, fontSize: 11 }]}>{t(m.label)}</Text>
                   </View>
                 ))}
               </View>
@@ -155,14 +157,14 @@ export default function JournalScreen({ route }) {
             </Card>
           ))}
           <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>
-            Tap an entry to delete it
+            {t('Tap an entry to delete it')}
           </Text>
         </>
       )}
 
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <BottomSheet title="Today's check-in" onClose={() => setShowModal(false)}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginBottom: SPACING.md }]}>Overall mood</Text>
+        <BottomSheet title={t("Today's check-in")} onClose={() => setShowModal(false)}>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, marginBottom: SPACING.md }]}>{t('Overall mood')}</Text>
           <View style={styles.moods}>
             {MOODS.map(mood => {
               const active = newEntry.mood === mood;
@@ -181,20 +183,20 @@ export default function JournalScreen({ route }) {
             })}
           </View>
 
-          <Stepper label="Hydration" hint="0 = very dry · 10 = plump" value={newEntry.hydrationLevel} onChange={v => update({ hydrationLevel: v })} />
-          <Stepper label="Barrier health" hint="0 = stinging · 10 = resilient" value={newEntry.barrierHealth} onChange={v => update({ barrierHealth: v })} />
-          <Stepper label="Acne" hint="0 = none · 10 = severe" value={newEntry.acneLevel} onChange={v => update({ acneLevel: v })} />
-          <Stepper label="Redness" hint="0 = none · 10 = severe" value={newEntry.rednessLevel} onChange={v => update({ rednessLevel: v })} />
+          <Stepper label={t('Hydration')} hint={t('0 = very dry · 10 = plump')} value={newEntry.hydrationLevel} onChange={v => update({ hydrationLevel: v })} />
+          <Stepper label={t('Barrier health')} hint={t('0 = stinging · 10 = resilient')} value={newEntry.barrierHealth} onChange={v => update({ barrierHealth: v })} />
+          <Stepper label={t('Acne')} hint={t('0 = none · 10 = severe')} value={newEntry.acneLevel} onChange={v => update({ acneLevel: v })} />
+          <Stepper label={t('Redness')} hint={t('0 = none · 10 = severe')} value={newEntry.rednessLevel} onChange={v => update({ rednessLevel: v })} />
 
           <Input
-            label="Notes"
-            placeholder="New product, stress, sleep, weather…"
+            label={t('Notes')}
+            placeholder={t('New product, stress, sleep, weather…')}
             value={newEntry.notes}
             onChangeText={notes => update({ notes })}
             multiline
           />
 
-          <Button title="Save entry" onPress={handleSaveEntry} loading={saving} style={{ marginBottom: SPACING.xl }} />
+          <Button title={t('Save entry')} onPress={handleSaveEntry} loading={saving} style={{ marginBottom: SPACING.xl }} />
         </BottomSheet>
       </Modal>
     </Screen>

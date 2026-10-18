@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar'
 import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
-import { LanguageProvider, useLanguage } from './utils/LanguageContext'
+import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
 import { signOut } from './utils/supabase'
 import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
@@ -38,6 +38,7 @@ const TABS = [
 
 function AppTabs({ userId }) {
   const { colors } = useTheme()
+  const t = useT()
 
   return (
     <Tab.Navigator
@@ -63,7 +64,7 @@ function AppTabs({ userId }) {
           component={tab.component}
           initialParams={{ userId }}
           options={{
-            tabBarLabel: tab.label,
+            tabBarLabel: t(tab.label),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
             ),

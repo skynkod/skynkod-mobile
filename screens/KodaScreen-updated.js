@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { askKoda, generateKodaIntroduction } from '../utils/koda-ai';
+import { useLanguage } from '../utils/LanguageContext';
 import { saveChatMessage, getChatHistory } from '../utils/chat-service';
 import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
@@ -14,12 +15,13 @@ const SUGGESTIONS = [
   'Which SPF for oily skin?',
 ];
 
-const intro = () => ({ role: 'assistant', content: generateKodaIntroduction(), timestamp: new Date().toISOString() });
+const intro = (t) => ({ role: 'assistant', content: t(generateKodaIntroduction()), timestamp: new Date().toISOString() });
 
 export default function KodaScreen() {
   const colors = useColors();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
-  const [messages, setMessages] = useState([intro()]);
+  const [messages, setMessages] = useState([intro(t)]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function KodaScreen() {
       }
       const result = await getChatHistory(user.id, 50);
       if (active && result.success && result.data?.length > 0) {
-        setMessages([intro(), ...result.data]);
+        setMessages([intro(t), ...result.data]);
       }
       if (active) setInitialLoading(false);
     };
@@ -60,12 +62,12 @@ export default function KodaScreen() {
 
     let reply;
     try {
-      const response = await askKoda(content, history);
+      const response = await askKoda(content, history, language);
       reply = response.error
-        ? { role: 'assistant', content: response.message || 'Sorry, something went wrong.', timestamp: new Date().toISOString(), error: true }
+        ? { role: 'assistant', content: t(response.message) || t('Sorry, something went wrong.'), timestamp: new Date().toISOString(), error: true }
         : response;
     } catch (error) {
-      reply = { role: 'assistant', content: 'Oops! Connection issue. Please try again.', timestamp: new Date().toISOString(), error: true };
+      reply = { role: 'assistant', content: t('Oops! Connection issue. Please try again.'), timestamp: new Date().toISOString(), error: true };
     }
 
     setMessages(prev => [...prev, reply]);
@@ -75,7 +77,7 @@ export default function KodaScreen() {
     scrollToBottom();
   };
 
-  if (initialLoading) return <LoadingView label="Loading your chat…" />;
+  if (initialLoading) return <LoadingView label={t('Loading your chat…')} />;
 
   const showSuggestions = messages.length <= 1 && !loading;
 
@@ -105,7 +107,7 @@ export default function KodaScreen() {
   const canSend = inputText.trim().length > 0 && !loading;
 
   return (
-    <Screen scroll={false} keyboard title="Koda" subtitle="Your AI skin coach" contentStyle={{ paddingHorizontal: 0 }}>
+    <Screen scroll={false} keyboard title="Koda" subtitle={t('Your AI skin coach')} contentStyle={{ paddingHorizontal: 0 }}>
       <FlatList
         ref={listRef}
         data={messages}
@@ -128,7 +130,7 @@ export default function KodaScreen() {
             {showSuggestions ? (
               <View style={styles.suggestions}>
                 {SUGGESTIONS.map(s => (
-                  <Chip key={s} label={s} onPress={() => send(s)} />
+                  <Chip key={s} label={t(s)} onPress={() => send(t(s))} />
                 ))}
               </View>
             ) : null}
@@ -139,7 +141,7 @@ export default function KodaScreen() {
       <View style={[styles.composer, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
         <TextInput
           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-          placeholder="Ask Koda anything…"
+          placeholder={t('Ask Koda anything…')}
           placeholderTextColor={colors.muted}
           value={inputText}
           onChangeText={setInputText}
@@ -150,7 +152,7 @@ export default function KodaScreen() {
           onPress={() => send()}
           disabled={!canSend}
           accessibilityRole="button"
-          accessibilityLabel="Send"
+          accessibilityLabel={t('Send')}
           style={[styles.send, { backgroundColor: colors.primary, opacity: canSend ? 1 : 0.4 }]}
         >
           <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />

@@ -4,7 +4,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 // Koda runs through our backend, which holds the model key and checks the
 // Supabase session. Only { role, content } is sent; the server cleans the rest.
-export const askKoda = async (userMessage, conversationHistory = []) => {
+export const askKoda = async (userMessage, conversationHistory = [], language = 'en') => {
   if (!API_URL) {
     return {
       error: 'missing_api_url',
@@ -28,7 +28,7 @@ export const askKoda = async (userMessage, conversationHistory = []) => {
         'content-type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, language }),
     });
 
     const data = await response.json().catch(() => ({}));
@@ -40,7 +40,7 @@ export const askKoda = async (userMessage, conversationHistory = []) => {
     if (data.error === 'daily_limit') {
       return {
         error: 'daily_limit',
-        message: `You've used your ${data.limit || ''} Koda questions for today. Come back tomorrow! 🌙`.replace('  ', ' '),
+        message: "You've used your Koda questions for today. Come back tomorrow! 🌙",
       };
     }
 

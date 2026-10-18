@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { useColors } from '../components/ui'
+import { useT } from '../utils/LanguageContext'
 import { SPACING, TYPE } from '../utils/theme'
 
 const LOGO_WHITE = require('../assets/images/skynkod-logo-white.png')
@@ -46,6 +47,7 @@ const QUESTION_STEPS = ['skinType', 'concerns', 'goal', 'summary']
 // transitions. The first page picks up the splash screen's mauve.
 export default function OnboardingScreen({ userId, onComplete }) {
   const colors = useColors()
+  const t = useT()
   const insets = useSafeAreaInsets()
   const [step, setStep] = useState(0)
   const [skinType, setSkinType] = useState(undefined)
@@ -163,52 +165,52 @@ export default function OnboardingScreen({ userId, onComplete }) {
         <View style={styles.topBar}>
           <View />
           <Pressable onPress={() => finish(false)} hitSlop={12}>
-            <Text style={[TYPE.bodyStrong, { color: '#FFFFFF' }]}>Skip</Text>
+            <Text style={[TYPE.bodyStrong, { color: '#FFFFFF' }]}>{t('Skip')}</Text>
           </Pressable>
         </View>
         <Animated.View style={[styles.welcomeBody, { opacity: enter }]}>
           <Image source={LOGO_WHITE} resizeMode="contain" style={{ width: 220, height: 220 / LOGO_RATIO }} />
-          <Text style={styles.welcomeTitle}>Good skin starts{'\n'}with knowing yours.</Text>
-          <Text style={styles.welcomeText}>A few quick questions, then we set everything up for you.</Text>
+          <Text style={styles.welcomeTitle}>{t('Good skin starts\nwith knowing yours.')}</Text>
+          <Text style={styles.welcomeText}>{t('A few quick questions, then we set everything up for you.')}</Text>
         </Animated.View>
         <View style={styles.footer}>
-          <Pill title="Let's start" variant="light" onPress={next} />
+          <Pill title={t("Let's start")} variant="light" onPress={next} />
         </View>
       </View>
     )
   }
 
   const isQuestion = QUESTION_STEPS.includes(name)
-  const typeLabel = SKIN_TYPES.find(t => t.value === skinType)?.label
-  const goalLabel = GOALS.find(g => g.value === goal)?.label
+  const typeLabel = t(SKIN_TYPES.find(type => type.value === skinType)?.label)
+  const goalLabel = t(GOALS.find(g => g.value === goal)?.label)
 
   let content
   let footer = null
   if (name === 'features') {
     content = (
       <>
-        <Text style={[styles.headline, { color: colors.text }]}>Everything your skin needs, in one place.</Text>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('Everything your skin needs, in one place.')}</Text>
         <View style={{ marginTop: SPACING.xxxl, gap: SPACING.xxl }}>
           {FEATURES.map((f, i) => (
             <View key={f.title} style={styles.feature}>
               <Text style={[styles.featureNumber, { color: BRAND_MAUVE }]}>{String(i + 1).padStart(2, '0')}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>{f.title}</Text>
-                <Text style={[TYPE.body, { color: colors.muted, marginTop: 4 }]}>{f.text}</Text>
+                <Text style={[styles.featureTitle, { color: colors.text }]}>{t(f.title)}</Text>
+                <Text style={[TYPE.body, { color: colors.muted, marginTop: 4 }]}>{t(f.text)}</Text>
               </View>
             </View>
           ))}
         </View>
       </>
     )
-    footer = <Pill title="Continue" onPress={next} />
+    footer = <Pill title={t('Continue')} onPress={next} />
   } else if (name === 'skinType') {
     content = (
       <>
-        <Text style={[styles.headline, { color: colors.text }]}>How would you describe your skin?</Text>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('How would you describe your skin?')}</Text>
         <View style={styles.choices}>
-          {SKIN_TYPES.map(t => (
-            <Choice key={t.label} label={t.label} hint={t.hint} selected={skinType === t.value} onPress={() => pickAndContinue(setSkinType, t.value)} />
+          {SKIN_TYPES.map(type => (
+            <Choice key={type.label} label={t(type.label)} hint={t(type.hint)} selected={skinType === type.value} onPress={() => pickAndContinue(setSkinType, type.value)} />
           ))}
         </View>
       </>
@@ -216,8 +218,8 @@ export default function OnboardingScreen({ userId, onComplete }) {
   } else if (name === 'concerns') {
     content = (
       <>
-        <Text style={[styles.headline, { color: colors.text }]}>What would you like to work on?</Text>
-        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>Pick as many as you like.</Text>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('What would you like to work on?')}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Pick as many as you like.')}</Text>
         <View style={styles.tags}>
           {CONCERNS.map(c => {
             const selected = concerns.includes(c)
@@ -227,21 +229,21 @@ export default function OnboardingScreen({ userId, onComplete }) {
                 onPress={() => toggleConcern(c)}
                 style={[styles.tag, { backgroundColor: selected ? colors.text : colors.card, borderColor: selected ? colors.text : colors.border }]}
               >
-                <Text style={[styles.tagText, { color: selected ? colors.bg : colors.text }]}>{c}</Text>
+                <Text style={[styles.tagText, { color: selected ? colors.bg : colors.text }]}>{t(c)}</Text>
               </Pressable>
             )
           })}
         </View>
       </>
     )
-    footer = <Pill title="Continue" onPress={next} disabled={concerns.length === 0} />
+    footer = <Pill title={t('Continue')} onPress={next} disabled={concerns.length === 0} />
   } else if (name === 'goal') {
     content = (
       <>
-        <Text style={[styles.headline, { color: colors.text }]}>And your main goal?</Text>
+        <Text style={[styles.headline, { color: colors.text }]}>{t('And your main goal?')}</Text>
         <View style={styles.choices}>
           {GOALS.map(g => (
-            <Choice key={g.value} label={g.label} selected={goal === g.value} onPress={() => pickAndContinue(setGoal, g.value)} />
+            <Choice key={g.value} label={t(g.label)} selected={goal === g.value} onPress={() => pickAndContinue(setGoal, g.value)} />
           ))}
         </View>
       </>
@@ -249,33 +251,33 @@ export default function OnboardingScreen({ userId, onComplete }) {
   } else {
     content = (
       <>
-        <Text style={[TYPE.overline, { color: colors.muted }]}>Your skin profile</Text>
-        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.sm }]}>Nice to meet your skin.</Text>
+        <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Your skin profile')}</Text>
+        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.sm }]}>{t('Nice to meet your skin.')}</Text>
         <View style={[styles.summary, { backgroundColor: BRAND_MAUVE }]}>
-          <Text style={styles.summaryLabel}>Skin type</Text>
-          <Text style={styles.summaryValue}>{typeLabel && skinType ? typeLabel : 'To discover'}</Text>
-          <Text style={styles.summaryLabel}>Working on</Text>
-          <Text style={styles.summaryValue}>{concerns.join(' · ')}</Text>
-          <Text style={styles.summaryLabel}>Goal</Text>
+          <Text style={styles.summaryLabel}>{t('Skin type')}</Text>
+          <Text style={styles.summaryValue}>{typeLabel && skinType ? typeLabel : t('To discover')}</Text>
+          <Text style={styles.summaryLabel}>{t('Working on')}</Text>
+          <Text style={styles.summaryValue}>{concerns.map(c => t(c)).join(' · ')}</Text>
+          <Text style={styles.summaryLabel}>{t('Goal')}</Text>
           <Text style={[styles.summaryValue, { marginBottom: 0 }]}>{goalLabel}</Text>
         </View>
         <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.xl }]}>
-          Your routines are ready, and Koda knows where to start.
+          {t('Your routines are ready, and Koda knows where to start.')}
         </Text>
       </>
     )
-    footer = <Pill title="Get started" onPress={() => finish(true)} loading={saving} />
+    footer = <Pill title={t('Get started')} onPress={() => finish(true)} loading={saving} />
   }
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
       <View style={styles.topBar}>
-        <Pressable onPress={back} hitSlop={12} accessibilityLabel="Back">
+        <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('Back')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         {name !== 'summary' ? (
           <Pressable onPress={() => finish(false)} hitSlop={12}>
-            <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>Skip</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip')}</Text>
           </Pressable>
         ) : <View />}
       </View>

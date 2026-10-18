@@ -6,6 +6,7 @@ import { scoresFromJournal } from '../utils/skin-score-calculator';
 import { getKodaSuggestion } from '../utils/koda-ai';
 import { getJournalEntries } from '../utils/journal-service';
 import { useAuth } from '../utils/AuthContext';
+import { useLanguage } from '../utils/LanguageContext';
 import { Screen, Card, SectionHeader, ProgressBar, IconCircle, IconButton, Button, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -31,6 +32,7 @@ const greeting = () => {
 
 export default function HomeScreen({ navigation }) {
   const colors = useColors();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,9 +64,9 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <Screen
-      overline={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
-      title={`${greeting()}${firstName ? `,\n${firstName}` : ''}`}
-      right={<IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings" />}
+      overline={new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+      title={`${t(greeting())}${firstName ? `,\n${firstName}` : ''}`}
+      right={<IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} accessibilityLabel={t('Settings')} />}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       {/* Skin score */}
@@ -73,27 +75,27 @@ export default function HomeScreen({ navigation }) {
           <>
             <View style={styles.heroTop}>
               <View>
-                <Text style={[TYPE.overline, { color: colors.onPrimary, opacity: 0.8 }]}>Skin score</Text>
+                <Text style={[TYPE.overline, { color: colors.onPrimary, opacity: 0.8 }]}>{t('Skin score')}</Text>
                 <Text style={[styles.heroScore, { color: colors.onPrimary }]}>{scores.overall}</Text>
               </View>
               <View style={[styles.trendPill, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
                 <Ionicons name={trend.icon} size={14} color={colors.onPrimary} />
-                <Text style={[TYPE.caption, { color: colors.onPrimary, fontWeight: '700' }]}>{trend.label}</Text>
+                <Text style={[TYPE.caption, { color: colors.onPrimary, fontWeight: '700' }]}>{t(trend.label)}</Text>
               </View>
             </View>
             <View style={[styles.heroBar, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
               <View style={[styles.heroBarFill, { width: `${scores.overall}%`, backgroundColor: colors.onPrimary }]} />
             </View>
             <Text style={[TYPE.caption, { color: colors.onPrimary, opacity: 0.85, marginTop: SPACING.sm }]}>
-              Based on {scores.entries} journal {scores.entries === 1 ? 'entry' : 'entries'} in the last 30 days
+              {t(scores.entries === 1 ? 'Based on 1 journal entry in the last 30 days' : 'Based on {count} journal entries in the last 30 days', { count: scores.entries })}
             </Text>
           </>
         ) : (
           <>
-            <Text style={[TYPE.overline, { color: colors.onPrimary, opacity: 0.8 }]}>Skin score</Text>
-            <Text style={[TYPE.heading, { color: colors.onPrimary, marginTop: SPACING.sm }]}>Log your first entry to unlock your score</Text>
+            <Text style={[TYPE.overline, { color: colors.onPrimary, opacity: 0.8 }]}>{t('Skin score')}</Text>
+            <Text style={[TYPE.heading, { color: colors.onPrimary, marginTop: SPACING.sm }]}>{t('Log your first entry to unlock your score')}</Text>
             <Button
-              title="Write today's entry"
+              title={t("Write today's entry")}
               icon="create-outline"
               onPress={() => navigation.navigate('Journal', { openNew: Date.now() })}
               style={{ marginTop: SPACING.lg, backgroundColor: colors.card, borderColor: colors.card }}
@@ -104,12 +106,12 @@ export default function HomeScreen({ navigation }) {
       </Card>
 
       {/* Today */}
-      <SectionHeader title="Today" />
+      <SectionHeader title={t('Today')} />
       <View style={styles.todayRow}>
         <Card style={styles.todayCard} onPress={() => navigation.navigate('Routines', { tab: isEvening ? 'evening' : 'morning' })}>
           <IconCircle name={isEvening ? 'moon-outline' : 'sunny-outline'} />
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{isEvening ? 'Evening' : 'Morning'} routine</Text>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>Tap to start</Text>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{isEvening ? t('Evening routine') : t('Morning routine')}</Text>
+          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Tap to start')}</Text>
         </Card>
         <Card style={styles.todayCard} onPress={() => navigation.navigate('Journal', { openNew: Date.now() })}>
           <IconCircle
@@ -117,9 +119,9 @@ export default function HomeScreen({ navigation }) {
             color={loggedToday ? colors.success : colors.primary}
             background={loggedToday ? colors.successSoft : colors.primarySoft}
           />
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>Skin check-in</Text>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{t('Skin check-in')}</Text>
           <Text style={[TYPE.caption, { color: loggedToday ? colors.success : colors.muted, marginTop: 2 }]}>
-            {loggedToday ? 'Done for today' : 'Not logged yet'}
+            {loggedToday ? t('Done for today') : t('Not logged yet')}
           </Text>
         </Card>
       </View>
@@ -127,13 +129,13 @@ export default function HomeScreen({ navigation }) {
       {/* Metrics */}
       {scores ? (
         <>
-          <SectionHeader title="Your skin" action="Analysis" onAction={() => navigation.navigate('Analysis')} style={{ marginTop: SPACING.xl }} />
+          <SectionHeader title={t('Your skin')} action={t('Analysis')} onAction={() => navigation.navigate('Analysis')} style={{ marginTop: SPACING.xl }} />
           <Card>
             {METRICS.map((m, idx) => (
               <View key={m.key} style={[styles.metric, idx === METRICS.length - 1 && { marginBottom: 0 }]}>
                 <View style={styles.metricHead}>
                   <Ionicons name={m.icon} size={16} color={colors.textSecondary} />
-                  <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{m.label}</Text>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(m.label)}</Text>
                   <Text style={[TYPE.bodyStrong, { color: scoreColor(scores[m.key]) }]}>{scores[m.key]}</Text>
                 </View>
                 <ProgressBar value={scores[m.key] / 100} color={scoreColor(scores[m.key])} height={6} />
@@ -144,19 +146,19 @@ export default function HomeScreen({ navigation }) {
       ) : null}
 
       {/* Koda */}
-      <SectionHeader title="Koda's tip" style={{ marginTop: SPACING.xl }} />
+      <SectionHeader title={t("Koda's tip")} style={{ marginTop: SPACING.xl }} />
       <Card tone="soft" onPress={() => navigation.navigate('Koda')}>
         <View style={{ flexDirection: 'row', gap: SPACING.md }}>
           <IconCircle name="sparkles" background={colors.card} />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.body, { color: colors.text }]}>{getKodaSuggestion().replace('💡 ', '')}</Text>
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', marginTop: SPACING.sm }]}>Ask Koda →</Text>
+            <Text style={[TYPE.body, { color: colors.text }]}>{t(getKodaSuggestion().replace('💡 ', ''))}</Text>
+            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', marginTop: SPACING.sm }]}>{t('Ask Koda →')}</Text>
           </View>
         </View>
       </Card>
 
       {/* Shortcuts */}
-      <SectionHeader title="Shortcuts" style={{ marginTop: SPACING.xl }} />
+      <SectionHeader title={t('Shortcuts')} style={{ marginTop: SPACING.xl }} />
       <View style={styles.shortcuts}>
         {[
           { label: 'Photos', icon: 'camera-outline', to: 'Photos' },
@@ -166,16 +168,16 @@ export default function HomeScreen({ navigation }) {
         ].map(s => (
           <Card key={s.to} style={styles.shortcut} onPress={() => navigation.navigate(s.to)}>
             <Ionicons name={s.icon} size={22} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600', marginTop: 6 }]}>{s.label}</Text>
+            <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600', marginTop: 6 }]}>{t(s.label)}</Text>
           </Card>
         ))}
       </View>
 
       {scores?.trend === 'worsening' ? (
         <View style={{ marginTop: SPACING.lg }}>
-          <Badge label="Tip" tone="warning" />
+          <Badge label={t('Tip')} tone="warning" />
           <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6 }]}>
-            Your skin looks more reactive this week. Emergency mode can help you build a gentle 7-day plan.
+            {t('Your skin looks more reactive this week. Emergency mode can help you build a gentle 7-day plan.')}
           </Text>
         </View>
       ) : null}

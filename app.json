@@ -23,7 +23,8 @@
           "backgroundColor": "#C5A8BB"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-localization"
     ],
     "android": {
       "package": "com.anonymous.skynkod",
