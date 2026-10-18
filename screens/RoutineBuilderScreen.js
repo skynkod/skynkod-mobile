@@ -8,9 +8,9 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productMatch } from '../utils/ingredients-guide'
-import { addToMyProducts } from '../utils/catalog'
+import { addToMyProducts, getProductsByIds } from '../utils/catalog'
 import { saveRoutine } from '../utils/routines-service'
-import { STEP_TYPES, ESSENTIALS, OPTIONAL, sortSteps } from '../utils/routine-steps'
+import { STEP_TYPES, STEP_ORDER, ESSENTIALS } from '../utils/routine-steps'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -26,24 +26,46 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const essentials = ESSENTIALS[period]
 
   const [index, setIndex] = useState(0) // essential step shown; essentials.length = summary
-  const [steps, setSteps] = useState(essentials) // step keys in the routine
-  const [picks, setPicks] = useState({}) // stepKey → product
+  // Each slot is one product in the routine; a step type can have any number.
+  // The essential slots use their step key as id so the wizard can find them.
+  const startSlots = p => ESSENTIALS[p].map(key => ({ uid: key, key, product: null }))
+  const [slots, setSlots] = useState(() => startSlots(period))
   const [saving, setSaving] = useState(false)
   const enter = useRef(new Animated.Value(1)).current
 
-  // Fresh start each time the builder is opened from somewhere.
+  // Fresh start each time the builder is opened; "Edit" reopens the saved
+  // routine straight on the summary.
   useEffect(() => {
-    setIndex(0)
-    setSteps(ESSENTIALS[period])
-    setPicks({})
+    const saved = route?.params?.editSteps
+    if (!saved?.length) {
+      setIndex(0)
+      setSlots(startSlots(period))
+      return
+    }
+    setIndex(ESSENTIALS[period].length)
+    getProductsByIds(saved.map(s => s.product_id).filter(Boolean))
+      .then(products => {
+        const byId = Object.fromEntries(products.map(p => [p.id, p]))
+        setSlots(saved.map((s, i) => ({ uid: `${s.key || 'step'}-saved-${i}`, key: STEP_TYPES[s.key] ? s.key : 'serum', product: byId[s.product_id] || null })))
+      })
+      .catch(error => logError('RoutineBuilder_loadSaved', error, { period }, 'warn'))
   }, [route?.params?.startedAt])
 
   // A product chosen in the picker comes back here.
   useEffect(() => {
     const picked = route?.params?.picked
-    if (!picked?.stepKey || !picked?.product) return
-    setPicks(prev => ({ ...prev, [picked.stepKey]: picked.product }))
-    setSteps(prev => (prev.includes(picked.stepKey) ? prev : sortSteps([...prev, picked.stepKey])))
+    if (!picked?.uid || !picked?.product) return
+    setSlots(prev => {
+      if (prev.some(slot => slot.uid === picked.uid)) {
+        return prev.map(slot => (slot.uid === picked.uid ? { ...slot, product: picked.product } : slot))
+      }
+      // New slot goes after the others of its kind, in routine order.
+      const next = [...prev, { uid: picked.uid, key: picked.stepKey, product: picked.product }]
+      return next
+        .map((slot, i) => ({ slot, i }))
+        .sort((a, b) => STEP_ORDER.indexOf(a.slot.key) - STEP_ORDER.indexOf(b.slot.key) || a.i - b.i)
+        .map(({ slot }) => slot)
+    })
     navigation.setParams({ picked: undefined })
   }, [route?.params?.picked])
 
@@ -57,8 +79,12 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const leave = () => navigation.navigate({ name: 'Routines', params: { tab: period }, merge: true })
   const stepKey = essentials[index]
   const step = STEP_TYPES[stepKey]
+  const currentSlot = slots.find(slot => slot.uid === stepKey)
 
-  const pick = key => navigation.navigate('ProductPicker', { stepKey: key, period })
+  const pick = (key, uid = key) => navigation.navigate('ProductPicker', { stepKey: key, uid, period })
+  const addStep = key => pick(key, `${key}-${Date.now()}`)
+  const removeSlot = uid => setSlots(prev => prev.filter(slot => slot.uid !== uid))
+  const addable = STEP_ORDER.filter(key => period === 'morning' || key !== 'sunscreen')
   const askKoda = key =>
     navigation.navigate('Koda', {
       returnTo: 'RoutineBuilder',
@@ -69,23 +95,23 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     })
 
   const save = async () => {
-    const chosen = steps.filter(k => picks[k])
+    const chosen = slots.filter(slot => slot.product)
     if (!chosen.length) {
       Alert.alert(t('Add at least one product'), t('Pick a product for one of the steps first.'))
       return
     }
     setSaving(true)
     try {
-      const routineSteps = chosen.map(k => ({
-        key: k,
-        action: STEP_TYPES[k].label,
-        product: `${picks[k].brand} ${picks[k].name}`.trim(),
-        product_id: picks[k].id,
-        image_url: picks[k].image_url || null,
+      const routineSteps = chosen.map(({ key, product }) => ({
+        key,
+        action: STEP_TYPES[key].label,
+        product: `${product.brand} ${product.name}`.trim(),
+        product_id: product.id,
+        image_url: product.image_url || null,
       }))
       const result = await saveRoutine(user.id, period, routineSteps)
       if (!result.success) throw new Error(result.error)
-      await Promise.all(chosen.map(k => addToMyProducts(user.id, picks[k]).catch(() => {})))
+      await Promise.all(chosen.map(({ product }) => addToMyProducts(user.id, product).catch(() => {})))
       navigation.navigate('Routines', { tab: period, savedAt: Date.now() })
     } catch (error) {
       await logError('RoutineBuilder_save', error, { period }, 'warn')
@@ -95,7 +121,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     }
   }
 
-  const ProductCard = ({ product, onChange }) => {
+  const ProductCard = ({ product, onChange, onRemove }) => {
     const match = productMatch(product, profile)
     return (
       <View style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -111,11 +137,18 @@ export default function RoutineBuilderScreen({ navigation, route }) {
           <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           <View style={{ marginTop: 4 }}><MatchBadge tone={match.tone} label={`${match.score}% · ${t(match.label)}`} /></View>
         </View>
-        {onChange ? (
-          <Pressable onPress={onChange} hitSlop={10}>
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Change')}</Text>
-          </Pressable>
-        ) : null}
+        <View style={{ alignItems: 'flex-end', gap: SPACING.md }}>
+          {onRemove ? (
+            <Pressable onPress={onRemove} hitSlop={10} accessibilityLabel={t('Remove')}>
+              <Ionicons name="close" size={18} color={colors.muted} />
+            </Pressable>
+          ) : null}
+          {onChange ? (
+            <Pressable onPress={onChange} hitSlop={10}>
+              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Change')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     )
   }
@@ -139,13 +172,12 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   )
 
   const progress = Math.min(1, index / essentials.length)
-  const addable = OPTIONAL[period].filter(k => !steps.includes(k))
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => (index > 0 ? setIndex(index - 1) : leave())}
+          onPress={() => (index > 0 && !route?.params?.editSteps?.length ? setIndex(index - 1) : leave())}
           hitSlop={12}
           accessibilityLabel={t('Back')}
         >
@@ -175,9 +207,9 @@ export default function RoutineBuilderScreen({ navigation, route }) {
               <Text style={[styles.headline, { color: colors.text }]}>{t(step.title)}</Text>
               <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t(step.why)}</Text>
 
-              {picks[stepKey] ? (
+              {currentSlot?.product ? (
                 <View style={{ marginTop: SPACING.xl }}>
-                  <ProductCard product={picks[stepKey]} onChange={() => pick(stepKey)} />
+                  <ProductCard product={currentSlot.product} onChange={() => pick(stepKey)} />
                 </View>
               ) : (
                 <View style={{ marginTop: SPACING.xxl, gap: SPACING.sm }}>
@@ -193,13 +225,13 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                 {period === 'morning' ? t('Your morning routine') : t('Your night routine')}
               </Text>
               <View style={{ marginTop: SPACING.xl, gap: SPACING.md }}>
-                {steps.map((k, i) => (
-                  <View key={k}>
-                    <Text style={[styles.stepLabel, { color: colors.muted }]}>{`${i + 1}. ${t(STEP_TYPES[k].label).toUpperCase()}`}</Text>
-                    {picks[k] ? (
-                      <ProductCard product={picks[k]} onChange={() => pick(k)} />
+                {slots.map((slot, i) => (
+                  <View key={slot.uid}>
+                    <Text style={[styles.stepLabel, { color: colors.muted }]}>{`${i + 1}. ${t(STEP_TYPES[slot.key].label).toUpperCase()}`}</Text>
+                    {slot.product ? (
+                      <ProductCard product={slot.product} onChange={() => pick(slot.key, slot.uid)} onRemove={() => removeSlot(slot.uid)} />
                     ) : (
-                      <Pressable onPress={() => pick(k)} style={[styles.emptyStep, { borderColor: colors.border }]}>
+                      <Pressable onPress={() => pick(slot.key, slot.uid)} style={[styles.emptyStep, { borderColor: colors.border }]}>
                         <Ionicons name="add" size={18} color={colors.primary} />
                         <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Choose a product')}</Text>
                       </Pressable>
@@ -213,7 +245,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                   <Text style={[styles.stepLabel, { color: colors.muted, marginTop: SPACING.xl }]}>{t('ADD A STEP')}</Text>
                   <View style={styles.chips}>
                     {addable.map(k => (
-                      <Pressable key={k} onPress={() => pick(k)} style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                      <Pressable key={k} onPress={() => addStep(k)} style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }]}>
                         <Ionicons name="add" size={14} color={colors.primary} />
                         <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{t(STEP_TYPES[k].label)}</Text>
                       </Pressable>
@@ -228,7 +260,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.lg }]}>
         {!inSummary ? (
-          picks[stepKey] ? (
+          currentSlot?.product ? (
             <Pill title={t('Next')} icon="arrow-forward" onPress={() => setIndex(index + 1)} />
           ) : (
             <Pressable onPress={() => setIndex(index + 1)} style={{ alignSelf: 'center', padding: SPACING.md }}>

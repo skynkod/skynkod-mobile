@@ -20,6 +20,7 @@ export default function ProductPickerScreen({ navigation, route }) {
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
   const stepKey = route?.params?.stepKey
+  const uid = route?.params?.uid || stepKey // which slot of the routine this fills
   const step = STEP_TYPES[stepKey] || STEP_TYPES.cleanser
   const [query, setQuery] = useState('')
   const [picks, setPicks] = useState([])
@@ -62,7 +63,7 @@ export default function ProductPickerScreen({ navigation, route }) {
   )
 
   // merge keeps the builder's period and progress; a plain navigate would wipe them.
-  const choose = product => navigation.navigate({ name: 'RoutineBuilder', params: { picked: { stepKey, product } }, merge: true })
+  const choose = product => navigation.navigate({ name: 'RoutineBuilder', params: { picked: { stepKey, uid, product } }, merge: true })
   const searching = query.trim().length >= 2
   const list = searching ? results.map(p => ({ product: p, match: productMatch(p, profile) })) : topPicks
 
@@ -80,7 +81,7 @@ export default function ProductPickerScreen({ navigation, route }) {
           style={[styles.input, { color: colors.text }]}
         />
         <Pressable
-          onPress={() => navigation.navigate('Scanner', { pickFor: stepKey })}
+          onPress={() => navigation.navigate('Scanner', { pickFor: { stepKey, uid } })}
           hitSlop={10}
           accessibilityLabel={t('Scan a product')}
         >

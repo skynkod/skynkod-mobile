@@ -73,7 +73,7 @@ export default function RoutinesScreen({ route, navigation }) {
 
   if (loading) return <LoadingView />;
 
-  const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now() });
+  const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now(), editSteps: saved?.steps || null });
 
   return (
     <Screen

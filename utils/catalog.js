@@ -32,6 +32,13 @@ export const productsByCategory = async (categories, limit = 80) => {
   return data || []
 }
 
+export const getProductsByIds = async (ids) => {
+  if (!ids.length) return []
+  const { data, error } = await supabase.from('products').select(FIELDS).in('id', ids)
+  if (error) throw error
+  return data || []
+}
+
 export const getProduct = async (id) => {
   const { data, error } = await supabase.from('products').select(FIELDS).eq('id', id).single()
   if (error) throw error
