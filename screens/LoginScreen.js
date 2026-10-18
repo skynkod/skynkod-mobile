@@ -9,6 +9,20 @@ import { SPACING, TYPE } from '../utils/theme'
 
 const LOGO = require('../assets/images/skynkod-logo.png')
 // Turn on once Google is set up in Supabase > Authentication > Providers.
+// Reads key=value pairs from a URL's #fragment and ?query (auth redirects use
+// both), without relying on URLSearchParams, which React Native only partly supports.
+const readAuthParams = (url = '') => {
+  const params = {}
+  const parts = [url.split('#')[1], url.split('#')[0].split('?')[1]]
+  for (const part of parts) {
+    for (const pair of (part || '').split('&')) {
+      const [key, value = ''] = pair.split('=')
+      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '))
+    }
+  }
+  return params
+}
+
 const GOOGLE_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH === 'true'
 
 export default function LoginScreen({ onLogin }) {
@@ -36,11 +50,13 @@ export default function LoginScreen({ onLogin }) {
   // session in the URL fragment (#access_token=...&type=recovery).
   const recoveryUrl = Linking.useLinkingURL()
   useEffect(() => {
-    if (!recoveryUrl || !recoveryUrl.includes('type=recovery')) return
-    const params = Object.fromEntries(new URLSearchParams(recoveryUrl.split('#')[1] || ''))
+    if (!recoveryUrl || !recoveryUrl.includes('reset-password')) return
+    const params = readAuthParams(recoveryUrl)
+    // Names only (never the tokens), to see what the link brought back.
+    console.log('Reset link params:', Object.keys(params), params.error_code || '', params.error_description || '')
     if (!params.access_token || !params.refresh_token) {
       setMode('reset')
-      setError(params.error_description?.replace(/\+/g, ' ') || 'This link has expired. Please ask for a new one.')
+      setError(params.error_description || 'This link has expired. Please ask for a new one.')
       return
     }
     supabase.auth.setSession({ access_token: params.access_token, refresh_token: params.refresh_token })
@@ -48,7 +64,10 @@ export default function LoginScreen({ onLogin }) {
         setMode('reset')
         setError(null)
         setPassword('')
-        if (sessionError) return setError('This link has expired. Please ask for a new one.')
+        if (sessionError) {
+          console.log('Reset link session error:', sessionError.message)
+          return setError('This link has expired. Please ask for a new one.')
+        }
         setResetStep('newPassword')
         setNotice('Choose your new password.')
       })
@@ -112,9 +131,9 @@ export default function LoginScreen({ onLogin }) {
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
       if (result.type !== 'success') return
 
-      const params = Object.fromEntries(new URLSearchParams(result.url.split('#')[1] || ''))
+      const params = readAuthParams(result.url)
       if (!params.access_token || !params.refresh_token) {
-        throw new Error(params.error_description?.replace(/\+/g, ' ') || 'Google sign-in was cancelled.')
+        throw new Error(params.error_description || 'Google sign-in was cancelled.')
       }
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: params.access_token,
