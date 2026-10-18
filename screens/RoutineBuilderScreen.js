@@ -80,6 +80,15 @@ export default function RoutineBuilderScreen({ navigation, route }) {
           { text: t('Choose another'), style: 'cancel', onPress: () => pick(picked.stepKey, picked.uid) },
         ]
       )
+    } else if (match.triggered.length) {
+      Alert.alert(
+        t('Not for your skin'),
+        `${t(match.triggered[0].text)}.`,
+        [
+          { text: t('Keep anyway'), style: 'destructive' },
+          { text: t('Choose another'), style: 'cancel', onPress: () => pick(picked.stepKey, picked.uid) },
+        ]
+      )
     } else if (match.tone === 'warning') {
       Alert.alert(
         t('Heads up'),

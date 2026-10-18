@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { searchProducts, linkBarcode } from '../utils/catalog'
-import { searchIngredients, ingredientFit, productMatch } from '../utils/ingredients-guide'
+import { searchIngredients, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -167,7 +167,7 @@ export default function SearchScreen({ navigation, route }) {
           ) : null}
           {products
             .map(product => ({ product, match: productMatch(product, profile) }))
-            .sort((a, b) => a.match.avoid.length - b.match.avoid.length)
+            .sort((a, b) => Number(isUnsuitable(a.match)) - Number(isUnsuitable(b.match)))
             .map(({ product, match }) => {
             return (
               <Pressable
@@ -186,7 +186,7 @@ export default function SearchScreen({ navigation, route }) {
                   <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
                   <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
                 </View>
-                <MatchBadge tone={match.tone} label={match.avoid.length ? t('Avoid') : `${match.score}%`} />
+                <MatchBadge tone={match.tone} label={t(badgeText(match))} />
               </Pressable>
             )
           })}

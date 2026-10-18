@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productsByCategory, searchProducts } from '../utils/catalog'
-import { productMatch } from '../utils/ingredients-guide'
+import { productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { STEP_TYPES } from '../utils/routine-steps'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -58,7 +58,7 @@ export default function ProductPickerScreen({ navigation, route }) {
     () =>
       picks
         .map(p => ({ product: p, match: productMatch(p, profile) }))
-        .filter(({ match }) => !match.avoid.length)
+        .filter(({ match }) => !isUnsuitable(match))
         .sort((a, b) => b.match.score - a.match.score || Number(!!b.product.image_url) - Number(!!a.product.image_url))
         .slice(0, 12),
     [picks, profile]
@@ -68,7 +68,7 @@ export default function ProductPickerScreen({ navigation, route }) {
   const choose = product => navigation.navigate('RoutineBuilder', { picked: { stepKey, uid, product } }, { merge: true })
   const searching = query.trim().length >= 2
   const list = searching
-    ? results.map(p => ({ product: p, match: productMatch(p, profile) })).sort((a, b) => a.match.avoid.length - b.match.avoid.length)
+    ? results.map(p => ({ product: p, match: productMatch(p, profile) })).sort((a, b) => Number(isUnsuitable(a.match)) - Number(isUnsuitable(b.match)))
     : topPicks
 
   return (
@@ -118,7 +118,7 @@ export default function ProductPickerScreen({ navigation, route }) {
             <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           </View>
-          <MatchBadge tone={match.tone} label={match.avoid.length ? t('Avoid') : `${match.score}%`} />
+          <MatchBadge tone={match.tone} label={t(badgeText(match))} />
         </Pressable>
       ))}
     </Screen>

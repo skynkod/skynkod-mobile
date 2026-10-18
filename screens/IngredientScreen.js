@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productsWithIngredient } from '../utils/catalog'
-import { getIngredient, ingredientFit, productMatch } from '../utils/ingredients-guide'
+import { getIngredient, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -68,7 +68,7 @@ export default function IngredientScreen({ navigation, route }) {
       {!loading && !products.length ? <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('No products found yet.')}</Text> : null}
       {products
         .map(product => ({ product, match: productMatch(product, profile) }))
-        .sort((a, b) => a.match.avoid.length - b.match.avoid.length || b.match.score - a.match.score)
+        .sort((a, b) => Number(isUnsuitable(a.match)) - Number(isUnsuitable(b.match)) || b.match.score - a.match.score)
         .map(({ product, match }) => {
         return (
           <Pressable
@@ -87,7 +87,7 @@ export default function IngredientScreen({ navigation, route }) {
               <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
             </View>
-            <MatchBadge tone={match.tone} label={match.avoid.length ? t('Avoid') : `${match.score}%`} />
+            <MatchBadge tone={match.tone} label={t(badgeText(match))} />
           </Pressable>
         )
       })}

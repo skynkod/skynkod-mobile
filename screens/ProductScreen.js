@@ -47,9 +47,9 @@ export default function ProductScreen({ navigation, route }) {
 
   // Adding a product the user should avoid needs a clear, explained warning.
   const confirmAdd = (nextStatus) => {
-    if (!match.avoid.length) return add(nextStatus)
-    const first = match.avoid[0]
-    Alert.alert(t('Not recommended for you'), `${t(first.text)}.\n\n${t(first.detail || '')}`, [
+    if (!match.avoid.length && !match.triggered.length) return add(nextStatus)
+    const first = match.avoid[0] || match.triggered[0]
+    Alert.alert(match.avoid.length ? t('Not recommended for you') : t('Not for your skin'), `${t(first.text)}.${first.detail ? `\n\n${t(first.detail)}` : ''}`, [
       { text: t('Add anyway'), style: 'destructive', onPress: () => add(nextStatus) },
       { text: t("Don't add"), style: 'cancel' },
     ])
@@ -87,7 +87,13 @@ export default function ProductScreen({ navigation, route }) {
 
       <View style={[styles.matchCard, { backgroundColor: { danger: colors.dangerSoft, warning: colors.warningSoft, neutral: colors.surface }[match.tone] || colors.successSoft }]}>
         <View style={styles.matchHead}>
-          <Text style={[styles.matchScore, { color: { danger: colors.danger, warning: colors.warning, neutral: colors.textSecondary }[match.tone] || colors.success }]}>{match.score}%</Text>
+          {match.tone === 'danger' ? (
+            <Ionicons name="close-circle" size={40} color={colors.danger} />
+          ) : match.unverified.length ? (
+            <Ionicons name="help-circle" size={40} color={colors.warning} />
+          ) : (
+            <Text style={[styles.matchScore, { color: { warning: colors.warning, neutral: colors.textSecondary }[match.tone] || colors.success }]}>{match.score}%</Text>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.label)}</Text>
             <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>
@@ -97,7 +103,7 @@ export default function ProductScreen({ navigation, route }) {
         </View>
         {[...match.good.map(g => ({ ...g, ok: true })), ...match.care.map(c => ({ ...c, ok: false }))].map((r, idx) => (
           <View key={idx} style={styles.reason}>
-            <Ionicons name={r.ok ? 'checkmark-circle' : 'alert-circle'} size={16} color={r.ok ? colors.success : match.avoid.length ? colors.danger : colors.warning} />
+            <Ionicons name={r.ok ? 'checkmark-circle' : 'alert-circle'} size={16} color={r.ok ? colors.success : match.tone === 'danger' ? colors.danger : colors.warning} />
             <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}
