@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { getUserRoutines, completeRoutineStep } from '../utils/routines-service';
+import { getUserRoutines } from '../utils/routines-service';
+import { logStep } from '../utils/routine-log';
 import { getUserProfile } from '../utils/supabase';
 import { buildRoutine } from '../utils/routine-builder';
 import { useAuth } from '../utils/AuthContext';
@@ -83,7 +84,7 @@ export default function RoutinesScreen({ route, navigation }) {
     const next = { ...done, [idx]: !done[idx] };
     setDone(next);
     AsyncStorage.setItem(todayKey(user.id, tab), JSON.stringify(next)).catch(() => {});
-    if (next[idx] && saved?.id) completeRoutineStep(user.id, saved.id, idx);
+    if (saved) logStep({ userId: user.id, routineId: saved.id, type: tab, stepIndex: idx, done: !!next[idx] });
   };
 
   if (loading) return <LoadingView />;

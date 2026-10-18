@@ -5,6 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { addJournalEntry, getJournalEntries, deleteJournalEntry } from '../utils/journal-service';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
+import { getUserRoutines } from '../utils/routines-service';
+import { todaySteps } from '../utils/routine-checks';
+import { getDayProgress, getRecentRegularity } from '../utils/routine-log';
 import { Screen, Card, Button, Input, Stepper, BottomSheet, EmptyState, LoadingView, Banner, SectionHeader, IconButton, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -32,7 +35,7 @@ const formatDay = (iso, t, language) => {
   return d.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' });
 };
 
-export default function JournalScreen({ route }) {
+export default function JournalScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -42,12 +45,26 @@ export default function JournalScreen({ route }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [newEntry, setNewEntry] = useState(EMPTY_ENTRY);
+  // "Log today": how much of each routine is done today, and regularity.
+  const [routineLog, setRoutineLog] = useState(null);
 
   const loadEntries = useCallback(async () => {
     if (!user?.id) {
       setLoading(false);
       return;
     }
+    Promise.all([getUserRoutines(user.id), getDayProgress(user.id), getRecentRegularity(user.id, 7)])
+      .then(([routines, progress, regularity]) => {
+        const list = routines.success ? routines.data || [] : [];
+        const rows = ['morning', 'evening']
+          .map(type => {
+            const steps = todaySteps(list.find(r => r.type === type)?.steps || []);
+            return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
+          })
+          .filter(Boolean);
+        setRoutineLog({ rows, regularity });
+      })
+      .catch(() => setRoutineLog(null));
     const result = await getJournalEntries(user.id);
     if (result.success) {
       setEntries(result.data || []);
@@ -110,6 +127,34 @@ export default function JournalScreen({ route }) {
       right={<IconButton icon="add" tone="primary" onPress={() => setShowModal(true)} accessibilityLabel="New entry" />}
     >
       {error ? <Banner message={error} actionLabel={t('Retry')} onAction={loadEntries} /> : null}
+
+      {routineLog?.rows.length ? (
+        <>
+          <SectionHeader title={t('Log today')} />
+          <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg }}>
+            {routineLog.rows.map((row, idx) => {
+              const complete = row.done >= row.total;
+              return (
+                <Pressable
+                  key={row.type}
+                  onPress={() => navigation?.navigate('Routines', { tab: row.type })}
+                  style={[styles.logRow, idx < routineLog.rows.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
+                >
+                  <Ionicons name={row.type === 'morning' ? 'sunny' : 'moon'} size={20} color={row.type === 'morning' ? '#E8B04A' : colors.secondary} />
+                  <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{row.type === 'morning' ? t('Morning routine') : t('Night routine')}</Text>
+                  {complete ? <Ionicons name="checkmark-circle" size={18} color={colors.success} /> : null}
+                  <Text style={[TYPE.caption, { color: complete ? colors.success : colors.textSecondary, fontWeight: '700' }]}>
+                    {t('{done}/{total} steps', { done: row.done, total: row.total })}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </Card>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: -SPACING.sm, marginBottom: SPACING.lg }]}>
+            {t('Routine done {done} of the last {days} days', { done: routineLog.regularity.done, days: routineLog.regularity.days })}
+          </Text>
+        </>
+      ) : null}
 
       {entries.length === 0 ? (
         <EmptyState
@@ -204,6 +249,7 @@ export default function JournalScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
+  logRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.lg },
   entryCard: { marginBottom: SPACING.md },
   entryHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   moodBubble: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

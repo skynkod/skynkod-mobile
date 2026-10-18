@@ -12,6 +12,7 @@ import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { dermatologistAdvice } from '../utils/dermatologist';
 import { todaySteps } from '../utils/routine-checks';
+import { logStep } from '../utils/routine-log';
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -100,6 +101,7 @@ export default function HomeScreen({ navigation }) {
     const next = { ...done, [currentIdx]: true };
     setDone(next);
     await AsyncStorage.setItem(doneKey(user.id, period), JSON.stringify(next)).catch(() => {});
+    logStep({ userId: user.id, routineId: routine?.id, type: period, stepIndex: currentIdx, done: true });
   };
 
   const undoLast = async () => {
@@ -108,6 +110,7 @@ export default function HomeScreen({ navigation }) {
     const next = { ...done, [last]: false };
     setDone(next);
     await AsyncStorage.setItem(doneKey(user.id, period), JSON.stringify(next)).catch(() => {});
+    logStep({ userId: user.id, routineId: routine?.id, type: period, stepIndex: last, done: false });
   };
 
   // "See a dermatologist" when skincare isn't enough; hidden for a while once read.
