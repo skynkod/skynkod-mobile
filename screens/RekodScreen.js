@@ -16,11 +16,10 @@ import {
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
-const LOGO = require('../assets/images/rekod-logo-white.png')
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']
 
-// Rekod has its own universe: a deep plum space, like a members' area.
+// Premium features live in a deep plum space, like a members' area.
 const C = {
   bg: '#33202E', card: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.12)',
   text: '#FFFFFF', textSecondary: 'rgba(255,255,255,0.78)', muted: 'rgba(255,255,255,0.55)',
@@ -35,7 +34,7 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
         <Pressable onPress={onBack || (() => navigation.goBack())} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={C.text} />
         </Pressable>
-        <Image source={LOGO} style={{ width: 26, height: 26 }} />
+        <Text style={[TYPE.overline, { color: C.primary }]}>Premium</Text>
         <View style={{ width: 26 }} />
       </View>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -113,7 +112,7 @@ export default function RekodScreen({ navigation }) {
       setStep('preview')
     } catch (error) {
       await logError('Rekod_preview', error)
-      Alert.alert('Something went wrong', 'Your Rekod could not be built. Please try again.')
+      Alert.alert('Something went wrong', 'Your programme could not be built. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -137,7 +136,7 @@ export default function RekodScreen({ navigation }) {
       setStep('intro')
     } catch (error) {
       await logError('Rekod_start', error)
-      Alert.alert('Something went wrong', 'Your Rekod could not be saved. Please try again.')
+      Alert.alert('Something went wrong', 'Your programme could not be saved. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -158,7 +157,7 @@ export default function RekodScreen({ navigation }) {
     }
   }
 
-  const leave = () => Alert.alert('Leave Rekod?', 'Your current routine stays as it is. You can start a new Rekod anytime.', [
+  const leave = () => Alert.alert('Leave your programme?', 'Your current routine stays as it is. You can start a new programme anytime.', [
     { text: 'Cancel', style: 'cancel' },
     { text: 'Leave', style: 'destructive', onPress: async () => { await leaveRekod(user.id).catch(() => {}); setPlan(null); setStep('intro') } },
   ])
@@ -173,7 +172,7 @@ export default function RekodScreen({ navigation }) {
     const tonight = tonightNight(plan)
     const todayIdx = [1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())
     return (
-      <Shell navigation={navigation} overline={`Rekod · ${goal.title}`} title={`Week ${week} of ${goal.weeks}`}>
+      <Shell navigation={navigation} overline={`My programme · ${goal.title}`} title={`Week ${week} of ${goal.weeks}`}>
         <View style={[styles.bar, { backgroundColor: C.primarySoft }]}><View style={{ width: `${Math.round((week / goal.weeks) * 100)}%`, height: '100%', backgroundColor: C.primary, borderRadius: 999 }} /></View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -209,7 +208,7 @@ export default function RekodScreen({ navigation }) {
         <RoutineCard title="Evening" steps={routine?.evening} colors={colors} showDays />
 
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.lg }}>
-          <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Leave Rekod</Text>
+          <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Leave my programme</Text>
         </Pressable>
       </Shell>
     )
@@ -219,12 +218,11 @@ export default function RekodScreen({ navigation }) {
   if (step === 'intro') {
     return (
       <Shell navigation={navigation}>
-        <Image source={LOGO} style={styles.logo} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-          <Text style={[TYPE.overline, { color: colors.primary }]}>Skynkod decodes your skin</Text>
+          <Text style={[TYPE.overline, { color: colors.primary }]}>Your skin programme</Text>
           <View style={[styles.premium, { backgroundColor: colors.primary }]}><Text style={styles.premiumText}>PREMIUM</Text></View>
         </View>
-        <Text style={[styles.hero, { color: colors.text }]}>Rekod{'\n'}transforms it.</Text>
+        <Text style={[styles.hero, { color: colors.text }]}>The skin you{'\n'}always wanted.</Text>
         <Text style={[TYPE.bodyStrong, { color: colors.primary, marginTop: SPACING.md }]}>A premium skin programme, from 6 to 12 weeks.</Text>
         <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
           A premium programme built entirely around your skin, so you finally get the skin you've always wanted. Every active is backed by science, not trends.
@@ -248,10 +246,10 @@ export default function RekodScreen({ navigation }) {
       <Shell
         navigation={navigation}
         onBack={() => setStep('intro')}
-        overline={`Your Rekod · ${goal.title}`}
+        overline={`Your programme · ${goal.title}`}
         title={answers.sensitive ? 'Built for skin that reacts easily' : 'Built for your skin'}
         subtitle={`${goal.weeks} weeks · ${goal.results.toLowerCase()}`}
-        footer={<RButton title="Join Rekod with this routine" onPress={adopt} loading={busy} />}
+        footer={<RButton title="Start my programme" onPress={adopt} loading={busy} />}
       >
         <RoutineCard title="Morning" steps={preview.morning} colors={colors} />
         <RoutineCard title="Evening" steps={preview.evening} colors={colors} showDays />
@@ -269,7 +267,7 @@ export default function RekodScreen({ navigation }) {
     priority: { n: 3, title: 'What do you want more of?', options: [{ v: 'retinoid', t: 'More retinol' }, { v: 'exfoliation', t: 'More exfoliation' }, { v: null, t: 'A bit of both' }] },
   }
   const q = QUESTIONS[step]
-  if (!q || busy) return <Loading label={busy ? 'Building your Rekod…' : undefined} />
+  if (!q || busy) return <Loading label={busy ? 'Building your programme…' : undefined} />
   const total = answers.experience === 'used' || step === 'priority' ? 3 : 2
   return (
     <Shell navigation={navigation} onBack={() => setStep(step === 'priority' ? 'experience' : step === 'experience' ? 'sensitive' : 'intro')}>
@@ -278,7 +276,7 @@ export default function RekodScreen({ navigation }) {
           <View key={i} style={[styles.progressBit, { backgroundColor: i < q.n ? colors.primary : colors.border }]} />
         ))}
       </View>
-      <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>Rekod · {goalOf(answers.goal).title}</Text>
+      <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>My programme · {goalOf(answers.goal).title}</Text>
       <Text style={[styles.question, { color: colors.text }]}>{q.title}</Text>
       {q.sub ? <Text style={[TYPE.body, { color: colors.textSecondary }]}>{q.sub}</Text> : null}
       <View style={{ gap: SPACING.md, marginTop: SPACING.xl }}>

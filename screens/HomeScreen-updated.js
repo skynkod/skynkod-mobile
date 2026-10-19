@@ -22,7 +22,6 @@ import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { track } from '../utils/analytics';
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, weekOf } from '../utils/rekod';
-const REKOD_LOGO = require('../assets/images/rekod-logo-white.png');
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
@@ -581,7 +580,6 @@ export default function HomeScreen({ navigation }) {
             <View onLayout={e => setRoutineY(e.nativeEvent.layout.y + bodyY)} style={styles.cardIn}>
               <View style={styles.cardHead}>
                 <Pressable disabled={!rekod} onPress={() => navigation.navigate('Rekod')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  {rekod ? <Image source={REKOD_LOGO} style={{ width: 16, height: 16, tintColor: colors.primary }} /> : null}
                   <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : rekod ? `${t('TONIGHT')} · ${t(NIGHTS[tonightNight(rekod)].short).toUpperCase()}` : t('TONIGHT')}</Text>
                 </Pressable>
                 <Pressable onPress={() => navigation.navigate('Routines', { tab: period })} hitSlop={10}>
@@ -651,9 +649,9 @@ export default function HomeScreen({ navigation }) {
           {/* Rekod: the premium programme. Members see it in their routine; others get one invitation. */}
           {loaded && !rekod ? (
             <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { opacity: pressed ? 0.9 : 1 }]}>
-              <Image source={REKOD_LOGO} style={{ width: 34, height: 34, tintColor: '#FFFFFF' }} />
+              <Ionicons name="sparkles-outline" size={28} color="#FFFFFF" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rekodKicker}>{t('REKOD · PREMIUM PROGRAMME')}</Text>
+                <Text style={styles.rekodKicker}>{t('PREMIUM · SKIN PROGRAMME')}</Text>
                 <Text style={styles.rekodTitle}>{t('Your skin programme, made for you')}</Text>
                 <Text style={styles.rekodText}>{t('Tell us your goal, get a routine of proven actives and a plan week by week.')}</Text>
               </View>
@@ -664,9 +662,9 @@ export default function HomeScreen({ navigation }) {
           {/* A member: a slim card back into her programme. */}
           {loaded && rekod ? (
             <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { paddingVertical: SPACING.md, opacity: pressed ? 0.9 : 1 }]}>
-              <Image source={REKOD_LOGO} style={{ width: 26, height: 26, tintColor: '#FFFFFF' }} />
+              <Ionicons name="sparkles-outline" size={22} color="#FFFFFF" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rekodKicker}>{t('MY REKOD PROGRAMME')}</Text>
+                <Text style={styles.rekodKicker}>{t('MY PROGRAMME')}</Text>
                 <Text style={[styles.rekodTitle, { fontSize: 15 }]}>
                   {t(goalOf(rekod.goal).title)} · {t('Week {n} of {total}', { n: Math.min(weekOf(rekod), goalOf(rekod.goal).weeks), total: goalOf(rekod.goal).weeks })}
                 </Text>
