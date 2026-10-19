@@ -40,12 +40,16 @@ const NIGHT_SKY = require('../assets/images/home-night.jpg');
 // Deep plum from the logo family, for text over the light clouds.
 const INK = '#4A2F42';
 
+// V1 is kept simple: these parts are built but switched off, and come back
+// one at a time as new features.
+const V1 = { sos: false, derm: false, seasonCards: false, budget: false, encyclopedia: false };
+
 const SHORTCUTS = [
   { label: 'My routines', icon: 'water-outline', to: 'Routines' },
   { label: 'My products', icon: 'flask-outline', to: 'Products' },
-  { label: 'My Skynbudget', icon: 'wallet-outline', to: 'Budget' },
-  { label: 'Skyncyclopedia', icon: 'library-outline', to: 'Skyncyclopedia' },
-];
+  V1.budget && { label: 'My Skynbudget', icon: 'wallet-outline', to: 'Budget' },
+  V1.encyclopedia && { label: 'Skyncyclopedia', icon: 'library-outline', to: 'Skyncyclopedia' },
+].filter(Boolean);
 
 // Same storage key as the Routines screen, so ticks are shared.
 const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date().toDateString()}`;
@@ -310,7 +314,7 @@ export default function HomeScreen({ navigation }) {
     .filter(x => x.life.status === 'expired' || x.life.status === 'soon')
     .sort((a, b) => a.life.daysLeft - b.life.daysLeft)[0];
   const derm = dermatologistAdvice(profile, entries);
-  const showDerm = derm && (!dermHiddenUntil || Date.now() > dermHiddenUntil);
+  const showDerm = V1.derm && derm && (!dermHiddenUntil || Date.now() > dermHiddenUntil);
   const hideDerm = async () => {
     const until = Date.now() + (derm?.level === 'recommended' ? 7 : 30) * 86400000;
     setDermHiddenUntil(until);
@@ -491,7 +495,7 @@ export default function HomeScreen({ navigation }) {
           </View>
 
           {/* The current routine has no season yet: is it this season's? */}
-          {askLabel && !seasonCard ? (
+          {V1.seasonCards && askLabel && !seasonCard ? (
             <Glass style={styles.card}>
               <View style={styles.cardIn}>
                 <View style={styles.seasonHead}>
@@ -514,7 +518,7 @@ export default function HomeScreen({ navigation }) {
           ) : null}
 
           {/* A new season: tips, and the offer of a routine for it */}
-          {seasonCard ? (
+          {V1.seasonCards && seasonCard ? (
             <Glass style={styles.card}>
               <View style={styles.cardIn}>
                 <View style={styles.seasonHead}>
@@ -548,7 +552,7 @@ export default function HomeScreen({ navigation }) {
             </Glass>
           ) : null}
 
-          {plan ? (
+          {V1.sos && plan ? (
             <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.soft, { backgroundColor: colors.primarySoft }]}>
               <Ionicons name="medkit-outline" size={18} color={colors.primary} />
               <Text style={[TYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>
@@ -675,7 +679,7 @@ export default function HomeScreen({ navigation }) {
 
           {/* Emergency mode: a smart card when today's check-in shows a problem,
               otherwise a discreet line. Hidden while a plan runs (banner above). */}
-          {!plan && suggestion ? (
+          {V1.sos && !plan && suggestion ? (
             <Pressable
               onPress={() => navigation.navigate('Emergency', { situation: suggestion.id, openedAt: Date.now() })}
               style={({ pressed }) => [styles.sosCard, { backgroundColor: colors.dangerSoft, opacity: pressed ? 0.85 : 1 }]}
@@ -687,7 +691,7 @@ export default function HomeScreen({ navigation }) {
               </View>
             </Pressable>
           ) : null}
-          {!plan && !suggestion && loaded && !skinIsFine ? (
+          {V1.sos && !plan && !suggestion && loaded && !skinIsFine ? (
             <View style={[styles.sosInvite, { backgroundColor: colors.primarySoft }]}>
               <View style={styles.sosHead}>
                 <View style={[styles.sosIcon, { backgroundColor: colors.card }]}>

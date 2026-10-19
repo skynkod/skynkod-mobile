@@ -55,7 +55,7 @@ const QUICK_ACTIONS = [
   { icon: 'create-outline', title: 'Skin check-in', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
   { icon: 'scan-outline', title: 'Scan a product', subtitle: 'Check ingredients and compatibility', to: 'Scanner' },
   { icon: 'flask-outline', title: 'Add a product', subtitle: 'Add it to your collection', to: 'Products' },
-  { icon: 'shield-checkmark-outline', title: 'Emergency mode', subtitle: 'A 7-day plan to calm your skin', to: 'Emergency' },
+  // V1: Emergency mode comes back later.
 ]
 
 const Empty = () => null
