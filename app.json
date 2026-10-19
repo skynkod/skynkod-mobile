@@ -11,8 +11,23 @@
       "bundleIdentifier": "com.anonymous.skynkod"
     },
     "plugins": [
-      "expo-camera",
-      "expo-image-picker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Skynkod uses the camera to scan product barcodes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Skynkod lets you choose a photo from your library.",
+          "cameraPermission": "Skynkod uses the camera to scan product barcodes.",
+          "microphonePermission": false
+        }
+      ],
       "expo-image",
       [
         "expo-splash-screen",
@@ -35,7 +50,9 @@
     "android": {
       "package": "com.anonymous.skynkod",
       "permissions": [
-        "android.permission.CAMERA",
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ]
     },

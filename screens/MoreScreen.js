@@ -39,7 +39,8 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
-const HIDDEN = ['Photos', 'Progress', 'Scanner', 'Quiz']
+// Premium waits until in-app purchases work (stores refuse "coming soon" screens).
+const HIDDEN = ['Photos', 'Progress', 'Scanner', 'Quiz', 'Premium']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {
