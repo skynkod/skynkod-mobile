@@ -198,6 +198,7 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const { colors, isDark, loading: themeLoading } = useTheme()
   const { loading: languageLoading } = useLanguage()
+  const lastScreen = React.useRef(null)
 
   // Notes when the app was last opened (once a day). Inactive accounts are
   // deleted after a year, so opening the app also cancels any pending warning.
@@ -345,10 +346,13 @@ function AppContent() {
           onReady={() => {
             const screen = navigationRef.getCurrentRoute()?.name
             if (screen) track('screen', { screen })
+            lastScreen.current = screen
           }}
           onStateChange={() => {
+            // Counted once per visit (a screen updating its own params isn't a new visit).
             const screen = navigationRef.getCurrentRoute()?.name
-            if (screen) track('screen', { screen })
+            if (screen && screen !== lastScreen.current) track('screen', { screen })
+            lastScreen.current = screen
           }}
         >
           <AppTabs userId={user.userId} />
