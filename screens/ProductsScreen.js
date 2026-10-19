@@ -25,6 +25,8 @@ const FILTERS = [
   { value: 'sunscreen', label: 'SPF' },
   { value: 'exfoliant', label: 'Exfoliants' },
   { value: 'mask', label: 'Masks' },
+  { value: 'body', label: 'Body' },
+  { value: 'hand care', label: 'Hand care' },
   { value: 'other', label: 'Other' },
 ]
 
