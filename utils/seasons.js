@@ -133,7 +133,7 @@ export const archiveCurrentRoutines = async (userId, endingSeasonId) => {
     .reduce((acc, r) => (acc.some(x => x.type === r.type) ? acc : [...acc, r]), [])
   if (!rows.length) return
   const { error } = await supabase.from('routine_archive').insert(
-    rows.map(r => ({ user_id: userId, season: endingSeasonId, type: r.type, steps: r.steps })),
+    rows.map(r => ({ user_id: userId, season: r.season || endingSeasonId, type: r.type, steps: r.steps })),
   )
   if (error) throw error
 }
@@ -147,4 +147,28 @@ export const restoreSeasonRoutines = async (userId, season, archived) => {
       if (!res.success) throw new Error(res.error)
     }
   }
+  await labelRoutines(userId, season.id)
 }
+
+// ---------- "Is this your autumn routine?" ----------
+
+// Marks the user's current routines as belonging to a season.
+export const labelRoutines = async (userId, seasonId) => {
+  const { error } = await supabase.from('routines').update({ season: seasonId }).eq('user_id', userId)
+  if (error) throw error
+}
+
+const noKey = (userId, season) => `skynkod_season_label_no_${userId}_${season.id}_${season.startedAt.getFullYear()}`
+
+// Ask when the user has a routine with no season yet, and hasn't said "no"
+// during this season (a "no" is asked again next season).
+export const shouldAskSeasonLabel = async (userId, season) => {
+  if (!userId) return false
+  const res = await getUserRoutines(userId)
+  const rows = (res.success ? res.data : []).filter(r => Array.isArray(r.steps) && r.steps.length)
+  if (!rows.length || rows.some(r => r.season)) return false
+  const no = await AsyncStorage.getItem(noKey(userId, season)).catch(() => null)
+  return !no
+}
+
+export const declineSeasonLabel = (userId, season) => AsyncStorage.setItem(noKey(userId, season), '1').catch(() => {})

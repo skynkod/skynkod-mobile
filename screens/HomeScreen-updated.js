@@ -22,7 +22,7 @@ import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { getSkinWeather, pickSkinTip } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
-import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines } from '../utils/seasons';
+import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
 import MorningCheckIn from '../components/MorningCheckIn';
 import Glass from '../components/Glass';
 import Moon from '../components/Moon';
@@ -126,6 +126,17 @@ export default function HomeScreen({ navigation }) {
       })
       .catch(() => {});
   }, [user?.id, season.id]);
+  // No season on the current routine yet: ask whether it's this season's.
+  const [askLabel, setAskLabel] = useState(false);
+  useEffect(() => {
+    if (!user?.id || seasonCard) return setAskLabel(false);
+    shouldAskSeasonLabel(user.id, season).then(setAskLabel).catch(() => {});
+  }, [user?.id, season.id, !!seasonCard, routine?.id]);
+  const answerLabel = async (yes) => {
+    setAskLabel(false);
+    if (yes) await labelRoutines(user.id, season.id).catch(error => logError('Home_seasonLabel', error, {}, 'warn'));
+    else declineSeasonLabel(user.id, season);
+  };
   const closeSeasonCard = () => {
     dismissSeasonCard(user.id, season);
     setSeasonCard(null);
@@ -134,6 +145,7 @@ export default function HomeScreen({ navigation }) {
     setSeasonBusy(true);
     try {
       await archiveCurrentRoutines(user.id, previousSeason(season.id));
+      await labelRoutines(user.id, season.id);
       closeSeasonCard();
       const res = await getUserRoutines(user.id);
       const morning = (res.success ? res.data : []).find(r => r.type === 'morning');
@@ -421,6 +433,29 @@ export default function HomeScreen({ navigation }) {
             </Pressable>
             </Glass>
           </View>
+
+          {/* The current routine has no season yet: is it this season's? */}
+          {askLabel && !seasonCard ? (
+            <Glass style={styles.card}>
+              <View style={styles.cardIn}>
+                <View style={styles.seasonHead}>
+                  <Ionicons name={SEASONS[season.id].icon} size={20} color={colors.primary} />
+                  <Text style={[styles.seasonTitle, { color: colors.text, flex: 1 }]}>
+                    {t('Is this your {season} routine?', { season: t(SEASONS[season.id].label).toLowerCase() })}
+                  </Text>
+                </View>
+                <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+                  {t('Save your current routine for this season. Next year, Skynkod will offer it back when the season returns.')}
+                </Text>
+                <Pressable onPress={() => answerLabel(true)} style={({ pressed }) => [styles.primary, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}>
+                  <Text style={[styles.primaryText, { color: colors.onPrimary }]}>{t("Yes, it's my {season} routine", { season: t(SEASONS[season.id].label).toLowerCase() })}</Text>
+                </Pressable>
+                <Pressable onPress={() => answerLabel(false)} hitSlop={8} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
+                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>{t('Not really')}</Text>
+                </Pressable>
+              </View>
+            </Glass>
+          ) : null}
 
           {/* A new season: tips, and the offer of a routine for it */}
           {seasonCard ? (
