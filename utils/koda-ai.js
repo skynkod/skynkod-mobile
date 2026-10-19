@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { buildKodaContext } from './koda-context';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -22,13 +23,16 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
       .filter(m => m && !m.error)
       .map(({ role, content }) => ({ role, content }));
 
+    // The user's week (journal, routine, recent products, patterns, plan).
+    const context = await buildKodaContext(session.user?.id).catch(() => null);
+
     const response = await fetch(`${API_URL.replace(/\/$/, '')}/koda`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ messages, language, profile }),
+      body: JSON.stringify({ messages, language, profile, context }),
     });
 
     const data = await response.json().catch(() => ({}));
@@ -56,6 +60,8 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
     return {
       role: 'assistant',
       content: data.content || 'No response',
+      // A suggested 7-day plan id, shown as a button under the reply.
+      plan: data.plan || null,
       timestamp: new Date().toISOString(),
     };
   } catch (error) {

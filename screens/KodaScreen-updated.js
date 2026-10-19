@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { askKoda, generateKodaIntroduction } from '../utils/koda-ai';
+import { getSituation } from '../utils/emergency-plans';
 import { useLanguage } from '../utils/LanguageContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { saveChatMessage, getChatHistory } from '../utils/chat-service';
@@ -113,6 +114,17 @@ export default function KodaScreen({ route, navigation }) {
           ]}
         >
           <Text style={[TYPE.body, { color: isUser ? colors.onPrimary : item.error ? colors.danger : colors.text }]}>{item.content}</Text>
+          {!isUser && item.plan && getSituation(item.plan) ? (
+            <Pressable
+              onPress={() => navigation.navigate('Emergency', { situation: item.plan, openedAt: Date.now() })}
+              style={({ pressed }) => [styles.planButton, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Ionicons name="medkit-outline" size={16} color={colors.onPrimary} />
+              <Text style={[TYPE.caption, { color: colors.onPrimary, fontWeight: '700', flexShrink: 1 }]}>
+                {t('Start the 7-day plan')} · {t(getSituation(item.plan).title)}
+              </Text>
+            </Pressable>
+          ) : null}
           <Text style={[styles.time, { color: isUser ? colors.onPrimary : colors.muted }]}>
             {new Date(item.timestamp || item.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
@@ -186,6 +198,7 @@ const styles = StyleSheet.create({
   rowKoda: { justifyContent: 'flex-start' },
   bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.lg },
   time: { fontSize: 10, marginTop: 4, opacity: 0.7, alignSelf: 'flex-end' },
+  planButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, marginTop: 10, alignSelf: 'flex-start' },
   suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth },
   input: { flex: 1, maxHeight: 120, minHeight: 44, borderRadius: 22, borderWidth: 1, paddingHorizontal: SPACING.lg, paddingTop: 12, paddingBottom: 12, fontSize: 15 },
