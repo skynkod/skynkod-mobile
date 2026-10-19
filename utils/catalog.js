@@ -3,6 +3,15 @@ import { supabase } from './supabase'
 const API_URL = process.env.EXPO_PUBLIC_API_URL
 const FIELDS = 'id,name,brand,category,image_url,key_ingredients,ingredients,ingredients_text,barcode,source'
 
+// Body and hand care products are in the catalogue but hidden until Skynkod
+// adds body care next to skincare: set this to true to show them everywhere.
+export const BODY_CARE_ENABLED = false
+const HIDDEN_CATEGORIES = BODY_CARE_ENABLED ? [] : ['body', 'hand care']
+export const isHiddenCategory = category => HIDDEN_CATEGORIES.includes(category)
+const visible = request => (HIDDEN_CATEGORIES.length
+  ? request.not('category', 'in', `(${HIDDEN_CATEGORIES.map(c => `"${c}"`).join(',')})`)
+  : request)
+
 // PostgREST filter values can't contain these.
 const safe = text => text.replace(/[,()*%{}"\\]/g, ' ').trim()
 
@@ -10,7 +19,7 @@ const safe = text => text.replace(/[,()*%{}"\\]/g, ' ').trim()
 export const searchProducts = async (query) => {
   const words = safe(query).split(/\s+/).filter(w => w.length > 1).slice(0, 4)
   if (!words.length) return []
-  let request = supabase.from('products').select(FIELDS)
+  let request = visible(supabase.from('products').select(FIELDS))
   for (const w of words) request = request.or(`name.ilike.%${w}%,brand.ilike.%${w}%`)
   const { data, error } = await request.order('image_url', { ascending: true, nullsFirst: false }).limit(30)
   if (error) throw error
@@ -20,14 +29,14 @@ export const searchProducts = async (query) => {
 // Products containing one of the guide ingredient's INCI names.
 export const productsWithIngredient = async (entry, limit = 20) => {
   const filters = entry.match.flatMap(m => [`ingredients_text.ilike.%${safe(m)}%`, `key_ingredients.cs.{"${safe(m)}"}`])
-  const { data, error } = await supabase.from('products').select(FIELDS).or(filters.join(',')).limit(limit)
+  const { data, error } = await visible(supabase.from('products').select(FIELDS).or(filters.join(','))).limit(limit)
   if (error) throw error
   return data || []
 }
 
 // Products of the given categories, for a routine step's top picks.
 export const productsByCategory = async (categories, limit = 80) => {
-  const { data, error } = await supabase.from('products').select(FIELDS).in('category', categories).limit(limit)
+  const { data, error } = await visible(supabase.from('products').select(FIELDS).in('category', categories)).limit(limit)
   if (error) throw error
   return data || []
 }
@@ -58,6 +67,8 @@ export const lookupBarcode = async (barcode) => {
     const data = await response.json().catch(() => ({}))
     if (response.status === 404) return { notFound: true, brandHint: data.brandHint || null }
     if (!response.ok || !data.product) return { error: data.error || `HTTP ${response.status}` }
+    // A hidden (body care) product is treated as not in the catalogue yet.
+    if (isHiddenCategory(data.product.category)) return { notFound: true, brandHint: data.product.brand || null }
     return { product: data.product }
   } catch (error) {
     return { error: error.message }

@@ -8,7 +8,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT, useLanguage } from '../utils/LanguageContext'
 import { shelfLife, setOpened, setExpiry, setPao } from '../utils/shelf-life'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, photoOf } from '../utils/catalog'
+import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, photoOf, BODY_CARE_ENABLED } from '../utils/catalog'
 import { getUserRoutines } from '../utils/routines-service'
 import { SHOP_LINKS_ENABLED } from '../utils/shop'
 import { logError } from '../utils/errorLogger'
@@ -25,9 +25,9 @@ const FILTERS = [
   { value: 'sunscreen', label: 'SPF' },
   { value: 'exfoliant', label: 'Exfoliants' },
   { value: 'mask', label: 'Masks' },
-  { value: 'body', label: 'Body' },
-  { value: 'hand care', label: 'Hand care' },
   { value: 'other', label: 'Other' },
+  // Shown once body care opens (BODY_CARE_ENABLED in utils/catalog.js).
+  ...(BODY_CARE_ENABLED ? [{ value: 'body', label: 'Body' }, { value: 'hand care', label: 'Hand care' }] : []),
 ]
 
 // The user's shelf ("I own") and wishlist ("To buy"), with how well each
