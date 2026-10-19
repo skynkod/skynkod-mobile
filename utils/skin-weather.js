@@ -86,3 +86,49 @@ export const getSkinWeather = async (coords) => {
   AsyncStorage.setItem(CACHE_KEY, JSON.stringify(fresh)).catch(() => {})
   return fresh
 }
+
+// ---------- The weather right now (refreshed every 30 minutes) ----------
+
+const NOW_KEY = 'skynkod_weather_now'
+
+// WMO weather codes → a short label and an icon (day / night).
+const SKY = [
+  [[0], 'Clear', 'sunny-outline', 'moon-outline'],
+  [[1, 2], 'Partly cloudy', 'partly-sunny-outline', 'cloudy-night-outline'],
+  [[3], 'Cloudy', 'cloud-outline', 'cloud-outline'],
+  [[45, 48], 'Foggy', 'cloud-outline', 'cloud-outline'],
+  [[51, 53, 55, 56, 57], 'Drizzle', 'rainy-outline', 'rainy-outline'],
+  [[61, 63, 65, 66, 67, 80, 81, 82], 'Rain', 'rainy-outline', 'rainy-outline'],
+  [[71, 73, 75, 77, 85, 86], 'Snow', 'snow-outline', 'snow-outline'],
+  [[95, 96, 99], 'Storm', 'thunderstorm-outline', 'thunderstorm-outline'],
+]
+const skyOf = (code, isDay) => {
+  const row = SKY.find(([codes]) => codes.includes(code)) || SKY[2]
+  return { label: row[1], icon: isDay ? row[2] : row[3] }
+}
+
+export const getWeatherNow = async (coords) => {
+  if (!coords?.latitude) return null
+  const where = `${coords.latitude},${coords.longitude}`
+  try {
+    const cached = JSON.parse((await AsyncStorage.getItem(NOW_KEY)) || 'null')
+    if (cached?.where === where && Date.now() - cached.at < 30 * 60000) return cached
+  } catch {}
+  const res = await fetch('https://api.open-meteo.com/v1/forecast'
+    + `?latitude=${coords.latitude}&longitude=${coords.longitude}`
+    + '&current=temperature_2m,relative_humidity_2m,weather_code,uv_index,is_day&timezone=auto')
+  if (!res.ok) throw new Error(`weather ${res.status}`)
+  const c = (await res.json()).current || {}
+  const sky = skyOf(c.weather_code, c.is_day !== 0)
+  const fresh = {
+    where,
+    at: Date.now(),
+    temp: Math.round(c.temperature_2m ?? 0),
+    humidity: Math.round(c.relative_humidity_2m ?? 0),
+    uv: Math.round(c.uv_index ?? 0),
+    isDay: c.is_day !== 0,
+    ...sky,
+  }
+  AsyncStorage.setItem(NOW_KEY, JSON.stringify(fresh)).catch(() => {})
+  return fresh
+}

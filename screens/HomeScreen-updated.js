@@ -20,7 +20,7 @@ import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
-import { getSkinWeather, pickSkinTip } from '../utils/skin-weather';
+import { getSkinWeather, pickSkinTip, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
 import MorningCheckIn from '../components/MorningCheckIn';
@@ -171,9 +171,12 @@ export default function HomeScreen({ navigation }) {
 
   // Today's local weather, for the skin weather line under the name.
   const [skyToday, setSkyToday] = useState(null);
+  // And the weather right now: temperature, sky, humidity, UV.
+  const [weatherNow, setWeatherNow] = useState(null);
   useEffect(() => {
     getSkinWeather(coords).then(setSkyToday).catch(error => logError('Home_weather', error, {}, 'warn'));
-  }, [coords?.latitude, coords?.longitude]);
+    getWeatherNow(coords).then(setWeatherNow).catch(error => logError('Home_weatherNow', error, {}, 'warn'));
+  }, [coords?.latitude, coords?.longitude, loaded]);
 
   useEffect(() => {
     updateLocation();
@@ -373,6 +376,18 @@ export default function HomeScreen({ navigation }) {
           <View style={[styles.heroTop, { paddingBottom: Math.round(introHeight * 0.3) }]}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
+            {/* The weather right now */}
+            {weatherNow ? (
+              <Glass radius={999} style={styles.linePill}>
+                <View style={styles.lineRow}>
+                  <Ionicons name={weatherNow.icon} size={15} color={isDark ? colors.text : INK} />
+                  <Text style={[styles.weatherNow, { color: isDark ? colors.text : INK }]}>
+                    {`${weatherNow.temp}° · ${t(weatherNow.label)} · ${t('Humidity')} ${weatherNow.humidity}%${weatherNow.isDay ? ` · UV ${weatherNow.uv}` : ''}`}
+                  </Text>
+                </View>
+              </Glass>
+            ) : null}
+
             {/* Skin weather: the day's one tip from the local weather (daytime only) */}
             {(isNight ? eveningTip : weatherTip) ? (
               <Glass radius={999} style={styles.linePill}>
@@ -780,6 +795,7 @@ const styles = StyleSheet.create({
   heroTop: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xl },
   hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic', ...SHADOW },
   name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2, ...SHADOW },
+  weatherNow: { fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
   linePill: { alignSelf: 'flex-start', marginTop: SPACING.md },
   lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.lg, paddingVertical: 7 },
   // Same voice as the greeting: serif italic.
