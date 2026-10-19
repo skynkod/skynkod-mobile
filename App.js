@@ -41,12 +41,11 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
 
-// Bottom bar: Home · Journal · (+) · Rekod · Koda · Profile.
+// Bottom bar: Home · Journal · (+) · Koda · Profile. Rekod opens from Home.
 const TABS = [
   { name: 'Home', component: HomeScreen, label: 'Home', icon: 'home' },
   { name: 'Journal', component: JournalScreen, label: 'Journal', icon: 'calendar' },
   { name: 'Add', label: '', icon: 'add' },
-  { name: 'Rekod', component: RekodScreen, label: 'Rekod', icon: 'rekod' },
   { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'koda' },
   { name: 'More', component: MoreScreen, label: 'Profile', icon: 'person' },
 ]
@@ -61,7 +60,6 @@ const QUICK_ACTIONS = [
 
 const Empty = () => null
 const KODA_ICON = require('./assets/images/koda-logo-white.png')
-const REKOD_ICON = require('./assets/images/rekod-logo-white.png')
 
 function AppTabs({ userId }) {
   const { colors } = useTheme()
@@ -118,8 +116,8 @@ function AppTabs({ userId }) {
             options={{
               tabBarLabel: t(tab.label),
               tabBarIcon: ({ color, focused, size }) =>
-                tab.icon === 'koda' || tab.icon === 'rekod' ? (
-                  <Image source={tab.icon === 'koda' ? KODA_ICON : REKOD_ICON} style={{ width: size, height: size, tintColor: color }} />
+                tab.icon === 'koda' ? (
+                  <Image source={KODA_ICON} style={{ width: size, height: size, tintColor: color }} />
                 ) : (
                   <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
                 ),
@@ -139,6 +137,7 @@ function AppTabs({ userId }) {
         { name: 'ProductPicker', component: ProductPickerScreen },
         { name: 'Privacy', component: PrivacyScreen },
         { name: 'Suggestions', component: SuggestionsScreen },
+        { name: 'Rekod', component: RekodScreen },
         ...MORE_SCREENS,
       ].map(screen => (
         <Tab.Screen
@@ -149,7 +148,7 @@ function AppTabs({ userId }) {
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
-            ...(['Scanner', 'RoutineBuilder'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
+            ...(['Scanner', 'RoutineBuilder', 'Rekod'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
           }}
         />
       ))}

@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Platform, Alert, Image } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Platform, Alert, Image, ScrollView, ActivityIndicator } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen, Button, LoadingView, ProgressBar, useColors } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getUserRoutines } from '../utils/routines-service'
@@ -16,15 +16,63 @@ import {
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
-const LOGO = require('../assets/images/rekod-logo.png')
+const LOGO = require('../assets/images/rekod-logo-white.png')
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']
+
+// Rekod has its own universe: a deep plum space, like a members' area.
+const C = {
+  bg: '#33202E', card: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.12)',
+  text: '#FFFFFF', textSecondary: 'rgba(255,255,255,0.78)', muted: 'rgba(255,255,255,0.55)',
+  primary: '#E2C6DA', primarySoft: 'rgba(226,198,218,0.16)', onPrimary: '#33202E',
+  success: '#A8E2BC', successSoft: 'rgba(168,226,188,0.14)',
+}
+
+function Shell({ navigation, overline, title, subtitle, footer, children, onBack }) {
+  return (
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
+      <View style={styles.topBar}>
+        <Pressable onPress={onBack || (() => navigation.goBack())} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={26} color={C.text} />
+        </Pressable>
+        <Image source={LOGO} style={{ width: 26, height: 26 }} />
+        <View style={{ width: 26 }} />
+      </View>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {overline ? <Text style={[TYPE.overline, { color: C.primary }]}>{overline}</Text> : null}
+        {title ? <Text style={[styles.title, { color: C.text }]}>{title}</Text> : null}
+        {subtitle ? <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>{subtitle}</Text> : null}
+        {children}
+      </ScrollView>
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </SafeAreaView>
+  )
+}
+
+function RButton({ title, onPress, loading, disabled, outline, small, style }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled || loading} accessibilityRole="button" style={({ pressed }) => [
+      styles.rbutton, small && { height: 40 },
+      outline ? { borderWidth: 1, borderColor: C.primary } : { backgroundColor: C.primary },
+      (pressed || disabled) && { opacity: 0.7 }, style,
+    ]}>
+      {loading ? <ActivityIndicator color={outline ? C.primary : C.onPrimary} /> : <Text style={[TYPE.bodyStrong, { color: outline ? C.primary : C.onPrimary, fontWeight: '700', fontSize: small ? 13 : 15 }]}>{title}</Text>}
+    </Pressable>
+  )
+}
+
+const Loading = ({ label }) => (
+  <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: SPACING.md }}>
+    <ActivityIndicator color={C.primary} size="large" />
+    {label ? <Text style={[TYPE.caption, { color: C.muted }]}>{label}</Text> : null}
+  </View>
+)
 
 // Evidence badge shown on a routine step (see docs/rekod/regles-rekod.html).
 const PROVEN = ['SPF 50', 'Retinol', 'Exfoliate', 'Azelaic acid']
 
-export default function RekodScreen() {
-  const colors = useColors()
+export default function RekodScreen({ navigation }) {
+  const colors = C
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
   const [plan, setPlan] = useState(undefined)
@@ -115,7 +163,7 @@ export default function RekodScreen() {
     { text: 'Leave', style: 'destructive', onPress: async () => { await leaveRekod(user.id).catch(() => {}); setPlan(null); setStep('intro') } },
   ])
 
-  if (plan === undefined) return <LoadingView />
+  if (plan === undefined) return <Loading />
 
   // ---------- Following a Rekod ----------
   if (plan) {
@@ -125,8 +173,8 @@ export default function RekodScreen() {
     const tonight = tonightNight(plan)
     const todayIdx = [1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())
     return (
-      <Screen overline={`Rekod · ${goal.title}`} title={`Week ${week} of ${goal.weeks}`}>
-        <ProgressBar value={week / goal.weeks} />
+      <Shell navigation={navigation} overline={`Rekod · ${goal.title}`} title={`Week ${week} of ${goal.weeks}`}>
+        <View style={[styles.bar, { backgroundColor: C.primarySoft }]}><View style={{ width: `${Math.round((week / goal.weeks) * 100)}%`, height: '100%', backgroundColor: C.primary, borderRadius: 999 }} /></View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[TYPE.overline, { color: colors.muted }]}>Tonight</Text>
@@ -150,9 +198,9 @@ export default function RekodScreen() {
           <View style={[styles.card, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]}>Any stinging or redness this week?</Text>
             <View style={styles.answers}>
-              <Button title="All good" size="sm" onPress={() => checkIn('good')} loading={busy} style={{ flex: 1 }} />
-              <Button title="A little" size="sm" variant="outline" onPress={() => checkIn('little')} disabled={busy} style={{ flex: 1 }} />
-              <Button title="A lot" size="sm" variant="outline" onPress={() => checkIn('lot')} disabled={busy} style={{ flex: 1 }} />
+              <RButton small title="All good" onPress={() => checkIn('good')} loading={busy} style={{ flex: 1 }} />
+              <RButton small outline title="A little" onPress={() => checkIn('little')} disabled={busy} style={{ flex: 1 }} />
+              <RButton small outline title="A lot" onPress={() => checkIn('lot')} disabled={busy} style={{ flex: 1 }} />
             </View>
           </View>
         ) : null}
@@ -163,14 +211,14 @@ export default function RekodScreen() {
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.lg }}>
           <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Leave Rekod</Text>
         </Pressable>
-      </Screen>
+      </Shell>
     )
   }
 
   // ---------- Joining ----------
   if (step === 'intro') {
     return (
-      <Screen>
+      <Shell navigation={navigation}>
         <Image source={LOGO} style={styles.logo} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
           <Text style={[TYPE.overline, { color: colors.primary }]}>Skynkod decodes your skin</Text>
@@ -189,25 +237,27 @@ export default function RekodScreen() {
             </Pressable>
           ))}
         </View>
-      </Screen>
+      </Shell>
     )
   }
 
   if (step === 'preview' && preview) {
     const goal = goalOf(answers.goal)
     return (
-      <Screen
+      <Shell
+        navigation={navigation}
+        onBack={() => setStep('intro')}
         overline={`Your Rekod · ${goal.title}`}
         title={answers.sensitive ? 'Built for skin that reacts easily' : 'Built for your skin'}
         subtitle={`${goal.weeks} weeks · ${goal.results.toLowerCase()}`}
-        footer={<Button title="Adopt this routine" onPress={adopt} loading={busy} />}
+        footer={<RButton title="Join Rekod with this routine" onPress={adopt} loading={busy} />}
       >
         <RoutineCard title="Morning" steps={preview.morning} colors={colors} />
         <RoutineCard title="Evening" steps={preview.evening} colors={colors} showDays />
         <Pressable onPress={() => setStep('intro')} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
           <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Change my goal</Text>
         </Pressable>
-      </Screen>
+      </Shell>
     )
   }
 
@@ -218,13 +268,10 @@ export default function RekodScreen() {
     priority: { n: 3, title: 'What do you want more of?', options: [{ v: 'retinoid', t: 'More retinol' }, { v: 'exfoliation', t: 'More exfoliation' }, { v: null, t: 'A bit of both' }] },
   }
   const q = QUESTIONS[step]
-  if (!q || busy) return <LoadingView label={busy ? 'Building your Rekod…' : undefined} />
+  if (!q || busy) return <Loading label={busy ? 'Building your Rekod…' : undefined} />
   const total = answers.experience === 'used' || step === 'priority' ? 3 : 2
   return (
-    <Screen back={false}>
-      <Pressable onPress={() => setStep(step === 'priority' ? 'experience' : step === 'experience' ? 'sensitive' : 'intro')} hitSlop={10}>
-        <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>‹ Back</Text>
-      </Pressable>
+    <Shell navigation={navigation} onBack={() => setStep(step === 'priority' ? 'experience' : step === 'experience' ? 'sensitive' : 'intro')}>
       <View style={styles.progress}>
         {Array.from({ length: total }).map((_, i) => (
           <View key={i} style={[styles.progressBit, { backgroundColor: i < q.n ? colors.primary : colors.border }]} />
@@ -248,7 +295,7 @@ export default function RekodScreen() {
           )
         })}
       </View>
-    </Screen>
+    </Shell>
   )
 }
 
@@ -274,9 +321,15 @@ function RoutineCard({ title, steps, colors, showDays }) {
 }
 
 const styles = StyleSheet.create({
-  logo: { width: 44, height: 44, marginBottom: SPACING.lg },
+  logo: { width: 56, height: 56, marginBottom: SPACING.lg, marginTop: SPACING.md },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
+  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
+  footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, paddingBottom: SPACING.md },
+  title: { fontFamily: SERIF, fontSize: 30, lineHeight: 36, marginTop: SPACING.xs },
+  bar: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: SPACING.lg },
+  rbutton: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.lg },
   premium: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  premiumText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  premiumText: { color: '#33202E', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
   hero: { fontFamily: SERIF, fontSize: 44, lineHeight: 46, marginTop: SPACING.sm },
   serif: { fontFamily: SERIF, fontSize: 18 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },

@@ -22,6 +22,7 @@ import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { track } from '../utils/analytics';
 import { getRekodPlan, tonightNight, NIGHTS } from '../utils/rekod';
+const REKOD_LOGO = require('../assets/images/rekod-logo-white.png');
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
@@ -579,7 +580,10 @@ export default function HomeScreen({ navigation }) {
             <Glass style={styles.card}>
             <View onLayout={e => setRoutineY(e.nativeEvent.layout.y + bodyY)} style={styles.cardIn}>
               <View style={styles.cardHead}>
-                <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : rekod ? `${t('TONIGHT')} · ${t(NIGHTS[tonightNight(rekod)].short).toUpperCase()}` : t('TONIGHT')}</Text>
+                <Pressable disabled={!rekod} onPress={() => navigation.navigate('Rekod')} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {rekod ? <Image source={REKOD_LOGO} style={{ width: 16, height: 16, tintColor: colors.primary }} /> : null}
+                  <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : rekod ? `${t('TONIGHT')} · ${t(NIGHTS[tonightNight(rekod)].short).toUpperCase()}` : t('TONIGHT')}</Text>
+                </Pressable>
                 <Pressable onPress={() => navigation.navigate('Routines', { tab: period })} hitSlop={10}>
                   <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>
                     {t('{done} of {total}', { done: doneCount, total: steps.length })}
@@ -641,6 +645,19 @@ export default function HomeScreen({ navigation }) {
                   {'  ·  '}{period === 'morning' ? t('see you tonight') : t('sleep well')} {period === 'morning' ? '☀️' : '🌙'}
                 </Text>
               </Text>
+            </Pressable>
+          ) : null}
+
+          {/* Rekod: the premium programme. Members see it in their routine; others get one invitation. */}
+          {loaded && !rekod ? (
+            <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { opacity: pressed ? 0.9 : 1 }]}>
+              <Image source={REKOD_LOGO} style={{ width: 34, height: 34, tintColor: '#FFFFFF' }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rekodKicker}>{t('REKOD · PREMIUM')}</Text>
+                <Text style={styles.rekodTitle}>{t('The skin you have always wanted')}</Text>
+                <Text style={styles.rekodText}>{t('A programme built around your skin, backed by science.')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
             </Pressable>
           ) : null}
 
@@ -852,6 +869,10 @@ const styles = StyleSheet.create({
   card: { marginTop: SPACING.lg },
   cardIn: { padding: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rekodCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#33202E', borderRadius: 22, padding: SPACING.lg, marginTop: SPACING.lg },
+  rekodKicker: { color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
+  rekodTitle: { color: '#FFFFFF', fontFamily: SERIF, fontSize: 17, marginTop: 2 },
+  rekodText: { color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 1 },
   dots: { flexDirection: 'row', gap: 6, marginTop: SPACING.md },
   dot: { flex: 1, height: 3, borderRadius: 2 },
