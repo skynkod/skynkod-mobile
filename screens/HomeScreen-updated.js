@@ -25,6 +25,7 @@ import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines } from '../utils/seasons';
 import MorningCheckIn from '../components/MorningCheckIn';
 import Glass from '../components/Glass';
+import Moon from '../components/Moon';
 import { getProductsByIds, getNewestProductId, getMyProducts, photoOf } from '../utils/catalog';
 import { useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -340,6 +341,12 @@ export default function HomeScreen({ navigation }) {
 
           {/* Date and bell on top, the greeting centred in the space above the sections */}
           <View style={{ minHeight: introHeight }}>
+          {/* Tonight's real moon, in its true shape, on the lavender sky */}
+          {isNight || isDark ? (
+            <View pointerEvents="none" style={[styles.moon, { top: insets.top + 64 }]}>
+              <Moon size={58} />
+            </View>
+          ) : null}
           <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
             <Text style={styles.date}>
               {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -722,6 +729,7 @@ const styles = StyleSheet.create({
   tile: { padding: SPACING.lg, gap: SPACING.md },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sky: { position: 'absolute', top: 0, left: 0, right: 0 },
+  moon: { position: 'absolute', right: SPACING.xxl, shadowColor: '#FFFFFF', shadowOpacity: 0.45, shadowRadius: 14, shadowOffset: { width: 0, height: 0 } },
   seasonHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   seasonTitle: { fontFamily: SERIF, fontSize: 22 },
   seasonTip: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
