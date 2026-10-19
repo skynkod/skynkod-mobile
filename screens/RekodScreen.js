@@ -225,6 +225,7 @@ export default function RekodScreen({ navigation }) {
           <View style={[styles.premium, { backgroundColor: colors.primary }]}><Text style={styles.premiumText}>PREMIUM</Text></View>
         </View>
         <Text style={[styles.hero, { color: colors.text }]}>Rekod{'\n'}transforms it.</Text>
+        <Text style={[TYPE.bodyStrong, { color: colors.primary, marginTop: SPACING.md }]}>A premium skin programme, from 6 to 12 weeks.</Text>
         <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
           A premium programme built entirely around your skin, so you finally get the skin you've always wanted. Every active is backed by science, not trends.
         </Text>

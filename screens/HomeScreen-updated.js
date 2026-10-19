@@ -653,9 +653,9 @@ export default function HomeScreen({ navigation }) {
             <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { opacity: pressed ? 0.9 : 1 }]}>
               <Image source={REKOD_LOGO} style={{ width: 34, height: 34, tintColor: '#FFFFFF' }} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rekodKicker}>{t('REKOD · PREMIUM')}</Text>
-                <Text style={styles.rekodTitle}>{t('The skin you have always wanted')}</Text>
-                <Text style={styles.rekodText}>{t('A programme built around your skin, backed by science.')}</Text>
+                <Text style={styles.rekodKicker}>{t('REKOD · PREMIUM PROGRAMME')}</Text>
+                <Text style={styles.rekodTitle}>{t('Your skin programme, made for you')}</Text>
+                <Text style={styles.rekodText}>{t('Tell us your goal, get a routine of proven actives and a plan week by week.')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
             </Pressable>
@@ -666,7 +666,7 @@ export default function HomeScreen({ navigation }) {
             <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { paddingVertical: SPACING.md, opacity: pressed ? 0.9 : 1 }]}>
               <Image source={REKOD_LOGO} style={{ width: 26, height: 26, tintColor: '#FFFFFF' }} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rekodKicker}>{t('MY REKOD')}</Text>
+                <Text style={styles.rekodKicker}>{t('MY REKOD PROGRAMME')}</Text>
                 <Text style={[styles.rekodTitle, { fontSize: 15 }]}>
                   {t(goalOf(rekod.goal).title)} · {t('Week {n} of {total}', { n: Math.min(weekOf(rekod), goalOf(rekod.goal).weeks), total: goalOf(rekod.goal).weeks })}
                 </Text>
