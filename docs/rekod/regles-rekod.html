@@ -1,0 +1,364 @@
+<title>Règles Rekod</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
+<style>
+/* Layout: one reading column; shared rules first, then one section per goal, sources at the end of each */
+:root {
+  --bg: #FBF8FA; --surface: #FFFFFF; --ink: #1E1A1D; --soft: #5E565C; --muted: #7A7178;
+  --line: #EDE5EA; --mauve: #C5A8BB; --plum: #8A6380; --plum-ink: #6E4C66; --tint: #F4EDF2;
+  --proven: #2F6B45; --proven-bg: #E3F0E6; --promising: #8A5A12; --promising-bg: #F8EBD3; --hype: #7A3B3B; --hype-bg: #F6E1E1;
+  --serif: Georgia, 'Times New Roman', serif; --body: 'DM Sans', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161215; --surface: #201A1F; --ink: #F3ECF1; --soft: #CFC3CB; --muted: #A79BA4; --line: #352C33; --mauve: #9C7F92; --plum: #C9A3BE; --plum-ink: #E2C6DA; --tint: #2A2128;
+  --proven: #8FD3A3; --proven-bg: #1F3326; --promising: #E7C07A; --promising-bg: #3A2E18; --hype: #E9A3A3; --hype-bg: #3A2020; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #161215; --surface: #201A1F; --ink: #F3ECF1; --soft: #CFC3CB; --muted: #A79BA4; --line: #352C33; --mauve: #9C7F92; --plum: #C9A3BE; --plum-ink: #E2C6DA; --tint: #2A2128;
+  --proven: #8FD3A3; --proven-bg: #1F3326; --promising: #E7C07A; --promising-bg: #3A2E18; --hype: #E9A3A3; --hype-bg: #3A2020; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
+.wrap { max-width: 780px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font: 400 clamp(32px, 6vw, 44px)/1.1 var(--serif); }
+h2 { font: 400 26px/1.2 var(--serif); }
+h3 { font: 700 15px/1.4 var(--body); letter-spacing: .02em; }
+p { margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--plum); font-weight: 700; }
+.lead { color: var(--soft); max-width: 64ch; }
+.note { background: var(--tint); border-radius: 14px; padding: 14px 16px; color: var(--plum-ink); font-size: 15px; }
+section { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+li::marker { color: var(--plum); }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc a { text-decoration: none; color: var(--plum-ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 600; }
+.toc a:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.b-proven { color: var(--proven); background: var(--proven-bg); }
+.b-promising { color: var(--promising); background: var(--promising-bg); }
+.b-hype { color: var(--hype); background: var(--hype-bg); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 560px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--tint); }
+tr:last-child td { border-bottom: 0; }
+.routine { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.routine div { background: var(--tint); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+.routine b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--plum); margin-bottom: 4px; }
+.steps { display: grid; gap: 8px; }
+.steps div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; font-size: 14px; }
+.steps span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.src { font-size: 13px; color: var(--muted); }
+.src li::marker { color: var(--muted); }
+.warn { color: var(--hype); }
+@media (max-width: 480px) { .steps div { grid-template-columns: 1fr; gap: 2px; } }
+</style>
+
+<main class="wrap">
+  <header style="display: grid; gap: 12px">
+    <p class="eyebrow">Brouillon à faire relire · version du 19 octobre 2026</p>
+    <h1>Les règles de Rekod</h1>
+    <p class="lead">Ce document décrit comment Rekod choisit les actifs d'une routine, à quel dosage, et à quel rythme il les introduit. L'appli suivra ces règles à la lettre, sans IA pour décider. Il est écrit pour être relu et corrigé par une dermatologue ou une pharmacienne avant la sortie.</p>
+    <p class="note">Conseils cosmétiques uniquement. Rekod ne pose pas de diagnostic et ne remplace pas une consultation. Les références citées sont à vérifier par la relectrice. Je les ai indiquées pour qu'elle puisse contrôler chaque affirmation.</p>
+    <nav class="toc" aria-label="Sommaire">
+      <a href="#principes">Principes</a><a href="#base">Base commune</a><a href="#rythme">Introduction</a><a href="#securite">Sécurité</a>
+      <a href="#nette">Peau nette</a><a href="#age">Anti-âge</a><a href="#taches">Taches</a><a href="#eclat">Éclat</a><a href="#pores">Pores</a><a href="#apaisee">Peau apaisée</a><a href="#hydratation">Hydratation</a><a href="#marketing">Surtout marketing</a>
+    </nav>
+  </header>
+
+  <section id="principes">
+    <h2>1. Les principes</h2>
+    <div class="card">
+      <h3>Les trois niveaux de preuve affichés dans l'appli</h3>
+      <ul>
+        <li><span class="badge b-proven">Prouvé</span> Plusieurs essais cliniques contrôlés ou une recommandation officielle (par exemple les recommandations de l'American Academy of Dermatology).</li>
+        <li><span class="badge b-promising">Prometteur</span> Des résultats encourageants, mais des études peu nombreuses, petites ou financées par l'industrie.</li>
+        <li><span class="badge b-hype">Surtout marketing</span> Une promesse courante sans preuve solide que l'actif, appliqué sur la peau, produit l'effet annoncé.</li>
+      </ul>
+      <h3>Les trois réglages qui adaptent chaque routine</h3>
+      <ul>
+        <li><b>Sensibilité</b> : peau résistante, ou peau qui réagit facilement (rougeurs, picotements, eczéma, rosacée).</li>
+        <li><b>Habitude des actifs</b> : jamais / un peu (niacinamide, vitamine C) / régulièrement (acides, rétinoïdes).</li>
+        <li><b>Nombre d'étapes</b> : essentiel (3 le matin, 3 le soir) ou complet (jusqu'à 5).</li>
+      </ul>
+      <h3>Règles générales</h3>
+      <ul>
+        <li>Une routine Rekod contient au maximum <b>deux actifs « forts »</b> (rétinoïde, acide exfoliant, peroxyde de benzoyle).</li>
+        <li>On n'introduit <b>qu'un nouvel actif à la fois</b>, avec au moins deux semaines avant le suivant.</li>
+        <li>On ne promet jamais de résultat avant le délai réaliste de l'objectif, en général 8 à 12 semaines.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="base">
+    <h2>2. La base commune à toutes les routines</h2>
+    <div class="card">
+      <div class="routine">
+        <div><b>Matin</b>Nettoyant doux (ou simple rinçage à l'eau pour les peaux sèches) → actif du matin éventuel → crème hydratante → <b style="display:inline; text-transform:none; letter-spacing:0">crème solaire SPF 50</b></div>
+        <div><b>Soir</b>Démaquillage ou nettoyant doux → actif du soir (selon le planning) → crème hydratante</div>
+      </div>
+      <ul>
+        <li><span class="badge b-proven">Prouvé</span> <b>Crème solaire chaque matin</b> : réduit le photovieillissement et les taches, et protège les peaux qui utilisent rétinoïdes et acides. Quantité : environ deux longueurs de doigt pour le visage et le cou.</li>
+        <li><span class="badge b-proven">Prouvé</span> <b>Crème hydratante</b> : renforce la barrière cutanée et réduit l'irritation causée par les actifs.</li>
+        <li>Ordre d'application : du plus liquide au plus épais, la crème solaire en dernier le matin.</li>
+      </ul>
+      <ul class="src">
+        <li>Hughes MCB et al. Sunscreen and prevention of skin aging: a randomized trial. Ann Intern Med. 2013;158(11):781-790.</li>
+        <li>Purnamawati S et al. The role of moisturizers in addressing various kinds of dermatitis: a review. Clin Med Res. 2017;15(3-4):75-87.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="rythme">
+    <h2>3. Le plan d'introduction</h2>
+    <div class="card">
+      <h3>Rétinoïdes (rétinol, rétinal)</h3>
+      <div class="steps">
+        <div><span>Semaines 1–2</span><p>2 soirs par semaine (par exemple lundi et jeudi).</p></div>
+        <div><span>Semaines 3–4</span><p>Un soir sur deux.</p></div>
+        <div><span>Semaine 5 et +</span><p>Tous les soirs si la peau le tolère. Peau qui réagit facilement : on peut rester à un soir sur deux.</p></div>
+      </div>
+      <h3>Acides exfoliants sans rinçage (AHA, BHA, PHA)</h3>
+      <div class="steps">
+        <div><span>Semaines 1–2</span><p>1 à 2 soirs par semaine.</p></div>
+        <div><span>Semaine 3 et +</span><p>2 à 3 soirs par semaine au maximum. Peau qui réagit facilement : 2 soirs maximum, de préférence PHA ou acide mandélique.</p></div>
+      </div>
+      <h3>Actifs doux (niacinamide, acide azélaïque, vitamine C)</h3>
+      <div class="steps">
+        <div><span>Semaine 1</span><p>Un jour sur deux.</p></div>
+        <div><span>Semaine 2 et +</span><p>Tous les jours. L'acide azélaïque peut picoter les premiers jours : on reste à un jour sur deux si c'est le cas.</p></div>
+      </div>
+      <h3>Point de départ selon le profil</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Profil</th><th>Rétinoïde de départ</th><th>Acide de départ</th></tr></thead>
+        <tbody>
+          <tr><td>Jamais d'actifs, peau qui réagit</td><td>Rétinol 0,1–0,2 % ou rétinal 0,05 %, en « sandwich » entre deux couches de crème</td><td>PHA ou acide mandélique, 1 soir par semaine</td></tr>
+          <tr><td>Jamais d'actifs, peau résistante</td><td>Rétinol 0,2–0,3 %</td><td>BHA 2 % ou AHA 5–8 %, 1 à 2 soirs</td></tr>
+          <tr><td>Un peu d'habitude</td><td>Rétinol 0,3–0,5 %</td><td>BHA 2 % ou AHA 8–10 %, 2 soirs</td></tr>
+          <tr><td>Habituée</td><td>Rétinol 0,5–1 % ou rétinal 0,1 %, en commençant à la semaine 3 du plan</td><td>Selon tolérance, 3 soirs maximum</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Le bilan de la semaine (une question)</h3>
+      <ul>
+        <li><b>« Tout va bien »</b> : on passe à l'étape suivante.</li>
+        <li><b>« Un peu »</b> (léger picotement, petites peaux sèches) : on reste une semaine de plus au même niveau.</li>
+        <li><b>« Beaucoup »</b> (brûlure, rougeur qui dure, peau qui pèle fort) : on revient d'un niveau, on met les actifs forts en pause 3 à 5 jours, et on garde seulement nettoyant doux, crème et SPF.</li>
+        <li class="warn"><b>Arrêt et conseil de consulter</b> : gonflement, plaques qui suintent, réaction qui s'étend, ou aucune amélioration après la pause.</li>
+      </ul>
+      <ul class="src">
+        <li>Mukherjee S et al. Retinoids in the treatment of skin aging: an overview of clinical efficacy and safety. Clin Interv Aging. 2006;1(4):327-348.</li>
+        <li>Kornhauser A et al. Applications of hydroxy acids: classification, mechanisms, and photoactivity. Clin Cosmet Investig Dermatol. 2010;3:135-142.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="securite">
+    <h2>4. Sécurité : ce que Rekod ne fait jamais</h2>
+    <div class="card">
+      <ul>
+        <li><b>Grossesse ou allaitement</b> : aucun rétinoïde. On propose à la place du bakuchiol, de l'acide azélaïque ou de la niacinamide. Pas d'acide salicylique en peeling à forte concentration. Toujours afficher : « Parles-en à ton médecin ou à ta sage-femme ».</li>
+        <li><b>Rétinoïde et acide le même soir</b> : jamais. On alterne les soirs.</li>
+        <li><b>Peroxyde de benzoyle et rétinol au même moment</b> : on les sépare (peroxyde le matin, rétinol le soir).</li>
+        <li><b>Eczéma, rosacée, dermatite périorale</b> : pas d'acides exfoliants forts ni de gommage à grains. Priorité à la barrière cutanée. Le rétinoïde n'est proposé qu'après 4 semaines sans réaction.</li>
+        <li><b>Ingrédients que la personne veut éviter</b> (allergies déclarées) : jamais proposés.</li>
+        <li><b>Signes qui demandent un avis médical</b> : acné nodulaire ou kystique, taches qui changent de forme ou de couleur, lésion qui saigne. Rekod affiche un conseil de consultation au lieu d'une routine.</li>
+      </ul>
+      <ul class="src">
+        <li>Bozzo P et al. Safety of skin care products during pregnancy. Can Fam Physician. 2011;57(6):665-667.</li>
+        <li>Thiboutot D et al. Standard management options for rosacea: the 2019 update by the National Rosacea Society Expert Committee. J Am Acad Dermatol. 2020;82(6):1501-1510.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="nette">
+    <h2>5. Rekod Peau nette</h2>
+    <div class="card">
+      <p class="lead">Pour les boutons, points noirs et pores bouchés. Premiers résultats vers 6–8 semaines, résultat net vers 12 semaines.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Acide salicylique (BHA) 0,5–2 %</td><td><span class="badge b-proven">Prouvé</span></td><td>Désincruste les pores, points noirs et microkystes</td></tr>
+          <tr><td>Peroxyde de benzoyle 2,5–5 %</td><td><span class="badge b-proven">Prouvé</span></td><td>Boutons rouges inflammatoires ; 2,5 % aussi efficace et moins irritant que les doses plus fortes</td></tr>
+          <tr><td>Rétinoïdes (adapalène, rétinol)</td><td><span class="badge b-proven">Prouvé</span></td><td>Base de traitement de l'acné ; l'adapalène est un médicament dans certains pays, on propose alors le rétinol</td></tr>
+          <tr><td>Acide azélaïque 10–20 %</td><td><span class="badge b-proven">Prouvé</span></td><td>Boutons et marques rouges ou brunes, bien toléré par les peaux sensibles</td></tr>
+          <tr><td>Niacinamide 2–5 %</td><td><span class="badge b-promising">Prometteur</span></td><td>Réduit le sébum et apaise</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Nettoyant doux → niacinamide → crème légère non comédogène → SPF 50 (peroxyde de benzoyle 2,5 % en couche fine sur les zones à boutons, si inflammatoire)</div>
+        <div><b>Soir</b>Nettoyant doux → BHA (selon le planning) ou acide azélaïque → crème. Rétinol à partir de la semaine 3, jamais le même soir que le BHA.</div>
+      </div>
+      <ul class="src">
+        <li>Reynolds RV et al. Guidelines of care for the management of acne vulgaris. J Am Acad Dermatol. 2024;90(5):1006.e1-1006.e30.</li>
+        <li>Zaenglein AL et al. Guidelines of care for the management of acne vulgaris. J Am Acad Dermatol. 2016;74(5):945-973.</li>
+        <li>Draelos ZD et al. The effect of 2% niacinamide on facial sebum production. J Cosmet Laser Ther. 2006;8(2):96-101.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="age">
+    <h2>6. Rekod Anti-âge</h2>
+    <div class="card">
+      <p class="lead">Pour les ridules, la fermeté et le teint. Premiers effets vers 8–12 semaines, effet sur les rides vers 6 mois. On ne promet pas de « rajeunir », on promet une peau visiblement plus lisse et plus uniforme.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Crème solaire quotidienne</td><td><span class="badge b-proven">Prouvé</span></td><td>Le geste anti-âge le plus efficace</td></tr>
+          <tr><td>Rétinol, rétinal</td><td><span class="badge b-proven">Prouvé</span></td><td>Stimule le renouvellement, lisse les ridules</td></tr>
+          <tr><td>Vitamine C (acide ascorbique 10–20 %)</td><td><span class="badge b-proven">Prouvé</span></td><td>Antioxydant le matin, éclat, complète la crème solaire</td></tr>
+          <tr><td>Niacinamide 4–5 %</td><td><span class="badge b-promising">Prometteur</span></td><td>Texture, ridules, teint</td></tr>
+          <tr><td>Bakuchiol 0,5–1 %</td><td><span class="badge b-promising">Prometteur</span></td><td>Alternative douce au rétinol, possible pendant la grossesse</td></tr>
+          <tr><td>Peptides</td><td><span class="badge b-promising">Prometteur</span></td><td>Hydratation et texture ; peu d'études indépendantes</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Nettoyant doux → vitamine C → crème → SPF 50</div>
+        <div><b>Soir</b>Nettoyant doux → rétinoïde (selon le planning ; bakuchiol si grossesse) → crème riche</div>
+      </div>
+      <ul class="src">
+        <li>Mukherjee S et al. Clin Interv Aging. 2006;1(4):327-348 (voir section 3).</li>
+        <li>Telang PS. Vitamin C in dermatology. Indian Dermatol Online J. 2013;4(2):143-146.</li>
+        <li>Bissett DL et al. Niacinamide: a B vitamin that improves aging facial skin appearance. Dermatol Surg. 2005;31(7 Pt 2):860-865.</li>
+        <li>Dhaliwal S et al. Prospective, randomized, double-blind assessment of topical bakuchiol and retinol for facial photoageing. Br J Dermatol. 2019;180(2):289-296.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="taches">
+    <h2>7. Rekod Taches</h2>
+    <div class="card">
+      <p class="lead">Pour les marques de boutons, taches de soleil et teint irrégulier. Résultats vers 8–12 semaines. Sans crème solaire quotidienne, aucun actif ne suffit. Le mélasma demande un avis médical en plus.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Crème solaire SPF 50, idéalement teintée (oxydes de fer)</td><td><span class="badge b-proven">Prouvé</span></td><td>Empêche les taches de foncer ; la teinte protège aussi de la lumière visible</td></tr>
+          <tr><td>Acide azélaïque 10–20 %</td><td><span class="badge b-proven">Prouvé</span></td><td>Éclaircit les marques, bien toléré</td></tr>
+          <tr><td>Rétinoïdes</td><td><span class="badge b-proven">Prouvé</span></td><td>Accélère le renouvellement des cellules pigmentées</td></tr>
+          <tr><td>Acide tranexamique (topique)</td><td><span class="badge b-promising">Prometteur</span></td><td>Taches et mélasma, surtout en complément</td></tr>
+          <tr><td>Niacinamide, vitamine C, alpha-arbutine</td><td><span class="badge b-promising">Prometteur</span></td><td>Uniformisent le teint, effet modéré</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Nettoyant doux → vitamine C ou niacinamide → crème → SPF 50 teinté</div>
+        <div><b>Soir</b>Nettoyant doux → acide azélaïque ou acide tranexamique → rétinoïde à partir de la semaine 3 (soirs alternés) → crème</div>
+      </div>
+      <ul class="src">
+        <li>Kircik LH. Efficacy and safety of azelaic acid gel 15% in the treatment of post-inflammatory hyperpigmentation and acne. J Drugs Dermatol. 2011;10(6):586-590.</li>
+        <li>Taraz M et al. Tranexamic acid in treatment of melasma: a comprehensive review of clinical studies. Dermatol Ther. 2017;30(3):e12465.</li>
+        <li>Navarrete-Solís J et al. A double-blind, randomized clinical trial of niacinamide 4% versus hydroquinone 4% in the treatment of melasma. Dermatol Res Pract. 2011;2011:379173.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="eclat">
+    <h2>8. Rekod Éclat</h2>
+    <div class="card">
+      <p class="lead">Pour la peau terne et fatiguée. Premiers effets en 3–4 semaines.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>AHA (acide glycolique ou lactique)</td><td><span class="badge b-proven">Prouvé</span></td><td>Exfolie en douceur, lisse le grain de peau</td></tr>
+          <tr><td>Vitamine C</td><td><span class="badge b-proven">Prouvé</span></td><td>Éclat et protection antioxydante le matin</td></tr>
+          <tr><td>Niacinamide</td><td><span class="badge b-promising">Prometteur</span></td><td>Teint plus uniforme</td></tr>
+          <tr><td>Hydratants (glycérine, acide hyaluronique)</td><td><span class="badge b-proven">Prouvé</span></td><td>Une peau hydratée réfléchit mieux la lumière</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Nettoyant doux → vitamine C → crème → SPF 50</div>
+        <div><b>Soir</b>Nettoyant doux → AHA (selon le planning) → sérum hydratant → crème</div>
+      </div>
+      <ul class="src"><li>Kornhauser A et al. 2010 (voir section 3) ; Telang PS 2013 (voir section 6).</li></ul>
+    </div>
+  </section>
+
+  <section id="pores">
+    <h2>9. Rekod Pores</h2>
+    <div class="card">
+      <p class="lead">Pour les pores visibles et la brillance. On ne peut pas « fermer » un pore : on peut le désencombrer et le rendre moins visible. Résultats vers 8–12 semaines.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Acide salicylique (BHA)</td><td><span class="badge b-proven">Prouvé</span></td><td>Nettoie l'intérieur du pore</td></tr>
+          <tr><td>Rétinoïdes</td><td><span class="badge b-promising">Prometteur</span></td><td>Pores moins visibles avec le temps</td></tr>
+          <tr><td>Niacinamide</td><td><span class="badge b-promising">Prometteur</span></td><td>Moins de sébum, pores moins marqués</td></tr>
+          <tr><td>Argile (masque)</td><td><span class="badge b-promising">Prometteur</span></td><td>Absorbe l'excès de sébum, effet temporaire</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Nettoyant doux → niacinamide → crème légère → SPF 50 fluide</div>
+        <div><b>Soir</b>Nettoyant doux → BHA (selon le planning) → rétinol à partir de la semaine 3, soirs alternés → crème légère. Masque à l'argile 1 fois par semaine.</div>
+      </div>
+      <ul class="src"><li>Reynolds RV et al. 2024 (voir section 5) ; Draelos ZD et al. 2006 (voir section 5).</li></ul>
+    </div>
+  </section>
+
+  <section id="apaisee">
+    <h2>10. Rekod Peau apaisée</h2>
+    <div class="card">
+      <p class="lead">Pour les rougeurs, tiraillements et réactions. Priorité : réparer la barrière avant tout autre actif. Amélioration en 2–4 semaines. Rosacée et eczéma : avis médical recommandé.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Céramides, cholestérol, acides gras</td><td><span class="badge b-proven">Prouvé</span></td><td>Reconstruisent la barrière cutanée</td></tr>
+          <tr><td>Acide azélaïque 15–20 %</td><td><span class="badge b-proven">Prouvé</span></td><td>Rougeurs et boutons de la rosacée</td></tr>
+          <tr><td>Niacinamide</td><td><span class="badge b-promising">Prometteur</span></td><td>Apaise, renforce la barrière</td></tr>
+          <tr><td>Panthénol, centella asiatica, avoine colloïdale</td><td><span class="badge b-promising">Prometteur</span></td><td>Apaisent les sensations d'inconfort</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Rinçage à l'eau ou nettoyant très doux → crème aux céramides → SPF 50 minéral (oxyde de zinc)</div>
+        <div><b>Soir</b>Nettoyant très doux → acide azélaïque à partir de la semaine 3 si la peau est calme → crème aux céramides. Pas de parfum ni d'huiles essentielles.</div>
+      </div>
+      <ul class="src">
+        <li>Thiboutot D et al. 2020 (voir section 4).</li>
+        <li>Draelos ZD, Raymond I. The efficacy of a ceramide-based cream in mild-to-moderate atopic dermatitis. J Clin Aesthet Dermatol. 2018;11(5):30-32.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="hydratation">
+    <h2>11. Rekod Hydratation</h2>
+    <div class="card">
+      <p class="lead">Pour la peau qui tire, sèche ou déshydratée. Amélioration en 1–2 semaines.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif</th><th>Preuve</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Humectants : glycérine, acide hyaluronique, urée 5–10 %</td><td><span class="badge b-proven">Prouvé</span></td><td>Attirent l'eau dans la peau</td></tr>
+          <tr><td>Émollients : squalane, beurres, céramides</td><td><span class="badge b-proven">Prouvé</span></td><td>Assouplissent et réparent</td></tr>
+          <tr><td>Occlusifs : vaseline, diméthicone (le soir, peaux très sèches)</td><td><span class="badge b-proven">Prouvé</span></td><td>Empêchent l'eau de s'évaporer</td></tr>
+        </tbody>
+      </table></div>
+      <div class="routine">
+        <div><b>Matin</b>Rinçage à l'eau ou nettoyant crème → sérum hydratant sur peau encore humide → crème → SPF 50</div>
+        <div><b>Soir</b>Nettoyant crème → sérum hydratant → crème riche → fine couche occlusive sur les zones très sèches</div>
+      </div>
+      <ul class="src"><li>Purnamawati S et al. 2017 (voir section 2).</li></ul>
+    </div>
+  </section>
+
+  <section id="marketing">
+    <h2>12. Ce que Rekod présente comme « surtout marketing »</h2>
+    <div class="card">
+      <ul>
+        <li><span class="badge b-hype">Surtout marketing</span> <b>Collagène en crème</b> : la molécule est trop grosse pour pénétrer et remplacer le collagène de la peau. Elle hydrate en surface, rien de plus.</li>
+        <li><span class="badge b-hype">Surtout marketing</span> <b>Produits « détox » et charbon « qui aspire les toxines »</b> : la peau ne stocke pas de toxines qu'une crème pourrait retirer.</li>
+        <li><span class="badge b-hype">Surtout marketing</span> <b>Or, caviar, perles</b> : aucune preuve d'un effet propre sur la peau à ces concentrations.</li>
+        <li><span class="badge b-hype">Surtout marketing</span> <b>« Resserre les pores »</b> au sens propre : un pore ne s'ouvre ni ne se ferme.</li>
+      </ul>
+      <p class="src">Section à valider en priorité par la relectrice : ce sont les affirmations les plus visibles et les plus susceptibles d'être contestées par une marque.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pour la relectrice</h2>
+    <div class="card">
+      <ul>
+        <li>Les dosages, rythmes et niveaux de preuve vous semblent-ils justes ?</li>
+        <li>Faut-il ajouter une contre-indication ou un signe d'alerte ?</li>
+        <li>Les références sont-elles exactes et à jour ?</li>
+        <li>Un actif devrait-il changer de niveau de preuve ?</li>
+      </ul>
+      <p>Vos corrections seront intégrées telles quelles dans l'appli.</p>
+    </div>
+  </section>
+</main>
