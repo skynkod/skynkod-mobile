@@ -8,7 +8,7 @@
     ],
     "ios": {
       "supportsTabletMode": true,
-      "bundleIdentifier": "com.anonymous.skynkod"
+      "bundleIdentifier": "com.skynkod.app"
     },
     "plugins": [
       [
@@ -48,7 +48,7 @@
       ]
     ],
     "android": {
-      "package": "com.anonymous.skynkod",
+      "package": "com.skynkod.app",
       "permissions": [
         "android.permission.CAMERA"
       ],
