@@ -21,7 +21,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { track } from '../utils/analytics';
-import { getRekodPlan, tonightNight, NIGHTS } from '../utils/rekod';
+import { getRekodPlan, tonightNight, NIGHTS, goalOf, weekOf } from '../utils/rekod';
 const REKOD_LOGO = require('../assets/images/rekod-logo-white.png');
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
@@ -656,6 +656,20 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.rekodKicker}>{t('REKOD · PREMIUM')}</Text>
                 <Text style={styles.rekodTitle}>{t('The skin you have always wanted')}</Text>
                 <Text style={styles.rekodText}>{t('A programme built around your skin, backed by science.')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
+            </Pressable>
+          ) : null}
+
+          {/* A member: a slim card back into her programme. */}
+          {loaded && rekod ? (
+            <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { paddingVertical: SPACING.md, opacity: pressed ? 0.9 : 1 }]}>
+              <Image source={REKOD_LOGO} style={{ width: 26, height: 26, tintColor: '#FFFFFF' }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rekodKicker}>{t('MY REKOD')}</Text>
+                <Text style={[styles.rekodTitle, { fontSize: 15 }]}>
+                  {t(goalOf(rekod.goal).title)} · {t('Week {n} of {total}', { n: Math.min(weekOf(rekod), goalOf(rekod.goal).weeks), total: goalOf(rekod.goal).weeks })}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
             </Pressable>
