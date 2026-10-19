@@ -6,41 +6,30 @@ import * as Location from 'expo-location'
 
 const CACHE_KEY = 'skynkod_skin_weather'
 
-// One tip from the day's weather, most important first. `profile` adapts
-// the thresholds (dry skin hears about dry air sooner, oily about humidity).
-export const pickSkinTip = (w, profile, city) => {
-  if (!w) return null
+// The day's skin tips from the weather, most important first (at most 3).
+// `profile` adapts the thresholds (dry skin hears about dry air sooner, oily
+// about humidity). A calm day gives an empty list.
+export const pickSkinTips = (w, profile, city) => {
+  if (!w) return []
   const type = profile?.skin_type
   const dryThreshold = type === 'Dry' || type === 'Sensitive' ? 40 : 30
   const at = city ? ` in ${city}` : ''
   const hour = h => `${h}:00`
+  const tips = []
 
   // Chergui: hot, dry, windy.
-  if (w.tempMax >= 30 && w.humidityMin <= 25 && w.windMax >= 25) {
-    return { icon: 'flag-outline', text: 'Chergui today · Hot, dry wind: protect your skin barrier' }
-  }
-  if (w.uvMax >= 8) {
-    return { icon: 'sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · Reapply sunscreen around ${hour(w.uvPeakHour)}` }
-  }
-  if (w.humidityMin <= dryThreshold) {
-    return { icon: 'leaf-outline', text: 'Very dry air today · Your skin will be thirsty, add a hydrating serum' }
-  }
-  if (w.tempMax >= 33 && w.humidityMean >= 60) {
-    return { icon: 'water-outline', text: `${Math.round(w.tempMax)}° and humid · Light cream, and cleanse well tonight` }
-  }
-  if (w.tempMax >= 33) {
-    return { icon: 'thermometer-outline', text: `${Math.round(w.tempMax)}°${at} · Light textures, and reapply your SPF` }
-  }
-  if (w.tempMax <= 10) {
-    return { icon: 'snow-outline', text: `Cold day · ${Math.round(w.tempMax)}° · Richer cream, protect your cheeks and lips` }
-  }
-  if (type === 'Oily' && w.humidityMean >= 70) {
-    return { icon: 'water-outline', text: 'Humid day · A light gel moisturizer is enough' }
-  }
-  if (w.uvMax >= 5) {
-    return { icon: 'partly-sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · SPF 30 or more this morning` }
-  }
-  return { icon: 'cloud-outline', text: `Mild day · ${Math.round(w.tempMax)}°${at} · Your usual routine is perfect` }
+  const chergui = w.tempMax >= 30 && w.humidityMin <= 25 && w.windMax >= 25
+  if (chergui) tips.push({ icon: 'flag-outline', text: 'Chergui today · Hot, dry wind: protect your skin barrier' })
+  if (w.uvMax >= 8) tips.push({ icon: 'sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · Reapply sunscreen around ${hour(w.uvPeakHour)}` })
+  if (!chergui && w.humidityMin <= dryThreshold) tips.push({ icon: 'leaf-outline', text: 'Very dry air today · Your skin will be thirsty, add a hydrating serum' })
+  // Humid only when the air isn't also dry at some point of the day.
+  const humid = w.humidityMean >= 60 && w.humidityMin > dryThreshold
+  if (w.tempMax >= 33 && humid) tips.push({ icon: 'water-outline', text: `${Math.round(w.tempMax)}° and humid · Light cream, and cleanse well tonight` })
+  else if (w.tempMax >= 33) tips.push({ icon: 'thermometer-outline', text: `${Math.round(w.tempMax)}°${at} · Light textures, and reapply your SPF` })
+  if (w.tempMax <= 10) tips.push({ icon: 'snow-outline', text: `Cold day · ${Math.round(w.tempMax)}° · Richer cream, protect your cheeks and lips` })
+  if (type === 'Oily' && humid && w.humidityMean >= 70 && w.tempMax < 33) tips.push({ icon: 'water-outline', text: 'Humid day · A light gel moisturizer is enough' })
+  if (w.uvMax >= 5 && w.uvMax < 8) tips.push({ icon: 'partly-sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · SPF 30 or more this morning` })
+  return tips.slice(0, 3)
 }
 
 const fetchWeather = async ({ latitude, longitude }) => {

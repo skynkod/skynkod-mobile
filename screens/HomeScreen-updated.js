@@ -20,7 +20,7 @@ import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
-import { getSkinWeather, pickSkinTip, getWeatherNow } from '../utils/skin-weather';
+import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
 import MorningCheckIn from '../components/MorningCheckIn';
@@ -173,6 +173,20 @@ export default function HomeScreen({ navigation }) {
   const [skyToday, setSkyToday] = useState(null);
   // And the weather right now: temperature, sky, humidity, UV.
   const [weatherNow, setWeatherNow] = useState(null);
+  // The skin tips take turns every 4 seconds when there are several.
+  const [tipStep, setTipStep] = useState(0);
+  const tipFade = useRef(new Animated.Value(1)).current;
+  const tipCount = skyToday ? Math.max(1, pickSkinTips(skyToday.weather, profile, skyToday.city).length) : 1;
+  useEffect(() => {
+    if (tipCount < 2) return;
+    const id = setInterval(() => {
+      Animated.timing(tipFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+        setTipStep(step => step + 1);
+        Animated.timing(tipFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      });
+    }, 4000);
+    return () => clearInterval(id);
+  }, [tipCount]);
   // Beside the date, the sky then the temperature, in turn every 2 seconds.
   const [weatherStep, setWeatherStep] = useState(0);
   const weatherFade = useRef(new Animated.Value(1)).current;
@@ -333,11 +347,13 @@ export default function HomeScreen({ navigation }) {
 
   // White over the sky: the text sits on its deeper top part.
   const ink = '#FFFFFF';
-  const rawWeatherTip = skyToday ? pickSkinTip(skyToday.weather, profile, skyToday.city) : null;
+  const weatherTips = skyToday ? pickSkinTips(skyToday.weather, profile, skyToday.city) : [];
   // Calm weather: a Ramadan tip during the month, otherwise a season tip.
   const ramadan = ramadanDay();
   const calmTip = ramadan ? ramadanTip(ramadan, false) : seasonDailyTip(season.id);
-  const weatherTip = rawWeatherTip?.icon === 'cloud-outline' ? calmTip : rawWeatherTip;
+  // Several weather tips today: they take turns in the pill.
+  const dayTips = skyToday ? (weatherTips.length ? weatherTips : [calmTip]) : [];
+  const weatherTip = dayTips.length ? dayTips[tipStep % dayTips.length] : null;
   // After iftar the evening is when Ramadan tips matter most.
   const eveningTip = isNight && ramadan ? ramadanTip(ramadan, true) : null;
 
@@ -404,10 +420,10 @@ export default function HomeScreen({ navigation }) {
             {/* Skin weather: the day's one tip from the local weather (daytime only) */}
             {(isNight ? eveningTip : weatherTip) ? (
               <Glass radius={999} style={styles.linePill}>
-                <View style={styles.lineRow}>
+                <Animated.View style={[styles.lineRow, { opacity: isNight ? 1 : tipFade }]}>
                   <Ionicons name={(isNight ? eveningTip : weatherTip).icon} size={15} color={isDark ? colors.text : INK} />
                   <Text style={[styles.line, { color: isDark ? colors.text : INK, flexShrink: 1 }]}>{t((isNight ? eveningTip : weatherTip).text)}</Text>
-                </View>
+                </Animated.View>
               </Glass>
             ) : null}
             {/* The line sits on a frosted pill so it reads the same over light and deep parts of the sky */}
