@@ -52,7 +52,7 @@ Photos of your face that you choose to save.
 
 ### i) Data that stays on your phone
 We don't receive this data:
-- **Approximate location** (rounded to about 10 km): only if you allow it, to work out sunrise and sunset and switch the app to day or night mode. It stays on your phone.
+- **Approximate location** (rounded to about 10 km): only if you allow it, to work out sunrise and sunset (day or night mode) and for your "skin weather". It is stored on your phone; for the weather, only these rounded coordinates are sent to the Open-Meteo weather service, without your name, email or any identifier.
 - **Camera**: to scan a product's barcode. No image is saved or sent; only the barcode number is used.
 - **Notifications**: reminders are scheduled on your phone.
 - **Technical error logs**: kept on your phone to help us fix bugs.
@@ -91,6 +91,8 @@ We use service providers who process data on our behalf and on our instructions:
 | Apple / Google | App distribution; Premium payments (when available) | Under their own terms |
 
 When you scan an unknown product, only the **barcode number** is sent to the open database Open Beauty Facts. No personal data is shared.
+
+For your skin weather, only your **coordinates rounded to about 10 km** are sent to the **Open-Meteo** weather service (Switzerland), without any identifier.
 
 We may also disclose data when required by law (for example at the request of a judicial authority).
 

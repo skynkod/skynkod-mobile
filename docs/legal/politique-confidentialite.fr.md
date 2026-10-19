@@ -52,7 +52,7 @@ Les photos de votre visage que vous choisissez d'enregistrer.
 
 ### i) Les données qui restent sur votre téléphone
 Nous ne recevons pas ces données :
-- **Localisation approximative** (arrondie à environ 10 km) : uniquement si vous l'autorisez, pour calculer l'heure du lever et du coucher du soleil et passer l'application en mode jour ou nuit. Elle reste sur votre téléphone.
+- **Localisation approximative** (arrondie à environ 10 km) : uniquement si vous l'autorisez, pour calculer l'heure du lever et du coucher du soleil (mode jour ou nuit) et pour la « météo de votre peau ». Elle est enregistrée sur votre téléphone ; pour la météo, seules ces coordonnées arrondies sont envoyées au service météo Open-Meteo, sans votre nom, votre email ni aucun identifiant.
 - **Caméra** : pour scanner le code-barres d'un produit. Aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé.
 - **Notifications** : les rappels sont programmés sur votre téléphone.
 - **Journaux d'erreurs techniques** : enregistrés sur votre téléphone pour nous aider à corriger les bugs.
@@ -91,6 +91,8 @@ Nous faisons appel à des prestataires qui traitent les données pour notre comp
 | Apple / Google | Distribution de l'application ; paiements Premium (quand ils seront disponibles) | Selon leurs conditions |
 
 Quand vous scannez un produit inconnu, seul le **numéro du code-barres** est envoyé à la base ouverte Open Beauty Facts. Aucune donnée personnelle n'est transmise.
+
+Pour la météo de votre peau, seules vos **coordonnées arrondies à environ 10 km** sont envoyées au service météo **Open-Meteo** (Suisse), sans aucun identifiant.
 
 Nous pouvons aussi communiquer des données si la loi l'exige (par exemple sur demande d'une autorité judiciaire).
 

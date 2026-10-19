@@ -20,6 +20,7 @@ import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
+import { getSkinWeather, pickSkinTip } from '../utils/skin-weather';
 import MorningCheckIn from '../components/MorningCheckIn';
 import Glass from '../components/Glass';
 import { getProductsByIds, getNewestProductId, getMyProducts, photoOf } from '../utils/catalog';
@@ -77,7 +78,7 @@ export default function HomeScreen({ navigation }) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const firstName = useFirstName(user?.id);
-  const { isNight, isDark, updateLocation } = useTheme();
+  const { isNight, isDark, coords, updateLocation } = useTheme();
   const insets = useSafeAreaInsets();
   const heroHeight = Math.round(Dimensions.get('window').height * 0.8);
   // The first screen: about half for the greeting, the rest for the first sections.
@@ -108,6 +109,11 @@ export default function HomeScreen({ navigation }) {
   const [checkInSkipped, setCheckInSkipped] = useState(false);
   const [shelf, setShelf] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  // Today's local weather, for the skin weather line under the name.
+  const [skyToday, setSkyToday] = useState(null);
+  useEffect(() => {
+    getSkinWeather(coords).then(setSkyToday).catch(error => logError('Home_weather', error, {}, 'warn'));
+  }, [coords?.latitude, coords?.longitude]);
 
   useEffect(() => {
     updateLocation();
@@ -251,6 +257,7 @@ export default function HomeScreen({ navigation }) {
 
   // White over the sky: the text sits on its deeper top part.
   const ink = '#FFFFFF';
+  const weatherTip = skyToday ? pickSkinTip(skyToday.weather, profile, skyToday.city) : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -294,6 +301,15 @@ export default function HomeScreen({ navigation }) {
           <View style={[styles.heroTop, { paddingBottom: Math.round(introHeight * 0.3) }]}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
+            {/* Skin weather: the day's one tip from the local weather (daytime only) */}
+            {!isNight && weatherTip ? (
+              <Glass radius={999} style={styles.linePill}>
+                <View style={styles.lineRow}>
+                  <Ionicons name={weatherTip.icon} size={15} color={isDark ? colors.text : INK} />
+                  <Text style={[styles.line, { color: isDark ? colors.text : INK, flexShrink: 1 }]}>{t(weatherTip.text)}</Text>
+                </View>
+              </Glass>
+            ) : null}
             {/* The line sits on a frosted pill so it reads the same over light and deep parts of the sky */}
             {line ? (
               <Glass radius={999} style={styles.linePill}>

@@ -90,7 +90,7 @@ export const ThemeProvider = ({ children }) => {
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
 
   return (
-    <ThemeContext.Provider value={{ isDark, isNight: nightNow, updateLocation, themeMode, setThemeMode, toggleTheme, colors, loading }}>
+    <ThemeContext.Provider value={{ isDark, isNight: nightNow, coords, updateLocation, themeMode, setThemeMode, toggleTheme, colors, loading }}>
       {children}
     </ThemeContext.Provider>
   )
