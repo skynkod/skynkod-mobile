@@ -13,7 +13,7 @@ export const SECTIONS = [
   { id: 'basics', label: 'Skincare 101', icon: 'school-outline', intro: 'The essentials everyone should know.' },
   { id: 'issues', label: 'Skin issues', icon: 'medical-outline', intro: 'Understand what your skin is going through.' },
   { id: 'ingredients', label: 'Ingredients', icon: 'flask-outline', intro: 'What each ingredient does, and who it suits.' },
-  { id: 'morocco', label: 'Made in Morocco', icon: 'sunny-outline', intro: 'Hammam, argan, ghassoul and the Moroccan sun.' },
+  { id: 'morocco', label: 'World rituals', icon: 'earth-outline', intro: 'Beauty rituals from around the world, starting with Morocco: hammam, argan, ghassoul.' },
   { id: 'myths', label: 'Myths vs facts', icon: 'help-buoy-outline', intro: 'What’s true, and what isn’t.' },
 ]
 
