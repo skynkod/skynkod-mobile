@@ -1,5 +1,6 @@
-import React from 'react'
-import { View, Text, Pressable, StyleSheet } from 'react-native'
+import React, { useState } from 'react'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native'
+import { logError } from '../utils/errorLogger'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, SectionHeader, ListRow, useColors } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
@@ -37,15 +38,37 @@ export const MORE_SCREENS = [
 const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning & evening', icon: 'water-outline', group: 'track' }
 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
-const HIDDEN = ['Photos', 'Progress']
+// Scanner is in the search bar and the + button; the skin type is asked at sign-up.
+const HIDDEN = ['Photos', 'Progress', 'Scanner', 'Quiz']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {
   const colors = useColors()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const firstName = useFirstName(user?.id)
   const open = name => navigation.navigate(name)
   const tracking = byGroup('track')
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const confirmLogout = () => {
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          setLoggingOut(true)
+          try {
+            await logout()
+          } catch (error) {
+            await logError('MoreScreen_logout', error, {}, 'warn')
+            Alert.alert('Error', error?.message || 'Logout failed. Please try again.')
+            setLoggingOut(false)
+          }
+        },
+      },
+    ])
+  }
 
   return (
     <Screen title="Profile">
@@ -57,31 +80,14 @@ export default function MoreScreen({ navigation }) {
           <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{firstName || (user?.email || '').split('@')[0]}</Text>
           <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{user?.email}</Text>
         </View>
-        <Pressable onPress={() => open('Settings')} hitSlop={10} accessibilityLabel="Settings">
-          <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
-        </Pressable>
       </View>
 
       <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
-      <View style={styles.grid}>
-        {tracking.map(item => (
-          <Pressable
-            key={item.name}
-            onPress={() => open(item.name)}
-            style={({ pressed }) => [
-              styles.tile,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={[styles.tileIcon, { backgroundColor: colors.primarySoft }]}>
-              <Ionicons name={item.icon} size={22} color={colors.primary} />
-            </View>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{item.label}</Text>
-            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{item.subtitle}</Text>
-          </Pressable>
+      <Card padded={false} style={styles.listCard}>
+        {tracking.map((item, idx, arr) => (
+          <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
         ))}
-      </View>
+      </Card>
 
       <SectionHeader title="Learn & care" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
@@ -96,6 +102,16 @@ export default function MoreScreen({ navigation }) {
           <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
         ))}
       </Card>
+
+      {/* Log out, at the very bottom */}
+      <Pressable
+        onPress={confirmLogout}
+        disabled={loggingOut}
+        style={({ pressed }) => [styles.logout, { borderColor: colors.border, opacity: pressed || loggingOut ? 0.6 : 1 }]}
+      >
+        {loggingOut ? <ActivityIndicator color={colors.danger} /> : <Ionicons name="log-out-outline" size={20} color={colors.danger} />}
+        <Text style={[TYPE.bodyStrong, { color: colors.danger }]}>Log out</Text>
+      </Pressable>
     </Screen>
   )
 }
@@ -103,8 +119,6 @@ export default function MoreScreen({ navigation }) {
 const styles = StyleSheet.create({
   profile: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
   avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md },
-  tile: { width: '48%', flexGrow: 1, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg },
-  tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.md },
   listCard: { paddingHorizontal: SPACING.lg },
+  logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.xxl },
 })
