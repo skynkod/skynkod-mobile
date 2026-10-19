@@ -10,7 +10,7 @@ import * as Notifications from 'expo-notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
-import { signOut } from './utils/supabase'
+import { signOut, updateUserProfile } from './utils/supabase'
 import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
 import { logError } from './utils/errorLogger'
 import * as SplashScreen from 'expo-splash-screen'
@@ -198,6 +198,20 @@ function AppContent() {
   const { colors, isDark, loading: themeLoading } = useTheme()
   const { loading: languageLoading } = useLanguage()
 
+  // Notes when the app was last opened (once a day). Inactive accounts are
+  // deleted after a year, so opening the app also cancels any pending warning.
+  const markSeen = async (userId) => {
+    try {
+      const key = `skynkod_seen_${userId}`
+      const today = new Date().toDateString()
+      if ((await AsyncStorage.getItem(key)) === today) return
+      const ok = await updateUserProfile(userId, { last_seen_at: new Date().toISOString(), inactive_warned_30_at: null, inactive_warned_7_at: null })
+      if (ok) await AsyncStorage.setItem(key, today)
+    } catch (error) {
+      await logError('AppContent_markSeen', error, { userId }, 'warn')
+    }
+  }
+
   const initializeNotifications = async (userId) => {
     try {
       const granted = await requestNotificationPermissions()
@@ -233,6 +247,7 @@ function AppContent() {
         }
 
         initializeNotifications(userData.userId)
+        markSeen(userData.userId)
       }
     } catch (error) {
       await logError('AppContent_check', error, {}, 'error')
@@ -255,6 +270,7 @@ function AppContent() {
     }
     setUser(data)
     initializeNotifications(userId)
+    markSeen(userId)
   }
 
   // Clearing `user` is what actually sends the app back to the login screen.
