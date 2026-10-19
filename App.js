@@ -279,6 +279,12 @@ function AppContent() {
     setUser(null)
   }
 
+  // The account was deleted on the server (under 18 at sign-up): back to login.
+  const handleAccountGone = async () => {
+    await AsyncStorage.removeItem('skynkod_user').catch(() => {})
+    setUser(null)
+  }
+
   const handleOnboardingComplete = async () => {
     // Per account, so a new account on the same phone still gets onboarding.
     await AsyncStorage.setItem(`skynkod_onboarded_${user.userId}`, 'true')
@@ -301,7 +307,7 @@ function AppContent() {
   } else if (!user) {
     content = <LoginScreen onLogin={handleLogin} />
   } else if (showOnboarding) {
-    content = <OnboardingScreen userId={user.userId} onComplete={handleOnboardingComplete} />
+    content = <OnboardingScreen userId={user.userId} onComplete={handleOnboardingComplete} onLeave={handleAccountGone} />
   } else {
     content = (
       <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>

@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as WebBrowser from 'expo-web-browser'
 import { updateUserProfile } from '../utils/supabase'
+import { deleteAccount } from '../utils/account'
+import { articlesIn } from '../utils/encyclopedia'
+import ArticleBody from '../components/ArticleBody'
 import { logError } from '../utils/errorLogger'
 import { useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
@@ -88,16 +91,38 @@ const PRIVACY_URL = 'https://skynkod.com/privacy'
 // Questions about health-related skin data, only asked with explicit consent.
 const SENSITIVE_STEPS = ['acneType', 'conditions', 'avoid', 'pregnancy']
 
-const ALL_STEPS = ['welcome', 'features', 'name', 'consent', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
+const ALL_STEPS = ['welcome', 'features', 'name', 'birthday', 'consent', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
 
 // Glossier-inspired: lots of air, big plain headlines, pill buttons and soft
 // transitions. The first page picks up the splash screen's mauve.
-export default function OnboardingScreen({ userId, onComplete }) {
+// Skynkod is for 18 and over (age from the date of birth, on today's date).
+const MIN_AGE = 18
+const ageOn = (birth, today = new Date()) => {
+  let age = today.getFullYear() - birth.getFullYear()
+  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--
+  return age
+}
+// Day / month / year typed by the user → a real date, or null.
+const parseBirth = (d, m, y) => {
+  const day = Number(d), month = Number(m), year = Number(y)
+  if (!day || !month || String(y).length !== 4 || year < 1900 || year > new Date().getFullYear()) return null
+  const date = new Date(year, month - 1, day)
+  return date.getDate() === day && date.getMonth() === month - 1 && date <= new Date() ? date : null
+}
+const isoDay = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   const colors = useColors()
   const t = useT()
   const insets = useSafeAreaInsets()
   const [step, setStep] = useState(0)
   const [firstName, setFirstName] = useState('')
+  const [birthDay, setBirthDay] = useState('')
+  const [birthMonth, setBirthMonth] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+  const [minor, setMinor] = useState(false)
+  const [minorArticle, setMinorArticle] = useState(null)
+  const birthDate = parseBirth(birthDay, birthMonth, birthYear)
   const [terms, setTerms] = useState(false)
   const [health, setHealth] = useState(false)
   const [research, setResearch] = useState(false)
@@ -190,6 +215,8 @@ export default function OnboardingScreen({ userId, onComplete }) {
   // "Skip" can't jump past the consent page; after it, it saves the consents
   // and the answers given so far.
   const skip = () => {
+    const birthdayIdx = STEPS.indexOf('birthday')
+    if (!birthDate && step < birthdayIdx) return goTo(birthdayIdx)
     const consentIdx = STEPS.indexOf('consent')
     if (step < consentIdx) return goTo(consentIdx)
     finish(true)
@@ -217,6 +244,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
         if (userId) {
           const saved = await updateUserProfile(userId, {
             first_name: answers.firstName,
+            birth_date: birthDate ? isoDay(birthDate) : null,
             skin_type: answers.skinType,
             skin_concerns: answers.concerns,
             skin_goal: answers.goals[0] || null,
@@ -281,6 +309,50 @@ export default function OnboardingScreen({ userId, onComplete }) {
       {hint ? <Text style={[TYPE.caption, { color: colors.muted }]}>{hint}</Text> : null}
     </Pressable>
   )
+
+  // ---------- Under 18: a kind page with a few articles to read ----------
+  if (minor) {
+    const reads = [...articlesIn('basics'), ...articlesIn('myths')]
+    const open = reads.find(a => a.id === minorArticle)
+    return (
+      <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom + SPACING.lg }]}>
+        <View style={styles.topBar}>
+          {open ? (
+            <Pressable onPress={() => setMinorArticle(null)} hitSlop={12}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </Pressable>
+          ) : <View />}
+          <Pressable onPress={() => onLeave?.()} hitSlop={12}>
+            <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Close')}</Text>
+          </Pressable>
+        </View>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {open ? (
+            <>
+              <Text style={[styles.headline, { color: colors.text }]}>{t(open.title)}</Text>
+              <ArticleBody article={open} />
+            </>
+          ) : (
+            <>
+              <Text style={[styles.headline, { color: colors.text }]}>{t('See you soon!')}</Text>
+              <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+                {t("Skynkod is for 18 and over for now. We can't wait to see you back! In the meantime, here are a few tips to care for your skin.")}
+              </Text>
+              <View style={{ marginTop: SPACING.xl, gap: SPACING.sm }}>
+                {reads.map(a => (
+                  <Pressable key={a.id} onPress={() => setMinorArticle(a.id)} style={[styles.minorRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Ionicons name={a.icon} size={18} color={colors.primary} />
+                    <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]} numberOfLines={2}>{t(a.title)}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </View>
+    )
+  }
 
   // ---------- Page 1: the mockup's intro: logo, tagline, promise ----------
   if (name === 'welcome') {
@@ -362,6 +434,44 @@ export default function OnboardingScreen({ userId, onComplete }) {
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} disabled={!firstName.trim()} />
+  } else if (name === 'birthday') {
+    const field = (value, setter, placeholder, width, max) => (
+      <TextInput
+        value={value}
+        onChangeText={v => setter(v.replace(/\D/g, '').slice(0, max))}
+        placeholder={placeholder}
+        placeholderTextColor={colors.muted}
+        keyboardType="number-pad"
+        maxLength={max}
+        style={[styles.nameInput, styles.birthField, { width, color: colors.text, backgroundColor: colors.card, borderColor: value ? colors.primary : colors.border }]}
+      />
+    )
+    content = (
+      <>
+        <Text style={[styles.headline, { color: colors.text }]}>{t("When's your birthday?")}</Text>
+        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Skynkod is for people aged 18 and over.')}</Text>
+        <View style={styles.birthRow}>
+          {field(birthDay, setBirthDay, t('DD'), 72, 2)}
+          {field(birthMonth, setBirthMonth, t('MM'), 72, 2)}
+          {field(birthYear, setBirthYear, t('YYYY'), 104, 4)}
+        </View>
+        {birthDay && birthMonth && birthYear.length === 4 && !birthDate ? (
+          <Text style={[TYPE.caption, { color: colors.danger, marginTop: SPACING.md }]}>{t('This date doesn’t look right.')}</Text>
+        ) : null}
+      </>
+    )
+    footer = (
+      <Pill
+        title={t('Continue')}
+        disabled={!birthDate}
+        onPress={() => {
+          if (ageOn(birthDate) >= MIN_AGE) return next()
+          // Under 18: no account can be kept. Delete it now, then show a kind page.
+          setMinor(true)
+          deleteAccount().catch(error => logError('Onboarding_minorDelete', error, {}, 'warn'))
+        }}
+      />
+    )
   } else if (name === 'consent') {
     const Check = ({ value, onChange, children, required }) => (
       <Pressable onPress={() => onChange(!value)} style={styles.checkRow} accessibilityRole="checkbox" accessibilityState={{ checked: value }}>
@@ -403,6 +513,9 @@ export default function OnboardingScreen({ userId, onComplete }) {
             <Text style={[TYPE.body, { color: colors.text }]}>{t('Get offers and product tests from brands')}</Text>
             <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Brands never see who you are.')}</Text>
           </Check>
+          <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 18 }]}>
+            {t('Koda, our AI, runs on Anthropic (USA): your messages and a summary of your week are sent to it to answer you.')}
+          </Text>
         </View>
       </>
     )
@@ -515,7 +628,7 @@ export default function OnboardingScreen({ userId, onComplete }) {
         <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('Back')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        {name !== 'summary' && name !== 'consent' ? (
+        {name !== 'summary' && name !== 'consent' && name !== 'birthday' ? (
           <Pressable onPress={skip} hitSlop={12}>
             <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip')}</Text>
           </Pressable>
@@ -545,6 +658,9 @@ export default function OnboardingScreen({ userId, onComplete }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  birthRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xxl },
+  birthField: { textAlign: 'center', marginTop: 0, paddingHorizontal: 0 },
+  minorRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl, height: 52 },
   progressTrack: { height: 3, marginHorizontal: SPACING.xl, borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: 3, borderRadius: 2 },

@@ -13,12 +13,12 @@ Ces points découlent des brouillons de conditions d'utilisation et de politique
 
 ## À construire dans l'application
 
-5. **Confirmer l'âge (18 ans et plus)** à l'inscription, par exemple une case « J'ai 18 ans ou plus » dans l'étape de consentement.
+5. ✅ **Fait** : date de naissance demandée à l'inscription ; en dessous de 18 ans, le compte est supprimé.
 6. **Suppression des comptes inactifs après 12 mois**, avec un email de prévenance avant, par exemple 30 jours avant. Il faudra une tâche automatique côté serveur, et un vrai service d'envoi d'emails.
-7. **Mentionner Koda et Anthropic** dans l'étape de consentement : les messages et le résumé de la semaine sont envoyés à un prestataire aux États-Unis.
+7. ✅ **Fait** : Koda et Anthropic sont mentionnés dans l'étape de consentement.
 8. **La case « Offres de marques »** : aucune offre n'existe encore. Il faudra décider comment les présenter sans jamais transmettre l'identité aux marques, ou retirer la case en attendant.
 9. **La case « Statistiques anonymes »** : aucune statistique n'est encore produite. Même question : définir ce qui sera fait, ou retirer la case en attendant.
-10. **Citer Open Beauty Facts** dans l'application, par exemple dans À propos ou sur la fiche produit. Leur licence (ODbL) demande de mentionner la source.
+10. ✅ **Fait** : Open Beauty Facts est cité dans À propos.
 11. **Droit d'accès** : prévoir comment envoyer à une utilisatrice une copie de ses données si elle le demande. Au début, cela peut se faire par email, à la main.
 
 ## À mettre en ligne

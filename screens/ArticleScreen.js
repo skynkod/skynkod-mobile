@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen, EmptyState, Button, useColors } from '../components/ui';
+import ArticleBody from '../components/ArticleBody';
 import { useT } from '../utils/LanguageContext';
 import { getArticle, SECTIONS, ARTICLES } from '../utils/encyclopedia';
 import { getIngredient } from '../utils/ingredients-guide';
@@ -19,44 +20,6 @@ export default function ArticleScreen({ navigation, route }) {
   const ingredients = (article.ingredients || []).map(getIngredient).filter(Boolean);
   const related = ARTICLES.filter(a => a.id !== article.id && a.section === article.section).slice(0, 3);
 
-  const Callout = ({ icon, bg, fg, text }) => (
-    <View style={[styles.callout, { backgroundColor: bg }]}>
-      <Ionicons name={icon} size={18} color={fg} style={{ marginTop: 2 }} />
-      <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(text)}</Text>
-    </View>
-  );
-
-  const renderBlock = (b, i) => {
-    if (b.h) return <Text key={i} style={[TYPE.heading, styles.h, { color: colors.text }]}>{t(b.h)}</Text>;
-    if (b.p) return <Text key={i} style={[TYPE.body, styles.p, { color: colors.text }]}>{t(b.p)}</Text>;
-    if (b.list) return (
-      <View key={i} style={styles.p}>
-        {b.list.map((item, j) => (
-          <View key={j} style={styles.item}>
-            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(item)}</Text>
-          </View>
-        ))}
-      </View>
-    );
-    if (b.steps) return (
-      <View key={i} style={styles.p}>
-        {b.steps.map((item, j) => (
-          <View key={j} style={styles.item}>
-            <View style={[styles.num, { backgroundColor: colors.primarySoft }]}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '800' }]}>{j + 1}</Text>
-            </View>
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(item)}</Text>
-          </View>
-        ))}
-      </View>
-    );
-    if (b.tip) return <Callout key={i} icon="bulb-outline" bg={colors.primarySoft} fg={colors.primary} text={b.tip} />;
-    if (b.warn) return <Callout key={i} icon="warning-outline" bg={colors.dangerSoft} fg={colors.danger} text={b.warn} />;
-    if (b.derm) return <Callout key={i} icon="medkit-outline" bg={colors.cautionSoft || colors.surface} fg={colors.caution || colors.text} text={b.derm} />;
-    return null;
-  };
-
   return (
     <Screen back>
       <Text style={[TYPE.overline, { color: colors.primary }]}>{t(section?.label || '')}</Text>
@@ -66,7 +29,7 @@ export default function ArticleScreen({ navigation, route }) {
       ) : null}
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('{n} min read', { n: article.minutes })}</Text>
 
-      <View style={{ marginTop: SPACING.md }}>{article.blocks.map(renderBlock)}</View>
+      <ArticleBody article={article} />
 
       {ingredients.length ? (
         <>
@@ -114,12 +77,6 @@ export default function ArticleScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  h: { marginTop: SPACING.xl, marginBottom: SPACING.sm },
-  p: { marginBottom: SPACING.md },
-  item: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.sm },
-  dot: { width: 6, height: 6, borderRadius: 3, marginTop: 9 },
-  num: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  callout: { flexDirection: 'row', gap: SPACING.md, borderRadius: RADIUS.md, padding: SPACING.md, marginVertical: SPACING.sm },
   label: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },

@@ -23,7 +23,7 @@ Ce traitement a fait l'objet [d'une déclaration / d'une demande d'autorisation]
 ## 3. Les données que nous collectons
 
 ### a) Votre compte
-Adresse email, mot de passe (stocké de façon chiffrée par notre hébergeur, nous ne le voyons jamais), prénom, vos choix de consentement et leurs dates.
+Adresse email, mot de passe (stocké de façon chiffrée par notre hébergeur, nous ne le voyons jamais), prénom, **date de naissance** (pour vérifier que vous avez au moins 18 ans), vos choix de consentement et leurs dates.
 
 ### b) Votre profil de peau
 Type de peau, préoccupations (par exemple boutons, taches, rougeurs) et objectifs.
@@ -128,7 +128,7 @@ Vous pouvez aussi introduire une réclamation auprès de la **CNDP** (www.cndp.m
 
 ## 11. Âge minimum
 
-Skynkod est réservée aux personnes de **18 ans ou plus**. Nous ne collectons pas sciemment de données sur des personnes de moins de 18 ans. Si vous pensez qu'un mineur nous a transmis des données, contactez-nous pour que nous les supprimions.
+Skynkod est réservée aux personnes de **18 ans ou plus**. La date de naissance est demandée à l'inscription : si elle indique moins de 18 ans, le compte qui vient d'être créé est immédiatement supprimé. Nous ne collectons pas sciemment de données sur des personnes de moins de 18 ans. Si vous pensez qu'un mineur nous a transmis des données, contactez-nous pour que nous les supprimions.
 
 ## 12. Modifications
 

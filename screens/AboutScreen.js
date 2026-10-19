@@ -56,7 +56,8 @@ export default function AboutScreen() {
         <ListRow icon="mail-outline" title="Contact support" subtitle="support@skynkod.com" onPress={() => open('mailto:support@skynkod.com')} />
         <ListRow icon="globe-outline" title="Website" subtitle="skynkod.com" onPress={() => open('https://skynkod.com')} />
         <ListRow icon="shield-outline" title="Privacy policy" onPress={() => open('https://skynkod.com/privacy')} />
-        <ListRow icon="document-text-outline" title="Terms of service" onPress={() => open('https://skynkod.com/terms')} last />
+        <ListRow icon="document-text-outline" title="Terms of service" onPress={() => open('https://skynkod.com/terms')} />
+        <ListRow icon="server-outline" title="Product data: Open Beauty Facts" subtitle="Open Database License (ODbL)" onPress={() => open('https://world.openbeautyfacts.org')} last />
       </Card>
 
       <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>Made with care for your skin 💜</Text>

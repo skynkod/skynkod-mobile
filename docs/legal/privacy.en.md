@@ -23,7 +23,7 @@ This processing has been [declared to / authorised by] the **Moroccan data prote
 ## 3. The data we collect
 
 ### a) Your account
-Email address, password (stored encrypted by our host; we never see it), first name, your consent choices and their dates.
+Email address, password (stored encrypted by our host; we never see it), first name, **date of birth** (to check you are at least 18), your consent choices and their dates.
 
 ### b) Your skin profile
 Skin type, concerns (for example breakouts, dark spots, redness) and goals.
@@ -128,7 +128,7 @@ You can also lodge a complaint with the **CNDP** (www.cndp.ma).
 
 ## 11. Minimum age
 
-Skynkod is for people aged **18 or over**. We don't knowingly collect data from people under 18. If you think a minor has given us data, contact us and we will delete it.
+Skynkod is for people aged **18 or over**. Your date of birth is asked at sign-up: if it shows you are under 18, the account just created is deleted immediately. We don't knowingly collect data from people under 18. If you think a minor has given us data, contact us and we will delete it.
 
 ## 12. Changes
 
