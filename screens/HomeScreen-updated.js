@@ -173,6 +173,19 @@ export default function HomeScreen({ navigation }) {
   const [skyToday, setSkyToday] = useState(null);
   // And the weather right now: temperature, sky, humidity, UV.
   const [weatherNow, setWeatherNow] = useState(null);
+  // Beside the date, the sky then the temperature, in turn every 2 seconds.
+  const [weatherStep, setWeatherStep] = useState(0);
+  const weatherFade = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!weatherNow) return;
+    const id = setInterval(() => {
+      Animated.timing(weatherFade, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
+        setWeatherStep(step => (step + 1) % 2);
+        Animated.timing(weatherFade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+      });
+    }, 2000);
+    return () => clearInterval(id);
+  }, [!!weatherNow]);
   useEffect(() => {
     getSkinWeather(coords).then(setSkyToday).catch(error => logError('Home_weather', error, {}, 'warn'));
     getWeatherNow(coords).then(setWeatherNow).catch(error => logError('Home_weatherNow', error, {}, 'warn'));
@@ -363,9 +376,21 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : null}
           <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
-            <Text style={styles.date}>
-              {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
-            </Text>
+            {/* The date, and the weather right now in small beside it */}
+            <View style={styles.dateRow}>
+              <Text style={styles.date}>
+                {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+              </Text>
+              {weatherNow ? (
+                <>
+                  <Text style={styles.dateDot}>·</Text>
+                  <Ionicons name={weatherNow.icon} size={13} color="#FFFFFF" />
+                  <Animated.Text style={[styles.dateWeather, { opacity: weatherFade }]}>
+                    {weatherStep === 0 ? t(weatherNow.label) : `${weatherNow.temp}°`}
+                  </Animated.Text>
+                </>
+              ) : null}
+            </View>
             <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
               <Pressable onPress={() => navigation.navigate('Alerts')} style={styles.glass} accessibilityLabel={t('Notifications')}>
                 <Ionicons name="notifications-outline" size={19} color="#FFFFFF" />
@@ -376,18 +401,6 @@ export default function HomeScreen({ navigation }) {
           <View style={[styles.heroTop, { paddingBottom: Math.round(introHeight * 0.3) }]}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
-            {/* The weather right now */}
-            {weatherNow ? (
-              <Glass radius={999} style={styles.linePill}>
-                <View style={styles.lineRow}>
-                  <Ionicons name={weatherNow.icon} size={15} color={isDark ? colors.text : INK} />
-                  <Text style={[styles.weatherNow, { color: isDark ? colors.text : INK }]}>
-                    {`${weatherNow.temp}° · ${t(weatherNow.label)} · ${t('Humidity')} ${weatherNow.humidity}%${weatherNow.isDay ? ` · ${t('UV now')} ${weatherNow.uv}` : ''}`}
-                  </Text>
-                </View>
-              </Glass>
-            ) : null}
-
             {/* Skin weather: the day's one tip from the local weather (daytime only) */}
             {(isNight ? eveningTip : weatherTip) ? (
               <Glass radius={999} style={styles.linePill}>
@@ -791,15 +804,17 @@ const styles = StyleSheet.create({
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl },
   date: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  dateDot: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
+  dateWeather: { color: '#FFFFFF', fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
   glass: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.22)' },
   heroTop: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xl },
   hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic', ...SHADOW },
   name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2, ...SHADOW },
-  weatherNow: { fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
   linePill: { alignSelf: 'flex-start', marginTop: SPACING.md },
-  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.lg, paddingVertical: 7 },
+  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md, paddingVertical: 5 },
   // Same voice as the greeting: serif italic.
-  line: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 16 },
+  line: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 14 },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xl },
   mood: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   begin: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 25, paddingHorizontal: SPACING.xxl, marginTop: SPACING.xl },
