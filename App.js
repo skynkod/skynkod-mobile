@@ -33,6 +33,7 @@ import RoutineBuilderScreen from './screens/RoutineBuilderScreen'
 import ProductPickerScreen from './screens/ProductPickerScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
 import SuggestionsScreen from './screens/SuggestionsScreen'
+import RekodScreen from './screens/RekodScreen'
 
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -40,11 +41,12 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
 
-// Bottom bar from the mockup: Home · Journal · (+) · Koda · Profile.
+// Bottom bar: Home · Journal · (+) · Rekod · Koda · Profile.
 const TABS = [
   { name: 'Home', component: HomeScreen, label: 'Home', icon: 'home' },
   { name: 'Journal', component: JournalScreen, label: 'Journal', icon: 'calendar' },
   { name: 'Add', label: '', icon: 'add' },
+  { name: 'Rekod', component: RekodScreen, label: 'Rekod', icon: 'rekod' },
   { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'koda' },
   { name: 'More', component: MoreScreen, label: 'Profile', icon: 'person' },
 ]
@@ -59,6 +61,7 @@ const QUICK_ACTIONS = [
 
 const Empty = () => null
 const KODA_ICON = require('./assets/images/koda-logo-white.png')
+const REKOD_ICON = require('./assets/images/rekod-logo-white.png')
 
 function AppTabs({ userId }) {
   const { colors } = useTheme()
@@ -115,8 +118,8 @@ function AppTabs({ userId }) {
             options={{
               tabBarLabel: t(tab.label),
               tabBarIcon: ({ color, focused, size }) =>
-                tab.icon === 'koda' ? (
-                  <Image source={KODA_ICON} style={{ width: size, height: size, tintColor: color }} />
+                tab.icon === 'koda' || tab.icon === 'rekod' ? (
+                  <Image source={tab.icon === 'koda' ? KODA_ICON : REKOD_ICON} style={{ width: size, height: size, tintColor: color }} />
                 ) : (
                   <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
                 ),

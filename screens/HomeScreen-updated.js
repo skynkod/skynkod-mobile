@@ -21,6 +21,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { track } from '../utils/analytics';
+import { getRekodPlan, tonightNight, NIGHTS } from '../utils/rekod';
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
@@ -101,6 +102,7 @@ export default function HomeScreen({ navigation }) {
     Animated.timing(headerFade, { toValue: headerOn ? 1 : 0, duration: 180, useNativeDriver: true }).start();
   }, [headerOn, headerFade]);
   const [routineY, setRoutineY] = useState(0);
+  const [rekod, setRekod] = useState(null);
   const [bodyY, setBodyY] = useState(0);
   const [justPicked, setJustPicked] = useState(false);
   const period = isNight ? 'evening' : 'morning';
@@ -226,6 +228,8 @@ export default function HomeScreen({ navigation }) {
     ]);
     const mine = routines.success ? (routines.data || []).find(r => r.type === period && Array.isArray(r.steps) && r.steps.length) : null;
     setRoutine(mine || null);
+    // Following a Rekod: the evening card names tonight's night (Repair, Reset…).
+    getRekodPlan(user.id).then(setRekod).catch(() => setRekod(null));
     const active = await getActivePlan(user.id);
     setPlan(active);
     if (active && mine) {
@@ -575,7 +579,7 @@ export default function HomeScreen({ navigation }) {
             <Glass style={styles.card}>
             <View onLayout={e => setRoutineY(e.nativeEvent.layout.y + bodyY)} style={styles.cardIn}>
               <View style={styles.cardHead}>
-                <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : t('TONIGHT')}</Text>
+                <Text style={[styles.overline, { color: colors.primary }]}>{period === 'morning' ? t('THIS MORNING') : rekod ? `${t('TONIGHT')} · ${t(NIGHTS[tonightNight(rekod)].short).toUpperCase()}` : t('TONIGHT')}</Text>
                 <Pressable onPress={() => navigation.navigate('Routines', { tab: period })} hitSlop={10}>
                   <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>
                     {t('{done} of {total}', { done: doneCount, total: steps.length })}
