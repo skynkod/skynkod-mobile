@@ -55,21 +55,6 @@ export const MOROCCO = [
     ],
   },
   {
-    id: 'moroccan-sun',
-    section: 'morocco',
-    title: 'The Moroccan sun and your skin',
-    subtitle: 'Strong UV all year: protect yourself every day.',
-    icon: 'sunny-outline',
-    minutes: 3,
-    forProfile: ['Dark spots', 'Melasma', 'Fine lines'],
-    ingredients: ['zincoxide', 'vitaminc', 'niacinamide', 'azelaic'],
-    blocks: [
-      { p: 'Morocco gets a lot of strong sun, even in winter. UV is the number one cause of dark spots, melasma and early wrinkles.' },
-      { list: ['SPF 50 every morning, all year round', 'Reapply every 2 hours outside, especially at the beach or in the desert', 'A hat and shade between noon and 4 pm', 'Darker skin tones still need sunscreen: dark spots show more and last longer'] },
-      { tip: 'Treating dark spots without daily sunscreen is like filling a bath with the plug out.' },
-    ],
-  },
-  {
     id: 'rose-water',
     section: 'morocco',
     title: 'Rose water from Kelaa M’Gouna',
