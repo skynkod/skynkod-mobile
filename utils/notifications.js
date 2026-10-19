@@ -69,4 +69,4 @@ export const scheduleEveningReminder = (userId) =>
   scheduleDaily(`evening-${userId}`, "Skynkod", "Ta routine du soir, c'est le moment 🌙", 21, 0)
 
 export const scheduleJournalReminder = (userId) =>
-  scheduleDaily(`journal-${userId}`, "Skynkod", "Comment va ta peau aujourd'hui ? Note-le dans ton journal 📔", 20, 0)
+  scheduleDaily(`journal-${userId}`, "Skynkod", "Comment va ta peau ce matin ? 🌸", 7, 45)

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { SKIN_TYPES } from '../utils/constants'
-import { Screen, Card, Button, ProgressBar, useColors } from '../components/ui'
+import { Screen, Card, Button, useColors } from '../components/ui'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const QUESTIONS = [
@@ -82,10 +82,10 @@ export default function SkinTypeQuizScreen({ route }) {
     // SKIN_TYPES is keyed by lowercase type ({ oily: {...}, dry: {...} }), not an array.
     const info = SKIN_TYPES[result.toLowerCase()] || Object.values(SKIN_TYPES).find(s => s.name === result)
     return (
-      <Screen back title="Your skin type">
+      <Screen back>
+        <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>Your skin type</Text>
         <Card tone="soft" style={styles.resultCard}>
-          <Text style={styles.resultEmoji}>{info?.emoji || '✨'}</Text>
-          <Text style={[TYPE.display, { color: colors.primary }]}>{result}</Text>
+          <Text style={[styles.headline, { color: colors.primary, textAlign: 'center' }]}>{result}</Text>
           <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{info?.description}</Text>
         </Card>
         {saved ? (
@@ -102,30 +102,39 @@ export default function SkinTypeQuizScreen({ route }) {
   }
 
   const q = QUESTIONS[current]
+  // Same look as the onboarding: thin progress line, big headline, pill answers.
   return (
-    <Screen back overline={`Question ${current + 1} of ${QUESTIONS.length}`} title="Skin type quiz">
-      <ProgressBar value={(current + 1) / QUESTIONS.length} style={{ marginBottom: SPACING.xxl }} />
-      <Text style={[TYPE.heading, { color: colors.text, marginBottom: SPACING.xl }]}>{q.question}</Text>
-      {q.answers.map(a => (
-        <Pressable
-          key={a.text}
-          onPress={() => choose(a.type)}
-          style={({ pressed }) => [
-            styles.answer,
-            { backgroundColor: pressed ? colors.primarySoft : colors.card, borderColor: pressed ? colors.primary : colors.border },
-          ]}
-        >
-          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{a.text}</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-        </Pressable>
-      ))}
+    <Screen back>
+      <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+        <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${((current + 1) / QUESTIONS.length) * 100}%` }]} />
+      </View>
+      <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>{`Question ${current + 1} of ${QUESTIONS.length}`}</Text>
+      <Text style={[styles.headline, { color: colors.text }]}>{q.question}</Text>
+      <View style={styles.choices}>
+        {q.answers.map(a => (
+          <Pressable
+            key={a.text}
+            onPress={() => choose(a.type)}
+            style={({ pressed }) => [
+              styles.choice,
+              { backgroundColor: pressed ? colors.primarySoft : colors.card, borderColor: pressed ? colors.primary : colors.border, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+          >
+            <Text style={[styles.choiceLabel, { color: colors.text }]}>{a.text}</Text>
+          </Pressable>
+        ))}
+      </View>
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  resultCard: { alignItems: 'center', paddingVertical: SPACING.xxxl, marginBottom: SPACING.xl },
-  resultEmoji: { fontSize: 56, marginBottom: SPACING.md },
+  resultCard: { alignItems: 'center', paddingVertical: SPACING.xxxl, marginTop: SPACING.lg, marginBottom: SPACING.xl },
+  progressTrack: { height: 3, borderRadius: 2, overflow: 'hidden', marginTop: SPACING.sm },
+  progressFill: { height: 3, borderRadius: 2 },
+  headline: { fontSize: 32, fontWeight: '700', letterSpacing: -0.8, lineHeight: 38, marginTop: SPACING.sm },
+  choices: { marginTop: SPACING.xxl, gap: SPACING.sm },
+  choice: { borderRadius: 999, borderWidth: 1, paddingVertical: 16, paddingHorizontal: SPACING.xl },
+  choiceLabel: { fontSize: 16, fontWeight: '600' },
   savedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.lg, borderRadius: RADIUS.md },
-  answer: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, borderRadius: RADIUS.md, borderWidth: 1.5, marginBottom: SPACING.md },
 })

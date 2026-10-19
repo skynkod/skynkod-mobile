@@ -6,7 +6,6 @@ import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import ProgressScreen from './ProgressScreen'
-import ProgressAnalysisScreen from './ProgressAnalysisScreen'
 import ProductsScreen from './ProductsScreen'
 import PhotosScreen from './PhotosScreen'
 import SkinTypeQuizScreen from './SkinTypeQuizScreen'
@@ -22,7 +21,6 @@ import SettingsScreen from './SettingsScreen'
 export const MORE_SCREENS = [
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: ProgressScreen, label: 'Progress', subtitle: 'Your timeline', icon: 'trending-up-outline', group: 'track' },
-  { name: 'Analysis', component: ProgressAnalysisScreen, label: 'Analysis', subtitle: 'Mood over 30 days', icon: 'stats-chart-outline', group: 'track' },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
@@ -38,8 +36,8 @@ export const MORE_SCREENS = [
 // Routines left the tab bar (they live on Home now), so Profile links to them too.
 const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning & evening', icon: 'water-outline', group: 'track' }
 
-// Progress photos are parked for now (essentials first).
-const HIDDEN = ['Photos']
+// Progress photos are parked for now (essentials first); Progress only shows photos.
+const HIDDEN = ['Photos', 'Progress']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {

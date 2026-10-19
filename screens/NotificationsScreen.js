@@ -9,8 +9,8 @@ import { SPACING, TYPE } from '../utils/theme'
 
 // Times match what utils/notifications.js actually schedules.
 const REMINDERS = [
+  { key: 'journalReminder', id: 'journal', title: 'Morning check-in', time: '7:45', icon: 'happy-outline', schedule: scheduleJournalReminder },
   { key: 'morningReminder', id: 'morning', title: 'Morning routine', time: '8:00', icon: 'sunny-outline', schedule: scheduleMorningReminder },
-  { key: 'journalReminder', id: 'journal', title: 'Journal check-in', time: '20:00', icon: 'book-outline', schedule: scheduleJournalReminder },
   { key: 'eveningReminder', id: 'evening', title: 'Evening routine', time: '21:00', icon: 'moon-outline', schedule: scheduleEveningReminder },
 ]
 

@@ -19,7 +19,7 @@ const BRAND_MAUVE = '#C5A8BB'
 const FEATURES = [
   { icon: 'koda', title: 'AI Skin Coach', text: 'Koda analyzes your skin and gives personalized advice.' },
   { icon: 'sync-outline', title: 'Dynamic Routines', text: "Smart routines that adapt to your skin's real-time needs." },
-  { icon: 'speedometer-outline', title: 'Skin Score', text: 'Track your skin health with advanced scoring.' },
+  { icon: 'book-outline', title: 'What your skin tells you', text: 'Your daily check-in learns what makes your skin react.' },
   { icon: 'shield-checkmark-outline', title: 'Emergency Mode', text: 'Get a 7-day plan to repair, calm or prepare your skin.' },
   { icon: 'wallet-outline', title: 'Skynbudget', text: 'Track your collection, spending and get smart buying advice.' },
   { icon: 'scan-outline', title: 'Product Scan', text: 'Scan any product to analyze ingredients and compatibility.' },

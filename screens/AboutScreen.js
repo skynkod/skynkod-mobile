@@ -1,9 +1,12 @@
 import React from 'react'
-import { View, Text, StyleSheet, Linking } from 'react-native'
+import { View, Text, StyleSheet, Linking, Image } from 'react-native'
 import { logError } from '../utils/errorLogger'
 import { APP_INFO } from '../utils/constants'
-import { Screen, Card, SectionHeader, ListRow, IconCircle, useColors } from '../components/ui'
+import { Screen, Card, SectionHeader, ListRow, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
+
+const LOGO = require('../assets/images/skynkod-logo.png')
+const LOGO_RATIO = 1306 / 333
 
 const FEATURES = [
   'Daily skin tracking and journaling',
@@ -28,8 +31,7 @@ export default function AboutScreen() {
   return (
     <Screen back>
       <View style={styles.hero}>
-        <IconCircle name="sparkles" size={80} />
-        <Text style={[TYPE.title, { color: colors.text, marginTop: SPACING.lg }]}>Skynkod</Text>
+        <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Skynkod" />
         <Text style={[TYPE.body, { color: colors.muted }]}>Your skin. Your code. Decoded daily. · v{APP_INFO.version}</Text>
       </View>
 
@@ -64,6 +66,7 @@ export default function AboutScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginBottom: SPACING.xxl },
+  logo: { width: 200, height: 200 / LOGO_RATIO, marginTop: SPACING.lg, marginBottom: SPACING.md },
   feature: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.md },
   bullet: { width: 6, height: 6, borderRadius: 3 },
 })
