@@ -87,13 +87,18 @@ export default function HomeScreen({ navigation }) {
   // The first screen: about half for the greeting, the rest for the first sections.
   const introHeight = Math.round(Dimensions.get('window').height * 0.5);
   const scrollRef = useRef(null);
-  // Once the greeting scrolls away, a slim frosted header fades in.
+  // Once the greeting starts to scroll away, a slim frosted header appears in full
+  // (never half-transparent over the sky, even when the page is short).
   const scrollY = useRef(new Animated.Value(0)).current;
+  const headerFade = useRef(new Animated.Value(0)).current;
   const [headerOn, setHeaderOn] = useState(false);
   useEffect(() => {
-    const id = scrollY.addListener(({ value }) => setHeaderOn(on => (value > introHeight * 0.5) !== on ? !on : on));
+    const id = scrollY.addListener(({ value }) => setHeaderOn(on => (value > introHeight * 0.3) !== on ? !on : on));
     return () => scrollY.removeListener(id);
   }, [scrollY, introHeight]);
+  useEffect(() => {
+    Animated.timing(headerFade, { toValue: headerOn ? 1 : 0, duration: 180, useNativeDriver: true }).start();
+  }, [headerOn, headerFade]);
   const [routineY, setRoutineY] = useState(0);
   const [bodyY, setBodyY] = useState(0);
   const [justPicked, setJustPicked] = useState(false);
@@ -761,11 +766,11 @@ export default function HomeScreen({ navigation }) {
         style={[styles.header, {
           paddingTop: insets.top + SPACING.xs,
           borderBottomColor: colors.border,
-          opacity: scrollY.interpolate({ inputRange: [introHeight * 0.4, introHeight * 0.55], outputRange: [0, 1], extrapolate: 'clamp' }),
+          opacity: headerFade,
         }]}
       >
         <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,18,21,0.6)' : 'rgba(251,248,250,0.7)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,18,21,0.6)' : 'rgba(251,248,250,0.85)' }]} />
         <View style={styles.headerRow}>
           <View style={{ flex: 1, marginRight: SPACING.md }}>
             <Text style={[styles.headerDate, { color: colors.primary }]} numberOfLines={1}>
