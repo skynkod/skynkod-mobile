@@ -93,13 +93,13 @@ export default function HomeScreen({ navigation }) {
   // The first screen: about half for the greeting, the rest for the first sections.
   const introHeight = Math.round(Dimensions.get('window').height * 0.5);
   const scrollRef = useRef(null);
-  // Once the greeting starts to scroll away, a slim frosted header appears in full
+  // As soon as the page scrolls, a slim frosted header appears in full, with the date and weather
   // (never half-transparent over the sky, even when the page is short).
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerFade = useRef(new Animated.Value(0)).current;
   const [headerOn, setHeaderOn] = useState(false);
   useEffect(() => {
-    const id = scrollY.addListener(({ value }) => setHeaderOn(on => (value > introHeight * 0.3) !== on ? !on : on));
+    const id = scrollY.addListener(({ value }) => setHeaderOn(on => (value > 12) !== on ? !on : on));
     return () => scrollY.removeListener(id);
   }, [scrollY, introHeight]);
   useEffect(() => {
@@ -813,9 +813,19 @@ export default function HomeScreen({ navigation }) {
         <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,18,21,0.6)' : 'rgba(251,248,250,0.85)' }]} />
         <View style={styles.headerRow}>
           <View style={{ flex: 1, marginRight: SPACING.md }}>
-            <Text style={[styles.headerDate, { color: colors.primary }]} numberOfLines={1}>
-              {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={[styles.headerDate, { color: colors.primary }]} numberOfLines={1}>
+                {new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+              </Text>
+              {weatherNow ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name={weatherNow.icon} size={12} color={colors.primary} />
+                  <Animated.Text style={[styles.headerDate, { color: colors.primary, opacity: weatherFade }]}>
+                    {weatherStep === 0 ? t(weatherNow.label) : `${weatherNow.temp}°`}
+                  </Animated.Text>
+                </View>
+              ) : null}
+            </View>
             <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
               {greeting}{firstName ? `, ${firstName}` : ''}
             </Text>
