@@ -21,6 +21,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { getSkinWeather, pickSkinTip } from '../utils/skin-weather';
+import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines } from '../utils/seasons';
 import MorningCheckIn from '../components/MorningCheckIn';
 import Glass from '../components/Glass';
 import { getProductsByIds, getNewestProductId, getMyProducts, photoOf } from '../utils/catalog';
@@ -109,6 +110,51 @@ export default function HomeScreen({ navigation }) {
   const [checkInSkipped, setCheckInSkipped] = useState(false);
   const [shelf, setShelf] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  // The season, and its card on Home during the season's first week.
+  const season = currentSeason(new Date(), coords?.latitude ?? null);
+  const [seasonCard, setSeasonCard] = useState(null); // null | { archived }
+  const [seasonBusy, setSeasonBusy] = useState(false);
+  useEffect(() => {
+    if (!user?.id) return;
+    shouldShowSeasonCard(user.id, season)
+      .then(async show => {
+        if (!show) return setSeasonCard(null);
+        const archived = await getArchivedRoutines(user.id, season.id).catch(() => ({}));
+        setSeasonCard({ archived });
+      })
+      .catch(() => {});
+  }, [user?.id, season.id]);
+  const closeSeasonCard = () => {
+    dismissSeasonCard(user.id, season);
+    setSeasonCard(null);
+  };
+  const newSeasonRoutine = async () => {
+    setSeasonBusy(true);
+    try {
+      await archiveCurrentRoutines(user.id, previousSeason(season.id));
+      closeSeasonCard();
+      const res = await getUserRoutines(user.id);
+      const morning = (res.success ? res.data : []).find(r => r.type === 'morning');
+      navigation.navigate('RoutineBuilder', { period: 'morning', startedAt: Date.now(), editSteps: morning?.steps || null });
+    } catch (error) {
+      logError('Home_seasonNew', error, {}, 'warn');
+    } finally {
+      setSeasonBusy(false);
+    }
+  };
+  const bringBackSeasonRoutine = async () => {
+    setSeasonBusy(true);
+    try {
+      await restoreSeasonRoutines(user.id, season, seasonCard.archived);
+      closeSeasonCard();
+      load();
+    } catch (error) {
+      logError('Home_seasonRestore', error, {}, 'warn');
+    } finally {
+      setSeasonBusy(false);
+    }
+  };
+
   // Today's local weather, for the skin weather line under the name.
   const [skyToday, setSkyToday] = useState(null);
   useEffect(() => {
@@ -257,7 +303,9 @@ export default function HomeScreen({ navigation }) {
 
   // White over the sky: the text sits on its deeper top part.
   const ink = '#FFFFFF';
-  const weatherTip = skyToday ? pickSkinTip(skyToday.weather, profile, skyToday.city) : null;
+  const rawWeatherTip = skyToday ? pickSkinTip(skyToday.weather, profile, skyToday.city) : null;
+  // Calm weather: a season tip instead of "mild day".
+  const weatherTip = rawWeatherTip?.icon === 'cloud-outline' ? seasonDailyTip(season.id) : rawWeatherTip;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -361,6 +409,41 @@ export default function HomeScreen({ navigation }) {
             </Pressable>
             </Glass>
           </View>
+
+          {/* A new season: tips, and the offer of a routine for it */}
+          {seasonCard ? (
+            <Glass style={styles.card}>
+              <View style={styles.cardIn}>
+                <View style={styles.seasonHead}>
+                  <Ionicons name={SEASONS[season.id].icon} size={20} color={colors.primary} />
+                  <Text style={[styles.seasonTitle, { color: colors.text }]}>{t(SEASONS[season.id].title)}</Text>
+                </View>
+                {SEASONS[season.id].tips.map(tip => (
+                  <View key={tip} style={styles.seasonTip}>
+                    <View style={[styles.seasonDot, { backgroundColor: colors.primary }]} />
+                    <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(tip)}</Text>
+                  </View>
+                ))}
+                {seasonCard.archived?.morning?.length || seasonCard.archived?.evening?.length ? (
+                  <>
+                    <Pressable disabled={seasonBusy} onPress={bringBackSeasonRoutine} style={({ pressed }) => [styles.primary, { backgroundColor: colors.primary, opacity: pressed || seasonBusy ? 0.8 : 1 }]}>
+                      <Text style={[styles.primaryText, { color: colors.onPrimary }]}>{t('Bring back my {season} routine', { season: t(SEASONS[season.id].label).toLowerCase() })}</Text>
+                    </Pressable>
+                    <Pressable disabled={seasonBusy} onPress={newSeasonRoutine} hitSlop={8} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
+                      <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Create a new one instead')}</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable disabled={seasonBusy} onPress={newSeasonRoutine} style={({ pressed }) => [styles.primary, { backgroundColor: colors.primary, opacity: pressed || seasonBusy ? 0.8 : 1 }]}>
+                    <Text style={[styles.primaryText, { color: colors.onPrimary }]}>{t('Create my {season} routine', { season: t(SEASONS[season.id].label).toLowerCase() })}</Text>
+                  </Pressable>
+                )}
+                <Pressable onPress={closeSeasonCard} hitSlop={8} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
+                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>{t('Keep my routine')}</Text>
+                </Pressable>
+              </View>
+            </Glass>
+          ) : null}
 
           {plan ? (
             <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.soft, { backgroundColor: colors.primarySoft }]}>
@@ -634,6 +717,10 @@ const styles = StyleSheet.create({
   tile: { padding: SPACING.lg, gap: SPACING.md },
   tileIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sky: { position: 'absolute', top: 0, left: 0, right: 0 },
+  seasonHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  seasonTitle: { fontFamily: SERIF, fontSize: 22 },
+  seasonTip: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
+  seasonDot: { width: 5, height: 5, borderRadius: 3, marginTop: 9 },
   header: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden', borderBottomWidth: StyleSheet.hairlineWidth },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
   headerDate: { fontSize: 10, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
