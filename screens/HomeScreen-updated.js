@@ -20,6 +20,7 @@ import { markOpenedIfNeeded, shelfLife } from '../utils/shelf-life';
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
+import { track } from '../utils/analytics';
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
@@ -270,6 +271,8 @@ export default function HomeScreen({ navigation }) {
     setDone(next);
     await AsyncStorage.setItem(doneKey(user.id, period), JSON.stringify(next)).catch(() => {});
     logStep({ userId: user.id, routineId: routine?.id, type: period, stepIndex: currentIdx, done: true });
+    track('routine_step', { period });
+    if (steps.every((_, idx) => next[idx])) track('routine_done', { period });
     markOpenedIfNeeded(user.id, current?.product_id).catch(() => {});
   };
 

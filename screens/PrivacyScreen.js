@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT, useLanguage } from '../utils/LanguageContext'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
+import { setAnalyticsOff } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const PRIVACY_URL = 'https://skynkod.com/privacy'
@@ -34,6 +35,18 @@ export default function PrivacyScreen({ navigation }) {
     if (!ok) {
       setProfile(previous)
       await logError('PrivacyScreen_save', new Error('Consent not saved'), {}, 'warn')
+      Alert.alert(t('Error'), t("Couldn't save your choice. Try again."))
+    }
+  }
+
+  // Usage statistics are on by default; turning them off stops them at once.
+  const setImprove = async (on) => {
+    setProfile(p => ({ ...p, analytics_off: !on }))
+    try {
+      await setAnalyticsOff(!on)
+    } catch (error) {
+      setProfile(p => ({ ...p, analytics_off: on }))
+      await logError('PrivacyScreen_analytics', error, {}, 'warn')
       Alert.alert(t('Error'), t("Couldn't save your choice. Try again."))
     }
   }
@@ -77,10 +90,10 @@ export default function PrivacyScreen({ navigation }) {
           onChange={setHealth}
         />
         <Row
-          title={t('Anonymous statistics')}
-          subtitle={t('Helps us improve Skynkod. Never linked to your name or email.')}
-          value={profile.consent_research}
-          onChange={v => save({ consent_research: v })}
+          title={t('Help improve Skynkod')}
+          subtitle={t('Counts which screens and features you use, and reports errors. Never what you write in your journal or to Koda.')}
+          value={!profile.analytics_off}
+          onChange={setImprove}
         />
         <Row
           title={t('Offers and product tests')}

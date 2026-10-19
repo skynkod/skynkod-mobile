@@ -10,6 +10,7 @@ import { saveChatMessage, getChatHistory } from '../utils/chat-service';
 import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { track } from '../utils/analytics';
 
 const SUGGESTIONS = [
   'Build me a simple morning routine',
@@ -77,6 +78,7 @@ export default function KodaScreen({ route, navigation }) {
     setLoading(true);
     scrollToBottom();
     if (user?.id) saveChatMessage(user.id, userMessage);
+    track('koda_message'); // only that a message was sent, never its content
 
     let reply;
     try {

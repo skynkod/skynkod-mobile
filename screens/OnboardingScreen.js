@@ -9,6 +9,7 @@ import { deleteAccount } from '../utils/account'
 import { articlesIn } from '../utils/encyclopedia'
 import ArticleBody from '../components/ArticleBody'
 import { logError } from '../utils/errorLogger'
+import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
 import { SPACING, TYPE } from '../utils/theme'
@@ -125,7 +126,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   const birthDate = parseBirth(birthDay, birthMonth, birthYear)
   const [terms, setTerms] = useState(false)
   const [health, setHealth] = useState(false)
-  const [research, setResearch] = useState(false)
   const [offers, setOffers] = useState(false)
   const [skinType, setSkinType] = useState(undefined)
   const [concerns, setConcerns] = useState([])
@@ -161,6 +161,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   const goTo = (i) => {
     direction.current = i > step ? 1 : -1
     setStep(i)
+    track('onboarding_step', { step: STEPS[i] })
   }
   const next = () => goTo(step + 1)
   const back = () => goTo(step - 1)
@@ -208,7 +209,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     consent_version: CONSENT_VERSION,
     consent_terms_at: terms ? now() : null,
     consent_health_at: health ? now() : null,
-    consent_research: research,
     consent_offers: offers,
   })
 
@@ -504,10 +504,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
               {t('Use my sensitive skin information (skin conditions, acne type, allergies, pregnancy) to personalise my advice')}
             </Text>
             <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Without it, we skip those questions.')}</Text>
-          </Check>
-          <Check value={research} onChange={setResearch}>
-            <Text style={[TYPE.body, { color: colors.text }]}>{t('Help improve Skynkod with anonymous statistics')}</Text>
-            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Never linked to your name or email.')}</Text>
           </Check>
           <Check value={offers} onChange={setOffers}>
             <Text style={[TYPE.body, { color: colors.text }]}>{t('Get offers and product tests from brands')}</Text>

@@ -50,12 +50,14 @@ Prices and stores you enter, barcodes you link to a product, and products you as
 ### h) Progress photos (when the feature is available)
 Photos of your face that you choose to save.
 
-### i) Data that stays on your phone
+### i) How you use the app, and errors
+Which screens you open and which features you use (for example: routine finished, morning check-in done, a message sent to Koda, a product scanned or not found), with the date, your phone type (iPhone or Android), the app version and its language. When a search finds no product, the words searched. When the app runs into an error, a technical report (screen, error message). **Never** what you write in your journal, your mood, or the content of your messages to Koda. This data is linked to your account. You can turn it off at any time in Settings › Privacy › "Help improve Skynkod".
+
+### j) Data that stays on your phone
 We don't receive this data:
 - **Approximate location** (rounded to about 10 km): only if you allow it, to work out sunrise and sunset (day or night mode) and for your "skin weather". It is stored on your phone; for the weather, only these rounded coordinates are sent to the Open-Meteo weather service, without your name, email or any identifier.
 - **Camera**: to scan a product's barcode. No image is saved or sent; only the barcode number is used.
 - **Notifications**: reminders are scheduled on your phone.
-- **Technical error logs**: kept on your phone to help us fix bugs.
 
 ## 4. Why we use it
 
@@ -67,7 +69,7 @@ We don't receive this data:
 | Answer your questions with Koda | Message, profile, and a summary of your week (see section 5) | Contract; explicit consent for health data |
 | Track your products and spending | Products, spending | Contract |
 | Improve the catalogue for everyone (average prices in dirhams, barcodes) | Community contributions, **without name or email** | Legitimate interest |
-| Anonymous statistics to improve Skynkod | Aggregated, anonymous data | Your consent (optional box) |
+| Understand how the app is used and fix errors, to improve Skynkod | How you use the app, error reports (see 3i) | Legitimate interest; you can object at any time in Settings › Privacy |
 | Offers and product tests from brands | Skin profile, **without passing your identity to brands** | Your consent (optional box) |
 | Security and abuse prevention (for example the daily limit of Koda questions) | Account, usage counters | Legitimate interest |
 
@@ -106,6 +108,7 @@ Your data is hosted in the European Union (Germany), and messages sent to Koda a
 - **Account deletion**: when you delete your account in the app, we immediately erase your data (profile, journal, routines, products, spending, Koda conversations, photos) and your login. Our host's technical backups are erased automatically within [X DAYS, to check with Supabase].
 - **Inactive account**: an account with no sign-in for **12 months** is deleted, after a warning email.
 - **Withdrawing health consent**: the related health data is erased.
+- **Usage statistics and error reports**: kept 12 months, then erased automatically (and immediately if you delete your account).
 - Anonymous community contributions (for example an average price) may be kept, as they can't identify you.
 
 ## 9. Security

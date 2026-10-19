@@ -17,7 +17,7 @@ Ces points découlent des brouillons de conditions d'utilisation et de politique
 6. **Suppression des comptes inactifs après 12 mois**, avec un email de prévenance avant, par exemple 30 jours avant. Il faudra une tâche automatique côté serveur, et un vrai service d'envoi d'emails.
 7. ✅ **Fait** : Koda et Anthropic sont mentionnés dans l'étape de consentement.
 8. **La case « Offres de marques »** : aucune offre n'existe encore. Il faudra décider comment les présenter sans jamais transmettre l'identité aux marques, ou retirer la case en attendant.
-9. **La case « Statistiques anonymes »** : aucune statistique n'est encore produite. Même question : définir ce qui sera fait, ou retirer la case en attendant.
+9. ✅ **Fait** : la case « Statistiques anonymes » est remplacée par des statistiques d'utilisation liées au compte, activées par défaut, désactivables dans Réglages › Confidentialité, gardées 12 mois. **À faire valider par l'avocat** : l'intérêt légitime comme base (au lieu du consentement).
 10. ✅ **Fait** : Open Beauty Facts est cité dans À propos.
 11. **Droit d'accès** : prévoir comment envoyer à une utilisatrice une copie de ses données si elle le demande. Au début, cela peut se faire par email, à la main.
 

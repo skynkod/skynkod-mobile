@@ -8,6 +8,7 @@ import { Screen, Button, EmptyState, useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
 import { lookupBarcode } from '../utils/catalog'
 import { requestProduct } from '../utils/community-data'
+import { track } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // Full-screen camera that reads a product barcode and opens its page.
@@ -26,6 +27,7 @@ export default function BarcodeScannerScreen({ navigation, route }) {
     busy.current = true
     setStatus('looking')
     const result = await lookupBarcode(data)
+    if (result.product || result.notFound) track('scan', { found: !!result.product })
     if (result.product) {
       setStatus('scanning')
       busy.current = false

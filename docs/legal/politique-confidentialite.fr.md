@@ -50,12 +50,14 @@ Les prix et magasins que vous indiquez, les codes-barres que vous associez à un
 ### h) Les photos de progression (quand la fonctionnalité est disponible)
 Les photos de votre visage que vous choisissez d'enregistrer.
 
-### i) Les données qui restent sur votre téléphone
+### i) Votre utilisation de l'application, et les erreurs
+Les écrans que vous ouvrez et les fonctionnalités que vous utilisez (par exemple : routine terminée, check-in du matin fait, message envoyé à Koda, produit scanné ou introuvable), avec la date, le type de téléphone (iPhone ou Android), la version de l'application et sa langue. Quand une recherche ne trouve aucun produit, les mots recherchés. Quand l'application rencontre une erreur, un rapport technique (écran, message d'erreur). **Jamais** ce que vous écrivez dans votre journal, votre humeur, ni le contenu de vos messages à Koda. Ces données sont liées à votre compte. Vous pouvez les désactiver à tout moment dans Réglages › Confidentialité › « Aider à améliorer Skynkod ».
+
+### j) Les données qui restent sur votre téléphone
 Nous ne recevons pas ces données :
 - **Localisation approximative** (arrondie à environ 10 km) : uniquement si vous l'autorisez, pour calculer l'heure du lever et du coucher du soleil (mode jour ou nuit) et pour la « météo de votre peau ». Elle est enregistrée sur votre téléphone ; pour la météo, seules ces coordonnées arrondies sont envoyées au service météo Open-Meteo, sans votre nom, votre email ni aucun identifiant.
 - **Caméra** : pour scanner le code-barres d'un produit. Aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé.
 - **Notifications** : les rappels sont programmés sur votre téléphone.
-- **Journaux d'erreurs techniques** : enregistrés sur votre téléphone pour nous aider à corriger les bugs.
 
 ## 4. Pourquoi nous les utilisons
 
@@ -67,7 +69,7 @@ Nous ne recevons pas ces données :
 | Répondre à vos questions avec Koda | Message, profil, et un résumé de votre semaine (voir section 5) | Exécution du contrat ; consentement explicite pour les données de santé |
 | Suivre vos produits et vos dépenses | Produits, dépenses | Exécution du contrat |
 | Améliorer le catalogue pour tous (prix moyens en dirhams, codes-barres) | Contributions communautaires, **sans nom ni email** | Intérêt légitime |
-| Statistiques anonymes pour améliorer Skynkod | Données agrégées et anonymes | Votre consentement (case facultative) |
+| Comprendre comment l'application est utilisée et corriger les erreurs, pour améliorer Skynkod | Utilisation de l'application, rapports d'erreurs (voir 3i) | Intérêt légitime ; vous pouvez vous y opposer à tout moment dans Réglages › Confidentialité |
 | Offres et tests de produits de marques | Profil de peau, **sans transmettre votre identité aux marques** | Votre consentement (case facultative) |
 | Sécurité, prévention des abus (par exemple le nombre de questions à Koda par jour) | Compte, compteurs d'utilisation | Intérêt légitime |
 
@@ -106,6 +108,7 @@ Vos données sont hébergées dans l'Union européenne (Allemagne), et les messa
 - **Suppression du compte** : quand vous supprimez votre compte depuis l'application, nous effaçons immédiatement vos données (profil, journal, routines, produits, dépenses, conversations avec Koda, photos) et votre identifiant de connexion. Les sauvegardes techniques de notre hébergeur sont effacées automatiquement dans un délai de [X JOURS, à vérifier auprès de Supabase].
 - **Compte inactif** : un compte sans aucune connexion pendant **12 mois** est supprimé, après un email de prévenance.
 - **Retrait du consentement santé** : les données de santé correspondantes sont effacées.
+- **Statistiques d'utilisation et rapports d'erreurs** : conservés 12 mois, puis effacés automatiquement (et immédiatement si vous supprimez votre compte).
 - Les contributions communautaires anonymes (par exemple un prix moyen) peuvent être conservées, puisqu'elles ne permettent pas de vous identifier.
 
 ## 9. Sécurité

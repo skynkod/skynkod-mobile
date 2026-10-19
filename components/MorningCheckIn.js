@@ -5,6 +5,7 @@ import { useColors } from './ui'
 import { useT } from '../utils/LanguageContext'
 import { MOODS, TAGS, saveDay } from '../utils/journal-day'
 import { logError } from '../utils/errorLogger'
+import { track } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const KODA = require('../assets/images/koda-logo.png')
@@ -42,7 +43,10 @@ export default function MorningCheckIn({ userId, entry, streak = 0, onSaved, onS
   }
   const saveOnce = async (nextMood, nextTags) => {
     try {
+      const first = !entryId.current
       const id = await saveDay(userId, new Date(), { mood: nextMood, tags: nextTags, notes: entry?.notes || '' }, entryId.current)
+      // Only that the check-in was done, never the mood or the tags.
+      if (first) track('checkin_done')
       entryId.current = id
       onSaved?.({ id, date: new Date().toISOString(), mood: nextMood, skin_conditions: nextTags, notes: entry?.notes || '' })
     } catch (error) {

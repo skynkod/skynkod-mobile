@@ -8,6 +8,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { searchProducts, linkBarcode, photoOf } from '../utils/catalog'
 import { requestProduct } from '../utils/community-data'
+import { track } from '../utils/analytics'
 import { searchIngredients, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -68,7 +69,10 @@ export default function SearchScreen({ navigation, route }) {
         const rows = await searchProducts(q)
         if (id === requestId.current) setProducts(rows)
         // Nothing found for a real-looking name: note it as a wanted product.
-        if (!rows.length && q.length >= 4 && !searchIngredients(q).length) requestProduct('name', q).catch(() => {})
+        if (!rows.length && q.length >= 4 && !searchIngredients(q).length) {
+          requestProduct('name', q).catch(() => {})
+          track('search_no_result', { q: q.slice(0, 60) })
+        }
       } catch (error) {
         await logError('SearchScreen_search', error, { q }, 'warn')
       } finally {

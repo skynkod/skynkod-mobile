@@ -13,6 +13,7 @@ import { AuthProvider } from './utils/AuthContext'
 import { signOut, updateUserProfile } from './utils/supabase'
 import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
 import { logError } from './utils/errorLogger'
+import { setAnalyticsUser, track } from './utils/analytics'
 import * as SplashScreen from 'expo-splash-screen'
 import AnimatedSplash from './components/AnimatedSplash'
 import { BottomSheet, ListRow, Card } from './components/ui'
@@ -215,6 +216,12 @@ function AppContent() {
   const initializeNotifications = async (userId) => {
     try {
       const granted = await requestNotificationPermissions()
+      // Counted only when it changes, not at every launch.
+      const notifKey = `skynkod_notif_counted_${userId}`
+      if ((await AsyncStorage.getItem(notifKey)) !== String(granted)) {
+        track('notifications', { on: !!granted })
+        await AsyncStorage.setItem(notifKey, String(granted))
+      }
 
       if (granted) {
         const token = await getExpoPushToken()
@@ -246,6 +253,7 @@ function AppContent() {
           setShowOnboarding(true)
         }
 
+        setAnalyticsUser(userData.userId).then(() => track('app_open')).catch(() => {})
         initializeNotifications(userData.userId)
         markSeen(userData.userId)
       }
@@ -269,6 +277,7 @@ function AppContent() {
       setShowOnboarding(true)
     }
     setUser(data)
+    setAnalyticsUser(userId).then(() => { track('sign_in'); track('app_open') }).catch(() => {})
     initializeNotifications(userId)
     markSeen(userId)
   }
@@ -292,18 +301,21 @@ function AppContent() {
       logError('AppContent_logoutNotifications', err, { userId }, 'warn')
     )
 
+    setAnalyticsUser(null)
     setUser(null)
   }
 
   // The account was deleted on the server (under 18 at sign-up): back to login.
   const handleAccountGone = async () => {
     await AsyncStorage.removeItem('skynkod_user').catch(() => {})
+    setAnalyticsUser(null)
     setUser(null)
   }
 
   const handleOnboardingComplete = async () => {
     // Per account, so a new account on the same phone still gets onboarding.
     await AsyncStorage.setItem(`skynkod_onboarded_${user.userId}`, 'true')
+    track('onboarding_done')
     setShowOnboarding(false)
   }
 
@@ -327,7 +339,18 @@ function AppContent() {
   } else {
     content = (
       <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>
-        <NavigationContainer ref={navigationRef} theme={navTheme}>
+        <NavigationContainer
+          ref={navigationRef}
+          theme={navTheme}
+          onReady={() => {
+            const screen = navigationRef.getCurrentRoute()?.name
+            if (screen) track('screen', { screen })
+          }}
+          onStateChange={() => {
+            const screen = navigationRef.getCurrentRoute()?.name
+            if (screen) track('screen', { screen })
+          }}
+        >
           <AppTabs userId={user.userId} />
         </NavigationContainer>
       </AuthProvider>

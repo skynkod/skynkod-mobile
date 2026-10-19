@@ -1,10 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { reportError } from './analytics'
 
 const MAX_LOGS = 100
 
-export async function logError(source, error, context = {}) {
+export async function logError(source, error, context = {}, level = 'error') {
   // While developing, show it in the Metro logs too.
   if (__DEV__) console.warn(`[${source}]`, error?.message || String(error))
+  // Real errors also reach the server; warnings (often just no network) stay on the phone.
+  if (level !== 'warn') reportError({ source, message: error?.message || String(error), stack: error?.stack })
   try {
     const errorLog = {
       timestamp: new Date().toISOString(),
