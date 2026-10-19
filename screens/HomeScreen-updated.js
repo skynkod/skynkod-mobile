@@ -21,6 +21,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { getSkinWeather, pickSkinTip } from '../utils/skin-weather';
+import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines } from '../utils/seasons';
 import MorningCheckIn from '../components/MorningCheckIn';
 import Glass from '../components/Glass';
@@ -304,8 +305,12 @@ export default function HomeScreen({ navigation }) {
   // White over the sky: the text sits on its deeper top part.
   const ink = '#FFFFFF';
   const rawWeatherTip = skyToday ? pickSkinTip(skyToday.weather, profile, skyToday.city) : null;
-  // Calm weather: a season tip instead of "mild day".
-  const weatherTip = rawWeatherTip?.icon === 'cloud-outline' ? seasonDailyTip(season.id) : rawWeatherTip;
+  // Calm weather: a Ramadan tip during the month, otherwise a season tip.
+  const ramadan = ramadanDay();
+  const calmTip = ramadan ? ramadanTip(ramadan, false) : seasonDailyTip(season.id);
+  const weatherTip = rawWeatherTip?.icon === 'cloud-outline' ? calmTip : rawWeatherTip;
+  // After iftar the evening is when Ramadan tips matter most.
+  const eveningTip = isNight && ramadan ? ramadanTip(ramadan, true) : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -350,11 +355,11 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
             {/* Skin weather: the day's one tip from the local weather (daytime only) */}
-            {!isNight && weatherTip ? (
+            {(isNight ? eveningTip : weatherTip) ? (
               <Glass radius={999} style={styles.linePill}>
                 <View style={styles.lineRow}>
-                  <Ionicons name={weatherTip.icon} size={15} color={isDark ? colors.text : INK} />
-                  <Text style={[styles.line, { color: isDark ? colors.text : INK, flexShrink: 1 }]}>{t(weatherTip.text)}</Text>
+                  <Ionicons name={(isNight ? eveningTip : weatherTip).icon} size={15} color={isDark ? colors.text : INK} />
+                  <Text style={[styles.line, { color: isDark ? colors.text : INK, flexShrink: 1 }]}>{t((isNight ? eveningTip : weatherTip).text)}</Text>
                 </View>
               </Glass>
             ) : null}

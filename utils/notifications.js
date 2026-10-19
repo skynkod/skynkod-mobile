@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
+import { ramadanDay } from './ramadan'
 import Constants from 'expo-constants'
 
 Notifications.setNotificationHandler({
@@ -65,8 +66,16 @@ const scheduleDaily = async (id, title, body, hour, minute) => {
 export const scheduleMorningReminder = (userId) =>
   scheduleDaily(`morning-${userId}`, "Skynkod", "Ta routine du matin t'attend ☀️", 8, 0)
 
+// During Ramadan (in Arab and Muslim countries) the bedtime reminder also says
+// to rehydrate; rescheduled at each app start, so it follows the month.
 export const scheduleEveningReminder = (userId) =>
-  scheduleDaily(`evening-${userId}`, "Skynkod", "Ta routine du soir, c'est le moment 🌙", 21, 0)
+  scheduleDaily(
+    `evening-${userId}`,
+    "Skynkod",
+    ramadanDay() ? "Ta routine du soir 🌙 Et pense à bien t'hydrater avant de dormir 💧" : "Ta routine du soir, c'est le moment 🌙",
+    21,
+    0,
+  )
 
 export const scheduleJournalReminder = (userId) =>
   scheduleDaily(`journal-${userId}`, "Skynkod", "Comment va ta peau ce matin ? 🌸", 7, 45)
