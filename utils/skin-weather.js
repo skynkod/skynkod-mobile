@@ -20,7 +20,7 @@ export const pickSkinTip = (w, profile, city) => {
     return { icon: 'flag-outline', text: 'Chergui today · Hot, dry wind: protect your skin barrier' }
   }
   if (w.uvMax >= 8) {
-    return { icon: 'sunny-outline', text: `UV ${Math.round(w.uvMax)}${at} · Reapply sunscreen around ${hour(w.uvPeakHour)}` }
+    return { icon: 'sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · Reapply sunscreen around ${hour(w.uvPeakHour)}` }
   }
   if (w.humidityMin <= dryThreshold) {
     return { icon: 'leaf-outline', text: 'Very dry air today · Your skin will be thirsty, add a hydrating serum' }
@@ -38,7 +38,7 @@ export const pickSkinTip = (w, profile, city) => {
     return { icon: 'water-outline', text: 'Humid day · A light gel moisturizer is enough' }
   }
   if (w.uvMax >= 5) {
-    return { icon: 'partly-sunny-outline', text: `UV ${Math.round(w.uvMax)}${at} · SPF 30 or more this morning` }
+    return { icon: 'partly-sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · SPF 30 or more this morning` }
   }
   return { icon: 'cloud-outline', text: `Mild day · ${Math.round(w.tempMax)}°${at} · Your usual routine is perfect` }
 }

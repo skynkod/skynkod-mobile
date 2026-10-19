@@ -382,7 +382,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.lineRow}>
                   <Ionicons name={weatherNow.icon} size={15} color={isDark ? colors.text : INK} />
                   <Text style={[styles.weatherNow, { color: isDark ? colors.text : INK }]}>
-                    {`${weatherNow.temp}° · ${t(weatherNow.label)} · ${t('Humidity')} ${weatherNow.humidity}%${weatherNow.isDay ? ` · UV ${weatherNow.uv}` : ''}`}
+                    {`${weatherNow.temp}° · ${t(weatherNow.label)} · ${t('Humidity')} ${weatherNow.humidity}%${weatherNow.isDay ? ` · ${t('UV now')} ${weatherNow.uv}` : ''}`}
                   </Text>
                 </View>
               </Glass>
