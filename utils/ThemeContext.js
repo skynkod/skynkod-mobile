@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Location from 'expo-location'
 import { DARK_COLORS, LIGHT_COLORS } from './theme'
 import { isNightAt } from './daylight'
+import { setSkinDayCoords } from './skin-day'
 import { logError } from './errorLogger'
 
 const ThemeContext = createContext()
@@ -40,6 +41,7 @@ export const ThemeProvider = ({ children }) => {
 
   // Re-checks day/night every minute; also drives the Home greeting.
   useEffect(() => {
+    setSkinDayCoords(coords)
     setNightNow(isNightAt(new Date(), coords))
     const interval = setInterval(() => setNightNow(isNightAt(new Date(), coords)), 60000)
     return () => clearInterval(interval)

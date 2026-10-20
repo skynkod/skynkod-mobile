@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './supabase'
+import { skinDay, skinDayKey } from './skin-day'
 
 // Each ticked routine step is one row in routine_completions, so the Journal
 // can show "Morning routine 4/4" and how regular the user has been.
@@ -12,7 +13,7 @@ export const localDay = (date = new Date()) => {
 // Ticks (done = true) or unticks one step of today's routine.
 export const logStep = async ({ userId, routineId, type, stepIndex, done }) => {
   try {
-    const day = localDay()
+    const day = skinDayKey()
     const { error: delError } = await supabase
       .from('routine_completions')
       .delete()
@@ -39,7 +40,7 @@ export const logStep = async ({ userId, routineId, type, stepIndex, done }) => {
 }
 
 // { morning: Set(stepIndex), evening: Set(stepIndex) } for one day.
-export const getDayProgress = async (userId, day = localDay()) => {
+export const getDayProgress = async (userId, day = skinDayKey()) => {
   const { data, error } = await supabase
     .from('routine_completions')
     .select('routine_type, step_index')
@@ -67,9 +68,9 @@ export const getRecentRegularity = async (userId, days = 7) => {
 // Journal shows the same count as Home. Same storage key as Home and Routines.
 export const syncTodayTicks = async (userId, routinesById = {}) => {
   try {
-    const progress = await getDayProgress(userId, localDay())
+    const progress = await getDayProgress(userId, skinDayKey())
     for (const type of ['morning', 'evening']) {
-      const raw = await AsyncStorage.getItem(`routine_done_${userId}_${type}_${new Date().toDateString()}`)
+      const raw = await AsyncStorage.getItem(`routine_day_${userId}_${type}_${skinDay().toDateString()}`)
       const ticks = JSON.parse(raw || '{}')
       for (const [idx, isDone] of Object.entries(ticks)) {
         if (isDone && !progress[type].has(Number(idx))) {

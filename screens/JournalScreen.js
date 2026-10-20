@@ -11,6 +11,7 @@ import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../uti
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
+import { skinDayKey } from '../utils/skin-day';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
 const planFor = tags => {
@@ -123,7 +124,7 @@ export default function JournalScreen({ route, navigation }) {
       await syncTodayTicks(user.id);
       const [routines, progress, regularity] = await Promise.all([
         getUserRoutines(user.id),
-        getDayProgress(user.id, localDay(selected)),
+        getDayProgress(user.id, selected.toDateString() === new Date().toDateString() ? skinDayKey() : localDay(selected)),
         getRecentRegularity(user.id, 7),
       ]);
       const list = routines.success ? routines.data || [] : [];

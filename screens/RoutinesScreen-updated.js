@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getUserRoutines } from '../utils/routines-service';
 import { logStep } from '../utils/routine-log';
+import { skinDay } from '../utils/skin-day';
 import { markOpenedIfNeeded } from '../utils/shelf-life';
 import { getUserProfile } from '../utils/supabase';
 import { buildRoutine } from '../utils/routine-builder';
@@ -18,7 +19,7 @@ import { todaySteps } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
-const todayKey = (userId, tab) => `routine_done_${userId}_${tab}_${new Date().toDateString()}`;
+const todayKey = (userId, tab) => `routine_day_${userId}_${tab}_${skinDay().toDateString()}`;
 
 export default function RoutinesScreen({ route, navigation }) {
   const colors = useColors();

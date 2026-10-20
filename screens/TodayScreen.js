@@ -14,13 +14,13 @@ import { useTheme } from '../utils/ThemeContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getUserRoutines } from '../utils/routines-service'
 import { todaySteps } from '../utils/routine-checks'
-import { logStep, syncTodayTicks, localDay } from '../utils/routine-log'
+import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state'
-import { sunTimes } from '../utils/daylight'
+import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
@@ -30,7 +30,7 @@ import { SPACING, RADIUS, TYPE } from '../utils/theme'
 // "My skin day", like a food diary: three things to do each day (morning
 // routine, check-in, evening routine), a ring that fills up and a streak.
 
-const doneKey = (userId, period) => `routine_done_${userId}_${period}_${new Date().toDateString()}`
+const doneKey = (userId, period) => `routine_day_${userId}_${period}_${skinDay().toDateString()}`
 const tap = () => { Haptics.selectionAsync().catch(() => {}) }
 
 // Days in a row with something logged (a routine step or a check-in). Today
@@ -46,28 +46,13 @@ const streakFrom = (days) => {
 
 // The day starts at the real sunrise where she is (5 am when we don't know
 // the place): the greeting turns to Good morning and the skin check-in resets.
-const sunriseOn = (date, coords) => {
-  if (coords) {
-    const times = sunTimes(date, coords.latitude, coords.longitude)
-    if (times.sunrise) return times.sunrise
-  }
-  const d = new Date(date)
-  d.setHours(5, 0, 0, 0)
-  return d
-}
-const skinDay = (coords, now = new Date()) => {
-  if (now >= sunriseOn(now, coords)) return now
-  const d = new Date(now)
-  d.setDate(d.getDate() - 1)
-  return d
-}
-const sameSkinDay = (date, coords) => !!date && new Date(date).toDateString() === skinDay(coords).toDateString()
+const sameSkinDay = (date, coords) => !!date && new Date(date).toDateString() === skinDay(new Date(), coords).toDateString()
 // A mood picked last night after midnight sits on today's date but was set
 // before this morning's sunrise: it doesn't count for today.
 const pickedToday = (entry, coords) => {
   if (!entry?.mood || !sameSkinDay(entry.date, coords)) return false
   const touched = entry.updated_at || entry.created_at
-  return !touched || new Date(touched) >= sunriseOn(skinDay(coords), coords)
+  return !touched || new Date(touched) >= sunriseOn(skinDay(new Date(), coords), coords)
 }
 
 export default function TodayScreen({ navigation }) {
@@ -106,7 +91,10 @@ export default function TodayScreen({ navigation }) {
       const morning = latest('morning')
       const evening = latest('evening')
       setRoutines({ morning, evening })
-      setDone({ morning: JSON.parse(m || '{}'), evening: JSON.parse(e || '{}') })
+      // Ticks saved online count too (e.g. done on another phone).
+      const online = await getDayProgress(user.id).catch(() => null)
+      const withOnline = (local, set) => ({ ...Object.fromEntries([...(set || [])].map(i => [i, true])), ...local })
+      setDone({ morning: withOnline(JSON.parse(m || '{}'), online?.morning), evening: withOnline(JSON.parse(e || '{}'), online?.evening) })
       setPlan(p)
       syncTodayTicks(user.id, { morning: morning?.id, evening: evening?.id })
       const active = await getActivePlan(user.id)
@@ -189,7 +177,7 @@ export default function TodayScreen({ navigation }) {
     try {
       // Only today's entry is updated; an older one on screen is never touched.
       const current = sameSkinDay(entry?.date, coords) ? entry : null
-      const day = skinDay(coords)
+      const day = skinDay(new Date(), coords)
       const id = await saveDay(user.id, day, { mood, tags: current?.mood === mood ? current?.skin_conditions || [] : [], notes: current?.notes || '' }, current?.id)
       setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString(), updated_at: new Date().toISOString() })
       if (!entry?.mood) track('checkin_done')
