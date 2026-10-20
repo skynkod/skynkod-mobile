@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import MyProgressScreen from './MyProgressScreen'
+import MySpaceScreen from './MySpaceScreen'
 import ProductsScreen from './ProductsScreen'
 import PhotosScreen from './PhotosScreen'
 import SkinTypeQuizScreen from './SkinTypeQuizScreen'
@@ -24,6 +25,7 @@ export const MORE_SCREENS = [
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
+  { name: 'MySpace', component: MySpaceScreen, label: 'My space', subtitle: 'A box from your week, every week', icon: 'cube-outline', group: 'track' },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
