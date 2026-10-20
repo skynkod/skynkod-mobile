@@ -189,10 +189,13 @@ export default function JournalScreen({ route, navigation }) {
     }, [selected.toDateString(), user?.id])
   );
 
+  // A new mood starts the details over: what was ticked before is cleared.
   const setMoodNow = value => {
     dirty.current = true;
-    latest.current = { ...latest.current, mood: value };
+    const changed = value !== mood;
+    latest.current = { ...latest.current, mood: value, ...(changed ? { tags: [] } : {}) };
     setMood(value);
+    if (changed) setTags([]);
     saveNow();
   };
   const toggleTag = (tag) => {

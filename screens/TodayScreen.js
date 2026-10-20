@@ -123,7 +123,7 @@ export default function TodayScreen({ navigation }) {
       const since = new Date(Date.now() - 60 * 86400000)
       const [{ data: ticks }, { data: entries }] = await Promise.all([
         supabase.from('routine_completions').select('date').eq('user_id', user.id).gte('date', localDay(since)),
-        supabase.from('journal_entries').select('id, date, mood, skin_conditions, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
+        supabase.from('journal_entries').select('id, date, mood, skin_conditions, notes, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
       ])
       const today = (entries || []).find(x => sameSkinDay(x.date, coords))
       setEntry(today || null)
@@ -190,7 +190,7 @@ export default function TodayScreen({ navigation }) {
       // Only today's entry is updated; an older one on screen is never touched.
       const current = sameSkinDay(entry?.date, coords) ? entry : null
       const day = skinDay(coords)
-      const id = await saveDay(user.id, day, { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
+      const id = await saveDay(user.id, day, { mood, tags: current?.mood === mood ? current?.skin_conditions || [] : [], notes: current?.notes || '' }, current?.id)
       setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString(), updated_at: new Date().toISOString() })
       if (!entry?.mood) track('checkin_done')
       // Straight to the journal: a tip for the day, and room to say what's going on.
