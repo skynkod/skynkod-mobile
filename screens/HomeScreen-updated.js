@@ -21,7 +21,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state';
 import { situationFromCheckIn, MOODS, saveDay } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { track } from '../utils/analytics';
-import { getRekodPlan, tonightNight, NIGHTS, goalOf, weekOf } from '../utils/rekod';
+import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod';
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather';
 import { ramadanDay, ramadanTip } from '../utils/ramadan';
 import { SEASONS, currentSeason, previousSeason, seasonDailyTip, shouldShowSeasonCard, dismissSeasonCard, getArchivedRoutines, archiveCurrentRoutines, restoreSeasonRoutines, labelRoutines, shouldAskSeasonLabel, declineSeasonLabel } from '../utils/seasons';
@@ -647,7 +647,7 @@ export default function HomeScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.rekodKicker}>{t('MY PROGRAMME')}</Text>
                 <Text style={[styles.rekodTitle, { fontSize: 15 }]}>
-                  {t(goalOf(rekod.goal).title)} · {t('Week {n} of {total}', { n: Math.min(weekOf(rekod), goalOf(rekod.goal).weeks), total: goalOf(rekod.goal).weeks })}
+                  {goalsTitle(rekod)} · {t('Week {n} of {total}', { n: Math.min(weekOf(rekod), goalOf(rekod.goal).weeks), total: goalOf(rekod.goal).weeks })}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   rekodCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#33202E', borderRadius: 22, padding: SPACING.lg, marginTop: SPACING.lg },
   rekodKicker: { color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
-  rekodTitle: { color: '#FFFFFF', fontFamily: SERIF, fontSize: 17, marginTop: 2 },
+  rekodTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginTop: 2 },
   rekodText: { color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 1 },
   dots: { flexDirection: 'row', gap: 6, marginTop: SPACING.md },

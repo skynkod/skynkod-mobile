@@ -14,7 +14,7 @@ import { track } from '../utils/analytics'
 import { searchProducts, getMyProducts } from '../utils/catalog'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import {
-  GOALS, NIGHTS, goalOf, weekOf, weekPattern, tonightNight, checkInDue,
+  GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
 } from '../utils/rekod'
@@ -156,9 +156,12 @@ export default function RekodScreen({ navigation }) {
   }, [user?.id])
   useFocusEffect(useCallback(() => { load() }, [load]))
 
-  const pickGoal = (goal) => {
+  // Up to 3 goals; the first one picked sets the programme's pace.
+  const [picked, setPicked] = useState([])
+  const toggleGoal = (id) => setPicked(prev => (prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev))
+  const confirmGoals = () => {
     const reactive = profile?.skin_type === 'Sensitive' || [...(profile?.skin_conditions || []), ...(profile?.skin_concerns || [])].some(c => REACTIVE.includes(c))
-    setAnswers({ goal, sensitive: reactive })
+    setAnswers({ goal: picked[0], goals: picked, sensitive: reactive })
     setStep('sensitive')
   }
 
@@ -236,7 +239,7 @@ export default function RekodScreen({ navigation }) {
           <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />
           <View style={{ flex: 1, gap: 6 }}>
             <Text style={[TYPE.overline, { color: C.primary }]}>My programme</Text>
-            <Text style={[styles.dashTitle, { color: C.text }]}>{goal.title}</Text>
+            <Text style={[styles.dashTitle, { color: C.text }]} numberOfLines={2}>{goalsTitle(plan)}</Text>
             <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
               <Ionicons name={NIGHTS[tonight].icon} size={14} color={C.primary} />
               <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {NIGHTS[tonight].short}</Text>
@@ -302,13 +305,26 @@ export default function RekodScreen({ navigation }) {
 
   if (step === 'goals') {
     return (
-      <Shell navigation={navigation} onBack={() => setStep('intro')}>
+      <Shell navigation={navigation} onBack={() => setStep('intro')}
+        footer={<RButton title={picked.length ? `Continue · ${picked.length}/3` : 'Pick up to 3'} disabled={!picked.length} onPress={() => { tap(); confirmGoals() }} />}>
         <Text style={[styles.title, { color: C.text }]}>What do you want to change?</Text>
+        <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>Pick up to 3. The first one leads your programme.</Text>
         <View style={styles.grid}>
           {GOALS.map(g => (
-            <Pressable key={g.id} onPress={() => { tap(); pickGoal(g.id) }} style={({ pressed }) => [styles.tile, { backgroundColor: C.card, borderColor: C.border, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-              <View style={[styles.tileIcon, { backgroundColor: C.primarySoft }]}>
-                <Ionicons name={GOAL_ICONS[g.id] || 'sparkles-outline'} size={24} color={C.primary} />
+            <Pressable key={g.id} onPress={() => { tap(); toggleGoal(g.id) }} style={({ pressed }) => [styles.tile, {
+              backgroundColor: picked.includes(g.id) ? C.primarySoft : C.card,
+              borderColor: picked.includes(g.id) ? C.primary : C.border,
+              borderWidth: picked.includes(g.id) ? 2 : 1,
+              opacity: !picked.includes(g.id) && picked.length >= 3 ? 0.45 : 1,
+              transform: [{ scale: pressed ? 0.97 : 1 }],
+            }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={[styles.tileIcon, { backgroundColor: C.primarySoft }]}>
+                  <Ionicons name={GOAL_ICONS[g.id] || 'sparkles-outline'} size={24} color={C.primary} />
+                </View>
+                {picked.includes(g.id) ? (
+                  <View style={styles.tileCheck}><Text style={{ color: C.onPrimary, fontSize: 12, fontWeight: '800' }}>{picked.indexOf(g.id) + 1}</Text></View>
+                ) : null}
               </View>
               <Text style={[TYPE.bodyStrong, { color: C.text }]}>{g.title}</Text>
               <Text style={[TYPE.caption, { color: C.muted }]} numberOfLines={2}>{g.subtitle}</Text>
@@ -327,7 +343,7 @@ export default function RekodScreen({ navigation }) {
         onBack={() => setStep('goals')}
         footer={<RButton title="Start my programme" onPress={() => { tap(); adopt() }} loading={busy} />}
       >
-        <Text style={[TYPE.overline, { color: C.primary }]}>Your programme · {goal.title}</Text>
+        <Text style={[TYPE.overline, { color: C.primary }]}>Your programme · {goalsTitle(answers)}</Text>
         <Text style={[styles.title, { color: C.text }]}>Your skin, decoded.</Text>
         <View style={[styles.pill, { backgroundColor: C.primarySoft, marginTop: SPACING.sm }]}>
           <Ionicons name="calendar-outline" size={14} color={C.primary} />
@@ -514,14 +530,15 @@ function StepSheet({ step: s, onClose, navigation, onOwn }) {
 
 const styles = StyleSheet.create({
   dash: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md },
-  dashTitle: { fontFamily: SERIF, fontSize: 26, lineHeight: 30 },
+  dashTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 26, lineHeight: 30 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#E2C6DA', borderRadius: 18, padding: SPACING.lg, marginTop: SPACING.lg },
   tile: { width: '48.5%', borderWidth: 1, borderRadius: 22, padding: SPACING.lg, gap: 6, minHeight: 132 },
+  tileCheck: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E2C6DA', alignItems: 'center', justifyContent: 'center' },
   tileIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.lg },
   slideIcon: { width: 112, height: 112, borderRadius: 56, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(226,198,218,0.12)', marginBottom: SPACING.xxl },
-  slideTitle: { fontFamily: SERIF, fontSize: 32, lineHeight: 38, textAlign: 'center' },
+  slideTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 32, lineHeight: 38, textAlign: 'center' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: SPACING.md },
   dot: { height: 8, borderRadius: 4 },
   segment: { flexDirection: 'row', borderRadius: 999, padding: 4 },
@@ -533,17 +550,17 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   bottomSheet: { backgroundColor: '#3B2636', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SPACING.xl, paddingBottom: SPACING.xxxl },
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: SPACING.lg },
-  sheetTitle: { fontFamily: SERIF, fontSize: 24, lineHeight: 30 },
+  sheetTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 24, lineHeight: 30 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
   scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
   footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, paddingBottom: SPACING.md },
-  title: { fontFamily: SERIF, fontSize: 30, lineHeight: 36, marginTop: SPACING.xs },
+  title: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.xs },
   bar: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: SPACING.lg },
   rbutton: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.lg },
   premium: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   premiumText: { color: '#33202E', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  hero: { fontFamily: SERIF, fontSize: 44, lineHeight: 46, marginTop: SPACING.sm },
-  serif: { fontFamily: SERIF, fontSize: 18 },
+  hero: { fontWeight: '700', letterSpacing: -0.4, fontSize: 44, lineHeight: 46, marginTop: SPACING.sm },
+  serif: { fontWeight: '700', letterSpacing: -0.4, fontSize: 18 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.xl },
   goal: { width: '48.5%', borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, gap: 2 },
   card: { borderWidth: 1, borderRadius: 20, padding: SPACING.lg, gap: SPACING.md, marginTop: SPACING.lg },
@@ -560,12 +577,12 @@ const styles = StyleSheet.create({
   search: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', borderRadius: 14, paddingHorizontal: 14, height: 46, color: '#FFFFFF', marginTop: SPACING.md },
   resultRow: { paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.12)' },
   keyChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  product: { fontFamily: SERIF, fontSize: 15 },
+  product: { fontWeight: '600', fontSize: 15 },
   badge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   badgeText: { fontSize: 11, fontWeight: '700' },
   progress: { flexDirection: 'row', gap: 4, marginTop: SPACING.lg },
   progressBit: { flex: 1, height: 3, borderRadius: 2 },
-  question: { fontFamily: SERIF, fontSize: 30, lineHeight: 36, marginTop: SPACING.sm },
+  question: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.sm },
   option: { borderRadius: 18, padding: SPACING.lg },
 })
 
