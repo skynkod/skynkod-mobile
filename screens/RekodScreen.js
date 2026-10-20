@@ -22,7 +22,7 @@ import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
-  decideStep, stepId, saveRekodPlan, projectRekod,
+  decideStep, stepId, saveRekodPlan, projectRekod, programmeFinished, startMaintenance,
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
@@ -309,6 +309,66 @@ export default function RekodScreen({ navigation }) {
 
   if (plan === undefined) return <Loading />
 
+  // ---------- The programme is over: keep the results, or a new goal ----------
+  if (plan && programmeFinished(plan)) {
+    const base = plan.baseline
+    const latest = scans[0]
+    const rows = base && latest && latest.id !== base.id ? compareScans(base.points, latest.result?.points) : null
+    const keep = async () => {
+      setBusy(true)
+      try {
+        const res = await startMaintenance(user.id, plan, profile)
+        setPlan(res.plan); setRoutine(res.routine)
+        syncSmartReminders(user.id)
+        track('rekod_maintenance')
+      } catch (error) {
+        await logError('Rekod_maintenance', error)
+        Alert.alert('Something went wrong', 'Please try again.')
+      } finally { setBusy(false) }
+    }
+    const newGoal = () => Alert.alert('Start a new goal?', 'Your current routine stays until your new Rekod is ready. Questions you already answered won’t be asked again.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Choose a new goal', onPress: async () => { await leaveRekod(user.id).catch(() => {}); syncSmartReminders(user.id); setPlan(null); setPicked([]); setStep('goals') } },
+    ])
+    return (
+      <Shell navigation={navigation} footer={(
+        <>
+          <RButton title="Keep my results" onPress={keep} loading={busy} />
+          <RButton outline title="Start a new goal" onPress={newGoal} style={{ marginTop: SPACING.sm }} />
+        </>
+      )}>
+        <Text style={[TYPE.overline, { color: C.primary }]}>Programme complete</Text>
+        <Text style={[styles.title, { color: C.text }]}>You did it 🌸</Text>
+        <Text style={[TYPE.body, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>
+          {goalOf(plan.goal).weeks} weeks of {goalsTitle(plan)}. Now you can keep your results with a gentler routine, or take on a new goal.
+        </Text>
+        {rows ? (
+          <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+            <Text style={[TYPE.overline, { color: C.primary }]}>Before / after · Dekod</Text>
+            {rows.map(r => (
+              <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
+                <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? '#F2B37A' : C.muted, fontSize: 13, fontWeight: '700' }}>{LEVEL_LABEL[r.from]} → {LEVEL_LABEL[r.to]}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center' }]}>
+            <Ionicons name="scan-circle-outline" size={24} color={C.primary} />
+            <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>Take a Dekod to see your before / after</Text>
+            <Ionicons name="chevron-forward" size={18} color={C.muted} />
+          </Pressable>
+        )}
+        <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+          <Text style={[TYPE.bodyStrong, { color: C.text }]}>Keep my results</Text>
+          <Text style={[TYPE.caption, { color: C.muted, lineHeight: 18 }]}>The same products, with fewer strong nights: enough to keep what you gained, gentle enough to go on for months.</Text>
+          <Text style={[TYPE.bodyStrong, { color: C.text, marginTop: SPACING.sm }]}>Start a new goal</Text>
+          <Text style={[TYPE.caption, { color: C.muted, lineHeight: 18 }]}>Pick a new goal and get a new programme, built on what your skin already handles.</Text>
+        </View>
+      </Shell>
+    )
+  }
+
   // ---------- Following a programme: an app dashboard ----------
   if (plan) {
     const goal = goalOf(plan.goal)
@@ -326,9 +386,11 @@ export default function RekodScreen({ navigation }) {
     return (
       <Shell navigation={navigation} footer={<RButton title="Ask Koda about my Rekod" onPress={() => navigation.navigate('Koda')} />}>
         <View style={styles.dash}>
-          <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />
+          {plan.maintenance
+            ? <Ring progress={1} label="✓" sub="maintenance" />
+            : <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />}
           <View style={{ flex: 1, gap: 6 }}>
-            <Text style={[TYPE.overline, { color: C.primary }]}>My Rekod</Text>
+            <Text style={[TYPE.overline, { color: C.primary }]}>{plan.maintenance ? 'My Rekod · keeping my results' : 'My Rekod'}</Text>
             <Text style={[styles.dashTitle, { color: C.text }]} numberOfLines={2}>{goalsTitle(plan)}</Text>
             <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
               <Ionicons name={NIGHTS[tonight].icon} size={14} color={C.primary} />

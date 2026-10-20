@@ -81,6 +81,11 @@ export const nightCounts = (plan) => {
     // Last check-in said the skin reacted: one active night becomes a reset night.
     if (c.ret > 0) { c.ret -= 1; c.reset += 1 } else if (c.ex > 0) { c.ex -= 1; c.reset += 1 }
   }
+  if (plan.maintenance) {
+    // After the programme: keep the results with fewer strong nights.
+    if (c.ret > 1) { c.ret -= 1; c.rep += 1 }
+    if (c.ex > 1) { c.ex -= 1; c.reset += 1 }
+  }
   return c
 }
 
@@ -475,6 +480,21 @@ export const startRekod = async (userId, answers, givenProfile) => {
   }
   await saveRekodPlan(userId, plan)
   return { plan, routine }
+}
+
+// The programme is over (all its weeks done) and not yet in maintenance.
+export const programmeFinished = (plan, now = new Date()) => !plan.maintenance && weekOf(plan, now) > goalOf(plan.goal).weeks
+
+// "Keep my results": a gentler routine that goes on as long as she wants.
+export const startMaintenance = async (userId, plan, profile) => {
+  const next = { ...plan, maintenance: true, maintenanceSince: new Date().toISOString(), extraReset: false }
+  const routine = await buildRekodRoutine(userId, next, profile)
+  for (const type of ['morning', 'evening']) {
+    const res = await saveRoutine(userId, type, routine[type])
+    if (!res.success) throw new Error(res.error)
+  }
+  await saveRekodPlan(userId, next)
+  return { plan: next, routine }
 }
 
 // After a weekly check-in: new level, new evening days.
