@@ -5,7 +5,7 @@
 // by a dermatologist or pharmacist. Deterministic rules only: no AI decides.
 
 import { supabase } from './supabase'
-import { findIngredients, productMatch, isUnsuitable } from './ingredients-guide'
+import { findIngredients, productMatch, isUnsuitable, getIngredient } from './ingredients-guide'
 import { productsByCategory, getMyProducts } from './catalog'
 import { saveRoutine } from './routines-service'
 import { getUserProfile } from './supabase'
@@ -265,7 +265,10 @@ const stepFrom = (key, action, choice, extra = {}, want = []) => {
     issues: choice?.issues || [],
     want,
     why: !choice ? 'No product in our catalogue is safe enough for your skin for this step yet. We’re adding more every week.'
-      : main ? `${main.name}: ${main.what}` : ROLE_WHY[key] || (keys[0] ? `${keys[0].name}: ${keys[0].what}` : null),
+      : main ? `${main.name}: ${main.what}`
+      // A base step whose ideal active isn't in any 100% safe product: say so honestly.
+      : want.length && ROLE_WHY[key] && !['sunscreen'].includes(key) ? `${ROLE_WHY[key]} The ideal for your goals would also contain ${getIngredient(want[0])?.name?.toLowerCase() || want[0]}, but no product with it is 100% safe for your skin yet.`
+      : ROLE_WHY[key] || (keys[0] ? `${keys[0].name}: ${keys[0].what}` : null),
     keys,
     ...extra,
   }
@@ -292,19 +295,20 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const goals = plan.goals?.length ? plan.goals : [plan.goal]
   const union = lists => [...new Set(lists.flat().filter(Boolean))]
   const amWant = union(goals.map(g => morningSerum[g]))
+  const moistWant = goals.some(g => g === 'calm' || g === 'hydration') ? ['ceramides'] : []
   const exWant = plan.sensitive ? ['mandelic', 'pha', 'lactic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
   const repairWant = union(goals.map(g => repairFor[g])).length ? union(goals.map(g => repairFor[g])) : ['ceramides', 'panthenol', 'centella', 'peptides']
   const spf50 = p => /50/.test(p.name || '')
 
   const cleanser = await pick(['cleanser'], gentle)
-  const moisturizer = await pick(['moisturizer'], goals.some(g => g === 'calm' || g === 'hydration') ? { ...gentle, want: ['ceramides'] } : gentle)
+  const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant })
   const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50 } : { ...gentle, prefer: spf50 })
-  const amSerum = await pick(['serum', 'toner'], { ...gentle, want: amWant, unique: true })
+  const amSerum = await pick(['serum', 'toner'], { ...gentle, want: amWant, wantRequired: true, unique: true })
 
   const morning = [
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     amSerum && stepFrom('serum', 'Serum', amSerum, { cats: ['serum', 'toner'] }, amWant),
-    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
+    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
     stepFrom('sunscreen', 'SPF 50', sunscreen, { cats: ['sunscreen'] }, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
@@ -319,14 +323,14 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const midStrength = p => /0[.,][2-5]|emulsion|2\s?%/i.test(p.name || '')
   const strength = plan.experience === 'used' && !plan.sensitive ? null : plan.experience === 'some' && !plan.sensitive ? midStrength : gentleStrength
   const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, wantRequired: true, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
-  const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, unique: true })
+  const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, wantRequired: true, unique: true })
 
   const evening = [
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exWant),
     daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
-    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
+    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
   ].filter(Boolean)
 
   return { morning, evening }
