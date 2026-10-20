@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getUserProfile } from './supabase'
+import { engineProfile } from './skin-quiz'
 
 // The user's skin answers from onboarding, for match badges.
 export const useSkinProfile = (userId) => {
@@ -9,15 +10,8 @@ export const useSkinProfile = (userId) => {
     let active = true
     getUserProfile(userId).then(p => {
       if (!active) return
-      setProfile(p ? {
-        skin_type: p.skin_type,
-        skin_concerns: p.skin_concerns || [],
-        acne_types: p.acne_types || [],
-        skin_conditions: p.skin_conditions || [],
-        avoid_ingredients: p.avoid_ingredients || [],
-        pregnancy: p.pregnancy || null,
-        skin_goals: p.skin_goals || [],
-      } : null)
+      // Suspected conditions and fragile-skin treatments count as precautions.
+      setProfile(p ? engineProfile(p) : null)
     })
     return () => { active = false }
   }, [userId])

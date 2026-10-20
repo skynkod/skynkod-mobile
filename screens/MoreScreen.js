@@ -18,8 +18,10 @@ import EmergencyScreen from './EmergencyScreen'
 import BarcodeScannerScreen from './BarcodeScannerScreen'
 import SkyncyclopediaScreen from './SkyncyclopediaScreen'
 import SettingsScreen from './SettingsScreen'
+import SkinProfileScreen from './SkinProfileScreen'
 
 export const MORE_SCREENS = [
+  { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: ProgressScreen, label: 'Progress', subtitle: 'Your timeline', icon: 'trending-up-outline', group: 'track' },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },

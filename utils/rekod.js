@@ -9,6 +9,7 @@ import { findIngredients, productMatch, isUnsuitable } from './ingredients-guide
 import { productsByCategory, getMyProducts } from './catalog'
 import { saveRoutine } from './routines-service'
 import { getUserProfile } from './supabase'
+import { engineProfile } from './skin-quiz'
 import { archiveCurrentRoutines } from './seasons'
 
 // ---------- Goals ----------
@@ -60,6 +61,10 @@ export const nightCounts = (plan) => {
   if (plan.reactive) {
     // Rosacea, eczema, perioral or seborrheic dermatitis: no exfoliating acids.
     c.rep += c.ex; c.ex = 0
+  }
+  if (plan.fragile) {
+    // Isotretinoin or a prescription skin cream: no acids, no retinoid, only gentle care.
+    c.rep += c.ex + c.ret; c.ex = 0; c.ret = 0
   }
   if (plan.goal === 'calm') {
     // No acids; the "retinoid" night becomes azelaic acid from week 3.
@@ -253,14 +258,13 @@ const stepFrom = (key, action, choice, extra = {}, want = []) => {
 // never be built on a profile that hasn't loaded yet.
 const loadProfile = async (userId) => {
   const p = await getUserProfile(userId)
-  return p ? {
-    skin_type: p.skin_type, skin_concerns: p.skin_concerns || [], acne_types: p.acne_types || [],
-    skin_conditions: p.skin_conditions || [], avoid_ingredients: p.avoid_ingredients || [], pregnancy: p.pregnancy || null,
-  } : {}
+  return p ? engineProfile(p) : {}
 }
 
-export const buildRekodRoutine = async (userId, plan, givenProfile) => {
+export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const profile = await loadProfile(userId).catch(() => givenProfile || {})
+  // The latest skin profile decides the precautions (a new diagnosis, a new treatment).
+  const plan = { ...basePlan, reactive: !!basePlan.reactive || isReactive(profile), fragile: !!profile.fragile, sensitive: !!basePlan.sensitive || isReactive(profile) || !!profile.fragile }
   const pick = await chooser(userId, profile)
   const pregnant = ['pregnant', 'breastfeeding'].includes(profile?.pregnancy)
   const gentle = { avoidHarsh: true, noStrong: true }
@@ -353,7 +357,10 @@ export const replaceRoutineStep = async (userId, period, index, step) => {
 // Rebuilds a member's routine with the latest rules and catalogue, keeping the
 // products she chose herself. Saves only when something changed.
 export const refreshRekodRoutine = async (userId, plan) => {
-  const fresh = await buildRekodRoutine(userId, plan)
+  const profile = await loadProfile(userId).catch(() => ({}))
+  const flags = { reactive: !!plan.reactive || isReactive(profile), fragile: !!profile.fragile }
+  if (flags.reactive !== !!plan.reactive || flags.fragile !== !!plan.fragile) await saveRekodPlan(userId, { ...plan, ...flags })
+  const fresh = await buildRekodRoutine(userId, { ...plan, ...flags })
   const { data } = await supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false })
   const out = {}
   for (const type of ['morning', 'evening']) {

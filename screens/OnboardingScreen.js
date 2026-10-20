@@ -11,6 +11,8 @@ import ArticleBody from '../components/ArticleBody'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
+import QuizQuestion from '../components/QuizQuestion'
+import { CHAPTERS, questionsFor, toColumns, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, PHOTOTYPE } from '../utils/skin-quiz'
 import { useT } from '../utils/LanguageContext'
 import { SPACING, TYPE } from '../utils/theme'
 
@@ -21,78 +23,19 @@ const BRAND_MAUVE = '#C5A8BB'
 
 // Same six features, wording and order as the left column of the mockup.
 const FEATURES = [
-  { icon: 'koda', title: 'AI Skin Coach', text: 'Koda analyzes your skin and gives personalized advice.' },
-  { icon: 'sync-outline', title: 'Dynamic Routines', text: "Smart routines that adapt to your skin's real-time needs." },
+  { icon: 'sparkles-outline', title: 'Your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
+  { icon: 'koda', title: 'AI Skin Coach', text: 'Koda knows your skin and your routine, and answers like an expert.' },
+  { icon: 'scan-outline', title: 'Product Scan', text: 'Scan any product to see if it suits your skin.' },
   { icon: 'book-outline', title: 'What your skin tells you', text: 'Your daily check-in learns what makes your skin react.' },
-  { icon: 'shield-checkmark-outline', title: 'Emergency Mode', text: 'Get a 7-day plan to repair, calm or prepare your skin.' },
-  { icon: 'wallet-outline', title: 'Skynbudget', text: 'Track your collection, spending and get smart buying advice.' },
-  { icon: 'scan-outline', title: 'Product Scan', text: 'Scan any product to analyze ingredients and compatibility.' },
 ]
 
-// Skin types match the names used by the routine builder and the quiz.
-const SKIN_TYPES = [
-  { value: 'Dry', label: 'Dry', hint: 'Feels tight, can flake' },
-  { value: 'Oily', label: 'Oily', hint: 'Shiny by midday' },
-  { value: 'Combination', label: 'Combination', hint: 'Oily T-zone, drier cheeks' },
-  { value: 'Normal', label: 'Normal', hint: 'Balanced, rarely bothers you' },
-  { value: 'Sensitive', label: 'Sensitive', hint: 'Reacts easily, turns red' },
-  { value: null, label: "Not sure yet", hint: 'You can take the skin quiz later' },
-]
-
-const CONCERNS = ['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity']
-
-const GOALS = [
-  { value: 'clear', label: 'Clearer skin' },
-  { value: 'hydration', label: 'Deep hydration' },
-  { value: 'even_tone', label: 'An even skin tone' },
-  { value: 'anti_aging', label: 'Smoother, firmer skin' },
-  { value: 'simple', label: 'A routine I actually stick to' },
-]
-
-// Optional follow-ups that sharpen the compatibility score. Values are stored
-// in English (users.acne_types / skin_conditions / avoid_ingredients / pregnancy).
-const ACNE_TYPES = [
-  { value: 'Comedonal', label: 'Blackheads & whiteheads' },
-  { value: 'Inflammatory', label: 'Red, inflamed spots' },
-  { value: 'Cystic', label: 'Deep, painful cysts' },
-  { value: 'Hormonal', label: 'Hormonal (jawline, around periods)' },
-  { value: 'Fungal', label: 'Tiny itchy bumps (fungal acne)' },
-  { value: 'Unsure', label: 'Not sure' },
-]
-const CONDITIONS = [
-  { value: 'Rosacea', label: 'Rosacea' },
-  { value: 'Eczema', label: 'Eczema or atopic skin' },
-  { value: 'Perioral dermatitis', label: 'Perioral dermatitis' },
-  { value: 'Seborrheic dermatitis', label: 'Seborrheic dermatitis' },
-  { value: 'Psoriasis', label: 'Psoriasis' },
-  { value: 'Melasma', label: 'Melasma' },
-  { value: 'None', label: 'None of these' },
-]
-const AVOID = [
-  { value: 'Fragrance', label: 'Fragrance' },
-  { value: 'Essential oils', label: 'Essential oils' },
-  { value: 'Nuts', label: 'Nuts' },
-  { value: 'Lanolin', label: 'Lanolin' },
-  { value: 'Alcohol', label: 'Alcohol' },
-  { value: 'None', label: 'Nothing in particular' },
-]
-const PREGNANCY = [
-  { value: 'no', label: 'No' },
-  { value: 'pregnant', label: "I'm pregnant" },
-  { value: 'breastfeeding', label: "I'm breastfeeding" },
-  { value: 'unsaid', label: "I'd rather not say" },
-]
-
-const MAX_GOALS = 3
 
 // Bump when the terms or privacy policy change, so users are asked again.
 export const CONSENT_VERSION = 'v1-2026-10'
 const TERMS_URL = 'https://skynkod.com/terms'
 const PRIVACY_URL = 'https://skynkod.com/privacy'
 // Questions about health-related skin data, only asked with explicit consent.
-const SENSITIVE_STEPS = ['acneType', 'conditions', 'avoid', 'pregnancy']
-
-const ALL_STEPS = ['welcome', 'features', 'name', 'birthday', 'consent', 'skinType', 'concerns', 'acneType', 'conditions', 'avoid', 'pregnancy', 'goal', 'summary']
+const INTRO_STEPS = ['welcome', 'features', 'name', 'birthday', 'consent']
 
 // Glossier-inspired: lots of air, big plain headlines, pill buttons and soft
 // transitions. The first page picks up the splash screen's mauve.
@@ -127,19 +70,14 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   const [terms, setTerms] = useState(false)
   const [health, setHealth] = useState(false)
   const [offers, setOffers] = useState(false)
-  const [skinType, setSkinType] = useState(undefined)
-  const [concerns, setConcerns] = useState([])
-  const [goals, setGoals] = useState([]) // up to MAX_GOALS
-  const [acneTypes, setAcneTypes] = useState([])
-  const [conditions, setConditions] = useState([])
-  const [avoid, setAvoid] = useState([])
-  const [pregnancy, setPregnancy] = useState(null)
+  const [answers, setAnswers] = useState({}) // the skin quiz (utils/skin-quiz.js)
+  const setAnswer = (id, value) => setAnswers(prev => ({ ...prev, [id]: value }))
   const [saving, setSaving] = useState(false)
 
-  // The acne question only shows when acne was picked as a concern.
-  const STEPS = ALL_STEPS
-    .filter(s => s !== 'acneType' || concerns.includes('Acne'))
-    .filter(s => health || !SENSITIVE_STEPS.includes(s))
+  // Quiz questions follow the answers (acne details only with acne, health
+  // questions only with the health consent, pregnancy not for men…).
+  const quiz = questionsFor(answers, health)
+  const STEPS = [...INTRO_STEPS, ...quiz.map(q => `q:${q.id}`), 'summary']
   const QUESTION_STEPS = STEPS.slice(STEPS.indexOf('name'))
   const name = STEPS[step]
   const enter = useRef(new Animated.Value(0)).current
@@ -172,38 +110,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     setTimeout(next, 260)
   }
 
-  // Multi-select where "None" clears the rest (and the rest clear "None").
-  const toggleIn = (setter, value) =>
-    setter(prev => {
-      if (value === 'None') return prev.includes('None') ? [] : ['None']
-      const without = prev.filter(v => v !== 'None')
-      return without.includes(value) ? without.filter(v => v !== value) : [...without, value]
-    })
-
-  const tagsQuestion = (title, subtitle, options, selected, setter) => (
-    <>
-      <Text style={[styles.headline, { color: colors.text }]}>{t(title)}</Text>
-      <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t(subtitle)}</Text>
-      <View style={styles.tags}>
-        {options.map(o => {
-          const on = selected.includes(o.value)
-          return (
-            <Pressable
-              key={o.value}
-              onPress={() => toggleIn(setter, o.value)}
-              style={[styles.tag, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primary : colors.border }]}
-            >
-              <Text style={[styles.tagText, { color: on ? colors.primary : colors.text }]}>{t(o.label)}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
-    </>
-  )
-
-  const toggleConcern = (c) =>
-    setConcerns(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]))
-
   const now = () => new Date().toISOString()
   const consentFields = () => ({
     consent_version: CONSENT_VERSION,
@@ -228,31 +134,15 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     setSaving(true)
     try {
       if (save) {
-        const clean = list => list.filter(v => v !== 'None')
-        const answers = {
-          firstName: firstName.trim() || null,
-          skinType: skinType ?? null,
-          concerns,
-          goals,
-          acneTypes: health && concerns.includes('Acne') ? acneTypes : [],
-          conditions: health ? clean(conditions) : [],
-          avoid: health ? clean(avoid) : [],
-          pregnancy: health ? pregnancy : null,
-        }
+        const columns = toColumns(answers, health)
         await AsyncStorage.setItem('skynkod_skin_profile', JSON.stringify(answers))
-        if (userId && answers.firstName) await AsyncStorage.setItem(`skynkod_first_name_${userId}`, answers.firstName)
+        const first = firstName.trim() || null
+        if (userId && first) await AsyncStorage.setItem(`skynkod_first_name_${userId}`, first)
         if (userId) {
           const saved = await updateUserProfile(userId, {
-            first_name: answers.firstName,
+            first_name: first,
             birth_date: birthDate ? isoDay(birthDate) : null,
-            skin_type: answers.skinType,
-            skin_concerns: answers.concerns,
-            skin_goal: answers.goals[0] || null,
-            skin_goals: answers.goals,
-            acne_types: answers.acneTypes,
-            skin_conditions: answers.conditions,
-            avoid_ingredients: answers.avoid,
-            pregnancy: answers.pregnancy,
+            ...columns,
             onboarding_complete: true,
             ...consentFields(),
           })
@@ -379,8 +269,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   }
 
   const isQuestion = QUESTION_STEPS.includes(name)
-  const typeLabel = t(SKIN_TYPES.find(type => type.value === skinType)?.label)
-  const goalLabel = goals.map(v => t(GOALS.find(g => g.value === v)?.label)).join(' · ')
 
   let content
   let footer = null
@@ -516,84 +404,21 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} disabled={!terms} />
-  } else if (name === 'skinType') {
+  } else if (name.startsWith('q:')) {
+    const q = quiz.find(x => `q:${x.id}` === name)
+    const firstOfChapter = quiz.findIndex(x => x.chapter === q.chapter) === quiz.indexOf(q)
+    const chapter = CHAPTERS.find(c => c.id === q.chapter)
+    const chapterNo = CHAPTERS.filter(c => quiz.some(x => x.chapter === c.id)).indexOf(chapter) + 1
     content = (
       <>
-        <Text style={[styles.headline, { color: colors.text }]}>{t('How would you describe your skin?')}</Text>
-        <View style={styles.choices}>
-          {SKIN_TYPES.map(type => (
-            <Choice key={type.label} label={t(type.label)} hint={t(type.hint)} selected={skinType === type.value} onPress={() => pickAndContinue(setSkinType, type.value)} />
-          ))}
-        </View>
+        <Text style={[TYPE.overline, { color: BRAND_MAUVE, marginBottom: SPACING.sm }]}>{t('Chapter {n}', { n: chapterNo })} · {t(chapter.label)}</Text>
+        {firstOfChapter ? <Text style={[TYPE.body, { color: colors.textSecondary, marginBottom: SPACING.lg, fontStyle: 'italic' }]}>{t(chapter.cheer)}</Text> : null}
+        <QuizQuestion question={q} value={answers[q.id]} onChange={v => setAnswer(q.id, v)} onPicked={() => setTimeout(next, 260)} />
       </>
     )
-  } else if (name === 'concerns') {
-    content = (
-      <>
-        <Text style={[styles.headline, { color: colors.text }]}>{t('What would you like to work on?')}</Text>
-        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Pick as many as you like.')}</Text>
-        <View style={styles.tags}>
-          {CONCERNS.map(c => {
-            const selected = concerns.includes(c)
-            return (
-              <Pressable
-                key={c}
-                onPress={() => toggleConcern(c)}
-                style={[styles.tag, { backgroundColor: selected ? colors.primarySoft : colors.card, borderColor: selected ? colors.primary : colors.border }]}
-              >
-                <Text style={[styles.tagText, { color: selected ? colors.primary : colors.text }]}>{t(c)}</Text>
-              </Pressable>
-            )
-          })}
-        </View>
-      </>
-    )
-    footer = <Pill title={t('Continue')} onPress={next} disabled={concerns.length === 0} />
-  } else if (name === 'acneType') {
-    content = tagsQuestion('What kind of breakouts do you get?', 'Optional. It changes which ingredients help.', ACNE_TYPES, acneTypes, setAcneTypes)
-    footer = <Pill title={acneTypes.length ? t('Continue') : t('Skip')} onPress={next} />
-  } else if (name === 'conditions') {
-    content = tagsQuestion('Any skin conditions?', 'Optional. We use it to flag ingredients that can trigger flare-ups.', CONDITIONS, conditions, setConditions)
-    footer = <Pill title={conditions.length ? t('Continue') : t('Skip')} onPress={next} />
-  } else if (name === 'avoid') {
-    content = tagsQuestion('Anything you need to avoid?', 'Optional. Products with these will be flagged.', AVOID, avoid, setAvoid)
-    footer = <Pill title={avoid.length ? t('Continue') : t('Skip')} onPress={next} />
-  } else if (name === 'pregnancy') {
-    content = (
-      <>
-        <Text style={[styles.headline, { color: colors.text }]}>{t('Are you pregnant or breastfeeding?')}</Text>
-        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Optional. Some ingredients, like retinol, are best avoided during this time.')}</Text>
-        <View style={styles.choices}>
-          {PREGNANCY.map(o => (
-            <Choice key={o.value} label={t(o.label)} selected={pregnancy === o.value} onPress={() => pickAndContinue(setPregnancy, o.value)} />
-          ))}
-        </View>
-      </>
-    )
-    footer = <Pill title={t('Skip')} variant="ghost" onPress={next} />
-  } else if (name === 'goal') {
-    const toggleGoal = value =>
-      setGoals(prev => (prev.includes(value) ? prev.filter(v => v !== value) : prev.length < MAX_GOALS ? [...prev, value] : prev))
-    content = (
-      <>
-        <Text style={[styles.headline, { color: colors.text }]}>{t('And your goals?')}</Text>
-        <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>
-          {t('Pick up to 3.')}{goals.length ? ` ${goals.length}/3` : ''}
-        </Text>
-        <View style={styles.choices}>
-          {GOALS.map(g => {
-            const selected = goals.includes(g.value)
-            const full = !selected && goals.length >= MAX_GOALS
-            return (
-              <View key={g.value} style={{ opacity: full ? 0.45 : 1 }}>
-                <Choice label={t(g.label)} selected={selected} onPress={() => toggleGoal(g.value)} />
-              </View>
-            )
-          })}
-        </View>
-      </>
-    )
-    footer = <Pill title={t('Continue')} onPress={next} disabled={!goals.length} />
+    footer = q.type === 'multi'
+      ? <Pill title={(answers[q.id] || []).length ? t('Continue') : t('Skip')} onPress={next} />
+      : <Pill title={t('Skip')} variant="ghost" onPress={next} />
   } else {
     content = (
       <>
@@ -603,14 +428,23 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
         </Text>
         <View style={[styles.summary, { backgroundColor: BRAND_MAUVE }]}>
           <Text style={styles.summaryLabel}>{t('Skin type')}</Text>
-          <Text style={styles.summaryValue}>{typeLabel && skinType ? typeLabel : t('To discover')}</Text>
+          <Text style={styles.summaryValue}>{computeSkinType(answers) ? t(computeSkinType(answers)) : t('To discover')}{answers.reactivity === 'often' ? ` · ${t('Sensitive')}` : ''}</Text>
+          {answers.sun ? (<>
+            <Text style={styles.summaryLabel}>{t('Sun phototype')}</Text>
+            <Text style={styles.summaryValue}>{PHOTOTYPE[answers.sun]}</Text>
+          </>) : null}
           <Text style={styles.summaryLabel}>{t('Working on')}</Text>
-          <Text style={styles.summaryValue}>{concerns.map(c => t(c)).join(' · ')}</Text>
-          <Text style={styles.summaryLabel}>{goals.length > 1 ? t('Goals') : t('Goal')}</Text>
-          <Text style={[styles.summaryValue, { marginBottom: 0 }]}>{goalLabel}</Text>
+          <Text style={[styles.summaryValue, { marginBottom: 0 }]}>{(answers.concerns || []).map(c => t(c)).join(' · ') || t('Keeping my skin healthy')}</Text>
         </View>
+        {health && suspicionsFrom(answers).map(id => (
+          <View key={id} style={[styles.suspicion, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(SUSPICIONS[id].title)}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(SUSPICIONS[id].text)}</Text>
+            <Text style={[TYPE.caption, { color: colors.primary, marginTop: 6, lineHeight: 18, fontWeight: '600' }]}>{t(DOCTOR_NOTE)}</Text>
+          </View>
+        ))}
         <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.xl }]}>
-          {t('Your routines are ready, and Koda knows where to start.')}
+          {t('You can change any answer later in Profile › My skin profile.')}
         </Text>
       </>
     )
@@ -692,4 +526,5 @@ const styles = StyleSheet.create({
   summary: { borderRadius: 28, padding: SPACING.xxl, marginTop: SPACING.xxl },
   summaryLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
   summaryValue: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', letterSpacing: -0.3, marginTop: 4, marginBottom: SPACING.lg },
+  suspicion: { borderRadius: 20, borderWidth: 1, padding: SPACING.lg, marginTop: SPACING.md },
 })
