@@ -44,6 +44,18 @@ const save = (userId, state) => AsyncStorage.setItem(key(userId), JSON.stringify
 let queue = Promise.resolve()
 const serial = fn => { const run = queue.then(fn, fn); queue = run.catch(() => {}); return run }
 
+// What the profile shows, read from the phone only (instant): level, stars
+// and earned badges, newest first.
+export const quickJourney = async (userId) => {
+  const state = await loadJourney(userId)
+  const xp = totalXp(state.events)
+  const earned = Object.entries(state.badges)
+    .map(([id, b]) => ({ ...badgeOf(id), earned: b }))
+    .filter(b => b.id && !b.hidden)
+    .sort((a, b) => b.earned.at - a.earned.at)
+  return { xp, level: levelFor(xp), stars: state.stars.length, earned, earnableCount: VISIBLE_BADGES.filter(canEarn).length }
+}
+
 // ---------- Unlock notices (the toast listens) ----------
 
 const listeners = new Set()

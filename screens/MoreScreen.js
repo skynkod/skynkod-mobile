@@ -1,8 +1,15 @@
-import React, { useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native'
+import React, { useCallback, useState } from 'react'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { logError } from '../utils/errorLogger'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen, Card, SectionHeader, ListRow, useColors } from '../components/ui'
+import { Screen, Card, SectionHeader, ListRow, ProgressBar, useColors } from '../components/ui'
+import ProfileAvatar from '../components/ProfileAvatar'
+import { BadgeImage } from '../components/Badge'
+import { useJourney } from '../utils/useJourney'
+import { syncSoon } from '../utils/journey'
+import { VISIBLE_BADGES, canEarn } from '../utils/journey-core'
+import { useLanguage } from '../utils/LanguageContext'
 import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -52,6 +59,10 @@ export default function MoreScreen({ navigation }) {
   const colors = useColors()
   const { user, logout } = useAuth()
   const firstName = useFirstName(user?.id)
+  const { t } = useLanguage()
+  const journey = useJourney(user?.id)
+  // Keep the level and badges fresh when the profile opens.
+  useFocusEffect(useCallback(() => { syncSoon(user?.id, 200) }, [user?.id]))
   const open = name => navigation.navigate(name)
   const tracking = byGroup('track')
   const [loggingOut, setLoggingOut] = useState(false)
@@ -78,15 +89,43 @@ export default function MoreScreen({ navigation }) {
 
   return (
     <Screen back title="Profile">
-      <View style={[styles.profile, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.primarySoft }]}>
-          <Text style={[TYPE.heading, { color: colors.primary }]}>{(firstName || user?.email || '?')[0].toUpperCase()}</Text>
+      {/* Who she is, and where she is in her skin journey */}
+      <Pressable onPress={() => open('Journey')} style={({ pressed }) => [styles.profile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.9 : 1 }]}>
+        <View style={styles.profileTop}>
+          <ProfileAvatar name={firstName || user?.email} level={journey?.level.level} size={64} background={colors.primarySoft} textColor={colors.primary} />
+          <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 18 }]} numberOfLines={1}>{firstName || (user?.email || '').split('@')[0]}</Text>
+            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{user?.email}</Text>
+          </View>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{firstName || (user?.email || '').split('@')[0]}</Text>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{user?.email}</Text>
-        </View>
-      </View>
+        {journey ? (
+          <>
+            <View style={[styles.rowBetween, { marginTop: SPACING.lg }]}>
+              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(journey.level.tier.name).toUpperCase()}</Text>
+              <Text style={[TYPE.caption, { color: colors.muted }]}>{journey.level.next ? `${journey.xp} / ${journey.level.next.xp} XP` : `${journey.xp} XP`}</Text>
+            </View>
+            <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 2 }]}>{t('Level {n}', { n: journey.level.level })} · {t(journey.level.name)}</Text>
+            <ProgressBar value={journey.level.progress} style={{ marginTop: SPACING.sm }} />
+            <View style={[styles.stats, { borderTopColor: colors.border }]}>
+              <View style={styles.stat}><Ionicons name="ribbon-outline" size={16} color={colors.primary} /><Text style={[TYPE.caption, { color: colors.text }]}><Text style={{ fontWeight: '700' }}>{journey.earned.length}/{journey.earnableCount}</Text> {t('badges')}</Text></View>
+              <View style={styles.stat}><Ionicons name="star" size={15} color="#C99A45" /><Text style={[TYPE.caption, { color: colors.text }]}><Text style={{ fontWeight: '700' }}>{journey.stars}</Text> {t('stars')}</Text></View>
+              <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+            </View>
+          </>
+        ) : null}
+      </Pressable>
+
+      {/* My badges: the newest ones, or the first ones to aim for */}
+      <SectionHeader title={t('My badges')} action={t('See all')} onAction={() => open('Journey')} style={{ marginTop: SPACING.xl }} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.md, paddingRight: SPACING.lg }}>
+        {(journey?.earned.length ? journey.earned.slice(0, 8) : VISIBLE_BADGES.filter(canEarn).slice(0, 5)).map(b => (
+          <Pressable key={b.id} onPress={() => open('Journey')} style={styles.badge}>
+            <BadgeImage badge={b} size={64} locked={!b.earned} />
+            <Text numberOfLines={2} style={[TYPE.caption, { color: b.earned ? colors.text : colors.muted, textAlign: 'center', fontSize: 11, marginTop: 4 }]}>{t(b.name)}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      {journey && !journey.earned.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xs }]}>{t('Your first badges are waiting for you.')}</Text> : null}
 
       <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
@@ -124,8 +163,12 @@ export default function MoreScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  profile: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
-  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  profile: { padding: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
+  profileTop: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stats: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth },
+  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  badge: { width: 72, alignItems: 'center' },
   listCard: { paddingHorizontal: SPACING.lg },
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.xxl },
 })

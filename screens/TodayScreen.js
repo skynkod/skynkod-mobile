@@ -6,6 +6,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import { syncSoon } from '../utils/journey'
+import { useJourney } from '../utils/useJourney'
+import ProfileAvatar from '../components/ProfileAvatar'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
 import { supabase } from '../utils/supabase'
 import { useAuth } from '../utils/AuthContext'
@@ -70,6 +72,7 @@ export default function TodayScreen({ navigation }) {
   const insets = useSafeAreaInsets()
   const { language } = useLanguage()
   const { user } = useAuth()
+  const journey = useJourney(user?.id)
   const firstName = useFirstName(user?.id)
   const profile = useSkinProfile(user?.id)
   const { coords, updateLocation } = useTheme()
@@ -333,8 +336,8 @@ export default function TodayScreen({ navigation }) {
           <Ionicons name="notifications-outline" size={19} color={colors.text} />
         </Pressable>
         {/* Profile lives here now that Rekod and Dekod have the bottom bar */}
-        <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={[styles.bell, { backgroundColor: colors.primary, borderColor: colors.primary, marginLeft: SPACING.sm }]}>
-          {firstName ? <Text style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 15 }}>{firstName[0].toUpperCase()}</Text> : <Ionicons name="person" size={17} color={colors.onPrimary} />}
+        <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={{ marginLeft: SPACING.sm, marginRight: 6 }}>
+          <ProfileAvatar name={firstName} level={journey?.level.level} size={40} color={colors.primary} textColor={colors.onPrimary} />
         </Pressable>
       </View>
       {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
@@ -432,11 +435,6 @@ export default function TodayScreen({ navigation }) {
         <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </Pressable>
-      <Pressable onPress={() => navigation.navigate('Journey')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <Ionicons name="ribbon-outline" size={18} color={colors.primary} />
-        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('My Skin Journey')}</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-      </Pressable>
 
       {/* 5 · The programme */}
       <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My Rekod') : t('Go further')}</Text>
@@ -463,8 +461,8 @@ export default function TodayScreen({ navigation }) {
         <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
           <Ionicons name="notifications-outline" size={22} color={colors.text} />
         </Pressable>
-        <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
-          {firstName ? <Text style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 13 }}>{firstName[0].toUpperCase()}</Text> : <Ionicons name="person" size={14} color={colors.onPrimary} />}
+        <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={{ marginLeft: SPACING.md, marginRight: 4 }}>
+          <ProfileAvatar name={firstName} level={journey?.level.level} size={30} color={colors.primary} textColor={colors.onPrimary} />
         </Pressable>
       </Animated.View>
     )}
