@@ -142,7 +142,8 @@ export default function TodayScreen({ navigation }) {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? t('Good morning') : hour < 18 ? t('Good afternoon') : t('Good evening')
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
-  const tip = tips[0] || { icon: 'leaf-outline', text: seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id) }
+  const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
+  const tip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
   const tonight = plan ? NIGHTS[tonightNight(plan)] : null
 
   const Row = ({ period, icon, title, count }) => {
