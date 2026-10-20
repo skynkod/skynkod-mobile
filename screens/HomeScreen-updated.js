@@ -809,8 +809,7 @@ export default function HomeScreen({ navigation }) {
           opacity: headerFade,
         }]}
       >
-        <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21,18,21,0.6)' : 'rgba(251,248,250,0.85)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />
         <View style={styles.headerRow}>
           <View style={{ flex: 1, marginRight: SPACING.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
