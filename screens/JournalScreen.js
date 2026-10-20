@@ -39,6 +39,10 @@ const TAG_TIPS = {
   'Used new product': 'If it stings, stop the new product and go back to basics.',
 };
 
+// An okay day only offers the small everyday issues; the full list is for
+// Bad and Terrible.
+const OKAY_TAGS = ['Dryness', 'Oily', 'Poor sleep', 'Stress', 'Sun exposure', 'Hormonal / Period'];
+
 // Several problems ticked: one message that covers them all.
 const PROBLEM_TAGS = ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking', 'Dryness', 'Used new product'];
 const planPrompt = tags => (tags.filter(tag => PROBLEM_TAGS.includes(tag)).length > 1
@@ -297,7 +301,7 @@ export default function JournalScreen({ route, navigation }) {
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
         <View style={styles.tags}>
-          {TAGS.map(tag => {
+          {(mood === 'okay' ? OKAY_TAGS : TAGS).map(tag => {
             const on = tags.includes(tag);
             return (
               <Pressable
