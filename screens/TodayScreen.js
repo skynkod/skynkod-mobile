@@ -430,6 +430,11 @@ export default function TodayScreen({ navigation }) {
         <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </Pressable>
+      <Pressable onPress={() => navigation.navigate('Vanity')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('My vanity')}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      </Pressable>
 
       {/* 5 · The programme */}
       <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My Rekod') : t('Go further')}</Text>
