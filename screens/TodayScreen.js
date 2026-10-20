@@ -62,6 +62,13 @@ const skinDay = (coords, now = new Date()) => {
   return d
 }
 const sameSkinDay = (date, coords) => !!date && new Date(date).toDateString() === skinDay(coords).toDateString()
+// A mood picked last night after midnight sits on today's date but was set
+// before this morning's sunrise: it doesn't count for today.
+const pickedToday = (entry, coords) => {
+  if (!entry?.mood || !sameSkinDay(entry.date, coords)) return false
+  const touched = entry.updated_at || entry.created_at
+  return !touched || new Date(touched) >= sunriseOn(skinDay(coords), coords)
+}
 
 export default function TodayScreen({ navigation }) {
   const colors = useColors()
@@ -116,7 +123,7 @@ export default function TodayScreen({ navigation }) {
       const since = new Date(Date.now() - 60 * 86400000)
       const [{ data: ticks }, { data: entries }] = await Promise.all([
         supabase.from('routine_completions').select('date').eq('user_id', user.id).gte('date', localDay(since)),
-        supabase.from('journal_entries').select('id, date, mood, skin_conditions').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
+        supabase.from('journal_entries').select('id, date, mood, skin_conditions, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
       ])
       const today = (entries || []).find(x => sameSkinDay(x.date, coords))
       setEntry(today || null)
@@ -158,7 +165,7 @@ export default function TodayScreen({ navigation }) {
   const evening = countOf('evening')
   const part = c => (c.total ? c.done / c.total : 0)
   // Today's mood only: yesterday's never stays on screen.
-  const todayMood = sameSkinDay(entry?.date, coords) ? entry.mood : null
+  const todayMood = pickedToday(entry, coords) ? entry.mood : null
   const progress = (part(morning) + (todayMood ? 1 : 0) + part(evening)) / 3
 
   const toggle = async (period, idx) => {
@@ -184,7 +191,7 @@ export default function TodayScreen({ navigation }) {
       const current = sameSkinDay(entry?.date, coords) ? entry : null
       const day = skinDay(coords)
       const id = await saveDay(user.id, day, { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
-      setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString() })
+      setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString(), updated_at: new Date().toISOString() })
       if (!entry?.mood) track('checkin_done')
     } catch (error) {
       await logError('Today_mood', error)

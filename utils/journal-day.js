@@ -62,7 +62,7 @@ export const saveDay = async (userId, day, { mood, tags, notes }, existingId) =>
     ...levelsFrom(mood, tags),
   }
   if (existingId) {
-    const { error } = await supabase.from('journal_entries').update(fields).eq('id', existingId)
+    const { error } = await supabase.from('journal_entries').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', existingId)
     if (error) throw error
     return existingId
   }
