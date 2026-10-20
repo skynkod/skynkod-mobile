@@ -182,18 +182,32 @@ const isAcceptable = (product, profile) => {
   return !m.partial && !isUnsuitable(m) && !personal.length && (m.triggers || []).every(t => t.level === 'watch' || t.level === 'patch')
 }
 
-const pickFrom = (candidates, profile, { want = [], avoidHarsh = false, noStrong = false, exclude = [], prefer = null, strictOnly = false } = {}) => {
+// Order of choice, for every step:
+//   1. 100% safe with the wanted active, 2. 100% safe without it (when the active
+//   is only a preference, like ceramides in a moisturizer), and only then
+//   3. the mildest "not 100% safe" one. `level` limits to 'safe' or 'acceptable'.
+const pickFrom = (candidates, profile, { want = [], wantRequired = false, avoidHarsh = false, noStrong = false, exclude = [], prefer = null, strictOnly = false, level = null } = {}) => {
   const base = candidates.filter(p => p && !exclude.includes(p.id) && (!avoidHarsh || !harsh(p)) && (!noStrong || !has(p, STRONG, 12)))
   // The active must be one of the first ingredients, not a trace.
   const withActive = want.length ? base.filter(p => has(p, want, 8)) : base
+  const pools = want.length && !wantRequired ? [withActive, base] : [withActive]
   const rank = p => (productMatch(p, profile || {}).score || 0) + (prefer && prefer(p) ? 100 : 0)
   const best = list => list.map(p => ({ p, score: rank(p) })).sort((a, b) => b.score - a.score)[0]?.p || null
-  const safe = best(withActive.filter(p => isSafeFor(p, profile)))
-  if (safe || strictOnly) return safe
+  if (level !== 'acceptable') {
+    for (const pool of pools) {
+      const safe = best(pool.filter(p => isSafeFor(p, profile)))
+      if (safe) return safe
+    }
+    if (strictOnly || level === 'safe') return null
+  }
   // Nothing 100% safe: the mildest acceptable one, fewest issues first.
-  const ok = withActive.filter(p => isAcceptable(p, profile))
-  return ok.map(p => ({ p, n: safetyIssues(p, profile).reduce((a, i) => a + (i.level === 'patch' ? 3 : 1), 0), score: rank(p) }))
-    .sort((a, b) => a.n - b.n || b.score - a.score)[0]?.p || null
+  for (const pool of pools) {
+    const ok = pool.filter(p => isAcceptable(p, profile))
+    const mild = ok.map(p => ({ p, n: safetyIssues(p, profile).reduce((a, i) => a + (i.level === 'patch' ? 3 : 1), 0), score: rank(p) }))
+      .sort((a, b) => a.n - b.n || b.score - a.score)[0]?.p
+    if (mild) return mild
+  }
+  return null
 }
 
 // The user's own products first, then the catalogue.
@@ -204,15 +218,20 @@ const chooser = async (userId, profile) => {
   return async (categories, opts = {}) => {
     // Each treatment step gets its own product (the same serum isn't both the treatment and the repair).
     const o = { ...opts, exclude: opts.unique ? used : [] }
-    const own = pickFrom(mine.filter(p => categories.includes(p.category)), profile, o)
-    let found = own
-    if (!found) {
-      const key = categories.join('|')
-      cache[key] = cache[key] || await productsByCategory(categories, 200).catch(() => [])
-      found = pickFrom(cache[key], profile, o)
+    const ownList = mine.filter(p => categories.includes(p.category))
+    const key = categories.join('|')
+    cache[key] = cache[key] || await productsByCategory(categories, 200).catch(() => [])
+    // Her own 100% safe product, else a 100% safe one from the catalogue; a
+    // "not 100% safe" product only when nothing safe exists anywhere.
+    const own = pickFrom(ownList, profile, { ...o, level: 'safe' })
+    let found = own || pickFrom(cache[key], profile, { ...o, level: 'safe' })
+    let ownMild = null
+    if (!found && !o.strictOnly) {
+      ownMild = pickFrom(ownList, profile, { ...o, level: 'acceptable' })
+      found = ownMild || pickFrom(cache[key], profile, { ...o, level: 'acceptable' })
     }
     if (found && opts.unique) used.push(found.id)
-    return found ? { product: found, owned: found === own, issues: isSafeFor(found, profile) ? [] : safetyIssues(found, profile) } : null
+    return found ? { product: found, owned: found === own || found === ownMild, issues: isSafeFor(found, profile) ? [] : safetyIssues(found, profile) } : null
   }
 }
 
@@ -292,14 +311,14 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const week = weekPattern(plan)
   const daysFor = night => week.map((n, i) => (n === night ? JS_DAY[i] : null)).filter(d => d !== null)
 
-  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, unique: true, prefer: p => p.category === 'exfoliant' })
+  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, wantRequired: true, unique: true, prefer: p => p.category === 'exfoliant' })
   // Reactive conditions start with azelaic acid; a retinoid only after 4 calm weeks.
   const retinoidWant = plan.goal === 'calm' || (plan.reactive && weekOf(plan) < 5) ? ['azelaic'] : pregnant ? ['bakuchiol', 'peptides'] : ['retinol']
   // Start low: a gentle strength for beginners and reactive skin (rules, section 3).
   const gentleStrength = p => /0[.,]0?[12]\s?%|0[.,]2|starter|0[.,]1|2\s?% emulsion|emulsion/i.test(p.name || '')
   const midStrength = p => /0[.,][2-5]|emulsion|2\s?%/i.test(p.name || '')
   const strength = plan.experience === 'used' && !plan.sensitive ? null : plan.experience === 'some' && !plan.sensitive ? midStrength : gentleStrength
-  const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
+  const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, wantRequired: true, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
   const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, unique: true })
 
   const evening = [
