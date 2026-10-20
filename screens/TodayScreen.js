@@ -15,7 +15,7 @@ import { useSkinProfile } from '../utils/useSkinProfile'
 import { getUserRoutines } from '../utils/routines-service'
 import { todaySteps } from '../utils/routine-checks'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
-import { MOODS, saveDay } from '../utils/journal-day'
+import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
@@ -368,6 +368,9 @@ export default function TodayScreen({ navigation }) {
             )
           })}
         </View>
+        {todayMood && MOOD_MESSAGES[todayMood] ? (
+          <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>{t(MOOD_MESSAGES[todayMood])}</Text>
+        ) : null}
       </Pressable>
 
       {/* 5 · The programme */}
@@ -443,6 +446,7 @@ const styles = StyleSheet.create({
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38 },
   sosLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
+  moodMessage: { fontSize: 13, lineHeight: 18, marginTop: SPACING.md },
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },

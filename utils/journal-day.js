@@ -13,6 +13,15 @@ export const MOODS = [
   { value: 'terrible', label: 'Terrible', icon: 'emoticon-cry-outline', satisfaction: 1 },
 ]
 
+// A short message for each mood, on Home and in the journal.
+export const MOOD_MESSAGES = {
+  great: 'Your skin is glowing today! Keep your routine as it is, and don’t skip your SPF.',
+  good: 'Nice! Consistency keeps skin happy: stick to your routine.',
+  okay: 'An average day is normal. Drink water, cleanse gently tonight and get some sleep.',
+  bad: 'Sorry your skin isn’t at its best. Tick what’s going on below for a few simple tips.',
+  terrible: 'Rough day for your skin. Keep it simple and gentle today, and tick what’s going on below.',
+}
+
 export const TAGS = [
   'New pimple', 'Redness', 'Dryness', 'Itchiness / Sensitivity', 'Oily', 'Peeling / Flaking',
   'Sun exposure', 'Poor sleep', 'Stress', 'Hormonal / Period', 'Used new product',

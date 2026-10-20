@@ -7,7 +7,7 @@ import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
-import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
+import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
@@ -25,13 +25,6 @@ const planFor = tags => {
 };
 // A short message for the mood, and simple, general tips for each problem
 // ticked (free for everyone; the tailored 7-day plan is Emergency mode).
-const MOOD_MESSAGES = {
-  great: 'Your skin is glowing today! Keep your routine as it is, and don’t skip your SPF.',
-  good: 'Nice! Consistency keeps skin happy: stick to your routine.',
-  okay: 'An average day is normal. Drink water, cleanse gently tonight and get some sleep.',
-  bad: 'Sorry your skin isn’t at its best. Tick what’s going on below for a few simple tips.',
-  terrible: 'Rough day for your skin. Keep it simple and gentle today, and tick what’s going on below.',
-};
 const TAG_TIPS = {
   'New pimple': 'Don’t pick it. A hydrocolloid patch helps it heal faster.',
   'Redness': 'Skip strong actives today and rinse with cool water.',
