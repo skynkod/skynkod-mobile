@@ -26,8 +26,8 @@ export const QUESTIONS = [
     options: [o('dry', 'Tight or a bit rough'), o('normal', 'Comfortable'), o('combo', 'Shiny on the forehead and nose only'), o('oily', 'Shiny all over')] },
   { id: 'shine', chapter: 'test', type: 'single', title: 'By midday, your skin is…',
     options: [o('matte', 'Matte'), o('tzone', 'A bit shiny on the T-zone'), o('all', 'Shiny everywhere')] },
-  { id: 'pores', chapter: 'test', type: 'single', title: 'Your pores are…',
-    options: [o('small', 'Barely visible'), o('nose', 'Visible on the nose'), o('large', 'Visible on the cheeks too')] },
+  { id: 'pores', chapter: 'test', type: 'multi', title: 'Where are your pores visible?', subtitle: 'Pick all that apply.',
+    options: [o('nose', 'On the nose'), o('forehead', 'On the forehead'), o('cheeks', 'On the cheeks'), o('chin', 'On the chin'), o('None', 'Barely visible anywhere')] },
   { id: 'reactivity', chapter: 'test', type: 'single', title: 'Does your skin react easily?', subtitle: 'Stinging, redness or itching with products, heat or wind.',
     options: [o('rarely', 'Rarely'), o('sometimes', 'Sometimes'), o('often', 'Often')] },
   { id: 'sun', chapter: 'test', type: 'single', title: 'In the sun, you…', subtitle: 'It tells us how easily you get dark spots, and which sunscreen suits you.',
@@ -92,8 +92,10 @@ export const questionsFor = (answers, health) =>
 // The skin type comes from the test, not from what people think they have.
 export const computeSkinType = (a) => {
   if (!a.feel && !a.shine) return null
-  if (a.feel === 'oily' || a.shine === 'all') return 'Oily'
-  if (a.feel === 'combo' || a.shine === 'tzone' || (a.feel === 'normal' && a.pores === 'nose')) return 'Combination'
+  const pores = Array.isArray(a.pores) ? a.pores : a.pores ? [a.pores] : []
+  const tzoneOnly = pores.length && pores.every(p => ['nose', 'forehead', 'chin'].includes(p))
+  if (a.feel === 'oily' || a.shine === 'all' || (pores.includes('cheeks') && a.feel !== 'dry')) return 'Oily'
+  if (a.feel === 'combo' || a.shine === 'tzone' || (a.feel === 'normal' && tzoneOnly)) return 'Combination'
   if (a.feel === 'dry' && (!a.shine || a.shine === 'matte')) return 'Dry'
   return 'Normal'
 }
