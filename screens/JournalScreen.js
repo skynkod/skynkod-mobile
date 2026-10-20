@@ -321,7 +321,8 @@ export default function JournalScreen({ route, navigation }) {
           </View>
         ) : null}
 
-        {planFor(tags) ? (
+        {/* Offered as soon as the skin isn't great, even before ticking anything */}
+        {['okay', 'bad', 'terrible'].includes(mood) ? (
           <Pressable
             onPress={() => navigation.navigate('Emergency', { issues: issuesFromTags(tags), openedAt: Date.now() })}
             style={[styles.planCard, { backgroundColor: '#33202E' }]}
@@ -329,7 +330,7 @@ export default function JournalScreen({ route, navigation }) {
             <Ionicons name="diamond" size={16} color="#E2C6DA" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#E2C6DA', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('EMERGENCY MODE')}</Text>
-              <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', lineHeight: 18, marginTop: 2 }]}>{t(planPrompt(tags))}</Text>
+              <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', lineHeight: 18, marginTop: 2 }]}>{t(planFor(tags) ? planPrompt(tags) : 'Skin not at its best? Get a 7-day plan made for it')}</Text>
             </View>
             <Ionicons name={premium ? 'chevron-forward' : 'lock-closed'} size={16} color="#E2C6DA" />
           </Pressable>
