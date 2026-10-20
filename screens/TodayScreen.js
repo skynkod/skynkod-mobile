@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
@@ -144,6 +144,7 @@ export default function TodayScreen({ navigation }) {
   // The routine due now: morning from 5 am to 3 pm, then the evening one.
   const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
   const [compact, setCompact] = useState(false)
+  const helloBottom = useRef(200) // bottom of the greeting, so the sticky header waits until it is gone
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
   const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
   // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
@@ -217,7 +218,7 @@ export default function TodayScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
       scrollEventThrottle={32}
-      onScroll={e => { const down = e.nativeEvent.contentOffset.y > 56; if (down !== compact) setCompact(down) }}
+      onScroll={e => { const down = e.nativeEvent.contentOffset.y > helloBottom.current - insets.top - 56; if (down !== compact) setCompact(down) }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
       {/* 1 · Header: date and weather, greeting, today's skin tip */}
       <View style={styles.top}>
@@ -239,7 +240,7 @@ export default function TodayScreen({ navigation }) {
       </View>
       {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
       {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: SPACING.xxl }]}>{greeting},</Text> : null}
-      <View style={[styles.helloRow, firstName && { marginTop: 0 }]}>
+      <View style={[styles.helloRow, firstName && { marginTop: 0 }]} onLayout={e => { helloBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height }}>
         <Text style={[styles.hello, { color: colors.text }]}>{firstName || greeting}</Text>
         <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
       </View>
