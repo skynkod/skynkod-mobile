@@ -193,8 +193,8 @@ export default function TodayScreen({ navigation }) {
       const id = await saveDay(user.id, day, { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
       setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString(), updated_at: new Date().toISOString() })
       if (!entry?.mood) track('checkin_done')
-      // A bad day: straight to the journal to say what's going on (then the 7-day plan is offered there).
-      if (mood === 'bad' || mood === 'terrible') navigation.navigate('Journal', { openNew: Date.now() })
+      // Straight to the journal: a tip for the day, and room to say what's going on.
+      navigation.navigate('Journal', { openNew: Date.now() })
     } catch (error) {
       await logError('Today_mood', error)
     }

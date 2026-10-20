@@ -9,9 +9,13 @@ import { useSkinProfile } from '../utils/useSkinProfile'
 import { getMyProducts } from '../utils/catalog'
 import { ISSUES, questionsFor, buildSosPlan, issuesFromSituation } from '../utils/sos-plan'
 import { getActivePlan, startPlan, endPlan } from '../utils/emergency-state'
+import { isPremiumUser } from '../utils/premium'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const PLUM = '#33202E'
+// Lets the owner try Premium features before in-app purchase exists.
+const TESTERS = ['djedidilita@gmail.com']
+
 const PAUSE_LABELS = {
   retinoid: 'Retinol', acid: 'Acids', exfoliant: 'Exfoliants', vitaminC: 'Vitamin C',
   fragrance: 'Fragranced products', scrub: 'Scrubs', mask: 'Masks', newest: 'Your new product',
@@ -31,6 +35,9 @@ export default function EmergencyScreen({ navigation, route }) {
   const [qIndex, setQIndex] = useState(0)
   const [owned, setOwned] = useState(null)
   const [openDay, setOpenDay] = useState(0)
+  const [premium, setPremium] = useState(undefined)
+  const [preview, setPreview] = useState(false) // tester trying it without Premium
+  useEffect(() => { if (user?.id) isPremiumUser(user.id).then(setPremium).catch(() => setPremium(false)) }, [user?.id])
 
   const load = useCallback(async () => {
     if (!user?.id) return
@@ -57,7 +64,42 @@ export default function EmergencyScreen({ navigation, route }) {
     getMyProducts(user.id).then(rows => setOwned(rows.filter(r => r.status === 'owned' && r.product_id))).catch(() => setOwned([]))
   }, [stage, user?.id])
 
-  if (active === undefined) return <LoadingView />
+  if (active === undefined || premium === undefined) return <LoadingView />
+
+  // ---------- Locked: Emergency mode is part of Premium ----------
+  if (!premium && !active && !preview) {
+    const tester = TESTERS.includes(user?.email)
+    return (
+      <Screen back title={t('Emergency Mode')}>
+        <View style={[styles.lockCard, { backgroundColor: PLUM }]}>
+          <View style={styles.lockBadge}>
+            <Ionicons name="diamond" size={14} color="#E2C6DA" />
+            <Text style={{ color: '#E2C6DA', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('PREMIUM')}</Text>
+          </View>
+          <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700', marginTop: SPACING.md }}>{t('Emergency mode')}</Text>
+          <Text style={{ color: '#E2C6DA', fontSize: 14, lineHeight: 20, marginTop: SPACING.sm }}>
+            {t('A 7-day plan made for your skin when something goes wrong: a few quick questions, then one routine that treats everything at once.')}
+          </Text>
+          {['Breakouts, redness, dryness, peeling or a reaction, together', 'Morning and evening care that works well together', 'Strong products paused in your routine while it heals', 'Products picked from yours first, safe for your skin'].map(line => (
+            <View key={line} style={styles.lockLine}>
+              <Ionicons name="checkmark" size={15} color="#E2C6DA" />
+              <Text style={{ color: '#FFFFFF', fontSize: 13, lineHeight: 18, flex: 1 }}>{t(line)}</Text>
+            </View>
+          ))}
+        </View>
+        <Pressable onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Emergency mode very soon.'))}
+          style={({ pressed }) => [styles.primary, { backgroundColor: PLUM, opacity: pressed ? 0.85 : 1, flexDirection: 'row', gap: 8 }]}>
+          <Ionicons name="lock-open-outline" size={17} color="#FFFFFF" />
+          <Text style={styles.primaryText}>{t('Unlock with Premium')}</Text>
+        </Pressable>
+        {tester ? (
+          <Pressable onPress={() => setPreview(true)} style={{ alignSelf: 'center', padding: SPACING.md }}>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('Try it as Premium (test)')}</Text>
+          </Pressable>
+        ) : null}
+      </Screen>
+    )
+  }
 
   const questions = questionsFor(issues, answers, profile)
   const question = questions[qIndex]
@@ -305,6 +347,9 @@ export default function EmergencyScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.xl },
   tile: { width: '47%', flexGrow: 1, minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg },
+  lockCard: { borderRadius: RADIUS.xl, padding: SPACING.xl, marginTop: SPACING.sm },
+  lockBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  lockLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: SPACING.md },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
   planTitle: { fontSize: 24, fontWeight: '700', letterSpacing: -0.3, marginTop: SPACING.xs },
   card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.lg, overflow: 'hidden' },

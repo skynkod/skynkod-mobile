@@ -10,6 +10,7 @@ import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '.
 import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
+import { isPremiumUser } from '../utils/premium';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
 const planFor = tags => {
@@ -21,6 +22,29 @@ const planFor = tags => {
   if (tags.includes('Dryness')) return 'barrier';
   return null;
 };
+// A short message for the mood, and simple, general tips for each problem
+// ticked (free for everyone; the tailored 7-day plan is Emergency mode).
+const MOOD_MESSAGES = {
+  great: 'Your skin is glowing today! Keep your routine as it is, and don’t skip your SPF.',
+  good: 'Nice! Consistency keeps skin happy: stick to your routine.',
+  okay: 'An average day is normal. Drink water, cleanse gently tonight and get some sleep.',
+  bad: 'Sorry your skin isn’t at its best. Tick what’s going on below for a few simple tips.',
+  terrible: 'Rough day for your skin. Keep it simple and gentle today, and tick what’s going on below.',
+};
+const TAG_TIPS = {
+  'New pimple': 'Don’t pick it. A hydrocolloid patch helps it heal faster.',
+  'Redness': 'Skip strong actives today and rinse with cool water.',
+  'Dryness': 'Moisturize on damp skin and avoid hot water.',
+  'Itchiness / Sensitivity': 'Use only fragrance-free products today.',
+  'Oily': 'A gentle cleanse is enough: over-washing makes more oil.',
+  'Peeling / Flaking': 'Don’t scrub the flakes. Moisturize and pause retinol and acids.',
+  'Sun exposure': 'Soothe with a calming moisturizer, and wear SPF tomorrow.',
+  'Poor sleep': 'Try to sleep 7 to 9 hours tonight: skin repairs itself at night.',
+  'Stress': 'Stress shows on skin. Take 10 calm minutes before bed.',
+  'Hormonal / Period': 'Breakouts around your period are common. Keep your routine gentle.',
+  'Used new product': 'If it stings, stop the new product and go back to basics.',
+};
+
 // Several problems ticked: one message that covers them all.
 const PROBLEM_TAGS = ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking', 'Dryness', 'Used new product'];
 const planPrompt = tags => (tags.filter(tag => PROBLEM_TAGS.includes(tag)).length > 1
@@ -61,6 +85,8 @@ export default function JournalScreen({ route, navigation }) {
   const [routineLog, setRoutineLog] = useState(null);
   const [skinPatterns, setSkinPatterns] = useState(null);
   const dirty = useRef(false);
+  const [premium, setPremiumState] = useState(false);
+  useEffect(() => { if (user?.id) isPremiumUser(user.id).then(setPremiumState).catch(() => {}); }, [user?.id]);
 
   const weekStart = startOfWeek(selected);
   const days = [...Array(7)].map((_, i) => {
@@ -249,6 +275,13 @@ export default function JournalScreen({ route, navigation }) {
           })}
         </View>
 
+        {mood && MOOD_MESSAGES[mood] ? (
+          <View style={[styles.tipBox, { backgroundColor: colors.surface }]}>
+            <Ionicons name="sparkles-outline" size={15} color={colors.primary} />
+            <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(MOOD_MESSAGES[mood])}</Text>
+          </View>
+        ) : null}
+
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
         <View style={styles.tags}>
@@ -266,14 +299,27 @@ export default function JournalScreen({ route, navigation }) {
           })}
         </View>
 
+        {tags.some(tag => TAG_TIPS[tag]) ? (
+          <View style={[styles.tipBox, { backgroundColor: colors.surface, flexDirection: 'column', alignItems: 'stretch', gap: 6 }]}>
+            {tags.filter(tag => TAG_TIPS[tag]).map(tag => (
+              <Text key={tag} style={[TYPE.caption, { color: colors.text, lineHeight: 18 }]}>
+                <Text style={{ fontWeight: '700' }}>{t(tag)} · </Text>{t(TAG_TIPS[tag])}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+
         {planFor(tags) ? (
           <Pressable
             onPress={() => navigation.navigate('Emergency', { issues: issuesFromTags(tags), openedAt: Date.now() })}
             style={[styles.planCard, { backgroundColor: '#33202E' }]}
           >
             <Ionicons name="diamond" size={16} color="#E2C6DA" />
-            <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', flex: 1, lineHeight: 18 }]}>{t(planPrompt(tags))}</Text>
-            <Ionicons name="chevron-forward" size={16} color="#E2C6DA" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#E2C6DA', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('EMERGENCY MODE')}</Text>
+              <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', lineHeight: 18, marginTop: 2 }]}>{t(planPrompt(tags))}</Text>
+            </View>
+            <Ionicons name={premium ? 'chevron-forward' : 'lock-closed'} size={16} color="#E2C6DA" />
           </Pressable>
         ) : null}
 
@@ -366,6 +412,7 @@ const styles = StyleSheet.create({
   progressFill: { height: 6, borderRadius: 3 },
   patternRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
   patternIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  tipBox: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.md },
   planCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg },
   card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
