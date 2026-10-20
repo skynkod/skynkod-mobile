@@ -228,8 +228,8 @@ export default function TodayScreen({ navigation }) {
         <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
       </View>
       <View style={styles.tipLine}>
-        <Ionicons name={tip.icon} size={15} color={colors.primary} />
-        <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
+        <Ionicons name={tip.icon} size={14} color={colors.muted} />
+        <Text style={{ color: colors.muted, flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '300', fontStyle: 'italic' }}>{t(tip.text)}</Text>
       </View>
 
       {/* 2 · Check any product: the heart of the app */}
