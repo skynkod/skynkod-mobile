@@ -5,8 +5,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
-import Svg, { Circle, Defs, RadialGradient, Stop, Line } from 'react-native-svg'
-import Moon from '../components/Moon'
+import Svg, { Circle, Line, Path } from 'react-native-svg'
 import { supabase } from '../utils/supabase'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage, useT } from '../utils/LanguageContext'
@@ -222,11 +221,12 @@ export default function TodayScreen({ navigation }) {
           <Ionicons name="notifications-outline" size={19} color={colors.text} />
         </Pressable>
       </View>
+      {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
       <View style={styles.helloRow}>
-        <Text style={[styles.hello, { color: colors.text, flex: 1 }]}>{greeting}{firstName ? `,\n${firstName}` : ''}</Text>
-        {/* Tonight's real moon, or a soft sun during the day */}
-        <View style={styles.sky}>{hour >= 5 && hour < 18 ? <Sun size={46} /> : <Moon size={46} />}</View>
+        <Text style={[styles.hello, { color: colors.text }]}>{greeting}{firstName ? ',' : ''}</Text>
+        <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
       </View>
+      {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: 0 }]}>{firstName}</Text> : null}
       <View style={styles.tipLine}>
         <Ionicons name={tip.icon} size={15} color={colors.primary} />
         <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
@@ -309,28 +309,24 @@ export default function TodayScreen({ navigation }) {
   )
 }
 
-// A soft, hand-drawn-looking sun: a warm glow, a disc and thin rays.
-function Sun({ size = 46 }) {
-  const c = size / 2
+// Tiny custom "emoji" in the brand colours (mauve and plum).
+function MoonGlyph({ size = 24 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M15.5 3.2a8.8 8.8 0 1 0 5.3 15.4A7.2 7.2 0 0 1 15.5 3.2Z" fill="#C5A8BB" />
+      <Path d="M19.2 4.2l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45Z" fill="#8A6380" />
+    </Svg>
+  )
+}
+
+function SunGlyph({ size = 24 }) {
   const rays = Array.from({ length: 8 }, (_, i) => (i * Math.PI) / 4)
   return (
-    <Svg width={size} height={size}>
-      <Defs>
-        <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#F6C98E" stopOpacity="0.55" />
-          <Stop offset="1" stopColor="#F6C98E" stopOpacity="0" />
-        </RadialGradient>
-        <RadialGradient id="disc" cx="40%" cy="38%" r="65%">
-          <Stop offset="0" stopColor="#FFE3B8" />
-          <Stop offset="1" stopColor="#F2B36E" />
-        </RadialGradient>
-      </Defs>
-      <Circle cx={c} cy={c} r={c} fill="url(#glow)" />
+    <Svg width={size} height={size} viewBox="0 0 24 24">
       {rays.map((a, i) => (
-        <Line key={i} x1={c + Math.cos(a) * size * 0.3} y1={c + Math.sin(a) * size * 0.3} x2={c + Math.cos(a) * size * 0.42} y2={c + Math.sin(a) * size * 0.42}
-          stroke="#F2B36E" strokeWidth={2} strokeLinecap="round" />
+        <Line key={i} x1={12 + Math.cos(a) * 7.6} y1={12 + Math.sin(a) * 7.6} x2={12 + Math.cos(a) * 10.6} y2={12 + Math.sin(a) * 10.6} stroke="#8A6380" strokeWidth={1.8} strokeLinecap="round" />
       ))}
-      <Circle cx={c} cy={c} r={size * 0.2} fill="url(#disc)" />
+      <Circle cx={12} cy={12} r={5} fill="#C5A8BB" />
     </Svg>
   )
 }
@@ -353,9 +349,9 @@ const styles = StyleSheet.create({
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38, marginTop: SPACING.xxl },
-  helloRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md },
-  sky: { marginTop: SPACING.xxl, width: 46, height: 46 },
+  hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38 },
+  helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
+  glyph: { marginTop: 4 },
   tipLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxxl, marginBottom: SPACING.md },
   bell: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
