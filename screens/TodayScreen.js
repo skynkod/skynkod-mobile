@@ -382,6 +382,11 @@ export default function TodayScreen({ navigation }) {
           <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>{t(HOME_MOOD_MESSAGES[todayMood] || MOOD_MESSAGES[todayMood])}</Text>
         ) : null}
       </Pressable>
+      <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
+        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      </Pressable>
 
       {/* 5 · The programme */}
       <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My Rekod') : t('Go further')}</Text>
@@ -461,6 +466,7 @@ const styles = StyleSheet.create({
   sosLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
   moodMessage: { fontSize: 13, lineHeight: 18, marginTop: SPACING.md },
   avatarSmall: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.md },
+  progressLink: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, borderWidth: 1, borderRadius: 16, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },

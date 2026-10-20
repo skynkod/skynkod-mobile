@@ -6,7 +6,7 @@ import { Screen, Card, SectionHeader, ListRow, useColors } from '../components/u
 import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
-import ProgressScreen from './ProgressScreen'
+import MyProgressScreen from './MyProgressScreen'
 import ProductsScreen from './ProductsScreen'
 import PhotosScreen from './PhotosScreen'
 import SkinTypeQuizScreen from './SkinTypeQuizScreen'
@@ -23,7 +23,7 @@ import SkinProfileScreen from './SkinProfileScreen'
 export const MORE_SCREENS = [
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
-  { name: 'Progress', component: ProgressScreen, label: 'Progress', subtitle: 'Your timeline', icon: 'trending-up-outline', group: 'track' },
+  { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
@@ -43,7 +43,7 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
 // Premium waits until in-app purchases work (stores refuse "coming soon" screens).
 // V1: Budget and Skyncyclopedia come back later as new features.
-const HIDDEN = ['Photos', 'Progress', 'Scanner', 'Quiz', 'Premium', 'Budget', 'Skyncyclopedia']
+const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Premium', 'Budget', 'Skyncyclopedia']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {
