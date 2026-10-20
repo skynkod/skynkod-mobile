@@ -4,7 +4,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
-import { P, PremiumShell, PButton, PLoading, Carousel, tap } from '../components/PremiumSpace'
+import { P, PremiumShell, PButton, PLoading, Carousel, tap, isIntroHidden, hideIntro } from '../components/PremiumSpace'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
@@ -67,6 +67,7 @@ export default function DekodScreen({ navigation }) {
   const [history, setHistory] = useState(null) // past scans, newest first
   const [shot, setShot] = useState(null) // { uri, checks, ok, retake } right after the photo
   const [viewing, setViewing] = useState(null) // a past scan opened from the history
+  const [introHidden, setIntroHidden] = useState(false) // she understood Dekod: no more slides
 
   const loadHistory = useCallback(() => {
     if (!user?.id) return
@@ -78,6 +79,7 @@ export default function DekodScreen({ navigation }) {
     if (!user?.id) return
     isPremiumUser(user.id).then(p => setPremium(p || TESTERS.includes(user.email))).catch(() => setPremium(TESTERS.includes(user.email)))
     hasDekodConsent(user.id).then(setConsent)
+    isIntroHidden('dekod', user.id).then(setIntroHidden)
   }, [user?.id])
 
   if (premium === undefined || consent === undefined) return <PLoading />
@@ -352,12 +354,39 @@ export default function DekodScreen({ navigation }) {
     )
   }
 
+  const startButton = premium
+    ? <PButton title={t('Start my Dekod')} icon="scan-outline" onPress={begin} />
+    : <PButton title={t('Unlock with Premium')} icon="lock-open-outline" onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Dekod very soon.'))} />
+
+  // ---------- Intro hidden: a short start screen ----------
+  if (introHidden) {
+    return (
+      <PremiumShell label={LABEL} title="Dekod" subtitle={t('Your skin scan: one selfie, five points, one tip each.')}
+        footer={(
+          <>
+            {startButton}
+            <Pressable onPress={() => { tap(); setIntroHidden(false) }} hitSlop={8} style={{ alignSelf: 'center', paddingTop: SPACING.sm }}>
+              <Text style={[TYPE.caption, { color: P.primary, fontWeight: '700' }]}>{t('What is Dekod?')}</Text>
+            </Pressable>
+          </>
+        )}>
+        <Line icon="sunny-outline" text="Daylight, no makeup, face the camera" />
+        <Line icon="shield-checkmark-outline" text="Your photo is analysed, then deleted" />
+      </PremiumShell>
+    )
+  }
+
   // ---------- Intro: a swipeable presentation (locked without Premium) ----------
   return (
     <PremiumShell label={LABEL} scroll={false}
-      footer={premium
-        ? <PButton title={t('Start my Dekod')} icon="scan-outline" onPress={begin} />
-        : <PButton title={t('Unlock with Premium')} icon="lock-open-outline" onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Dekod very soon.'))} />}>
+      footer={(
+        <>
+          {startButton}
+          <Pressable onPress={() => { tap(); hideIntro('dekod', user.id); setIntroHidden(true) }} hitSlop={8} style={{ alignSelf: 'center', paddingTop: SPACING.sm }}>
+            <Text style={[TYPE.caption, { color: P.muted, fontWeight: '600' }]}>{t('Got it, don’t show this again')}</Text>
+          </Pressable>
+        </>
+      )}>
       <Carousel slides={SLIDES.map(s => ({ ...s, title: t(s.title), text: t(s.text) }))} />
       <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginBottom: SPACING.sm }]}>{t('One scan a day with Premium')}</Text>
     </PremiumShell>

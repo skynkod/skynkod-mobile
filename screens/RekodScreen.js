@@ -15,6 +15,7 @@ import { searchProducts, getMyProducts } from '../utils/catalog'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
+import { isIntroHidden, hideIntro } from '../components/PremiumSpace'
 import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
@@ -100,6 +101,9 @@ export default function RekodScreen({ navigation }) {
   const [sheet, setSheet] = useState(null) // { period, idx }: a step's details
   const [checkOpen, setCheckOpen] = useState(false)
   const [scans, setScans] = useState([]) // Dekod scans, newest first
+  // The explanation shows until she hides it; then Rekod opens on the goals.
+  const [introHidden, setIntroHidden] = useState(false)
+  React.useEffect(() => { if (user?.id) isIntroHidden('rekod', user.id).then(setIntroHidden) }, [user?.id])
 
   // A changed step goes into the saved routine (members) or the preview (before joining).
   const applyStep = async (period, index, step) => {
@@ -423,20 +427,32 @@ export default function RekodScreen({ navigation }) {
   }
 
   // ---------- Joining: a swipeable intro ----------
-  if (step === 'intro') {
+  if (step === 'intro' && !introHidden) {
     return (
-      <Shell navigation={navigation} scroll={false} footer={<RButton title="Build my Rekod" onPress={() => { tap(); setStep('goals') }} />}>
+      <Shell navigation={navigation} scroll={false} footer={(
+        <>
+          <RButton title="Build my Rekod" onPress={() => { tap(); setStep('goals') }} />
+          <Pressable onPress={() => { tap(); hideIntro('rekod', user.id); setIntroHidden(true); setStep('goals') }} hitSlop={8} style={{ alignSelf: 'center', paddingTop: SPACING.md }}>
+            <Text style={[TYPE.caption, { color: C.muted, fontWeight: '600' }]}>Got it, don’t show this again</Text>
+          </Pressable>
+        </>
+      )}>
         <Carousel />
       </Shell>
     )
   }
 
-  if (step === 'goals') {
+  if (step === 'goals' || step === 'intro') {
     return (
-      <Shell navigation={navigation} onBack={() => setStep('intro')}
+      <Shell navigation={navigation} onBack={introHidden ? undefined : () => setStep('intro')}
         footer={<RButton title={picked.length ? `Continue · ${picked.length}/3` : 'Pick up to 3'} disabled={!picked.length} onPress={() => { tap(); confirmGoals() }} />}>
         <Text style={[styles.title, { color: C.text }]}>What do you want to change?</Text>
         <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>Pick up to 3. The first one leads your Rekod.</Text>
+        {introHidden ? (
+          <Pressable onPress={() => { tap(); setIntroHidden(false); setStep('intro') }} hitSlop={8} style={{ marginTop: SPACING.sm }}>
+            <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>What is Rekod?</Text>
+          </Pressable>
+        ) : null}
         {/* Day 0: Dekod reads the skin, and suggests the goals */}
         {(() => {
           const day0 = recentScan(scans)

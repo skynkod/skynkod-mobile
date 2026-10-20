@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SPACING, TYPE } from '../utils/theme'
 
 // The deep plum space shared by Skynkod's Premium features (same look as
@@ -103,3 +104,9 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: SPACING.md },
   dot: { height: 8, borderRadius: 4 },
 })
+
+// "Don't show again" for the intro of a Premium feature, per user.
+const introKey = (feature, userId) => `intro_hidden_${feature}_${userId}`
+export const isIntroHidden = async (feature, userId) => (await AsyncStorage.getItem(introKey(feature, userId)).catch(() => null)) === '1'
+export const hideIntro = (feature, userId) => AsyncStorage.setItem(introKey(feature, userId), '1').catch(() => {})
+export const showIntroAgain = (feature, userId) => AsyncStorage.removeItem(introKey(feature, userId)).catch(() => {})
