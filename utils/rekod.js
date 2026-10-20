@@ -333,10 +333,24 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
   ].filter(Boolean)
 
-  return { morning, evening }
+  // Her own decisions about flagged steps: removed ones stay out, accepted ones
+  // stop asking (the explanation stays).
+  const decide = period => list => list
+    .filter(st => !(plan.removed || []).includes(stepId(period, st)))
+    .map(st => ((plan.accepted || []).includes(stepId(period, st)) ? { ...st, accepted: true } : st))
+  return { morning: decide('morning')(morning), evening: decide('evening')(evening) }
 }
 
 // ---------- Changing one product ----------
+
+export const stepId = (period, step) => `${period}:${step.key}:${step.night || ''}`
+
+// "Keep it and patch test" or "Remove from my routine" on a flagged step.
+export const decideStep = (plan, period, step, decision) => {
+  const id = stepId(period, step)
+  const key = decision === 'remove' ? 'removed' : 'accepted'
+  return { ...plan, [key]: [...new Set([...(plan[key] || []), id])] }
+}
 
 // A 100% safe product for the same step: with the same active first, then any
 // safe product of the same kind. null when the catalogue has none.
@@ -433,6 +447,8 @@ export const startRekod = async (userId, answers, givenProfile) => {
     startedAt: new Date().toISOString(),
     checkins: [],
     extraReset: false,
+    removed: answers.removed || [],
+    accepted: answers.accepted || [],
   }
   const routine = await buildRekodRoutine(userId, plan, profile)
   await archiveCurrentRoutines(userId, 'before-rekod').catch(() => {})

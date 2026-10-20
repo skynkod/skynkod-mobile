@@ -18,6 +18,7 @@ import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
+  decideStep, stepId, saveRekodPlan,
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
@@ -122,6 +123,30 @@ export default function RekodScreen({ navigation }) {
       ])
     } catch (error) {
       await logError('Rekod_alternative', error)
+      Alert.alert('Something went wrong', 'Please try again.')
+    }
+  }
+
+  // A flagged step: keep it (and patch test) or take it out of the routine.
+  const decide = async (period, idx, decision) => {
+    const target = currentStep(period, idx)
+    setSheet(null)
+    tap()
+    try {
+      if (plan) {
+        const next = decideStep(plan, period, target, decision)
+        await saveRekodPlan(user.id, next)
+        setPlan(next)
+        setRoutine(await refreshRekodRoutine(user.id, next))
+      } else {
+        const id = stepId(period, target)
+        const key = decision === 'remove' ? 'removed' : 'accepted'
+        setAnswers(a => ({ ...a, [key]: [...new Set([...(a[key] || []), id])] }))
+        setPreview(pv => ({ ...pv, [period]: decision === 'remove' ? pv[period].filter((_, i) => i !== idx) : pv[period].map((st, i) => (i === idx ? { ...st, accepted: true } : st)) }))
+      }
+      track('rekod_flagged_step', { decision })
+    } catch (error) {
+      await logError('Rekod_decide', error)
       Alert.alert('Something went wrong', 'Please try again.')
     }
   }
@@ -304,6 +329,7 @@ export default function RekodScreen({ navigation }) {
         </Pressable>
 
         <StepSheet step={sheet && routine?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
+          onKeep={() => decide(sheet.period, sheet.idx, 'keep')} onRemove={() => decide(sheet.period, sheet.idx, 'remove')}
           onOwn={() => { const s2 = sheet; setSheet(null); setOwn({ period: s2.period, index: s2.idx }) }} />
         <BottomSheetModal visible={checkOpen} onClose={() => setCheckOpen(false)}>
           <Text style={[styles.sheetTitle, { color: C.text }]}>Any stinging or redness this week?</Text>
@@ -379,6 +405,7 @@ export default function RekodScreen({ navigation }) {
         </View>
         <RoutineTabs routine={preview} onOpen={(period, idx) => setSheet({ period, idx })} />
         <StepSheet step={sheet && preview?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
+          onKeep={() => decide(sheet.period, sheet.idx, 'keep')} onRemove={() => decide(sheet.period, sheet.idx, 'remove')}
           onOwn={() => { const s2 = sheet; setSheet(null); setOwn({ period: s2.period, index: s2.idx }) }} />
         <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
       </Shell>
@@ -523,7 +550,7 @@ function BottomSheetModal({ visible, onClose, children }) {
 }
 
 // A step's details: why, key ingredients, safety, the product page.
-function StepSheet({ step: s, onClose, navigation, onOwn }) {
+function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove }) {
   return (
     <BottomSheetModal visible={!!s} onClose={onClose}>
       {s ? (
@@ -537,6 +564,27 @@ function StepSheet({ step: s, onClose, navigation, onOwn }) {
                 {s.issues[0].level === 'avoid' ? 'Not recommended for your skin' : 'Not 100% safe for your skin'}
               </Text>
               {s.issues.map((i, n) => <Text key={n} style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>• {i.text}{i.detail ? `. ${i.detail}` : ''}</Text>)}
+            </View>
+          ) : null}
+          {s.issues?.length && s.product ? (
+            <View style={[styles.bestBox, { backgroundColor: C.card }]}>
+              <Text style={[TYPE.bodyStrong, { color: C.text }]}>{s.accepted ? 'You chose to keep it' : 'The best option we found'}</Text>
+              <Text style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>
+                No product for this step is 100% safe for your skin yet (because of the points above), so this is the closest match.
+              </Text>
+              <Text style={[TYPE.caption, { color: C.primary, lineHeight: 18, fontWeight: '600' }]}>
+                Patch test it first: apply a little on your jawline for 3 evenings. If it stings, itches or you break out, stop and remove it.
+              </Text>
+              {!s.accepted ? (
+                <View style={{ gap: SPACING.sm, marginTop: SPACING.sm }}>
+                  <RButton small title="Keep it and patch test" onPress={onKeep} />
+                  <RButton small outline title="Remove from my routine" onPress={onRemove} />
+                </View>
+              ) : (
+                <Pressable onPress={onRemove} hitSlop={8} style={{ marginTop: 4 }}>
+                  <Text style={[TYPE.caption, { color: C.muted, fontWeight: '700' }]}>Remove from my routine</Text>
+                </Pressable>
+              )}
             </View>
           ) : null}
           {s.keys?.length ? (
@@ -578,6 +626,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   bottomSheet: { backgroundColor: '#3B2636', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SPACING.xl, paddingBottom: SPACING.xxxl },
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: SPACING.lg },
+  bestBox: { borderRadius: 16, padding: SPACING.md, gap: 6 },
   sheetTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 24, lineHeight: 30 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
   scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
