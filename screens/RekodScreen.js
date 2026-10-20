@@ -3,6 +3,8 @@ import { View, Text, Pressable, StyleSheet, Platform, Alert, Image, ScrollView, 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
+import Svg, { Circle } from 'react-native-svg'
 import { useAuth } from '../utils/AuthContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getUserRoutines } from '../utils/routines-service'
@@ -29,7 +31,7 @@ const C = {
   success: '#A8E2BC', successSoft: 'rgba(168,226,188,0.14)',
 }
 
-function Shell({ navigation, overline, title, subtitle, footer, children, onBack }) {
+function Shell({ navigation, overline, title, subtitle, footer, children, onBack, scroll = true }) {
   return (
     <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
@@ -42,12 +44,14 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
         </View>
         <View style={{ width: 26 }} />
       </View>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {overline ? <Text style={[TYPE.overline, { color: C.primary }]}>{overline}</Text> : null}
-        {title ? <Text style={[styles.title, { color: C.text }]}>{title}</Text> : null}
-        {subtitle ? <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>{subtitle}</Text> : null}
-        {children}
-      </ScrollView>
+      {scroll ? (
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {overline ? <Text style={[TYPE.overline, { color: C.primary }]}>{overline}</Text> : null}
+          {title ? <Text style={[styles.title, { color: C.text }]}>{title}</Text> : null}
+          {subtitle ? <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>{subtitle}</Text> : null}
+          {children}
+        </ScrollView>
+      ) : <View style={[styles.scroll, { flex: 1 }]}>{children}</View>}
       {footer ? <View style={styles.footer}>{footer}</View> : null}
     </SafeAreaView>
   )
@@ -86,6 +90,8 @@ export default function RekodScreen({ navigation }) {
   const [preview, setPreview] = useState(null)
   const [busy, setBusy] = useState(false)
   const [own, setOwn] = useState(null) // { period, index } while choosing her own product
+  const [sheet, setSheet] = useState(null) // { period, idx }: a step's details
+  const [checkOpen, setCheckOpen] = useState(false)
 
   // A changed step goes into the saved routine (members) or the preview (before joining).
   const applyStep = async (period, index, step) => {
@@ -216,76 +222,96 @@ export default function RekodScreen({ navigation }) {
 
   if (plan === undefined) return <Loading />
 
-  // ---------- Following a Rekod ----------
+  // ---------- Following a programme: an app dashboard ----------
   if (plan) {
     const goal = goalOf(plan.goal)
     const week = Math.min(weekOf(plan), goal.weeks)
     const pattern = weekPattern(plan)
     const tonight = tonightNight(plan)
     const todayIdx = [1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())
+    const due = checkInDue(plan)
     return (
-      <Shell navigation={navigation} overline={`My programme · ${goal.title}`} title={`Week ${week} of ${goal.weeks}`}>
-        <View style={[styles.bar, { backgroundColor: C.primarySoft }]}><View style={{ width: `${Math.round((week / goal.weeks) * 100)}%`, height: '100%', backgroundColor: C.primary, borderRadius: 999 }} /></View>
-
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[TYPE.overline, { color: colors.muted }]}>Tonight</Text>
-          <Text style={[styles.serif, { color: colors.text }]}>{NIGHTS[tonight].label}</Text>
-          <View style={styles.weekRow}>
-            {pattern.map((night, i) => (
-              <View key={i} style={styles.dayCol}>
-                <Text style={[TYPE.caption, { color: colors.muted, fontSize: 11 }]}>{DAY_LETTERS[i]}</Text>
-                <View style={[styles.dayDot, {
-                  backgroundColor: night === 'retinoid' || night === 'exfoliation' ? colors.primary : colors.primarySoft,
-                  borderWidth: i === todayIdx ? 2 : 0, borderColor: colors.text,
-                }]}>
-                  <Ionicons name={NIGHTS[night].icon} size={14} color={night === 'retinoid' || night === 'exfoliation' ? colors.onPrimary : colors.primary} />
-                </View>
-              </View>
-            ))}
+      <Shell navigation={navigation} footer={<RButton title="Ask Koda about my programme" onPress={() => navigation.navigate('Koda')} />}>
+        <View style={styles.dash}>
+          <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text style={[TYPE.overline, { color: C.primary }]}>My programme</Text>
+            <Text style={[styles.dashTitle, { color: C.text }]}>{goal.title}</Text>
+            <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
+              <Ionicons name={NIGHTS[tonight].icon} size={14} color={C.primary} />
+              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {NIGHTS[tonight].short}</Text>
+            </View>
           </View>
         </View>
 
-        {checkInDue(plan) ? (
-          <View style={[styles.card, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>Any stinging or redness this week?</Text>
-            <View style={styles.answers}>
-              <RButton small title="All good" onPress={() => checkIn('good')} loading={busy} style={{ flex: 1 }} />
-              <RButton small outline title="A little" onPress={() => checkIn('little')} disabled={busy} style={{ flex: 1 }} />
-              <RButton small outline title="A lot" onPress={() => checkIn('lot')} disabled={busy} style={{ flex: 1 }} />
-            </View>
-          </View>
+        <View style={styles.weekRow}>
+          {pattern.map((night, i) => {
+            const strong = night === 'retinoid' || night === 'exfoliation'
+            return (
+              <View key={i} style={styles.dayCol}>
+                <Text style={[TYPE.caption, { color: i === todayIdx ? C.text : C.muted, fontSize: 11, fontWeight: i === todayIdx ? '700' : '500' }]}>{DAY_LETTERS[i]}</Text>
+                <View style={[styles.dayDot, { backgroundColor: strong ? C.primary : C.primarySoft, borderWidth: i === todayIdx ? 2 : 0, borderColor: C.text }]}>
+                  <Ionicons name={NIGHTS[night].icon} size={14} color={strong ? C.onPrimary : C.primary} />
+                </View>
+              </View>
+            )
+          })}
+        </View>
+
+        {due ? (
+          <Pressable onPress={() => { tap(); setCheckOpen(true) }} style={({ pressed }) => [styles.banner, { opacity: pressed ? 0.85 : 1 }]}>
+            <Ionicons name="pulse-outline" size={20} color={C.onPrimary} />
+            <Text style={[TYPE.bodyStrong, { color: C.onPrimary, flex: 1 }]}>Your weekly check-in is ready</Text>
+            <Ionicons name="chevron-forward" size={18} color={C.onPrimary} />
+          </Pressable>
         ) : null}
 
-        <RoutineCard navigation={navigation} title="Morning" period="morning" steps={routine?.morning} colors={colors} onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
-        <RoutineCard navigation={navigation} title="Evening" period="evening" steps={routine?.evening} colors={colors} showDays onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
+        <RoutineTabs routine={routine} onOpen={(period, idx) => setSheet({ period, idx })} />
 
-        <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
-        <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.lg }}>
-          <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Leave my programme</Text>
+        <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.xl }}>
+          <Text style={[TYPE.caption, { color: C.muted, fontWeight: '600' }]}>Leave my programme</Text>
         </Pressable>
+
+        <StepSheet step={sheet && routine?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
+          onOwn={() => { const s2 = sheet; setSheet(null); setOwn({ period: s2.period, index: s2.idx }) }} />
+        <BottomSheetModal visible={checkOpen} onClose={() => setCheckOpen(false)}>
+          <Text style={[styles.sheetTitle, { color: C.text }]}>Any stinging or redness this week?</Text>
+          <Text style={[TYPE.caption, { color: C.muted, marginTop: 4 }]}>Your plan adapts to your answer.</Text>
+          <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
+            {[['good', 'All good', 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
+              <Pressable key={v} disabled={busy} onPress={async () => { tap(); await checkIn(v); setCheckOpen(false) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderColor: C.border, borderWidth: 1, opacity: pressed ? 0.8 : 1 }]}>
+                <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}</Text>
+                <Text style={[TYPE.caption, { color: C.muted }]}>{h}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </BottomSheetModal>
+        <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
       </Shell>
     )
   }
 
-  // ---------- Joining ----------
+  // ---------- Joining: a swipeable intro ----------
   if (step === 'intro') {
     return (
-      <Shell navigation={navigation}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-          <Text style={[TYPE.overline, { color: colors.primary }]}>Your skin programme</Text>
-          <View style={[styles.premium, { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', gap: 4 }]}><Ionicons name="diamond" size={10} color="#33202E" /><Text style={styles.premiumText}>PREMIUM</Text></View>
-        </View>
-        <Text style={[styles.hero, { color: colors.text }]}>The skin you{'\n'}always wanted.</Text>
-        <Text style={[TYPE.bodyStrong, { color: colors.primary, marginTop: SPACING.md }]}>A premium skin programme, from 6 to 12 weeks.</Text>
-        <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
-          A premium programme built entirely around your skin, so you finally get the skin you've always wanted. Every active is backed by science, not trends.
-        </Text>
-        <Text style={[styles.serif, { color: colors.text, marginTop: SPACING.xxl, fontSize: 20 }]}>What do you want to change?</Text>
+      <Shell navigation={navigation} scroll={false} footer={<RButton title="Find my programme" onPress={() => { tap(); setStep('goals') }} />}>
+        <Carousel />
+      </Shell>
+    )
+  }
+
+  if (step === 'goals') {
+    return (
+      <Shell navigation={navigation} onBack={() => setStep('intro')}>
+        <Text style={[styles.title, { color: C.text }]}>What do you want to change?</Text>
         <View style={styles.grid}>
           {GOALS.map(g => (
-            <Pressable key={g.id} onPress={() => pickGoal(g.id)} style={({ pressed }) => [styles.goal, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 }]}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{g.title}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{g.subtitle}</Text>
+            <Pressable key={g.id} onPress={() => { tap(); pickGoal(g.id) }} style={({ pressed }) => [styles.tile, { backgroundColor: C.card, borderColor: C.border, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+              <View style={[styles.tileIcon, { backgroundColor: C.primarySoft }]}>
+                <Ionicons name={GOAL_ICONS[g.id] || 'sparkles-outline'} size={24} color={C.primary} />
+              </View>
+              <Text style={[TYPE.bodyStrong, { color: C.text }]}>{g.title}</Text>
+              <Text style={[TYPE.caption, { color: C.muted }]} numberOfLines={2}>{g.subtitle}</Text>
             </Pressable>
           ))}
         </View>
@@ -298,18 +324,19 @@ export default function RekodScreen({ navigation }) {
     return (
       <Shell
         navigation={navigation}
-        onBack={() => setStep('intro')}
-        overline={`Your programme · ${goal.title}`}
-        title={answers.sensitive ? 'Built for skin that reacts easily' : 'Built for your skin'}
-        subtitle={`${goal.weeks} weeks · ${goal.results.toLowerCase()}`}
-        footer={<RButton title="Start my programme" onPress={adopt} loading={busy} />}
+        onBack={() => setStep('goals')}
+        footer={<RButton title="Start my programme" onPress={() => { tap(); adopt() }} loading={busy} />}
       >
-        <RoutineCard navigation={navigation} title="Morning" period="morning" steps={preview.morning} colors={colors} onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
-        <RoutineCard navigation={navigation} title="Evening" period="evening" steps={preview.evening} colors={colors} showDays onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
+        <Text style={[TYPE.overline, { color: C.primary }]}>Your programme · {goal.title}</Text>
+        <Text style={[styles.title, { color: C.text }]}>Your skin, decoded.</Text>
+        <View style={[styles.pill, { backgroundColor: C.primarySoft, marginTop: SPACING.sm }]}>
+          <Ionicons name="calendar-outline" size={14} color={C.primary} />
+          <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>{goal.weeks} weeks · {goal.results.toLowerCase()}</Text>
+        </View>
+        <RoutineTabs routine={preview} onOpen={(period, idx) => setSheet({ period, idx })} />
+        <StepSheet step={sheet && preview?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
+          onOwn={() => { const s2 = sheet; setSheet(null); setOwn({ period: s2.period, index: s2.idx }) }} />
         <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
-        <Pressable onPress={() => setStep('intro')} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
-          <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Change my goal</Text>
-        </Pressable>
       </Shell>
     )
   }
@@ -324,26 +351,26 @@ export default function RekodScreen({ navigation }) {
   if (!q || busy) return <Loading label={busy ? 'Building your programme…' : undefined} />
   const total = answers.experience === 'used' || step === 'priority' ? 3 : 2
   return (
-    <Shell navigation={navigation} onBack={() => setStep(step === 'priority' ? 'experience' : step === 'experience' ? 'sensitive' : 'intro')}>
+    <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'priority' ? 'experience' : step === 'experience' ? 'sensitive' : 'goals')}>
       <View style={styles.progress}>
         {Array.from({ length: total }).map((_, i) => (
-          <View key={i} style={[styles.progressBit, { backgroundColor: i < q.n ? colors.primary : colors.border }]} />
+          <View key={i} style={[styles.progressBit, { backgroundColor: i < q.n ? C.primary : C.border }]} />
         ))}
       </View>
-      <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>My programme · {goalOf(answers.goal).title}</Text>
-      <Text style={[styles.question, { color: colors.text }]}>{q.title}</Text>
-      {q.sub ? <Text style={[TYPE.body, { color: colors.textSecondary }]}>{q.sub}</Text> : null}
+      <Text style={[TYPE.overline, { color: C.primary, marginTop: SPACING.xxl }]}>{goalOf(answers.goal).title}</Text>
+      <Text style={[styles.question, { color: C.text }]}>{q.title}</Text>
+      {q.sub ? <Text style={[TYPE.body, { color: C.textSecondary }]}>{q.sub}</Text> : null}
       <View style={{ gap: SPACING.md, marginTop: SPACING.xl }}>
         {q.options.map(o => {
           const selected = answers[step] === o.v
           return (
-            <Pressable key={String(o.v)} onPress={() => answer(step, o.v)} style={({ pressed }) => [styles.option, {
-              backgroundColor: selected ? colors.primarySoft : colors.card,
-              borderColor: selected ? colors.primary : colors.border,
+            <Pressable key={String(o.v)} onPress={() => { tap(); answer(step, o.v) }} style={({ pressed }) => [styles.option, {
+              backgroundColor: selected ? C.primarySoft : C.card,
+              borderColor: selected ? C.primary : C.border,
               borderWidth: selected ? 2 : 1,
-              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
             }]}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{o.t}</Text>
+              <Text style={[TYPE.bodyStrong, { color: C.text, fontSize: 16 }]}>{o.t}</Text>
             </Pressable>
           )
         })}
@@ -352,59 +379,161 @@ export default function RekodScreen({ navigation }) {
   )
 }
 
-function RoutineCard({ title, period, steps, colors, showDays, navigation, onAlternative, onOwn }) {
-  if (!steps?.length) return null
+// ---------- Pieces ----------
+
+const tap = () => { Haptics.selectionAsync().catch(() => {}) }
+
+const GOAL_ICONS = { clear: 'water-outline', antiaging: 'hourglass-outline', spots: 'contrast-outline', glow: 'sunny-outline', pores: 'grid-outline', calm: 'leaf-outline', hydration: 'rainy-outline' }
+const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'sparkles-outline', treatment: 'moon-outline' }
+
+const SLIDES = [
+  { icon: 'diamond-outline', title: 'The skin you always wanted', text: 'A premium programme of 6 to 12 weeks, built entirely around your skin.' },
+  { icon: 'flask-outline', title: 'Only actives that work', text: 'Every product is chosen for your skin, with actives backed by science, not trends.' },
+  { icon: 'trending-up-outline', title: 'A plan that adapts', text: 'Actives come in gently, week by week, and your plan adjusts to how your skin reacts.' },
+]
+
+function Carousel() {
+  const [page, setPage] = useState(0)
+  const [width, setWidth] = useState(0)
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[TYPE.overline, { color: colors.muted }]}>{title}</Text>
-      {steps.map((s, idx) => (
-        <View key={`${s.key}-${idx}`} style={styles.stepRow}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={[TYPE.overline, { color: colors.muted, fontSize: 10 }]}>{s.action}</Text>
-            <Pressable disabled={!s.product_id} onPress={() => navigation.navigate('Product', { id: s.product_id })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.product, { color: colors.text, flexShrink: 1 }]} numberOfLines={2}>{s.product || 'Pick a product'}</Text>
-              {s.product_id ? <Ionicons name="chevron-forward" size={14} color={colors.muted} /> : null}
-            </Pressable>
-            {showDays && s.days?.length ? <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600' }]}>{describeDays(s.days)}</Text> : null}
-            {s.why ? <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{s.why}</Text> : null}
-            {s.issues?.length ? (
-              <View style={[styles.issueBox, { borderColor: s.issues[0].level === 'avoid' ? '#E9A3A3' : '#E7C07A' }]}>
-                <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? '#E9A3A3' : '#E7C07A', fontWeight: '700' }]}>
-                  {s.issues[0].level === 'avoid' ? 'Not recommended for your skin' : 'Not 100% safe for your skin'}
-                </Text>
-                {s.issues.map((i, n) => (
-                  <Text key={n} style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>• {i.text}{i.detail ? `. ${i.detail}` : ''}</Text>
-                ))}
-              </View>
-            ) : null}
-            {(s.issues?.length || !s.product) && onAlternative ? (
-              <View style={styles.issueActions}>
-                <Pressable onPress={() => onOwn(period, idx)} style={[styles.smallBtn, { borderColor: colors.border }]}>
-                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>Use my own product</Text>
-                </Pressable>
-              </View>
-            ) : null}
-            {s.keys?.length ? (
-              <View style={styles.keys}>
-                {s.keys.map(k => (
-                  <Pressable key={k.id} onPress={() => navigation.navigate('Ingredient', { id: k.id })} style={[styles.keyChip, { backgroundColor: colors.primarySoft }]} accessibilityLabel={`${k.name}, see ingredient`}>
-                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600', fontSize: 12 }]}>{k.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
+    <View style={{ flex: 1 }} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={e => { const p = Math.round(e.nativeEvent.contentOffset.x / Math.max(width, 1)); if (p !== page) { tap(); setPage(p) } }}>
+        {SLIDES.map(s => (
+          <View key={s.title} style={[styles.slide, { width }]}>
+            <View style={styles.slideIcon}><Ionicons name={s.icon} size={44} color={C.primary} /></View>
+            <Text style={[styles.slideTitle, { color: C.text }]}>{s.title}</Text>
+            <Text style={[TYPE.body, { color: C.textSecondary, textAlign: 'center', marginTop: SPACING.md, lineHeight: 22 }]}>{s.text}</Text>
           </View>
-          {PROVEN.includes(s.action) ? (
-            <View style={[styles.badge, { backgroundColor: colors.successSoft }]}><Text style={[styles.badgeText, { color: colors.success }]}>Proven</Text></View>
-          ) : null}
-        </View>
-      ))}
+        ))}
+      </ScrollView>
+      <View style={styles.dots}>
+        {SLIDES.map((_, i) => <View key={i} style={[styles.dot, { backgroundColor: i === page ? C.primary : C.border, width: i === page ? 20 : 8 }]} />)}
+      </View>
     </View>
   )
 }
 
+function Ring({ progress, label, sub }) {
+  const size = 104, stroke = 9, r = (size - stroke) / 2, c = 2 * Math.PI * r
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.primarySoft} strokeWidth={stroke} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.primary} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - Math.max(0.03, Math.min(1, progress)))} />
+      </Svg>
+      <Text style={{ color: C.text, fontSize: 30, fontWeight: '700' }}>{label}</Text>
+      <Text style={{ color: C.muted, fontSize: 11 }}>{sub}</Text>
+    </View>
+  )
+}
+
+// Morning / Evening tabs; each step is a compact row, details open in a sheet.
+function RoutineTabs({ routine, onOpen }) {
+  const [tab, setTab] = useState(new Date().getHours() >= 16 ? 'evening' : 'morning')
+  const steps = routine?.[tab] || []
+  return (
+    <View style={{ marginTop: SPACING.xl }}>
+      <View style={[styles.segment, { backgroundColor: C.card }]}>
+        {[['morning', 'Morning', 'sunny-outline'], ['evening', 'Evening', 'moon-outline']].map(([id, label, icon]) => (
+          <Pressable key={id} onPress={() => { tap(); setTab(id) }} style={[styles.segmentItem, tab === id && { backgroundColor: C.primary }]}>
+            <Ionicons name={icon} size={15} color={tab === id ? C.onPrimary : C.muted} />
+            <Text style={[TYPE.bodyStrong, { color: tab === id ? C.onPrimary : C.muted, fontSize: 14 }]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={{ gap: SPACING.sm, marginTop: SPACING.md }}>
+        {steps.map((s, idx) => (
+          <Pressable key={`${s.key}-${idx}`} onPress={() => { tap(); onOpen(tab, idx) }} style={({ pressed }) => [styles.row, { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.8 : 1 }]}>
+            <View style={[styles.rowIcon, { backgroundColor: C.primarySoft }]}>
+              <Ionicons name={s.night === 'repair' ? 'bandage-outline' : STEP_ICONS[s.key] || 'ellipse-outline'} size={18} color={C.primary} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[TYPE.caption, { color: C.muted, fontWeight: '700', fontSize: 11, letterSpacing: 0.6 }]}>{idx + 1} · {s.action.toUpperCase()}</Text>
+              <Text style={[styles.product, { color: C.text }]} numberOfLines={1}>{s.product || 'Pick a product'}</Text>
+              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                {s.keys?.[0] ? <Text style={[styles.miniChip, { color: C.primary, backgroundColor: C.primarySoft }]}>{s.keys[0].name}</Text> : null}
+                {s.days?.length ? <Text style={[styles.miniChip, { color: C.muted, backgroundColor: C.card }]}>{describeDays(s.days)}</Text> : null}
+                {PROVEN.includes(s.action) ? <Text style={[styles.miniChip, { color: C.success, backgroundColor: C.successSoft }]}>Proven</Text> : null}
+              </View>
+            </View>
+            {s.issues?.length || !s.product ? <View style={[styles.warnDot, { backgroundColor: s.issues?.[0]?.level === 'avoid' ? '#E9A3A3' : '#E7C07A' }]} /> : null}
+            <Ionicons name="chevron-forward" size={18} color={C.muted} />
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+function BottomSheetModal({ visible, onClose, children }) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+      <View style={styles.bottomSheet}>
+        <View style={styles.handle} />
+        {children}
+      </View>
+    </Modal>
+  )
+}
+
+// A step's details: why, key ingredients, safety, the product page.
+function StepSheet({ step: s, onClose, navigation, onOwn }) {
+  return (
+    <BottomSheetModal visible={!!s} onClose={onClose}>
+      {s ? (
+        <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: SPACING.md }}>
+          <Text style={[TYPE.overline, { color: C.primary }]}>{s.action}{s.days?.length ? ` · ${describeDays(s.days)}` : ''}</Text>
+          <Text style={[styles.sheetTitle, { color: C.text }]}>{s.product || 'No product yet'}</Text>
+          {s.why ? <Text style={[TYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{s.why}</Text> : null}
+          {s.issues?.length ? (
+            <View style={[styles.issueBox, { borderColor: s.issues[0].level === 'avoid' ? '#E9A3A3' : '#E7C07A' }]}>
+              <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? '#E9A3A3' : '#E7C07A', fontWeight: '700' }]}>
+                {s.issues[0].level === 'avoid' ? 'Not recommended for your skin' : 'Not 100% safe for your skin'}
+              </Text>
+              {s.issues.map((i, n) => <Text key={n} style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>• {i.text}{i.detail ? `. ${i.detail}` : ''}</Text>)}
+            </View>
+          ) : null}
+          {s.keys?.length ? (
+            <View style={styles.keys}>
+              {s.keys.map(k => (
+                <Pressable key={k.id} onPress={() => { onClose(); navigation.navigate('Ingredient', { id: k.id }) }} style={[styles.keyChip, { backgroundColor: C.primarySoft }]}>
+                  <Text style={[TYPE.caption, { color: C.primary, fontWeight: '600' }]}>{k.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          {s.product_id ? <RButton title="See the product" onPress={() => { onClose(); navigation.navigate('Product', { id: s.product_id }) }} /> : null}
+          <RButton outline title="Use my own product" onPress={onOwn} />
+        </ScrollView>
+      ) : null}
+    </BottomSheetModal>
+  )
+}
+
 const styles = StyleSheet.create({
-  logo: { width: 56, height: 56, marginBottom: SPACING.lg, marginTop: SPACING.md },
+  dash: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md },
+  dashTitle: { fontFamily: SERIF, fontSize: 26, lineHeight: 30 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#E2C6DA', borderRadius: 18, padding: SPACING.lg, marginTop: SPACING.lg },
+  tile: { width: '48.5%', borderWidth: 1, borderRadius: 22, padding: SPACING.lg, gap: 6, minHeight: 132 },
+  tileIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.lg },
+  slideIcon: { width: 112, height: 112, borderRadius: 56, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(226,198,218,0.12)', marginBottom: SPACING.xxl },
+  slideTitle: { fontFamily: SERIF, fontSize: 32, lineHeight: 38, textAlign: 'center' },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: SPACING.md },
+  dot: { height: 8, borderRadius: 4 },
+  segment: { flexDirection: 'row', borderRadius: 999, padding: 4 },
+  segmentItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, borderRadius: 999 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 18, padding: SPACING.md },
+  rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  miniChip: { fontSize: 11, fontWeight: '700', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
+  warnDot: { width: 8, height: 8, borderRadius: 4 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  bottomSheet: { backgroundColor: '#3B2636', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SPACING.xl, paddingBottom: SPACING.xxxl },
+  handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: SPACING.lg },
+  sheetTitle: { fontFamily: SERIF, fontSize: 24, lineHeight: 30 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
   scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
   footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, paddingBottom: SPACING.md },
@@ -415,10 +544,10 @@ const styles = StyleSheet.create({
   premiumText: { color: '#33202E', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
   hero: { fontFamily: SERIF, fontSize: 44, lineHeight: 46, marginTop: SPACING.sm },
   serif: { fontFamily: SERIF, fontSize: 18 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.xl },
   goal: { width: '48.5%', borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.md, gap: 2 },
   card: { borderWidth: 1, borderRadius: 20, padding: SPACING.lg, gap: SPACING.md, marginTop: SPACING.lg },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xl },
   dayCol: { alignItems: 'center', gap: 4 },
   dayDot: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   answers: { flexDirection: 'row', gap: SPACING.sm },
