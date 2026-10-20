@@ -352,7 +352,8 @@ const styles = StyleSheet.create({
   point: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
   pointHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   level: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  ovalWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  // Centred a little below the middle, where the face sits when holding the phone at eye level.
+  ovalWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingTop: 90 },
   oval: { width: 250, height: 340, borderRadius: 170, borderWidth: 3, borderColor: 'rgba(255,255,255,0.85)' },
   ovalHint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, fontWeight: '600' },
   close: { position: 'absolute', top: 60, left: 20 },
