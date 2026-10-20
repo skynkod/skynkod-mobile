@@ -41,6 +41,10 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
       return { error: 'refusal', message: "I can't help with that one. Try asking another way?" };
     }
 
+    if (data.error === 'weekly_limit') {
+      return { error: 'weekly_limit', left: 0, resetsAt: data.resetsAt, message: "You've used your 3 free questions this week." };
+    }
+
     if (data.error === 'daily_limit') {
       return {
         error: 'daily_limit',
@@ -62,6 +66,8 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
       content: data.content || 'No response',
       // A suggested 7-day plan id, shown as a button under the reply.
       plan: data.plan || null,
+      // Free questions left this week (null when unlimited).
+      left: typeof data.left === 'number' ? data.left : null,
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
@@ -69,6 +75,19 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
       error: error.message,
       message: '⚠️ Connection error. Make sure you\'re online and try again.',
     };
+  }
+};
+
+// { unlimited } or { left, limit, resetsAt } for this week's free questions.
+export const getKodaQuota = async () => {
+  try {
+    if (!API_URL) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return null;
+    const response = await fetch(`${API_URL.replace(/\/$/, '')}/koda/quota`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
   }
 };
 

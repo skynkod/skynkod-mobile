@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { askKoda, generateKodaIntroduction } from '../utils/koda-ai';
+import { askKoda, generateKodaIntroduction, getKodaQuota } from '../utils/koda-ai';
 import { getSituation } from '../utils/emergency-plans';
 import { useLanguage } from '../utils/LanguageContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
@@ -44,6 +44,11 @@ export default function KodaScreen({ route, navigation }) {
   }, [prefill]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  // Free users: 3 questions a week, back every Monday. null = unknown/unlimited.
+  const [quota, setQuota] = useState(null);
+  useFocusEffect(useCallback(() => { getKodaQuota().then(q => q && setQuota(q)); }, [user?.id]));
+  const limited = quota && !quota.unlimited;
+  const outOfQuestions = limited && quota.left <= 0;
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -83,9 +88,16 @@ export default function KodaScreen({ route, navigation }) {
     let reply;
     try {
       const response = await askKoda(content, history, language, profile);
+      if (response.error === 'weekly_limit') {
+        // No error bubble: the gentle card below takes over.
+        setQuota(q => ({ ...(q || {}), unlimited: false, left: 0, resetsAt: response.resetsAt }));
+        setLoading(false);
+        return;
+      }
       reply = response.error
         ? { role: 'assistant', content: t(response.message) || t('Sorry, something went wrong.'), timestamp: new Date().toISOString(), error: true }
         : response;
+      if (!response.error && typeof response.left === 'number') setQuota(q => ({ ...(q || {}), unlimited: false, left: response.left }));
     } catch (error) {
       reply = { role: 'assistant', content: t('Oops! Connection issue. Please try again.'), timestamp: new Date().toISOString(), error: true };
     }
@@ -169,6 +181,30 @@ export default function KodaScreen({ route, navigation }) {
         }
       />
 
+      {outOfQuestions ? (
+        <View style={[styles.outCard, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, textAlign: 'center' }]}>{t("You've used your 3 free questions this week 🌸")}</Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>
+            {t('Koda will be back for you on Monday, with 3 new free questions.')}{'\n'}{t('Want to keep chatting now? Premium gives you Koda every day.')}
+          </Text>
+          <Pressable onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Koda every day very soon.'))}
+            style={({ pressed }) => [styles.unlock, { opacity: pressed ? 0.85 : 1 }]}>
+            <Ionicons name="diamond" size={15} color="#E2C6DA" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t('Unlock Koda with Premium')}</Text>
+          </Pressable>
+          <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('See you Monday 👋')}</Text>
+        </View>
+      ) : (
+      <>
+      {limited ? (
+        <Text style={[styles.quotaLine, { color: quota.left === 1 ? colors.primary : colors.muted }]}>
+          {quota.left === 1
+            ? t('This is your last free question this week. Make it count! 💬')
+            : quota.left >= (quota.limit || 3)
+              ? t('Every Monday, you get {n} free questions with Koda 🌸', { n: quota.limit || 3 })
+              : t('{n} free questions left this week · back to {limit} on Monday', { n: quota.left, limit: quota.limit || 3 })}
+        </Text>
+      ) : null}
       <View style={[styles.composer, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
         <TextInput
           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
@@ -189,6 +225,8 @@ export default function KodaScreen({ route, navigation }) {
           <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
         </Pressable>
       </View>
+      </>
+      )}
     </Screen>
   );
 }
@@ -196,6 +234,9 @@ export default function KodaScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   list: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.lg, gap: SPACING.md },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm },
+  quotaLine: { fontSize: 12, textAlign: 'center', paddingHorizontal: SPACING.xl, paddingTop: SPACING.sm },
+  outCard: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.lg },
+  unlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 999, backgroundColor: '#33202E', marginTop: SPACING.lg },
   rowUser: { justifyContent: 'flex-end' },
   rowKoda: { justifyContent: 'flex-start' },
   bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.lg },
