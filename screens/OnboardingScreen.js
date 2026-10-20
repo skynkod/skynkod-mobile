@@ -23,7 +23,7 @@ const BRAND_MAUVE = '#C5A8BB'
 
 // Same six features, wording and order as the left column of the mockup.
 const FEATURES = [
-  { icon: 'sparkles-outline', title: 'Your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
+  { icon: 'sparkles-outline', title: 'Rekod, your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
   { icon: 'koda', title: 'AI Skin Coach', text: 'Koda knows your skin and your routine, and answers like an expert.' },
   { icon: 'scan-outline', title: 'Product Scan', text: 'Scan any product to see if it suits your skin.' },
   { icon: 'book-outline', title: 'What your skin tells you', text: 'Your daily check-in learns what makes your skin react.' },

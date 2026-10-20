@@ -42,7 +42,7 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
         </Pressable>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <Ionicons name="diamond-outline" size={14} color={C.primary} />
-          <Text style={[TYPE.overline, { color: C.primary }]}>Skin programme</Text>
+          <Text style={[TYPE.overline, { color: C.primary }]}>Rekod · Skin programme</Text>
         </View>
         <View style={{ width: 26 }} />
       </View>
@@ -271,7 +271,7 @@ export default function RekodScreen({ navigation }) {
     }
   }
 
-  const leave = () => Alert.alert('Leave your programme?', 'Your current routine stays as it is. You can start a new programme anytime.', [
+  const leave = () => Alert.alert('Leave your Rekod?', 'Your current routine stays as it is. You can start a new Rekod anytime.', [
     { text: 'Cancel', style: 'cancel' },
     { text: 'Leave', style: 'destructive', onPress: async () => { await leaveRekod(user.id).catch(() => {}); setPlan(null); setStep('intro') } },
   ])
@@ -287,7 +287,7 @@ export default function RekodScreen({ navigation }) {
     const todayIdx = [1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())
     const due = checkInDue(plan)
     return (
-      <Shell navigation={navigation} footer={<RButton title="Ask Koda about my programme" onPress={() => navigation.navigate('Koda')} />}>
+      <Shell navigation={navigation} footer={<RButton title="Ask Koda about my Rekod" onPress={() => navigation.navigate('Koda')} />}>
         <View style={styles.dash}>
           <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />
           <View style={{ flex: 1, gap: 6 }}>
@@ -325,7 +325,7 @@ export default function RekodScreen({ navigation }) {
         <RoutineTabs routine={routine} onOpen={(period, idx) => setSheet({ period, idx })} />
 
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.xl }}>
-          <Text style={[TYPE.caption, { color: C.muted, fontWeight: '600' }]}>Leave my programme</Text>
+          <Text style={[TYPE.caption, { color: C.muted, fontWeight: '600' }]}>Leave my Rekod</Text>
         </Pressable>
 
         <StepSheet step={sheet && routine?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
@@ -351,7 +351,7 @@ export default function RekodScreen({ navigation }) {
   // ---------- Joining: a swipeable intro ----------
   if (step === 'intro') {
     return (
-      <Shell navigation={navigation} scroll={false} footer={<RButton title="Find my programme" onPress={() => { tap(); setStep('goals') }} />}>
+      <Shell navigation={navigation} scroll={false} footer={<RButton title="Build my Rekod" onPress={() => { tap(); setStep('goals') }} />}>
         <Carousel />
       </Shell>
     )
@@ -395,9 +395,9 @@ export default function RekodScreen({ navigation }) {
       <Shell
         navigation={navigation}
         onBack={() => setStep('goals')}
-        footer={<RButton title="Start my programme" onPress={() => { tap(); adopt() }} loading={busy} />}
+        footer={<RButton title="Start my Rekod" onPress={() => { tap(); adopt() }} loading={busy} />}
       >
-        <Text style={[TYPE.overline, { color: C.primary }]}>Your programme · {goalsTitle(answers)}</Text>
+        <Text style={[TYPE.overline, { color: C.primary }]}>Your Rekod · {goalsTitle(answers)}</Text>
         <Text style={[styles.title, { color: C.text }]}>Your skin, decoded.</Text>
         <View style={[styles.pill, { backgroundColor: C.primarySoft, marginTop: SPACING.sm }]}>
           <Ionicons name="calendar-outline" size={14} color={C.primary} />
@@ -419,7 +419,7 @@ export default function RekodScreen({ navigation }) {
     priority: { n: 3, title: 'What do you want more of?', options: [{ v: 'retinoid', t: 'More retinol' }, { v: 'exfoliation', t: 'More exfoliation' }, { v: null, t: 'A bit of both' }] },
   }
   const q = QUESTIONS[step]
-  if (!q || busy) return <Loading label={busy ? 'Building your programme…' : undefined} />
+  if (!q || busy) return <Loading label={busy ? 'Building your Rekod…' : undefined} />
   const total = answers.experience === 'used' || step === 'priority' ? 3 : 2
   return (
     <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'priority' ? (known.actives ? 'goals' : 'experience') : step === 'experience' ? (known.reactivity ? 'goals' : 'sensitive') : 'goals')}>
@@ -458,7 +458,7 @@ const GOAL_ICONS = { clear: 'water-outline', antiaging: 'hourglass-outline', spo
 const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'sparkles-outline', treatment: 'moon-outline' }
 
 const SLIDES = [
-  { icon: 'diamond-outline', title: 'The skin you always wanted', text: 'A premium programme of 6 to 12 weeks, built entirely around your skin.' },
+  { icon: 'diamond-outline', title: 'Rekod: the skin you always wanted', text: 'Rekod is a premium skin programme of 6 to 12 weeks, built entirely around your skin.' },
   { icon: 'flask-outline', title: 'Only actives that work', text: 'Every product is chosen for your skin, with actives backed by science, not trends.' },
   { icon: 'trending-up-outline', title: 'A plan that adapts', text: 'Actives come in gently, week by week, and your plan adjusts to how your skin reacts.' },
 ]

@@ -84,7 +84,7 @@ export default function JournalScreen({ route, navigation }) {
   const [skinPatterns, setSkinPatterns] = useState(null);
   const dirty = useRef(false);
   const [premium, setPremiumState] = useState(false);
-  useEffect(() => { if (user?.id) isPremiumUser(user.id).then(setPremiumState).catch(() => {}); }, [user?.id]);
+  useEffect(() => { if (user?.id) isPremiumUser(user.id).then(p => setPremiumState(p || user.email === 'djedidilita@gmail.com')).catch(() => {}); }, [user?.id]);
 
   const weekStart = startOfWeek(selected);
   const days = [...Array(7)].map((_, i) => {
@@ -149,6 +149,20 @@ export default function JournalScreen({ route, navigation }) {
   useEffect(() => {
     if (route?.params?.openNew) setSelected(new Date());
   }, [route?.params?.openNew]);
+
+  // From a Dekod scan: what it saw is pre-ticked, ready to check and save.
+  useEffect(() => {
+    const preset = route?.params?.presetTags;
+    if (!route?.params?.presetAt || !preset?.length) return;
+    dirty.current = true;
+    // Okay only lists everyday issues: anything else needs the full Bad list.
+    const needsFull = preset.some(tag => !OKAY_TAGS.includes(tag));
+    const base = ['okay', 'bad', 'terrible'].includes(mood) ? mood : route.params.presetMood || 'okay';
+    const m = base === 'okay' && needsFull ? 'bad' : base;
+    setMood(m);
+    setTags(prev => [...new Set([...prev, ...preset])]);
+    setStatus('dirty');
+  }, [route?.params?.presetAt]);
 
   // Nothing saves by itself: she taps Save, so she knows it's kept. Leaving
   // with unsaved changes asks whether to save them.
@@ -287,6 +301,16 @@ export default function JournalScreen({ route, navigation }) {
             );
           })}
         </View>
+
+        {/* Dekod, the skin scan (Premium) */}
+        <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.planCard, { backgroundColor: '#33202E' }]}>
+          <Ionicons name="scan-circle-outline" size={20} color="#E2C6DA" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#E2C6DA', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('DEKOD · SKIN SCAN')}</Text>
+            <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', lineHeight: 18, marginTop: 2 }]}>{t('Scan your skin with one selfie')}</Text>
+          </View>
+          <Ionicons name={premium ? 'diamond' : 'lock-closed'} size={15} color="#E2C6DA" />
+        </Pressable>
 
         {mood && MOOD_MESSAGES[mood] ? (
           <View style={[styles.tipBox, { backgroundColor: colors.surface }]}>

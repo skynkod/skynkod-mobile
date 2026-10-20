@@ -380,12 +380,12 @@ export default function TodayScreen({ navigation }) {
       </Pressable>
 
       {/* 5 · The programme */}
-      <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My programme') : t('Go further')}</Text>
+      <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My Rekod') : t('Go further')}</Text>
       <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.programme, { opacity: pressed ? 0.9 : 1 }]}>
         <View style={styles.programmeIcon}><Ionicons name="diamond-outline" size={20} color="#FFFFFF" /></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), goalOf(plan.goal).weeks), total: goalOf(plan.goal).weeks }) : t('PREMIUM · SKIN PROGRAMME')}</Text>
-          <Text style={styles.programmeTitle} numberOfLines={1}>{plan ? goalsTitle(plan) : t('Your skin programme, made for you')}</Text>
+          <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), goalOf(plan.goal).weeks), total: goalOf(plan.goal).weeks }) : t('PREMIUM · REKOD')}</Text>
+          <Text style={styles.programmeTitle} numberOfLines={1}>{plan ? goalsTitle(plan) : t('Rekod: your skin programme, made for you')}</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
       </Pressable>

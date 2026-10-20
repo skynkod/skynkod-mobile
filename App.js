@@ -151,7 +151,7 @@ function AppTabs({ userId }) {
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
-            ...(['Scanner', 'RoutineBuilder', 'Rekod'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
+            ...(['Scanner', 'RoutineBuilder', 'Rekod', 'Dekod'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
           }}
         />
       ))}
