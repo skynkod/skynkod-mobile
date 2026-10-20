@@ -63,6 +63,8 @@ export const QUESTIONS = [
 
   { id: 'routineLevel', chapter: 'habits', type: 'single', title: 'Your routine today…', subtitle: 'You can add the products you use anytime in My products.',
     options: [o('none', 'Nothing, just water'), o('basic', 'Cleanser and cream'), o('full', 'A full routine'), o('lover', 'Lots of products, I love it')] },
+  { id: 'actives', chapter: 'habits', type: 'single', title: 'Is your skin used to actives?', subtitle: 'Acids, retinol, vitamin C.',
+    options: [o('none', 'Never tried them'), o('some', 'A little'), o('used', 'Yes, regularly')] },
   { id: 'shaving', chapter: 'habits', type: 'single', title: 'You shave…', showIf: a => a.sex === 'man',
     options: [o('daily', 'Every day'), o('often', 'A few times a week'), o('rarely', 'Rarely, or I keep a beard')] },
   { id: 'sunTime', chapter: 'habits', type: 'single', title: 'Time outside on a normal day',

@@ -12,6 +12,7 @@ import { describeDays } from '../utils/routine-checks'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { searchProducts, getMyProducts } from '../utils/catalog'
+import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
@@ -40,7 +41,7 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
         </Pressable>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <Ionicons name="diamond-outline" size={14} color={C.primary} />
-          <Text style={[TYPE.overline, { color: C.primary }]}>Premium</Text>
+          <Text style={[TYPE.overline, { color: C.primary }]}>Skin programme</Text>
         </View>
         <View style={{ width: 26 }} />
       </View>
@@ -156,13 +157,29 @@ export default function RekodScreen({ navigation }) {
   }, [user?.id])
   useFocusEffect(useCallback(() => { load() }, [load]))
 
-  // Up to 3 goals; the first one picked sets the programme's pace.
+  // Up to 3 goals; the first one picked sets the programme's pace. Goals chosen
+  // at sign-up are already ticked, and questions already answered aren't asked again.
   const [picked, setPicked] = useState([])
+  const [known, setKnown] = useState({})
+  React.useEffect(() => {
+    if (!user?.id) return
+    getUserProfile(user.id).then(row => {
+      const sp = row?.skin_profile || {}
+      setKnown({ reactivity: sp.reactivity, actives: sp.actives })
+      const fromSignup = { clear: 'clear', hydration: 'hydration', even_tone: 'spots', anti_aging: 'antiaging' }
+      setPicked(prev => (prev.length ? prev : (row?.skin_goals || []).map(g => fromSignup[g]).filter(Boolean).slice(0, 3)))
+    }).catch(() => {})
+  }, [user?.id])
   const toggleGoal = (id) => setPicked(prev => (prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev))
   const confirmGoals = () => {
     const reactive = profile?.skin_type === 'Sensitive' || [...(profile?.skin_conditions || []), ...(profile?.skin_concerns || [])].some(c => REACTIVE.includes(c))
-    setAnswers({ goal: picked[0], goals: picked, sensitive: reactive })
-    setStep('sensitive')
+    const base = { goal: picked[0], goals: picked, sensitive: reactive || known.reactivity === 'often' }
+    if (!known.reactivity) { setAnswers(base); return setStep('sensitive') }
+    if (!known.actives) { setAnswers(base); return setStep('experience') }
+    const withExp = { ...base, experience: known.actives }
+    setAnswers(withExp)
+    if (known.actives === 'used') return setStep('priority')
+    buildPreview(withExp)
   }
 
   const buildPreview = async (final) => {
@@ -179,7 +196,18 @@ export default function RekodScreen({ navigation }) {
     }
   }
 
+  // Answers given here also go into the skin profile, so they're never asked twice.
+  const remember = async (patch) => {
+    try {
+      const row = await getUserProfile(user.id)
+      await updateUserProfile(user.id, { skin_profile: { ...(row?.skin_profile || {}), ...patch } })
+      setKnown(k => ({ ...k, ...patch }))
+    } catch (error) { logError('Rekod_remember', error, {}, 'warn') }
+  }
+
   const answer = (key, value) => {
+    if (key === 'sensitive') remember({ reactivity: value ? 'often' : 'rarely' })
+    if (key === 'experience') remember({ actives: value })
     const next = { ...answers, [key]: value }
     setAnswers(next)
     if (key === 'sensitive') setStep('experience')
@@ -367,7 +395,7 @@ export default function RekodScreen({ navigation }) {
   if (!q || busy) return <Loading label={busy ? 'Building your programme…' : undefined} />
   const total = answers.experience === 'used' || step === 'priority' ? 3 : 2
   return (
-    <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'priority' ? 'experience' : step === 'experience' ? 'sensitive' : 'goals')}>
+    <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'priority' ? (known.actives ? 'goals' : 'experience') : step === 'experience' ? (known.reactivity ? 'goals' : 'sensitive') : 'goals')}>
       <View style={styles.progress}>
         {Array.from({ length: total }).map((_, i) => (
           <View key={i} style={[styles.progressBit, { backgroundColor: i < q.n ? C.primary : C.border }]} />
