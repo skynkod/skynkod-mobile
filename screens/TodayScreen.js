@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated, Dimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -144,12 +144,14 @@ export default function TodayScreen({ navigation }) {
   // The routine due now: morning from 5 am to 3 pm, then the evening one.
   const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
   const [compact, setCompact] = useState(false)
-  // As soon as she scrolls, the whole top (date, greeting, tip) fades away
-  // and the small bar takes its place: nothing ever slides over the date.
+  // The top (date, greeting, tip) is either fully shown or fully gone: a small
+  // scroll snaps it away and the small bar takes its place, with no empty gap.
   const scrollY = useRef(new Animated.Value(0)).current
-  const swapAt = 24
-  const bigFade = scrollY.interpolate({ inputRange: [0, swapAt], outputRange: [1, 0], extrapolate: 'clamp' })
-  const smallFade = scrollY.interpolate({ inputRange: [0, swapAt], outputRange: [0, 1], extrapolate: 'clamp' })
+  const [topBottom, setTopBottom] = useState(220)
+  const [barHeight, setBarHeight] = useState(insets.top + 56)
+  const swapAt = Math.max(40, topBottom - barHeight)
+  const bigFade = scrollY.interpolate({ inputRange: [0, swapAt * 0.6], outputRange: [1, 0], extrapolate: 'clamp' })
+  const smallFade = scrollY.interpolate({ inputRange: [swapAt * 0.5, swapAt], outputRange: [0, 1], extrapolate: 'clamp' })
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
   const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
   // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
@@ -221,12 +223,12 @@ export default function TodayScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-    <Animated.ScrollView style={{ flex: 1 }} alwaysBounceVertical={false} contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
+    <Animated.ScrollView style={{ flex: 1 }} snapToOffsets={[0, swapAt]} snapToEnd={false} decelerationRate="fast" contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2, minHeight: Dimensions.get('window').height + swapAt }}
       scrollEventThrottle={32}
-      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: e => { const down = e.nativeEvent.contentOffset.y > swapAt / 2; if (down !== compact) setCompact(down) } })}
+      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: e => { const down = e.nativeEvent.contentOffset.y > swapAt * 0.75; if (down !== compact) setCompact(down) } })}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
       {/* 1 · Header: date and weather, greeting, today's skin tip */}
-      <Animated.View style={{ opacity: bigFade }}>
+      <Animated.View style={{ opacity: bigFade }} onLayout={e => setTopBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
       <View style={styles.top}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
           <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>
@@ -318,7 +320,7 @@ export default function TodayScreen({ navigation }) {
 
     {/* Fades in as the big greeting fades out: date, weather and greeting */}
     {(
-      <Animated.View pointerEvents={compact ? 'auto' : 'none'} style={[styles.sticky, { opacity: smallFade }, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+      <Animated.View onLayout={e => setBarHeight(e.nativeEvent.layout.height)} pointerEvents={compact ? 'auto' : 'none'} style={[styles.sticky, { opacity: smallFade }, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
