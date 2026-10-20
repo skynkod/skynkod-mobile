@@ -10,6 +10,7 @@ import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
 import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults, deleteDekodResult } from '../utils/dekod'
 import { logError } from '../utils/errorLogger'
+import { syncSmartReminders } from '../utils/notifications'
 import { track } from '../utils/analytics'
 import { SPACING, TYPE } from '../utils/theme'
 
@@ -124,7 +125,7 @@ export default function DekodScreen({ navigation }) {
       setResult(res)
       setTimeout(() => setStage('result'), 1400)
       track('dekod_done')
-      saveDekodResult(user.id, res).then(loadHistory).catch(error => logError('Dekod_save', error, {}, 'warn'))
+      saveDekodResult(user.id, res).then(() => { loadHistory(); syncSmartReminders(user.id) }).catch(error => logError('Dekod_save', error, {}, 'warn'))
     } catch (error) {
       setStage('tips')
       await logError('Dekod_shoot', error, {}, 'warn')

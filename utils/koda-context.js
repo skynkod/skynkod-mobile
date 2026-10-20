@@ -3,6 +3,8 @@ import { getUserRoutines } from './routines-service'
 import { getMyProducts } from './catalog'
 import { getEntriesBetween, getSkinPatterns } from './journal-day'
 import { getActivePlan } from './emergency-state'
+import { getRekodPlan, goalsTitle, weekOf, goalOf, tonightNight, NIGHTS } from './rekod'
+import { getDekodResults } from './dekod'
 
 // What Koda should know about the user's week, sent with each question.
 // Journal days and skin patterns are health data: only shared when the user
@@ -14,12 +16,15 @@ export const buildKodaContext = async (userId) => {
   const healthOk = !!profile?.consent_health_at
 
   const since = new Date(Date.now() - 7 * 86400000)
-  const [routines, products, plan, entries, patterns] = await Promise.all([
+  const [routines, products, plan, entries, patterns, rekod, dekod] = await Promise.all([
     safe(getUserRoutines(userId)),
     safe(getMyProducts(userId)),
     safe(getActivePlan(userId)),
     healthOk ? safe(getEntriesBetween(userId, since, new Date(Date.now() + 86400000))) : null,
     healthOk ? safe(getSkinPatterns(userId)) : null,
+    safe(getRekodPlan(userId)),
+    // Like the journal, the latest skin scan is only shared with the health consent.
+    healthOk ? safe(getDekodResults(userId, 1)) : null,
   ])
 
   const routine = {}
@@ -48,5 +53,15 @@ export const buildKodaContext = async (userId) => {
     routine,
     recentProducts,
     plan: plan ? { id: plan.situation.id, title: plan.situation.title, day: plan.dayIndex + 1 } : null,
+    rekod: rekod ? {
+      goals: goalsTitle(rekod),
+      week: weekOf(rekod),
+      weeks: goalOf(rekod.goal).weeks,
+      tonight: NIGHTS[tonightNight(rekod)]?.label || null,
+    } : null,
+    dekod: dekod?.[0] ? {
+      date: String(dekod[0].created_at).slice(0, 10),
+      points: Object.fromEntries(Object.entries(dekod[0].result?.points || {}).map(([k, v]) => [k, v?.level || 'none'])),
+    } : null,
   }
 }

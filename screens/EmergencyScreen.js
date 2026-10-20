@@ -10,6 +10,7 @@ import { getMyProducts } from '../utils/catalog'
 import { ISSUES, questionsFor, buildSosPlan, issuesFromSituation } from '../utils/sos-plan'
 import { getActivePlan, startPlan, endPlan } from '../utils/emergency-state'
 import { isPremiumUser } from '../utils/premium'
+import { syncSmartReminders } from '../utils/notifications'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const PLUM = '#33202E'
@@ -125,6 +126,7 @@ export default function EmergencyScreen({ navigation, route }) {
   const start = async () => {
     const begin = async () => {
       await startPlan(user.id, plan)
+      syncSmartReminders(user.id)
       reset()
       load()
     }
@@ -137,7 +139,7 @@ export default function EmergencyScreen({ navigation, route }) {
   const stop = () =>
     Alert.alert(t('End this plan?'), t('Your usual routine comes back straight away.'), [
       { text: t('Cancel'), style: 'cancel' },
-      { text: t('End plan'), style: 'destructive', onPress: async () => { await endPlan(user.id); load() } },
+      { text: t('End plan'), style: 'destructive', onPress: async () => { await endPlan(user.id); syncSmartReminders(user.id); load() } },
     ])
 
   const Lines = ({ label, icon, items }) => (

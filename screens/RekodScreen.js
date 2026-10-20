@@ -16,6 +16,8 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
 import { isIntroHidden, hideIntro } from '../components/PremiumSpace'
+import { getActivePlan } from '../utils/emergency-state'
+import { syncSmartReminders } from '../utils/notifications'
 import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
@@ -102,6 +104,8 @@ export default function RekodScreen({ navigation }) {
   const [checkOpen, setCheckOpen] = useState(false)
   const [scans, setScans] = useState([]) // Dekod scans, newest first
   const [fullOpen, setFullOpen] = useState(false) // the whole programme, week by week
+  const [sos, setSos] = useState(null) // a 7-day plan (Emergency mode) running alongside
+  const [olderDay0, setOlderDay0] = useState(null) // an older Dekod scan she chose as Day 0
   const [draft, setDraft] = useState(null) // the plan being previewed, before joining
   // The explanation shows until she hides it; then Rekod opens on the goals.
   const [introHidden, setIntroHidden] = useState(false)
@@ -179,6 +183,7 @@ export default function RekodScreen({ navigation }) {
     if (!user?.id) return
     try {
       let p = await getRekodPlan(user.id)
+      getActivePlan(user.id).then(setSos).catch(() => setSos(null))
       const dekod = await getDekodResults(user.id).catch(() => [])
       setScans(dekod)
       // No Day 0 yet: the first Dekod scan since the start becomes it.
@@ -266,8 +271,9 @@ export default function RekodScreen({ navigation }) {
   const adopt = async () => {
     setBusy(true)
     try {
-      const day0 = recentScan(scans)
+      const day0 = recentScan(scans) || olderDay0
       const res = await startRekod(user.id, { ...answers, baseline: day0 ? { id: day0.id, at: day0.created_at, points: day0.result?.points } : null }, profile)
+      syncSmartReminders(user.id)
       track('rekod_start', { goal: answers.goal, experience: answers.experience })
       setPlan(res.plan)
       setRoutine(res.routine)
@@ -284,6 +290,7 @@ export default function RekodScreen({ navigation }) {
     setBusy(true)
     try {
       const res = await recordCheckIn(user.id, plan, value, profile)
+      syncSmartReminders(user.id)
       track('rekod_checkin', { answer: value })
       setPlan(res.plan)
       setRoutine(r => ({ ...r, evening: res.routine.evening }))
@@ -297,7 +304,7 @@ export default function RekodScreen({ navigation }) {
 
   const leave = () => Alert.alert('Leave your Rekod?', 'Your current routine stays as it is. You can start a new Rekod anytime.', [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Leave', style: 'destructive', onPress: async () => { await leaveRekod(user.id).catch(() => {}); setPlan(null); setStep('intro') } },
+    { text: 'Leave', style: 'destructive', onPress: async () => { await leaveRekod(user.id).catch(() => {}); syncSmartReminders(user.id); setPlan(null); setStep('intro') } },
   ])
 
   if (plan === undefined) return <Loading />
@@ -310,6 +317,12 @@ export default function RekodScreen({ navigation }) {
     const tonight = tonightNight(plan)
     const todayIdx = [1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())
     const due = checkInDue(plan)
+    // A 7-day plan may pause the strong nights: say so instead of promising them.
+    const pausedNights = new Set([
+      ...((sos?.situation?.pause || []).includes('retinoid') ? ['retinoid'] : []),
+      ...((sos?.situation?.pause || []).some(p => p === 'acid' || p === 'exfoliant') ? ['exfoliation'] : []),
+    ])
+    const tonightPaused = pausedNights.has(tonight)
     return (
       <Shell navigation={navigation} footer={<RButton title="Ask Koda about my Rekod" onPress={() => navigation.navigate('Koda')} />}>
         <View style={styles.dash}>
@@ -319,7 +332,7 @@ export default function RekodScreen({ navigation }) {
             <Text style={[styles.dashTitle, { color: C.text }]} numberOfLines={2}>{goalsTitle(plan)}</Text>
             <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
               <Ionicons name={NIGHTS[tonight].icon} size={14} color={C.primary} />
-              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {NIGHTS[tonight].short}</Text>
+              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {NIGHTS[tonight].short}{tonightPaused ? ' · paused' : ''}</Text>
             </View>
           </View>
         </View>
@@ -337,6 +350,19 @@ export default function RekodScreen({ navigation }) {
             )
           })}
         </View>
+
+        {pausedNights.size ? (
+          <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center' }]}>
+            <Ionicons name="medkit-outline" size={22} color={C.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.bodyStrong, { color: C.text }]}>Your 7-day plan comes first</Text>
+              <Text style={[TYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>
+                {[...pausedNights].map(n => (n === 'retinoid' ? 'Retinol' : 'Exfoliation')).join(' and ')} nights are paused until day 7, then Rekod picks up where it stopped.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={C.muted} />
+          </Pressable>
+        ) : null}
 
         <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ alignSelf: 'center', marginTop: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="calendar-outline" size={15} color={C.primary} />
@@ -391,7 +417,7 @@ export default function RekodScreen({ navigation }) {
           )
         })()}
 
-        <RoutineTabs routine={routine} onOpen={(period, idx) => setSheet({ period, idx })} />
+        <RoutineTabs routine={routine} paused={pausedNights} onOpen={(period, idx) => setSheet({ period, idx })} />
 
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.xl }}>
           <Text style={[TYPE.caption, { color: C.muted, fontWeight: '600' }]}>Leave my Rekod</Text>
@@ -464,8 +490,27 @@ export default function RekodScreen({ navigation }) {
         ) : null}
         {/* Day 0: Dekod reads the skin, and suggests the goals */}
         {(() => {
-          const day0 = recentScan(scans)
+          const day0 = recentScan(scans) || olderDay0
           const ideas = day0 ? goalsFromDekod(day0.result?.points) : []
+          // Only older scans: offer the latest one as Day 0, or a new scan.
+          if (!day0 && scans.length) {
+            const last = scans[0]
+            return (
+              <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="scan-circle-outline" size={20} color={C.primary} />
+                  <Text style={[TYPE.overline, { color: C.primary }]}>Your Day 0</Text>
+                </View>
+                <Text style={[TYPE.body, { color: C.text, lineHeight: 22 }]}>
+                  Your last Dekod is from {new Date(last.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}. Use it as your starting point, or take a new scan for a fresher one.
+                </Text>
+                <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+                  <RButton small title="Use this scan" onPress={() => { tap(); setOlderDay0(last) }} style={{ flex: 1 }} />
+                  <RButton small outline title="New scan" onPress={() => { tap(); navigation.navigate('Dekod') }} style={{ flex: 1 }} />
+                </View>
+              </View>
+            )
+          }
           if (day0 && ideas.length) {
             return (
               <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
@@ -634,7 +679,7 @@ function Ring({ progress, label, sub }) {
 }
 
 // Morning / Evening tabs; each step is a compact row, details open in a sheet.
-function RoutineTabs({ routine, onOpen }) {
+function RoutineTabs({ routine, onOpen, paused }) {
   const [tab, setTab] = useState(new Date().getHours() >= 16 ? 'evening' : 'morning')
   const steps = routine?.[tab] || []
   return (
@@ -649,7 +694,7 @@ function RoutineTabs({ routine, onOpen }) {
       </View>
       <View style={{ gap: SPACING.sm, marginTop: SPACING.md }}>
         {steps.map((s, idx) => (
-          <Pressable key={`${s.key}-${idx}`} onPress={() => { tap(); onOpen(tab, idx) }} style={({ pressed }) => [styles.row, { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.8 : 1 }]}>
+          <Pressable key={`${s.key}-${idx}`} onPress={() => { tap(); onOpen(tab, idx) }} style={({ pressed }) => [styles.row, { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.8 : paused?.has(s.night) ? 0.5 : 1 }]}>
             <View style={[styles.rowIcon, { backgroundColor: C.primarySoft }]}>
               <Ionicons name={s.night === 'repair' ? 'bandage-outline' : STEP_ICONS[s.key] || 'ellipse-outline'} size={18} color={C.primary} />
             </View>
@@ -660,6 +705,7 @@ function RoutineTabs({ routine, onOpen }) {
                 {s.keys?.[0] ? <Text style={[styles.miniChip, { color: C.primary, backgroundColor: C.primarySoft }]}>{s.keys[0].name}</Text> : null}
                 {s.days?.length ? <Text style={[styles.miniChip, { color: C.muted, backgroundColor: C.card }]}>{describeDays(s.days)}</Text> : null}
                 {PROVEN.includes(s.action) ? <Text style={[styles.miniChip, { color: C.success, backgroundColor: C.successSoft }]}>Proven</Text> : null}
+                {paused?.has(s.night) ? <Text style={[styles.miniChip, { color: '#F2B37A', backgroundColor: 'rgba(242,179,122,0.14)' }]}>Paused · 7-day plan</Text> : null}
               </View>
             </View>
             {s.issues?.length || !s.product ? <View style={[styles.warnDot, { backgroundColor: s.issues?.[0]?.level === 'avoid' ? '#E9A3A3' : '#E7C07A' }]} /> : null}

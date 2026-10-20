@@ -78,7 +78,8 @@ We don't receive this data:
 When you write to Koda, your message is sent to our AI provider, **Anthropic PBC (United States)**, together with:
 - your skin profile;
 - a summary of your situation: your routine, products opened or added recently, and any 7-day plan in progress;
-- **if you consented to health data**: your journal for the last 7 days and the trends spotted in it.
+- your Rekod programme, if you follow one (goals, week, tonight's step);
+- **if you consented to health data**: your journal for the last 7 days, the trends spotted in it, and your latest Dekod result.
 
 **Dekod** works the same way: your photo is sent to Anthropic only to read what is visible on your skin, then deleted.
 

@@ -11,7 +11,7 @@ import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
 import { signOut, updateUserProfile } from './utils/supabase'
-import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from './utils/notifications'
+import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder, syncSmartReminders } from './utils/notifications'
 import { logError } from './utils/errorLogger'
 import { setAnalyticsUser, track } from './utils/analytics'
 import * as SplashScreen from 'expo-splash-screen'
@@ -251,6 +251,7 @@ function AppContent() {
           scheduleEveningReminder(userId),
           scheduleJournalReminder(userId),
         ])
+        await syncSmartReminders(userId)
       }
     } catch (error) {
       await logError('AppContent_initializeNotifications', error, { userId }, 'warn')
