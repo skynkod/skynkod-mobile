@@ -352,7 +352,8 @@ export default function JournalScreen({ route, navigation }) {
           ) : null}
         </View>
 
-        <Pressable onPress={saveNow} disabled={status !== 'dirty'}
+        {/* Saved: a short "✓ Saved", then back to Home */}
+        <Pressable onPress={async () => { await saveNow(); if (!dirty.current) setTimeout(() => navigation.navigate('Home'), 500); }} disabled={status !== 'dirty'}
           style={({ pressed }) => [styles.saveBtn, { backgroundColor: status === 'saved' ? colors.successSoft || colors.primarySoft : colors.primary, opacity: status === 'idle' ? 0.45 : pressed ? 0.85 : 1 }]}>
           {status === 'saving' ? <ActivityIndicator size="small" color={colors.onPrimary} /> : (
             <Text style={{ color: status === 'saved' ? colors.success : colors.onPrimary, fontWeight: '700', fontSize: 15 }}>
