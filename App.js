@@ -16,6 +16,7 @@ import { logError } from './utils/errorLogger'
 import { setAnalyticsUser, track } from './utils/analytics'
 import * as SplashScreen from 'expo-splash-screen'
 import AnimatedSplash from './components/AnimatedSplash'
+import RekodIcon from './components/RekodIcon'
 import { BottomSheet, ListRow, Card } from './components/ui'
 import { SPACING } from './utils/theme'
 import LoginScreen from './screens/LoginScreen'
@@ -47,18 +48,20 @@ const navigationRef = createNavigationContainerRef()
 // The journal opens from Home's "Your skin today"; Profile from Home's avatar.
 const TABS = [
   { name: 'Home', component: HomeScreen, label: 'Home', icon: 'home' },
-  { name: 'Rekod', component: RekodScreen, label: 'Rekod', icon: 'sparkles' },
+  { name: 'Rekod', component: RekodScreen, label: 'Rekod', icon: 'rekod' },
   { name: 'Add', label: '', icon: 'add' },
   { name: 'Dekod', component: DekodScreen, label: 'Dekod', icon: 'scan-circle' },
   { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'koda' },
 ]
 
-// What the big (+) button offers.
+// What the big (+) button offers: the scan first, then the pages that left
+// the bottom bar.
 const QUICK_ACTIONS = [
-  { icon: 'create-outline', title: 'Skin check-in', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
   { icon: 'scan-outline', title: 'Scan a product', subtitle: 'Check ingredients and compatibility', to: 'Scanner' },
-  { icon: 'flask-outline', title: 'Add a product', subtitle: 'Add it to your collection', to: 'Products' },
-  // V1: Emergency mode comes back later.
+  { icon: 'create-outline', title: 'Journal', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
+  { icon: 'water-outline', title: 'My routines', subtitle: 'Morning and evening', to: 'Routines' },
+  { icon: 'flask-outline', title: 'My products', subtitle: 'Your shelf and wishlist', to: 'Products' },
+  { icon: 'person-outline', title: 'Profile', subtitle: 'Your account and skin profile', to: 'More' },
 ]
 
 const Empty = () => null
@@ -95,18 +98,18 @@ function AppTabs({ userId }) {
             component={Empty}
             options={{
               tabBarLabel: () => null,
-              tabBarAccessibilityLabel: t('Scan a product'),
+              tabBarAccessibilityLabel: t('Menu'),
               tabBarButton: () => (
                 <View style={styles.addSlot}>
                   <Pressable
-                    // The scanner is the heart of the app: one tap opens it; a long press shows the other quick actions.
-                    onPress={() => { if (navigationRef.isReady()) navigationRef.navigate('Scanner') }}
-                    onLongPress={() => setQuickOpen(true)}
+                    // (+) opens the menu, with the scan first; a long press goes straight to the scanner.
+                    onPress={() => setQuickOpen(true)}
+                    onLongPress={() => { if (navigationRef.isReady()) navigationRef.navigate('Scanner') }}
                     accessibilityRole="button"
-                    accessibilityLabel={t('Scan a product')}
+                    accessibilityLabel={t('Menu')}
                     style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, shadowColor: colors.shadow, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
                   >
-                    <Ionicons name="scan" size={28} color="#FFFFFF" />
+                    <Ionicons name="add" size={32} color="#FFFFFF" />
                   </Pressable>
                 </View>
               ),
@@ -123,6 +126,8 @@ function AppTabs({ userId }) {
               tabBarIcon: ({ color, focused, size }) =>
                 tab.icon === 'koda' ? (
                   <Image source={KODA_ICON} style={{ width: size, height: size, tintColor: color }} />
+                ) : tab.icon === 'rekod' ? (
+                  <RekodIcon size={size} color={color} focused={focused} />
                 ) : (
                   <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
                 ),
@@ -161,12 +166,15 @@ function AppTabs({ userId }) {
     </Tab.Navigator>
 
     <Modal visible={quickOpen} transparent animationType="fade" onRequestClose={() => setQuickOpen(false)}>
-      <BottomSheet title={t('Quick actions')} onClose={() => setQuickOpen(false)}>
+      <BottomSheet title={t('Menu')} onClose={() => setQuickOpen(false)}>
         <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg }}>
           {QUICK_ACTIONS.map((action, idx) => (
             <ListRow
               key={action.to}
               icon={action.icon}
+              // The scan stays the star of the menu.
+              iconColor={idx === 0 ? '#FFFFFF' : undefined}
+              iconBackground={idx === 0 ? colors.accent : undefined}
               title={t(action.title)}
               subtitle={t(action.subtitle)}
               last={idx === QUICK_ACTIONS.length - 1}
