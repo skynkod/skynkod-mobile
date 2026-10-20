@@ -14,7 +14,7 @@ import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import {
   GOALS, NIGHTS, goalOf, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
-  findSafeAlternative, stepWithProduct, replaceRoutineStep,
+  findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
@@ -137,6 +137,8 @@ export default function RekodScreen({ navigation }) {
         const res = await getUserRoutines(user.id)
         const latest = type => (res.success ? res.data.find(r => r.type === type)?.steps : null) || []
         setRoutine({ morning: latest('morning'), evening: latest('evening') })
+        // Then bring it up to date with the latest safety rules and catalogue.
+        refreshRekodRoutine(user.id, p).then(setRoutine).catch(error => logError('Rekod_refresh', error, {}, 'warn'))
       }
     } catch (error) {
       await logError('Rekod_load', error, {}, 'warn')

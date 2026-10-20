@@ -321,7 +321,8 @@ export const stepWithProduct = async (userId, step, product) => {
   const profile = await loadProfile(userId).catch(() => ({}))
   const choice = { product, owned: false, issues: isSafeFor(product, profile) ? [] : safetyIssues(product, profile) }
   const unsafe = !isSafeFor(product, profile) && !isAcceptable(product, profile)
-  const next = stepFrom(step.key, step.action, choice, { days: step.days, night: step.night, cats: step.cats }, step.want || [])
+  // custom: the user's own change, kept when the routine is rebuilt.
+  const next = stepFrom(step.key, step.action, choice, { days: step.days, night: step.night, cats: step.cats, custom: true }, step.want || [])
   return unsafe ? { ...next, issues: [{ level: 'avoid', text: 'Not recommended for your skin', detail: 'You chose this product yourself: we advise against it for your skin.' }, ...next.issues] } : next
 }
 
@@ -334,6 +335,25 @@ export const replaceRoutineStep = async (userId, period, index, step) => {
   const res = await saveRoutine(userId, period, steps)
   if (!res.success) throw new Error(res.error)
   return steps
+}
+
+// Rebuilds a member's routine with the latest rules and catalogue, keeping the
+// products she chose herself. Saves only when something changed.
+export const refreshRekodRoutine = async (userId, plan) => {
+  const fresh = await buildRekodRoutine(userId, plan)
+  const { data } = await supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false })
+  const out = {}
+  for (const type of ['morning', 'evening']) {
+    const current = (data || []).find(r => r.type === type)?.steps || []
+    const merged = fresh[type].map(step => current.find(c => c.custom && c.key === step.key && c.night === step.night) ? { ...current.find(c => c.custom && c.key === step.key && c.night === step.night), days: step.days } : step)
+    const sig = list => JSON.stringify(list.map(x => [x.key, x.product_id, x.days, (x.issues || []).length, !!x.why]))
+    if (sig(merged) !== sig(current)) {
+      const res = await saveRoutine(userId, type, merged)
+      if (!res.success) throw new Error(res.error)
+    }
+    out[type] = merged
+  }
+  return out
 }
 
 // ---------- Saving ----------
