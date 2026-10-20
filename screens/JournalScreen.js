@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../utils/AuthContext';
@@ -82,7 +82,7 @@ export default function JournalScreen({ route, navigation }) {
   const [mood, setMood] = useState(null);
   const [tags, setTags] = useState([]);
   const [note, setNote] = useState('');
-  const [status, setStatus] = useState('idle'); // idle | saving | saved
+  const [status, setStatus] = useState('idle'); // idle | dirty | saving | saved
   const [routineLog, setRoutineLog] = useState(null);
   const [skinPatterns, setSkinPatterns] = useState(null);
   const dirty = useRef(false);
@@ -153,8 +153,8 @@ export default function JournalScreen({ route, navigation }) {
     if (route?.params?.openNew) setSelected(new Date());
   }, [route?.params?.openNew]);
 
-  // Writes the current answers. Mood and tags save at once, the note after a
-  // short pause; anything pending is saved when leaving the screen.
+  // Nothing saves by itself: she taps Save, so she knows it's kept. Leaving
+  // the screen without saving drops the changes.
   const latest = useRef({ mood, tags, note });
   latest.current = { mood, tags, note };
   const entryRef = useRef(entryId);
@@ -178,7 +178,8 @@ export default function JournalScreen({ route, navigation }) {
       setStatus('saved');
       setWeekEntries(prev => (prev.some(e => e.id === id) ? prev : [...prev, { id, date: selected.toISOString() }]));
     } catch (error) {
-      setStatus('idle');
+      setStatus('dirty');
+      Alert.alert(t('Couldn’t save'), t('Check your connection and try again.'));
       await logError('Journal_save', error, {}, 'warn');
     }
   };
@@ -186,9 +187,20 @@ export default function JournalScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => () => {
       clearTimeout(noteTimer.current);
-      saveNow();
+      dirty.current = false;
+      setStatus('idle');
     }, [selected.toDateString(), user?.id])
   );
+
+  // Changing day with unsaved changes: ask first.
+  const leaveDay = go => {
+    if (!dirty.current) return go();
+    Alert.alert(t('Save your check-in?'), t('You changed something on this day.'), [
+      { text: t("Don't save"), style: 'destructive', onPress: () => { dirty.current = false; setStatus('idle'); go(); } },
+      { text: t('Save'), onPress: async () => { await saveNow(); go(); } },
+    ]);
+  };
+  const markDirty = () => { dirty.current = true; setStatus('dirty'); };
 
   // A new mood starts the details over: what was ticked before is cleared.
   const setMoodNow = value => {
@@ -197,20 +209,18 @@ export default function JournalScreen({ route, navigation }) {
     latest.current = { ...latest.current, mood: value, ...(changed ? { tags: [] } : {}) };
     setMood(value);
     if (changed) setTags([]);
-    saveNow();
+    markDirty();
   };
   const toggleTag = (tag) => {
     const next = tags.includes(tag) ? tags.filter(x => x !== tag) : [...tags, tag];
     dirty.current = true;
     latest.current = { ...latest.current, tags: next };
     setTags(next);
-    saveNow();
+    markDirty();
   };
   const setNoteLater = value => {
-    dirty.current = true;
     setNote(value);
-    clearTimeout(noteTimer.current);
-    noteTimer.current = setTimeout(saveNow, 700);
+    markDirty();
   };
 
   const isToday = sameDay(selected, today);
@@ -220,7 +230,7 @@ export default function JournalScreen({ route, navigation }) {
       {/* Week strip */}
       <View style={styles.week}>
         <Pressable
-          onPress={() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() - 7); return x; })}
+          onPress={() => leaveDay(() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() - 7); return x; }))}
           hitSlop={8}
           accessibilityLabel={t('Previous week')}
         >
@@ -234,7 +244,7 @@ export default function JournalScreen({ route, navigation }) {
             <Pressable
               key={d.toISOString()}
               disabled={future}
-              onPress={async () => { await saveNow(); dirty.current = false; setSelected(d); }}
+              onPress={() => leaveDay(() => setSelected(d))}
               style={[styles.day, on && { backgroundColor: colors.accent }]}
             >
               <Text style={[styles.dayName, { color: on ? '#FFFFFF' : colors.textSecondary }]}>
@@ -247,7 +257,7 @@ export default function JournalScreen({ route, navigation }) {
         })}
         <Pressable
           disabled={sameDay(weekStart, startOfWeek(today))}
-          onPress={() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x > today ? new Date() : x; })}
+          onPress={() => leaveDay(() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x > today ? new Date() : x; }))}
           hitSlop={8}
           accessibilityLabel={t('Next week')}
         >
@@ -259,8 +269,7 @@ export default function JournalScreen({ route, navigation }) {
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardHead}>
           <Text style={[styles.overline, { color: colors.primary }]}>{t('CHECK-IN')}</Text>
-          {status === 'saving' ? <ActivityIndicator size="small" color={colors.muted} /> : null}
-          {status === 'saved' ? <Text style={[TYPE.caption, { color: colors.success, fontWeight: '600' }]}>{t('Saved')}</Text> : null}
+          {status === 'dirty' ? <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>{t('Not saved yet')}</Text> : null}
         </View>
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>
           {isToday ? t('How is your skin today?') : t('How was your skin that day?')}
@@ -340,6 +349,15 @@ export default function JournalScreen({ route, navigation }) {
           multiline
           style={[styles.note, { backgroundColor: colors.surface, color: colors.text }]}
         />
+
+        <Pressable onPress={saveNow} disabled={status !== 'dirty'}
+          style={({ pressed }) => [styles.saveBtn, { backgroundColor: status === 'saved' ? colors.successSoft || colors.primarySoft : colors.primary, opacity: status === 'idle' ? 0.45 : pressed ? 0.85 : 1 }]}>
+          {status === 'saving' ? <ActivityIndicator size="small" color={colors.onPrimary} /> : (
+            <Text style={{ color: status === 'saved' ? colors.success : colors.onPrimary, fontWeight: '700', fontSize: 15 }}>
+              {status === 'saved' ? `✓ ${t('Saved')}` : t('Save')}
+            </Text>
+          )}
+        </Pressable>
       </View>
 
       {/* What your skin tells you: links that keep coming back (observations, no advice) */}
@@ -421,6 +439,7 @@ const styles = StyleSheet.create({
   progressFill: { height: 6, borderRadius: 3 },
   patternRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
   patternIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  saveBtn: { height: 50, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg },
   tipBox: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.md },
   planCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg },
   card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },
