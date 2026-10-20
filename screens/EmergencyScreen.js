@@ -8,7 +8,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getMyProducts } from '../utils/catalog'
 import { ISSUES, questionsFor, buildSosPlan, issuesFromSituation } from '../utils/sos-plan'
-import { getActivePlan, startPlan, endPlan } from '../utils/emergency-state'
+import { getActivePlan, startPlan, endPlan, RETURN_LABELS } from '../utils/emergency-state'
 import { isPremiumUser } from '../utils/premium'
 import { syncSmartReminders } from '../utils/notifications'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -215,12 +215,34 @@ export default function EmergencyScreen({ navigation, route }) {
     return (
       <Screen back title={t('Emergency Mode')}>
         <Text style={[styles.planTitle, { color: colors.text }]}>{t(s.title)}</Text>
-        <Text style={[TYPE.body, { color: colors.textSecondary }]}>{t('Day {n} of 7', { n: active.dayIndex + 1 })}</Text>
+        <Text style={[TYPE.body, { color: colors.textSecondary }]}>
+          {active.phase === 'return' ? t('Plan done · gradual return, day {n} of {total}', { n: active.returnDay, total: active.returnDays }) : t('Day {n} of 7', { n: active.dayIndex + 1 })}
+        </Text>
+        {/* After day 7: paused products come back one by one */}
+        {active.schedule?.length ? (
+          <View style={[styles.note, { backgroundColor: colors.surface }]}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Gradual return')}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
+              {t('After the 7 days, your paused products come back one at a time over about two weeks, gentlest first. If your skin reacts in your journal, the last one goes back on pause.')}
+            </Text>
+            {active.schedule.map(r => {
+              const back = !r.again && active.dayIndex >= r.day
+              return (
+                <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: SPACING.sm }}>
+                  <Ionicons name={r.again ? 'pause-circle' : back ? 'checkmark-circle' : 'time-outline'} size={18} color={r.again ? colors.warning : back ? colors.success : colors.muted} />
+                  <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(RETURN_LABELS[r.id])}{r.id === 'retinoid' ? ` · ${t('one night out of two')}` : ''}</Text>
+                  <Text style={[TYPE.caption, { color: colors.muted }]}>{r.again ? t('paused again') : t('day {n}', { n: r.day + 1 })}</Text>
+                </View>
+              )
+            })}
+            {(s.pause || []).includes('newest') ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t('The product you suspect stays paused: bring it back only if you decide to.')}</Text> : null}
+          </View>
+        ) : null}
         <Notes notes={s.notes} />
         <DayList days={s.days} current={active.dayIndex} />
         <View style={[styles.note, { backgroundColor: colors.surface }]}>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Paused in your routine')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{s.pause.map(p => t(PAUSE_LABELS[p])).join(' · ')}</Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{(active.pause || s.pause).map(p => t(PAUSE_LABELS[p])).join(' · ') || t('Nothing anymore')}</Text>
           <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6 }]}>{t('Your Home routine already leaves them out until the plan ends.')}</Text>
         </View>
         <Pressable onPress={stop} style={{ alignSelf: 'center', padding: SPACING.lg }}>

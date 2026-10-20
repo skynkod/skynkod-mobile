@@ -10,6 +10,7 @@ import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '.
 import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions } from '../utils/journal-day';
 import { getMyProducts } from '../utils/catalog';
 import { getPausedProducts, setProductPaused } from '../utils/paused-products';
+import { repauseAfterReaction } from '../utils/emergency-state';
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
@@ -197,6 +198,10 @@ export default function JournalScreen({ route, navigation }) {
     setStatus('saving');
     try {
       const id = await saveDay(user.id, selected, { ...latest.current, notes: latest.current.note }, entryRef.current);
+      // Gradual return after a 7-day plan: a reaction puts the last product back on pause.
+      if ((latest.current.tags || []).some(tag => ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking'].includes(tag))) {
+        repauseAfterReaction(user.id).then(id2 => { if (id2) Alert.alert(t('Back on pause'), t('Your skin reacted: the last product that came back is paused again for now.')) });
+      }
       entryRef.current = id;
       setEntryId(id);
       dirty.current = false;

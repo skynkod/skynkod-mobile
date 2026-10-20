@@ -149,7 +149,24 @@ export const syncSmartReminders = async (userId) => {
 
     // 7-day plan: one reminder each remaining morning, with the day number.
     for (let d = 1; d <= 7; d += 1) await cancel(`sos-day-${d}-${userId}`)
-    if (sos) {
+    for (const id of ['mask', 'fragrance', 'vitaminC', 'scrub', 'exfoliant', 'acid', 'retinoid']) await cancel(`sos-back-${id}-${userId}`)
+    // Gradual return: the evening a product comes back, say so.
+    const BACK = {
+      en: { mask: 'masks', fragrance: 'fragranced products', vitaminC: 'vitamin C', scrub: 'scrubs', exfoliant: 'exfoliants', acid: 'acids', retinoid: 'retinol (one night out of two)' },
+      fr: { mask: 'les masques', fragrance: 'les produits parfumés', vitaminC: 'la vitamine C', scrub: 'les gommages', exfoliant: 'les exfoliants', acid: 'les acides', retinoid: 'le rétinol (un soir sur deux)' },
+    }
+    for (const r of sos?.schedule || []) {
+      if (r.again || r.day <= sos.dayIndex) continue
+      const date = new Date(sos.startedAt)
+      date.setDate(date.getDate() + r.day)
+      date.setHours(20, 30, 0, 0)
+      await Notifications.scheduleNotificationAsync({
+        identifier: `sos-back-${r.id}-${userId}`,
+        content: { title: 'Skynkod', body: l === 'fr' ? `Ce soir, on réintroduit ${BACK.fr[r.id]} dans ta routine 🌿` : `Tonight, we bring back ${BACK.en[r.id]} into your routine 🌿`, sound: true, data: { screen: 'Home' } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
+      }).catch(() => {})
+    }
+    if (sos && sos.phase !== 'return') {
       for (let d = sos.dayIndex + 2; d <= 7; d += 1) {
         const date = new Date(sos.startedAt)
         date.setDate(date.getDate() + d - 1)

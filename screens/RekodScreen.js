@@ -319,8 +319,8 @@ export default function RekodScreen({ navigation }) {
     const due = checkInDue(plan)
     // A 7-day plan may pause the strong nights: say so instead of promising them.
     const pausedNights = new Set([
-      ...((sos?.situation?.pause || []).includes('retinoid') ? ['retinoid'] : []),
-      ...((sos?.situation?.pause || []).some(p => p === 'acid' || p === 'exfoliant') ? ['exfoliation'] : []),
+      ...((sos?.pause || []).includes('retinoid') ? ['retinoid'] : []),
+      ...((sos?.pause || []).some(p => p === 'acid' || p === 'exfoliant') ? ['exfoliation'] : []),
     ])
     const tonightPaused = pausedNights.has(tonight)
     return (
@@ -357,7 +357,7 @@ export default function RekodScreen({ navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={[TYPE.bodyStrong, { color: C.text }]}>Your 7-day plan comes first</Text>
               <Text style={[TYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>
-                {[...pausedNights].map(n => (n === 'retinoid' ? 'Retinol' : 'Exfoliation')).join(' and ')} nights are paused until day 7, then Rekod picks up where it stopped.
+                {[...pausedNights].map(n => (n === 'retinoid' ? 'Retinol' : 'Exfoliation')).join(' and ')} nights are paused for now{sos?.phase === 'return' ? ', and come back step by step' : ' (until day 7)'}, then Rekod picks up where it stopped.
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={C.muted} />

@@ -19,7 +19,7 @@ import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
-import { getActivePlan, adjustForPlan } from '../utils/emergency-state'
+import { getActivePlan, adjustForPlan, RETURN_LABELS } from '../utils/emergency-state'
 import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
@@ -387,7 +387,11 @@ export default function TodayScreen({ navigation }) {
         <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.sosLine, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name={sos.plan.situation.icon} size={16} color={colors.primary} />
           <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-            {t('Day {day} of 7 · {title}', { day: sos.plan.dayIndex + 1, title: t(sos.plan.situation.title) })}
+            {sos.plan.phase === 'return'
+              ? (sos.plan.comingBack
+                ? t('Gradual return · today, {what} comes back', { what: t(RETURN_LABELS[sos.plan.comingBack]).toLowerCase() })
+                : t('Gradual return · day {day} of {total}', { day: sos.plan.returnDay, total: sos.plan.returnDays }))
+              : t('Day {day} of 7 · {title}', { day: sos.plan.dayIndex + 1, title: t(sos.plan.situation.title) })}
           </Text>
           <Ionicons name="chevron-forward" size={14} color={colors.muted} />
         </Pressable>
