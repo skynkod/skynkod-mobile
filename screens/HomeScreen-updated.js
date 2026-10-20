@@ -424,7 +424,8 @@ export default function HomeScreen({ navigation }) {
               </Glass>
             ) : null}
             {/* The line sits on a frosted pill so it reads the same over light and deep parts of the sky */}
-            {line ? (
+            {/* V1: the 'ritual awaits' line and the Begin button are gone; the routine card below is enough. */}
+            {false && line ? (
               <Glass radius={999} style={styles.linePill}>
                 <View style={styles.lineRow}>
                   <Text style={[styles.line, { color: isDark ? colors.text : INK }]}>{line}</Text>
@@ -447,7 +448,7 @@ export default function HomeScreen({ navigation }) {
               </>
             ) : null}
 
-            {action ? (
+            {false && action ? (
               <Pressable onPress={action.onPress} style={({ pressed }) => [styles.begin, { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 }]}>
                 <Text style={[styles.beginText, { color: colors.onPrimary }]}>{action.label}</Text>
                 <Ionicons name="arrow-forward" size={16} color={colors.onPrimary} />
