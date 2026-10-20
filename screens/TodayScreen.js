@@ -346,13 +346,13 @@ export default function TodayScreen({ navigation }) {
 
       {/* 3 · Today's check-in */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin today')}</Text>
-      <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable onPress={() => navigation.navigate('Journal', { openNew: Date.now() })} style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.logRow}>
           <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
             {todayMood ? t('Today: {mood}', { mood: t(MOODS.find(m => m.value === todayMood)?.label).toLowerCase() }) : t('How does your skin feel?')}
           </Text>
           {todayMood ? (
-            <Pressable onPress={() => navigation.navigate('Journal')} hitSlop={8}>
+            <Pressable onPress={() => navigation.navigate('Journal', { openNew: Date.now() })} hitSlop={8}>
               <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Add details')}</Text>
             </Pressable>
           ) : null}
@@ -368,7 +368,7 @@ export default function TodayScreen({ navigation }) {
             )
           })}
         </View>
-      </View>
+      </Pressable>
 
       {/* 5 · The programme */}
       <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My programme') : t('Go further')}</Text>

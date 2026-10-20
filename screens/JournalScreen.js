@@ -286,6 +286,9 @@ export default function JournalScreen({ route, navigation }) {
           </View>
         ) : null}
 
+        {/* Only when the skin isn't great: Okay, Bad or Terrible */}
+        {['okay', 'bad', 'terrible'].includes(mood) ? (
+          <>
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
         <View style={styles.tags}>
@@ -325,6 +328,8 @@ export default function JournalScreen({ route, navigation }) {
             </View>
             <Ionicons name={premium ? 'chevron-forward' : 'lock-closed'} size={16} color="#E2C6DA" />
           </Pressable>
+        ) : null}
+          </>
         ) : null}
 
         <TextInput
