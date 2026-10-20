@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { programmeFinished } from './rekod'
 import { logError } from './errorLogger'
 import {
-  BADGES, badgeOf, buildStats, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
+  VISIBLE_BADGES, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
   levelFor, streakFrom, weekStart, dayKey,
 } from './journey-core'
 
@@ -13,12 +13,13 @@ import {
 //
 // Stored on the phone (key journey_<userId>):
 //   events   { key: { xp, at } }       every XP ever given, one per unique key
-//   badges   { id: { at, revealed } }  earned badges; revealed = opened in the Koda box
+//   badges   { id: { at, revealed } }  earned badges; revealed = shown in a Koda box recap
 //   ingredients / productPages / opened  { id: firstTimestamp }
+//   shared   timestamp of the first time she shared Skynkod
 //   box      { lastWeek }              week of the last Koda box opened
 
 const key = userId => `journey_${userId}`
-const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, box: null })
+const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shared: null, box: null })
 
 export const loadJourney = async (userId) => {
   try { return { ...fresh(), ...JSON.parse((await AsyncStorage.getItem(key(userId))) || '{}') } } catch { return fresh() }
@@ -49,6 +50,17 @@ const remember = (field) => (userId, id) => {
 export const trackIngredient = remember('ingredients')
 export const trackProductPage = remember('productPages')
 export const trackOpened = remember('opened')
+
+// She shared Skynkod (the share sheet says it was sent, not just opened).
+export const trackShared = (userId) => {
+  if (!userId) return Promise.resolve()
+  return serial(async () => {
+    const state = await loadJourney(userId)
+    if (state.shared) return
+    state.shared = Date.now()
+    await save(userId, state)
+  }).then(() => syncSoon(userId, 300))
+}
 
 // ---------- Reading her real activity ----------
 
@@ -82,6 +94,7 @@ const gather = async (userId, state) => {
     ingredients: state.ingredients,
     productPages: state.productPages,
     opened: state.opened,
+    shared: !!state.shared,
   }
 }
 
@@ -118,15 +131,15 @@ export const syncJourney = (userId) => serial(async () => {
 
 const picture = (state, stats, challenges) => {
   const xp = totalXp(state.events)
-  const earnedCount = Object.keys(state.badges).length
   return {
     xp,
     level: levelFor(xp),
     streak: streakFrom(stats.routineDayList, dayKey()),
-    badges: BADGES.map(b => ({ ...b, earned: state.badges[b.id] || null })),
-    earnedCount,
+    badges: VISIBLE_BADGES.map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
+    earnedCount: VISIBLE_BADGES.filter(b => state.badges[b.id]).length,
     nextSteps: nextSteps(stats, state.badges),
     challenges,
+    stats,
     box: boxOf(state),
   }
 }
@@ -143,17 +156,18 @@ export const syncSoon = (userId, delay = 800) => {
 
 // ---------- The Koda box (every Monday) ----------
 
-// Ready when a new week started since the last one was opened. Inside: the
-// badges earned and not revealed yet, or a cup of tea.
-const boxOf = (state) => {
-  const ready = !!state.box && weekStart() > state.box.lastWeek
-  const inside = Object.entries(state.badges).filter(([, b]) => !b.revealed).map(([id]) => badgeOf(id)).filter(Boolean)
-  return { ready, inside }
-}
+// Ready when a new week started since the last one was opened. Inside: a
+// recap of the badges earned since the last box, or a cup of tea.
+const unboxed = state => Object.entries(state.badges)
+  .filter(([id, b]) => !b.revealed && !badgeOf(id)?.hidden)
+  .map(([id, b]) => ({ ...badgeOf(id), earned: b }))
+  .filter(b => b.id)
+
+const boxOf = (state) => ({ ready: !!state.box && weekStart() > state.box.lastWeek, inside: unboxed(state) })
 
 export const openBox = (userId) => serial(async () => {
   const state = await loadJourney(userId)
-  const inside = Object.entries(state.badges).filter(([, b]) => !b.revealed).map(([id]) => ({ ...badgeOf(id), earned: state.badges[id] })).filter(b => b.id)
+  const inside = unboxed(state)
   for (const b of inside) state.badges[b.id] = { ...state.badges[b.id], revealed: true }
   state.box = { lastWeek: weekStart() }
   await save(userId, state)

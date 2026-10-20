@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  XP, LEVELS, levelFor, streakFrom, buildStats, reachedBadges, weekChallenges, newXpEvents, totalXp, weekStart, dayKey, nextSteps,
+  XP, LEVELS, VISIBLE_BADGES, levelFor, streakFrom, buildStats, reachedBadges, weekChallenges, newXpEvents, totalXp, weekStart, dayKey, nextSteps,
 } from '../utils/journey-core.js'
 
 const empty = (over = {}) => ({
@@ -36,14 +36,24 @@ test('streak: consecutive local days, same day counted once, kept until tomorrow
   assert.equal(streakFrom(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-10'], '2026-10-10').best, 3)
 })
 
-test('badges: real thresholds, enthusiast after 5 others, kept forever', () => {
+test('badges: real thresholds, set-aside badges never earned, kept forever', () => {
   const ticks = Array.from({ length: 7 }, (_, i) => ({ date: dayKey(new Date(2026, 9, 12 + i)), routine_type: 'evening' }))
-  const { badges } = run(empty({ profileComplete: true, routineSaved: true, ticks, journal: [{ date: '2026-10-12T10:00:00Z', mood: 'good' }], kodaQuestions: 1, dekodScans: 1 }))
-  for (const id of ['first-steps', 'routine-rookie', 'consistency-club', 'night-owl', 'dear-diary', 'curious', 'first-look', 'skincare-enthusiast']) assert.ok(badges.includes(id), id)
-  assert.ok(!badges.includes('perfect-week'))
+  const { badges } = run(empty({ profileComplete: true, routineSaved: true, ticks, journal: [{ date: '2026-10-12T10:00:00Z', mood: 'good' }], kodaQuestions: 1, shared: true }))
+  for (const id of ['first-steps', 'routine-rookie', 'consistency-club', 'skinfluencer']) assert.ok(badges.includes(id), id)
+  for (const id of ['night-owl', 'dear-diary', 'curious', 'one-month-strong']) assert.ok(!badges.includes(id), id)
   // Data gone (product deleted, etc.): earned badges stay.
   const kept = reachedBadges(buildStats(empty()), { 'product-curator': { at: 1 } })
   assert.ok(kept.includes('product-curator'))
+})
+
+test('badges that count badges: enthusiast at 5, insider at 15 others', () => {
+  const visible = VISIBLE_BADGES.filter(b => b.metric !== 'otherBadges').map(b => b.id)
+  const five = Object.fromEntries(visible.slice(0, 5).map(id => [id, { at: 1 }]))
+  assert.ok(reachedBadges(buildStats(empty()), five).includes('skincare-enthusiast'))
+  assert.ok(!reachedBadges(buildStats(empty()), five).includes('skynkod-insider'))
+  const all = Object.fromEntries(visible.map(id => [id, { at: 1 }]))
+  assert.ok(reachedBadges(buildStats(empty()), all).includes('skynkod-insider'))
+  assert.equal(VISIBLE_BADGES.length, 16)
 })
 
 test('xp: no double award on repeated syncs', () => {

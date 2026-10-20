@@ -12,7 +12,7 @@ export const XP = {
   ingredient: 2,        // an ingredient page read for the first time
   routineDay: 5,        // a day with a ticked routine, once per day
   challenge: 20,        // a weekly challenge completed
-  badge: { quartz: 10, pearl: 25, gold: 50, prism: 100 },
+  badge: { common: 10, rare: 25, epic: 50, legendary: 100 },
 }
 
 export const LEVELS = [
@@ -23,38 +23,52 @@ export const LEVELS = [
   { level: 5, name: 'Skynkod Insider', xp: 1500 },
 ]
 
-// Tiers, from simple to legendary (the card design follows them).
+// Rarity, from common to legendary (the badge art and card follow it).
 export const TIERS = {
-  quartz: { name: 'Rose quartz' },
-  pearl: { name: 'Pearl' },
-  gold: { name: 'Gold' },
-  prism: { name: 'Prism' },
+  common: { name: 'Common', description: 'The first steps of your journey.' },
+  rare: { name: 'Rare', description: 'Important milestones.' },
+  epic: { name: 'Epic', description: 'Bigger achievements.' },
+  legendary: { name: 'Legendary', description: 'Unique, exceptional challenges.' },
 }
+export const TIER_ORDER = ['common', 'rare', 'epic', 'legendary']
+
+export const CATEGORIES = [
+  { id: 'start', title: 'First steps', subtitle: 'Start your adventure.' },
+  { id: 'knowledge', title: 'Skincare knowledge', subtitle: 'Discover, learn, explore.' },
+  { id: 'regularity', title: 'Consistency', subtitle: 'Small habits make big changes.' },
+  { id: 'advanced', title: 'Going further', subtitle: 'You keep going.' },
+]
 
 // Badges: `metric` reads the stats, `target` is the threshold. Each badge is
-// earned once and kept forever.
+// earned once and kept forever. `hidden` ones are set aside for now (no art yet).
 export const BADGES = [
-  { id: 'first-steps', name: 'First Steps', tier: 'quartz', icon: 'person-circle-outline', metric: 'profileComplete', target: 1, description: 'Your skin profile is complete.', condition: 'Complete your skin profile.', koda: 'Now I know your skin. Let’s take care of it together.' },
-  { id: 'routine-rookie', name: 'Routine Rookie', tier: 'quartz', icon: 'water-outline', metric: 'routineSaved', target: 1, description: 'Your first routine is saved.', condition: 'Save your first routine.', koda: 'Every glow starts with a first routine.' },
-  { id: 'dear-diary', name: 'Dear Diary', tier: 'quartz', icon: 'create-outline', metric: 'journalDays', target: 1, description: 'You told your journal how your skin feels.', condition: 'Fill in your journal once.', koda: 'Listening to your skin is the first skill.' },
-  { id: 'first-look', name: 'First Look', tier: 'quartz', icon: 'scan-outline', metric: 'dekodScans', target: 1, description: 'Your first Dekod scan.', condition: 'Do your first Dekod scan.', koda: 'You dared to really look. That’s where it all begins.' },
-  { id: 'curious', name: 'Curious', tier: 'quartz', icon: 'chatbubble-ellipses-outline', metric: 'kodaQuestions', target: 1, description: 'Your first question to Koda.', condition: 'Ask Koda a question.', koda: 'You ask the right questions. Your skin thanks you.' },
-  { id: 'rekod-started', name: 'Here We Go', tier: 'quartz', icon: 'diamond-outline', metric: 'rekodStarted', target: 1, description: 'You started a Rekod programme.', condition: 'Start a Rekod programme.', koda: 'A goal, a plan, and you. Let’s go.' },
-  { id: 'product-curator', name: 'Product Curator', tier: 'pearl', icon: 'flask-outline', metric: 'productsOwned', target: 5, description: '5 products in your collection.', condition: 'Add 5 products you own.', koda: 'A shelf that knows you. Nicely curated.' },
-  { id: 'shelf-organized', name: 'Shelf Organized', tier: 'pearl', icon: 'calendar-outline', metric: 'openedCount', target: 5, description: 'Opening dates noted for 5 products.', condition: 'Add the opening date of 5 products.', koda: 'Nothing expires behind your back anymore.' },
-  { id: 'skin-scholar', name: 'Skin Scholar', tier: 'pearl', icon: 'book-outline', metric: 'ingredientViews', target: 10, description: '10 ingredients discovered.', condition: 'Read 10 different ingredient pages.', koda: 'Ten ingredients you now understand. Labels speak to you.' },
-  { id: 'product-detective', name: 'Product Detective', tier: 'pearl', icon: 'search-outline', metric: 'productViews', target: 10, description: '10 product pages studied.', condition: 'Open the details of 10 different products.', koda: 'You check before you trust. Smart.' },
-  { id: 'consistency-club', name: 'Consistency Club', tier: 'pearl', icon: 'checkmark-done-outline', metric: 'routineDays', target: 7, description: 'Your routine followed on 7 days.', condition: 'Tick your routine on 7 different days.', koda: 'Seven days. This is how skin changes.' },
-  { id: 'night-owl', name: 'Night Owl', tier: 'pearl', icon: 'moon-outline', metric: 'bestWeekEvenings', target: 7, description: 'Seven evening routines in one week.', condition: 'Do your evening routine every night of a week.', koda: 'Seven nights in a row. Your skin worked while you slept.' },
-  { id: 'glow-up', name: 'Glow Up', tier: 'pearl', icon: 'sunny-outline', metric: 'glowUp', target: 1, description: 'Your skin felt better than the week before.', condition: 'Have a better skin week than the one before, in your journal.', koda: 'Better than last week. Keep doing what you’re doing.' },
-  { id: 'skynkod-explorer', name: 'Skynkod Explorer', tier: 'pearl', icon: 'compass-outline', metric: 'sectionsUsed', target: 4, description: 'You used 4 parts of Skynkod.', condition: 'Use 4 different parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', koda: 'You know your way around now.' },
-  { id: 'ingredient-explorer', name: 'Ingredient Explorer', tier: 'gold', icon: 'library-outline', metric: 'ingredientViews', target: 25, description: '25 ingredients discovered.', condition: 'Read 25 different ingredient pages.', koda: 'Twenty-five ingredients. You read labels like a pro.' },
-  { id: 'journal-keeper', name: 'Journal Keeper', tier: 'gold', icon: 'journal-outline', metric: 'journalDays', target: 10, description: '10 days in your skin journal.', condition: 'Fill in your journal on 10 different days.', koda: 'Ten days of listening. You know your skin better than ever.' },
-  { id: 'perfect-week', name: 'Perfect Week', tier: 'gold', icon: 'sparkles-outline', metric: 'bestWeekFull', target: 7, description: 'Every morning and every evening of a week.', condition: 'Do both routines every day of a week (14 out of 14).', koda: 'Every morning, every evening. A week without a miss. I’m proud of you.' },
-  { id: 'skincare-enthusiast', name: 'Skincare Enthusiast', tier: 'gold', icon: 'ribbon-outline', metric: 'otherBadges', target: 5, description: '5 badges earned.', condition: 'Earn 5 other badges.', koda: 'Five badges. This is becoming a real passion.' },
-  { id: 'one-month-strong', name: 'One Month Strong', tier: 'prism', icon: 'trophy-outline', metric: 'routineDays', target: 30, description: 'Your routine followed on 30 days.', condition: 'Tick your routine on 30 different days.', koda: 'Thirty days. This isn’t a try anymore, it’s who you are.' },
-  { id: 'rekod-complete', name: 'Rekod Complete', tier: 'prism', icon: 'diamond', metric: 'rekodFinished', target: 1, description: 'You finished a Rekod programme.', condition: 'Go all the way through a Rekod programme.', koda: 'Weeks of care, a skin that changed. You did it. Very few have this one.' },
+  { id: 'first-steps', name: 'First Steps', tier: 'common', category: 'start', metric: 'profileComplete', target: 1, description: 'Your skin profile is complete.', condition: 'Complete your skin profile.', koda: 'Now I know your skin. Let’s take care of it together.' },
+  { id: 'routine-rookie', name: 'Routine Rookie', tier: 'rare', category: 'start', metric: 'routineSaved', target: 1, description: 'Your first routine is saved.', condition: 'Save your first routine.', koda: 'Every glow starts with a first routine.' },
+  { id: 'product-curator', name: 'Product Curator', tier: 'epic', category: 'start', metric: 'productsOwned', target: 5, description: '5 products in your collection.', condition: 'Add 5 products to your collection.', koda: 'A shelf that knows you. Nicely curated.' },
+  { id: 'shelf-organized', name: 'Shelf Organized', tier: 'epic', category: 'start', metric: 'openedCount', target: 5, description: 'Opening dates noted for 5 products.', condition: 'Add the opening date of 5 products.', koda: 'Nothing expires behind your back anymore.' },
+  { id: 'skin-scholar', name: 'Skin Scholar', tier: 'common', category: 'knowledge', metric: 'ingredientViews', target: 10, description: '10 ingredients discovered.', condition: 'Read 10 different ingredient pages.', koda: 'Ten ingredients you now understand. Labels speak to you.' },
+  { id: 'ingredient-explorer', name: 'Ingredient Explorer', tier: 'rare', category: 'knowledge', metric: 'ingredientViews', target: 25, description: '25 ingredients discovered.', condition: 'Read 25 different ingredient pages.', koda: 'Twenty-five ingredients. You read labels like a pro.' },
+  { id: 'product-detective', name: 'Product Detective', tier: 'epic', category: 'knowledge', metric: 'productViews', target: 10, description: '10 product pages studied.', condition: 'Open the details of 10 different products.', koda: 'You check before you trust. Smart.' },
+  { id: 'skincare-expert', name: 'Skincare Expert', tier: 'legendary', category: 'knowledge', metric: 'ingredientViews', target: 50, description: '50 ingredients discovered.', condition: 'Read 50 different ingredient pages.', koda: 'Fifty ingredients. You could teach this now.' },
+  { id: 'consistency-club', name: 'Consistency Club', tier: 'common', category: 'regularity', metric: 'routineDays', target: 7, description: 'Your routine followed on 7 days.', condition: 'Tick your routine on 7 different days.', koda: 'Seven days. This is how skin changes.' },
+  { id: 'one-month-strong', name: 'One Month Strong', tier: 'epic', category: 'regularity', metric: 'routineDays', target: 30, description: 'Your routine followed on 30 days.', condition: 'Tick your routine on 30 different days.', koda: 'Thirty days. This isn’t a try anymore, it’s who you are.' },
+  { id: 'journal-keeper', name: 'Journal Keeper', tier: 'common', category: 'regularity', metric: 'journalDays', target: 10, description: '10 days in your skin journal.', condition: 'Fill in your journal on 10 different days.', koda: 'Ten days of listening. You know your skin better than ever.' },
+  { id: 'self-care-queen', name: 'Self Care Queen', tier: 'legendary', category: 'regularity', metric: 'routineDays', target: 90, description: 'Three months of care.', condition: 'Tick your routine on 90 different days.', koda: 'Three months. Your skin and you are a team now.' },
+  { id: 'skincare-enthusiast', name: 'Skincare Enthusiast', tier: 'common', category: 'advanced', metric: 'otherBadges', target: 5, description: '5 badges earned.', condition: 'Earn 5 badges.', koda: 'Five badges. This is becoming a real passion.' },
+  { id: 'skynkod-explorer', name: 'Skynkod Explorer', tier: 'rare', category: 'advanced', metric: 'sectionsUsed', target: 4, description: 'You used 4 parts of Skynkod.', condition: 'Use 4 different parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', koda: 'You know your way around now.' },
+  { id: 'skinfluencer', name: 'Skinfluencer', tier: 'epic', category: 'advanced', metric: 'shared', target: 1, description: 'You shared Skynkod with a friend.', condition: 'Share Skynkod with a friend.', koda: 'Good skin is better shared. Thank you for spreading the word.' },
+  { id: 'skynkod-insider', name: 'Skynkod Insider', tier: 'legendary', category: 'advanced', metric: 'otherBadges', target: 15, description: 'Every other badge earned.', condition: 'Earn all 15 other badges.', koda: 'You’ve seen it all. You’re a true Skynkod insider.' },
+  // Set aside for now (no art yet).
+  { id: 'dear-diary', name: 'Dear Diary', tier: 'common', category: 'regularity', hidden: true, metric: 'journalDays', target: 1, description: 'You told your journal how your skin feels.', condition: 'Fill in your journal once.', koda: 'Listening to your skin is the first skill.' },
+  { id: 'first-look', name: 'First Look', tier: 'common', category: 'start', hidden: true, metric: 'dekodScans', target: 1, description: 'Your first Dekod scan.', condition: 'Do your first Dekod scan.', koda: 'You dared to really look. That’s where it all begins.' },
+  { id: 'curious', name: 'Curious', tier: 'common', category: 'knowledge', hidden: true, metric: 'kodaQuestions', target: 1, description: 'Your first question to Koda.', condition: 'Ask Koda a question.', koda: 'You ask the right questions. Your skin thanks you.' },
+  { id: 'rekod-started', name: 'Here We Go', tier: 'common', category: 'advanced', hidden: true, metric: 'rekodStarted', target: 1, description: 'You started a Rekod programme.', condition: 'Start a Rekod programme.', koda: 'A goal, a plan, and you. Let’s go.' },
+  { id: 'night-owl', name: 'Night Owl', tier: 'rare', category: 'regularity', hidden: true, metric: 'bestWeekEvenings', target: 7, description: 'Seven evening routines in one week.', condition: 'Do your evening routine every night of a week.', koda: 'Seven nights in a row. Your skin worked while you slept.' },
+  { id: 'glow-up', name: 'Glow Up', tier: 'rare', category: 'regularity', hidden: true, metric: 'glowUp', target: 1, description: 'Your skin felt better than the week before.', condition: 'Have a better skin week than the one before, in your journal.', koda: 'Better than last week. Keep doing what you’re doing.' },
+  { id: 'perfect-week', name: 'Perfect Week', tier: 'epic', category: 'regularity', hidden: true, metric: 'bestWeekFull', target: 7, description: 'Every morning and every evening of a week.', condition: 'Do both routines every day of a week (14 out of 14).', koda: 'Every morning, every evening. A week without a miss. I’m proud of you.' },
+  { id: 'rekod-complete', name: 'Rekod Complete', tier: 'legendary', category: 'advanced', hidden: true, metric: 'rekodFinished', target: 1, description: 'You finished a Rekod programme.', condition: 'Go all the way through a Rekod programme.', koda: 'Weeks of care, a skin that changed. You did it. Very few have this one.' },
 ]
+export const VISIBLE_BADGES = BADGES.filter(b => !b.hidden)
 export const badgeOf = id => BADGES.find(b => b.id === id) || null
 
 // Weekly challenges (Monday to Sunday, local time).
@@ -116,7 +130,7 @@ const MOOD = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 }
 
 // raw: { profileComplete, routineSaved, products: [{product_id, created_at}],
 // openedCount, ticks: [{date, routine_type}], journal: [{date, mood}],
-// dekodScans, rekodStarted, rekodFinished, kodaQuestions,
+// dekodScans, rekodStarted, rekodFinished, kodaQuestions, shared,
 // ingredients: {id: ts}, productPages: {id: ts}, opened: {rowId: ts} }
 export const buildStats = (raw, now = new Date()) => {
   const routineDaySet = new Set(raw.ticks.map(t => t.date))
@@ -164,6 +178,7 @@ export const buildStats = (raw, now = new Date()) => {
     journalDays: journalDaySet.size,
     dekodScans: raw.dekodScans || 0,
     kodaQuestions: raw.kodaQuestions || 0,
+    shared: raw.shared ? 1 : 0,
     rekodStarted: raw.rekodStarted ? 1 : 0,
     rekodFinished: raw.rekodFinished ? 1 : 0,
     bestWeekEvenings: Math.max(0, ...Object.values(weeks).map(w => w.evenings)),
@@ -184,25 +199,33 @@ export const buildStats = (raw, now = new Date()) => {
 export const metricOf = (badge, stats, earnedCount = 0) => (badge.metric === 'otherBadges' ? earnedCount : stats[badge.metric] || 0)
 
 // Which badges are reached now, given those already earned (kept forever).
+// Only the badges on display can be earned; badges that count other badges
+// are checked last, smallest target first.
 export const reachedBadges = (stats, earned = {}) => {
   const out = new Set(Object.keys(earned))
-  for (const b of BADGES) if (b.metric !== 'otherBadges' && metricOf(b, stats) >= b.target) out.add(b.id)
-  const enthusiast = badgeOf('skincare-enthusiast')
-  const others = [...out].filter(id => id !== enthusiast.id).length
-  if (others >= enthusiast.target) out.add(enthusiast.id)
+  for (const b of VISIBLE_BADGES) if (b.metric !== 'otherBadges' && metricOf(b, stats) >= b.target) out.add(b.id)
+  const visible = new Set(VISIBLE_BADGES.map(b => b.id))
+  for (const b of VISIBLE_BADGES.filter(x => x.metric === 'otherBadges').sort((x, y) => x.target - y.target)) {
+    const others = [...out].filter(id => id !== b.id && visible.has(id)).length
+    if (others >= b.target) out.add(b.id)
+  }
   return [...out]
 }
 
-// The closest badges still to earn, with their progress.
-export const nextSteps = (stats, earned = {}, limit = 3) => {
-  const count = Object.keys(earned).filter(id => id !== 'skincare-enthusiast').length
-  return BADGES
-    .filter(b => !earned[b.id])
-    .map(b => ({ badge: b, value: Math.min(metricOf(b, stats, count), b.target), target: b.target }))
-    .filter(s => s.target > 1 || s.value === 0)
-    .sort((a, b) => b.value / b.target - a.value / a.target)
-    .slice(0, limit)
+export const earnedOthers = (badge, earned = {}) => {
+  const visible = new Set(VISIBLE_BADGES.map(b => b.id))
+  return Object.keys(earned).filter(id => id !== badge.id && visible.has(id)).length
 }
+
+// The closest badges still to earn, with their progress.
+export const progressOf = (badge, stats, earned = {}) => Math.min(metricOf(badge, stats, earnedOthers(badge, earned)), badge.target)
+
+export const nextSteps = (stats, earned = {}, limit = 3) => VISIBLE_BADGES
+  .filter(b => !earned[b.id])
+  .map(b => ({ badge: b, value: progressOf(b, stats, earned), target: b.target }))
+  .filter(s => s.target > 1 || s.value === 0)
+  .sort((a, b) => b.value / b.target - a.value / a.target)
+  .slice(0, limit)
 
 // ---------- Challenges ----------
 

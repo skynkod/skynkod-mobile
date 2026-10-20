@@ -1,37 +1,25 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator, Animated, useWindowDimensions } from 'react-native'
+import React, { useCallback, useState } from 'react'
+import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Screen, Card, Button, ProgressBar, Banner, useColors } from '../components/ui'
-import BadgeCard, { TIER_LOOK } from '../components/BadgeCard'
+import { Screen, Card, Button, ProgressBar, Banner, Chip, SegmentedControl, useColors } from '../components/ui'
+import { BadgeImage, TierPill, TIER_STYLE } from '../components/Badge'
 import { BoxArt, TeaArt } from '../components/KodaBox'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { syncJourney, openBox, makeBoxReadyForTest } from '../utils/journey'
-import { TIERS } from '../utils/journey-core'
+import { CATEGORIES, TIERS, TIER_ORDER } from '../utils/journey-core'
+import { shareSkynkod } from '../utils/share'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const TESTERS = ['djedidilita@gmail.com']
 const STATE_LABEL = { todo: 'To start', started: 'In progress', done: 'Done' }
+const TIER_FILTERS = [{ id: 'all', label: 'All' }, ...TIER_ORDER.map(id => ({ id, label: TIERS[id].name }))]
 
-// A card that flips in from the box.
-function Reveal({ children, k }) {
-  const v = useRef(new Animated.Value(0)).current
-  useEffect(() => {
-    v.setValue(0)
-    Animated.spring(v, { toValue: 1, friction: 7, tension: 50, useNativeDriver: true }).start()
-  }, [k])
-  return (
-    <Animated.View style={{ opacity: v, transform: [{ perspective: 800 }, { rotateY: v.interpolate({ inputRange: [0, 1], outputRange: ['90deg', '0deg'] }) }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }}>
-      {children}
-    </Animated.View>
-  )
-}
-
-// My Skin Journey: level, XP, streak, the Koda box of the week, challenges,
-// next steps and the badge collection. Free for everyone.
+// My Skin Journey: level and XP, then three tabs: the badge collection,
+// the weekly challenges (with the Monday Koda box), and stats. Free for everyone.
 export default function MySkinJourneyScreen() {
   const colors = useColors()
   const { t, language } = useLanguage()
@@ -39,6 +27,8 @@ export default function MySkinJourneyScreen() {
   const { width } = useWindowDimensions()
   const [data, setData] = useState(null)
   const [error, setError] = useState(false)
+  const [tab, setTab] = useState('badges')
+  const [filter, setFilter] = useState('all')
   const [detail, setDetail] = useState(null)
   const [box, setBox] = useState(null) // { items, step } while opening
   const tester = TESTERS.includes(user?.email)
@@ -57,10 +47,12 @@ export default function MySkinJourneyScreen() {
     )
   }
 
+  const { level, streak } = data
   const fmt = ts => new Date(ts).toLocaleDateString(language, { day: 'numeric', month: 'long', year: 'numeric' })
   const fmtDay = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(language, { day: 'numeric', month: 'short' }) }
-  const cardW = (Math.min(width, 600) - SPACING.lg * 2 - SPACING.md) / 2
-  const { level, streak } = data
+  const col = (Math.min(width, 600) - SPACING.lg * 2) / 4
+  // The level card shows her rarest badge (or the first one to aim for).
+  const showcase = [...data.badges].filter(b => b.earned).sort((a, b) => TIER_ORDER.indexOf(b.tier) - TIER_ORDER.indexOf(a.tier))[0] || data.badges[0]
 
   const startBox = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
@@ -69,10 +61,8 @@ export default function MySkinJourneyScreen() {
   }
   const nextInBox = () => {
     const next = box.step + 1
-    const item = box.items[next]
     if (next < Math.max(box.items.length, 1)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-      if (item?.tier === 'prism' || item?.tier === 'gold') setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}), 350)
       return setBox({ ...box, step: next })
     }
     setBox(null)
@@ -81,178 +71,211 @@ export default function MySkinJourneyScreen() {
   const boxItem = box && box.step >= 0 ? box.items[box.step] : null
   const isLast = box && box.step >= Math.max(box.items.length, 1) - 1
 
+  const badgeTile = b => (
+    <Pressable key={b.id} onPress={() => setDetail(b)} style={({ pressed }) => [styles.tile, { width: col, opacity: pressed ? 0.7 : 1 }]} accessibilityLabel={t(b.name)}>
+      <BadgeImage badge={b} size={col * 0.86} locked={!b.earned} />
+      <Text numberOfLines={2} style={[styles.tileName, { color: b.earned ? colors.text : colors.textSecondary }]}>{t(b.name)}</Text>
+      <Text numberOfLines={2} style={[styles.tileSub, { color: colors.muted }]}>{t(b.condition)}</Text>
+    </Pressable>
+  )
+
   return (
     <Screen back title={t('My Skin Journey')} subtitle={t('Your progress, your way.')}>
-      {/* Level, XP, badges, streak */}
+      {/* Level and XP */}
       <Card style={{ marginTop: SPACING.md }}>
-        <View style={styles.rowBetween}>
-          <View>
-            <Text style={[TYPE.overline, { color: colors.primary }]}>{t('LEVEL {n}', { n: level.level })}</Text>
-            <Text style={[TYPE.heading, { color: colors.text, marginTop: 2 }]}>{t(level.name)}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[TYPE.heading, { color: colors.text }]}>{data.xp}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary }]}>XP</Text>
-          </View>
-        </View>
-        <ProgressBar value={level.progress} style={{ marginTop: SPACING.md }} />
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>
-          {level.next ? t('{n} XP to {name}', { n: level.toNext, name: t(level.next.name) }) : t('You reached the highest level ✨')}
-        </Text>
-        <View style={[styles.stats, { borderTopColor: colors.border }]}>
-          <View style={styles.stat}>
-            <Ionicons name="ribbon-outline" size={18} color={colors.primary} />
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{data.earnedCount}/{data.badges.length}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('badges')}</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name={streak.active ? 'flame' : 'flame-outline'} size={18} color={streak.active ? colors.primary : colors.muted} />
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{streak.active ? t('{n} days', { n: streak.current }) : '–'}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('Best: {n}', { n: streak.best })}</Text>
+        <View style={styles.levelRow}>
+          <BadgeImage badge={showcase} size={64} locked={!showcase.earned} />
+          <View style={{ flex: 1 }}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 17 }]}>{t('Level {n}', { n: level.level })}</Text>
+            <View style={styles.rowBetween}>
+              <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t(level.name)}</Text>
+              <Text style={[TYPE.caption, { color: colors.muted }]}>{level.next ? `${data.xp} / ${level.next.xp} XP` : `${data.xp} XP`}</Text>
+            </View>
+            <ProgressBar value={level.progress} style={{ marginTop: 6 }} />
           </View>
         </View>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>
-          {streak.active
-            ? (streak.doneToday ? t('Your routine is ticked today. See you tomorrow 🌙') : t('Tick a routine today to keep your series going.'))
-            : t('A new series starts with your next ticked routine. No pressure.')}
-        </Text>
+        {streak.active ? (
+          <View style={[styles.streak, { borderTopColor: colors.border }]}>
+            <Ionicons name="flame" size={16} color={colors.primary} />
+            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>
+              {t('{n}-day series', { n: streak.current })} · {streak.doneToday ? t('done today') : t('tick a routine today to keep it')}
+            </Text>
+          </View>
+        ) : null}
       </Card>
 
-      {/* The Koda box */}
-      {data.box.ready || tester ? (
-        <Card style={{ marginTop: SPACING.lg, alignItems: 'center' }}>
-          <BoxArt size={120} />
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{data.box.ready ? t('Your Koda box has arrived') : t('Your next Koda box comes on Monday')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
-            {data.box.inside.length ? t('{n} badges are waiting inside.', { n: data.box.inside.length }) : t('Something for you is inside.')}
-          </Text>
-          {data.box.ready ? <Button title={t('Open my box')} onPress={startBox} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
-          {tester && !data.box.ready ? (
-            <Button title={t('Test: get my box now')} variant="secondary" icon="cube-outline" onPress={() => makeBoxReadyForTest(user.id).then(load)} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} />
-          ) : null}
-        </Card>
-      ) : null}
-
-      {/* Weekly challenges */}
-      <Text style={[styles.section, { color: colors.muted }]}>{t('THIS WEEK’S CHALLENGES')}</Text>
-      {data.challenges.length ? (
-        <>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: -4, marginBottom: SPACING.sm }]}>
-            {t('From {from} to {to} · +{xp} XP each', { from: fmtDay(data.challenges[0].from), to: fmtDay(data.challenges[0].to), xp: data.challenges[0].xp })}
-          </Text>
-          <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
-            {data.challenges.map((c, i) => (
-              <View key={c.id} style={[styles.challenge, i < data.challenges.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <Ionicons name={c.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={c.done ? colors.success : colors.muted} />
-                <View style={{ flex: 1 }}>
-                  <View style={styles.rowBetween}>
-                    <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(c.title)}</Text>
-                    <Text style={[TYPE.caption, { color: c.done ? colors.success : colors.textSecondary, fontWeight: '600' }]}>{t(STATE_LABEL[c.state])}</Text>
-                  </View>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(c.description)}</Text>
-                  <View style={styles.progressRow}>
-                    <ProgressBar value={c.value / c.target} height={6} style={{ flex: 1 }} color={c.done ? colors.success : undefined} />
-                    <Text style={[TYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{c.value}/{c.target}</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </Card>
-        </>
-      ) : null}
-
-      {/* Next steps */}
-      {data.nextSteps.length ? (
-        <>
-          <Text style={[styles.section, { color: colors.muted }]}>{t('NEXT STEPS')}</Text>
-          <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
-            {data.nextSteps.map((s, i) => (
-              <Pressable key={s.badge.id} onPress={() => setDetail(data.badges.find(b => b.id === s.badge.id))} style={[styles.challenge, i < data.nextSteps.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <View style={[styles.stepIcon, { backgroundColor: TIER_LOOK[s.badge.tier].well[1] }]}>
-                  <Ionicons name={s.badge.icon} size={18} color={TIER_LOOK[s.badge.tier].accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.badge.name)}</Text>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(s.badge.condition)}</Text>
-                  {s.target > 1 ? (
-                    <View style={styles.progressRow}>
-                      <ProgressBar value={s.value / s.target} height={6} style={{ flex: 1 }} />
-                      <Text style={[TYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{s.value}/{s.target}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
-            ))}
-          </Card>
-        </>
-      ) : null}
-
-      {/* The collection */}
-      <Text style={[styles.section, { color: colors.muted }]}>{t('MY COLLECTION')}</Text>
-      <View style={styles.grid}>
-        {data.badges.map(b => {
-          const state = !b.earned ? 'locked' : b.earned.revealed ? 'earned' : 'mystery'
-          return (
-            <Pressable key={b.id} onPress={() => setDetail(b)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : state === 'locked' ? 0.75 : 1 })} accessibilityLabel={t(b.name)}>
-              <BadgeCard badge={{ ...b, name: t(b.name) }} state={state} width={cardW} />
-            </Pressable>
-          )
-        })}
+      <View style={{ marginTop: SPACING.lg }}>
+        <SegmentedControl
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'badges', label: `${t('Badges')} ${data.earnedCount}/${data.badges.length}` },
+            { value: 'challenges', label: t('Challenges') },
+            { value: 'stats', label: t('Stats') },
+          ]}
+        />
       </View>
 
-      {/* Badge detail */}
-      <Modal visible={!!detail} transparent animationType="fade" onRequestClose={() => setDetail(null)}>
-        <Pressable style={[styles.back, { backgroundColor: 'rgba(12,8,12,0.82)' }]} onPress={() => setDetail(null)}>
-          {detail ? (() => {
-            const state = !detail.earned ? 'locked' : detail.earned.revealed ? 'earned' : 'mystery'
+      {tab === 'badges' ? (
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.sm, paddingVertical: SPACING.md }}>
+            {TIER_FILTERS.map(f => <Chip key={f.id} label={t(f.label)} selected={filter === f.id} onPress={() => setFilter(f.id)} />)}
+          </ScrollView>
+          {CATEGORIES.map(cat => {
+            const list = data.badges.filter(b => b.category === cat.id && (filter === 'all' || b.tier === filter))
+            if (!list.length) return null
             return (
-              <View style={{ alignItems: 'center', maxWidth: 320 }}>
-                <BadgeCard badge={{ ...detail, name: t(detail.name) }} state={state} width={230} shine={state === 'earned'} />
-                {state === 'earned' ? (
-                  <>
-                    <Text style={styles.quote}>“{t(detail.koda)}”</Text>
-                    <Text style={styles.sig}>KODA</Text>
-                    <Text style={styles.detailText}>{t(detail.description)}</Text>
-                    <Text style={styles.detailSub}>{t('Earned on {date}', { date: fmt(detail.earned.at) })} · {t(TIERS[detail.tier].name)}</Text>
-                  </>
-                ) : state === 'mystery' ? (
-                  <Text style={styles.detailText}>{t('You earned this one! It will be revealed in your Koda box on Monday.')}</Text>
-                ) : (
-                  <>
-                    <Text style={styles.detailText}>{t(detail.condition)}</Text>
-                    <Text style={styles.detailSub}>{t(TIERS[detail.tier].name)}</Text>
-                  </>
-                )}
+              <View key={cat.id} style={{ marginBottom: SPACING.lg }}>
+                <Text style={[styles.section, { color: colors.text }]}>{t(cat.title).toUpperCase()}</Text>
+                <Text style={[TYPE.caption, { color: colors.muted, fontStyle: 'italic', marginBottom: SPACING.sm }]}>{t(cat.subtitle)}</Text>
+                <View style={styles.grid}>{list.map(badgeTile)}</View>
               </View>
+            )
+          })}
+        </>
+      ) : null}
+
+      {tab === 'challenges' ? (
+        <>
+          {/* The Koda box */}
+          {data.box.ready || tester ? (
+            <Card style={{ marginTop: SPACING.lg, alignItems: 'center' }}>
+              <BoxArt size={110} />
+              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{data.box.ready ? t('Your Koda box has arrived') : t('Your next Koda box comes on Monday')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>{t('Your week in a box: your new badges, or a little treat.')}</Text>
+              {data.box.ready ? <Button title={t('Open my box')} onPress={startBox} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
+              {tester && !data.box.ready ? <Button title={t('Test: get my box now')} variant="secondary" icon="cube-outline" onPress={() => makeBoxReadyForTest(user.id).then(load)} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
+            </Card>
+          ) : null}
+
+          <Text style={[styles.section, { color: colors.text, marginTop: SPACING.xl }]}>{t('THIS WEEK’S CHALLENGES')}</Text>
+          {data.challenges.length ? (
+            <>
+              <Text style={[TYPE.caption, { color: colors.muted, marginBottom: SPACING.sm }]}>
+                {t('From {from} to {to} · +{xp} XP each', { from: fmtDay(data.challenges[0].from), to: fmtDay(data.challenges[0].to), xp: data.challenges[0].xp })}
+              </Text>
+              <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
+                {data.challenges.map((c, i) => (
+                  <View key={c.id} style={[styles.row, i < data.challenges.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+                    <Ionicons name={c.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={c.done ? colors.success : colors.muted} />
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.rowBetween}>
+                        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(c.title)}</Text>
+                        <Text style={[TYPE.caption, { color: c.done ? colors.success : colors.textSecondary, fontWeight: '600' }]}>{t(STATE_LABEL[c.state])}</Text>
+                      </View>
+                      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(c.description)}</Text>
+                      <View style={styles.progressRow}>
+                        <ProgressBar value={c.value / c.target} height={6} style={{ flex: 1 }} color={c.done ? colors.success : undefined} />
+                        <Text style={[TYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{c.value}/{c.target}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </Card>
+            </>
+          ) : null}
+
+          {data.nextSteps.length ? (
+            <>
+              <Text style={[styles.section, { color: colors.text, marginTop: SPACING.xl }]}>{t('NEXT STEPS')}</Text>
+              <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginTop: SPACING.sm }}>
+                {data.nextSteps.map((s, i) => (
+                  <Pressable key={s.badge.id} onPress={() => setDetail(data.badges.find(b => b.id === s.badge.id))} style={[styles.row, i < data.nextSteps.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+                    <BadgeImage badge={s.badge} size={40} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.badge.name)}</Text>
+                      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(s.badge.condition)}</Text>
+                      {s.target > 1 ? (
+                        <View style={styles.progressRow}>
+                          <ProgressBar value={s.value / s.target} height={6} style={{ flex: 1 }} />
+                          <Text style={[TYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{s.value}/{s.target}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                ))}
+              </Card>
+            </>
+          ) : null}
+        </>
+      ) : null}
+
+      {tab === 'stats' ? (
+        <>
+          <View style={[styles.statGrid, { marginTop: SPACING.lg }]}>
+            {[
+              { icon: 'sparkles-outline', value: data.xp, label: 'XP earned' },
+              { icon: 'ribbon-outline', value: `${data.earnedCount}/${data.badges.length}`, label: 'Badges' },
+              { icon: streak.active ? 'flame' : 'flame-outline', value: streak.current, label: 'Current series' },
+              { icon: 'trophy-outline', value: streak.best, label: 'Best series' },
+              { icon: 'water-outline', value: data.stats.routineDays, label: 'Days with a routine' },
+              { icon: 'create-outline', value: data.stats.journalDays, label: 'Journal days' },
+              { icon: 'book-outline', value: data.stats.ingredientViews, label: 'Ingredients discovered' },
+              { icon: 'flask-outline', value: data.stats.productsOwned, label: 'Products in your collection' },
+            ].map(s => (
+              <Card key={s.label} style={styles.statCard}>
+                <Ionicons name={s.icon} size={18} color={colors.primary} />
+                <Text style={[TYPE.heading, { color: colors.text, marginTop: 6 }]}>{s.value}</Text>
+                <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t(s.label)}</Text>
+              </Card>
+            ))}
+          </View>
+          <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 18 }]}>
+            {t('A series counts the days in a row with a ticked routine. Missing a day never takes away your badges or XP.')}
+          </Text>
+          <Button title={t('Share Skynkod with a friend')} variant="secondary" icon="share-outline" onPress={() => shareSkynkod(user.id, t)} style={{ marginTop: SPACING.xl }} />
+        </>
+      ) : null}
+
+      {/* Badge detail card */}
+      <Modal visible={!!detail} transparent animationType="fade" onRequestClose={() => setDetail(null)}>
+        <Pressable style={[styles.back, { backgroundColor: 'rgba(30,20,30,0.55)' }]} onPress={() => setDetail(null)}>
+          {detail ? (() => {
+            const ts = TIER_STYLE[detail.tier]
+            const status = detail.earned ? 'Obtained' : detail.value > 0 ? 'In progress' : 'Locked'
+            return (
+              <Pressable style={[styles.detail, { backgroundColor: ts.card }]} onPress={() => {}}>
+                <BadgeImage badge={detail} size={150} locked={!detail.earned} />
+                <TierPill tier={detail.tier} style={{ marginTop: SPACING.sm }} />
+                <Text style={[styles.detailName, { color: ts.ink }]}>{t(detail.name)}</Text>
+                <Text style={[styles.detailText, { color: ts.soft }]}>{t(detail.earned ? detail.description : detail.condition)}</Text>
+                <View style={{ alignSelf: 'stretch', marginTop: SPACING.md }}>
+                  <Text style={[styles.detailCount, { color: ts.soft }]}>{detail.earned ? detail.target : detail.value}/{detail.target}</Text>
+                  <View style={[styles.bar, { backgroundColor: detail.tier === 'legendary' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }]}>
+                    <View style={{ width: `${(detail.earned ? 1 : detail.value / detail.target) * 100}%`, height: '100%', borderRadius: 4, backgroundColor: ts.bar }} />
+                  </View>
+                </View>
+                <View style={[styles.status, detail.earned || detail.value > 0 ? { backgroundColor: ts.bar } : { borderWidth: 1, borderColor: ts.soft }]}>
+                  <Text style={[styles.statusText, { color: detail.earned || detail.value > 0 ? '#FFFFFF' : ts.ink }]}>{t(status).toUpperCase()}</Text>
+                </View>
+                <Text style={[styles.detailDate, { color: ts.soft }]}>
+                  {detail.earned ? fmt(detail.earned.at) : t('Keep going to unlock this badge.')}
+                </Text>
+                {detail.earned ? <Text style={[styles.detailKoda, { color: ts.ink }]}>“{t(detail.koda)}” · Koda</Text> : null}
+              </Pressable>
             )
           })() : null}
         </Pressable>
       </Modal>
 
-      {/* Opening the box */}
+      {/* Opening the Koda box: the week's badges, or a cup of tea */}
       <Modal visible={!!box} transparent animationType="fade" onRequestClose={() => {}}>
-        <View style={[styles.back, { backgroundColor: 'rgba(12,8,12,0.88)' }]}>
+        <View style={[styles.back, { backgroundColor: '#1E141D' }]}>
           {box && box.step < 0 ? (
             <View style={{ alignItems: 'center' }}>
-              <Text style={styles.boxKicker}>{t('YOUR KODA BOX')}</Text>
+              <Text style={styles.kicker}>{t('YOUR KODA BOX')}</Text>
               <Pressable onPress={nextInBox} style={{ marginTop: SPACING.lg }}><BoxArt size={210} /></Pressable>
               <Button title={t('Open it')} onPress={nextInBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
             </View>
           ) : box ? (
             <View style={{ alignItems: 'center', maxWidth: 320 }}>
-              {boxItem ? (
-                <Reveal k={boxItem.id}>
-                  <BadgeCard badge={{ ...boxItem, name: t(boxItem.name) }} state="earned" width={230} shine />
-                </Reveal>
-              ) : (
-                <Reveal k="tea"><TeaArt size={170} /></Reveal>
-              )}
-              <Text style={styles.quote}>
-                {boxItem ? `“${t(boxItem.koda)}”` : t('A cup of tea for you ☕ Last week was a quiet one, and that’s okay. Let’s start this week together.')}
+              {boxItem ? <BadgeImage badge={boxItem} size={190} /> : <TeaArt size={170} />}
+              <Text style={styles.boxTitle}>{boxItem ? t(boxItem.name) : t('A cup of tea for you')}</Text>
+              <Text style={styles.boxText}>
+                {boxItem ? t('Earned this week: {text}', { text: t(boxItem.description) }) : t('Last week was a quiet one, and that’s okay. Let’s start this week together.')}
               </Text>
-              <Text style={styles.sig}>KODA</Text>
-              {box.items.length > 1 ? <Text style={styles.detailSub}>{box.step + 1} / {box.items.length}</Text> : null}
-              <Button title={isLast ? (boxItem ? t('Add to my collection') : t('Let’s go')) : t('Next')} onPress={nextInBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
+              {box.items.length > 1 ? <Text style={styles.boxCount}>{box.step + 1} / {box.items.length}</Text> : null}
+              <Button title={isLast ? t('Let’s go') : t('Next')} onPress={nextInBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
             </View>
           ) : null}
         </View>
@@ -262,18 +285,30 @@ export default function MySkinJourneyScreen() {
 }
 
 const styles = StyleSheet.create({
+  levelRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
-  stats: { flexDirection: 'row', marginTop: SPACING.lg, paddingTop: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth },
-  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
-  challenge: { flexDirection: 'row', gap: SPACING.md, paddingVertical: SPACING.md },
+  streak: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: StyleSheet.hairlineWidth },
+  section: { fontSize: 13, fontWeight: '600', letterSpacing: 2.2 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  tile: { alignItems: 'center', paddingBottom: SPACING.md },
+  tileName: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 4, paddingHorizontal: 2 },
+  tileSub: { fontSize: 10, textAlign: 'center', marginTop: 2, paddingHorizontal: 2, lineHeight: 13 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm },
-  stepIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  statCard: { width: '48.5%' },
   back: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl },
-  boxKicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, fontWeight: '600' },
-  quote: { color: '#F6EEF2', fontSize: 17, lineHeight: 25, textAlign: 'center', marginTop: SPACING.lg, fontStyle: 'italic' },
-  sig: { color: '#E9CF9A', fontSize: 11, letterSpacing: 2.4, marginTop: SPACING.sm },
-  detailText: { color: '#F6EEF2', fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: SPACING.md },
-  detailSub: { color: '#BFA9B7', fontSize: 12, marginTop: SPACING.sm, textAlign: 'center' },
+  detail: { width: '100%', maxWidth: 320, borderRadius: RADIUS.xl, padding: SPACING.xl, alignItems: 'center' },
+  detailName: { fontSize: 22, fontWeight: '600', marginTop: SPACING.md, textAlign: 'center' },
+  detailText: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 4 },
+  detailCount: { fontSize: 11, textAlign: 'right', marginBottom: 4 },
+  bar: { height: 7, borderRadius: 4, overflow: 'hidden' },
+  status: { alignSelf: 'stretch', marginTop: SPACING.lg, paddingVertical: 11, borderRadius: 999, alignItems: 'center' },
+  statusText: { fontSize: 12, fontWeight: '700', letterSpacing: 1.6 },
+  detailDate: { fontSize: 12, marginTop: SPACING.md, textAlign: 'center' },
+  detailKoda: { fontSize: 13, fontStyle: 'italic', marginTop: SPACING.sm, textAlign: 'center', lineHeight: 19 },
+  kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, fontWeight: '600' },
+  boxTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '600', marginTop: SPACING.lg, textAlign: 'center' },
+  boxText: { color: '#D8C8D3', fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: SPACING.sm },
+  boxCount: { color: '#9F8D9A', fontSize: 12, marginTop: SPACING.sm },
 })
