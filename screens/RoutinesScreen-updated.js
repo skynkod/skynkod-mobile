@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getUserRoutines } from '../utils/routines-service';
@@ -94,9 +94,23 @@ export default function RoutinesScreen({ route, navigation }) {
 
   const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now(), editSteps: saved?.steps || null });
 
+  // Back skips the routine builder screens and returns to where she came
+  // from (usually Home), never to the steps she just finished.
+  const goBack = () => {
+    const state = navigation.getState();
+    const nameOf = key => state.routes.find(r => r.key === key)?.name;
+    const passing = ['Routines', 'RoutineBuilder', 'ProductPicker', 'Scanner'];
+    const history = (state.history || []).filter(entry => !passing.includes(nameOf(entry.key)));
+    const last = history[history.length - 1];
+    const target = last ? state.routes.findIndex(r => r.key === last.key) : -1;
+    if (target < 0) return navigation.navigate('Home');
+    navigation.dispatch(CommonActions.reset({ ...state, index: target, history }));
+  };
+
   return (
     <Screen
       back
+      onBack={goBack}
       right={saved ? (
         <Pressable onPress={build} hitSlop={10}>
           <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Edit')}</Text>

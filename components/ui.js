@@ -39,6 +39,7 @@ export function Screen({
   subtitle,
   overline,
   back = false,
+  onBack,
   right,
   scroll = true,
   keyboard = false,
@@ -66,7 +67,7 @@ export function Screen({
       {(showBack || right) && (
         <View style={styles.headerBar}>
           {showBack ? (
-            <IconButton icon="chevron-back" onPress={() => navigation.goBack()} accessibilityLabel="Back" />
+            <IconButton icon="chevron-back" onPress={onBack || (() => navigation.goBack())} accessibilityLabel="Back" />
           ) : (
             <View />
           )}
@@ -102,7 +103,7 @@ export function Screen({
   const stickyBar = scroll && compact && (title || showBack) ? (
     <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
       {showBack ? (
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back" style={styles.stickyBack}>
+        <Pressable onPress={onBack || (() => navigation.goBack())} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back" style={styles.stickyBack}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
       ) : <View style={styles.stickyBack} />}
