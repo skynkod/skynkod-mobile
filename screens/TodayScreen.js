@@ -23,6 +23,7 @@ import { getActivePlan, adjustForPlan } from '../utils/emergency-state'
 import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
+import { getWeekRecap, recapWeekKey, moodLabel } from '../utils/progress'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -83,6 +84,17 @@ export default function TodayScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false)
   // A 7-day skin plan (Emergency) pauses strong products while it runs.
   const [sos, setSos] = useState({ plan: null, products: {}, newest: null })
+  // The weekly recap: the week that just ended, until she closes it.
+  const [recap, setRecap] = useState(null)
+  useFocusEffect(useCallback(() => {
+    if (!user?.id) return
+    const key = `recap_seen_${user.id}_${recapWeekKey()}`
+    AsyncStorage.getItem(key).then(seen => {
+      if (seen) return setRecap(null)
+      getWeekRecap(user.id).then(r => setRecap(r.empty ? null : { ...r, key })).catch(() => setRecap(null))
+    }).catch(() => {})
+  }, [user?.id]))
+  const closeRecap = () => { AsyncStorage.setItem(recap.key, '1').catch(() => {}); setRecap(null) }
 
   const load = useCallback(async () => {
     if (!user?.id) return
@@ -325,6 +337,21 @@ export default function TodayScreen({ navigation }) {
       </View>
       </Animated.View>
 
+      {recap ? (
+        <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR WEEK')}</Text>
+            <Pressable onPress={closeRecap} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
+          </View>
+          <View style={styles.recapStats}>
+            <View style={{ flex: 1 }}><Text style={[styles.recapNum, { color: colors.text }]}>{recap.routines}<Text style={{ fontSize: 14, color: colors.muted }}>/14</Text></Text><Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('routines done')}</Text></View>
+            <View style={{ flex: 1 }}><Text style={[styles.recapNum, { color: colors.text }]}>{recap.mood !== null ? t(moodLabel(recap.mood)) : '–'}</Text><Text style={[TYPE.caption, { color: colors.textSecondary }]}>{recap.moodChange === null ? t('skin mood') : recap.moodChange > 0.3 ? t('better than last week') : recap.moodChange < -0.3 ? t('harder than last week') : t('like last week')}</Text></View>
+          </View>
+          {recap.top ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t('Most noted: {tag} ({n}×)', { tag: t(recap.top.tag), n: recap.top.count })}</Text> : null}
+          <Text style={[TYPE.caption, { color: colors.primary, marginTop: SPACING.sm, lineHeight: 18 }]}>{t(recap.tip)}</Text>
+        </Pressable>
+      ) : null}
+
       {/* 2 · Check any product: the heart of the app */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
       <View style={styles.searchRow}>
@@ -467,6 +494,10 @@ const styles = StyleSheet.create({
   moodMessage: { fontSize: 13, lineHeight: 18, marginTop: SPACING.md },
   avatarSmall: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.md },
   progressLink: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, borderWidth: 1, borderRadius: 16, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  recap: { borderWidth: 1, borderRadius: 20, padding: SPACING.lg, marginTop: SPACING.xxl },
+  recapKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1 },
+  recapStats: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.sm },
+  recapNum: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },
