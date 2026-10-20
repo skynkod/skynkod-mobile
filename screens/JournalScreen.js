@@ -21,6 +21,11 @@ const planFor = tags => {
   if (tags.includes('Dryness')) return 'barrier';
   return null;
 };
+// Several problems ticked: one message that covers them all.
+const PROBLEM_TAGS = ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking', 'Dryness', 'Used new product'];
+const planPrompt = tags => (tags.filter(tag => PROBLEM_TAGS.includes(tag)).length > 1
+  ? 'Your skin is having a hard time? Start a 7-day plan to help it recover'
+  : PLAN_PROMPTS[planFor(tags)]);
 const PLAN_PROMPTS = {
   reaction: 'Reacting to a new product? Start a 7-day plan to reset your skin',
   breakout: 'A new pimple? Start a 7-day plan to calm your skin',
@@ -267,7 +272,7 @@ export default function JournalScreen({ route, navigation }) {
             style={[styles.planCard, { backgroundColor: colors.primarySoft }]}
           >
             <Ionicons name={getSituation(planFor(tags))?.icon || 'medkit-outline'} size={18} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', flex: 1, lineHeight: 18 }]}>{t(PLAN_PROMPTS[planFor(tags)])}</Text>
+            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', flex: 1, lineHeight: 18 }]}>{t(planPrompt(tags))}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </Pressable>
         ) : null}
