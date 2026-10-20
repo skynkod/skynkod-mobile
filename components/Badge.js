@@ -88,14 +88,33 @@ export const TIER_STYLE = {
   secret: { pill: '#4A2D52', card: '#231A26', ink: '#EADCF0', soft: '#A493AD', bar: '#7E5A8C' },
 }
 
+// A badge not earned yet is a mysterious silhouette: its shape only, with a
+// question mark. The real art is revealed the moment it's earned.
+export const SILHOUETTE = '#B7A6C4'
+
 export function BadgeImage({ badge, size = 72, locked = false }) {
   const src = BADGE_IMAGES[badge.id]
+  const h = size * 0.96
+  if (locked) {
+    return (
+      <View style={{ width: size, height: h, alignItems: 'center', justifyContent: 'center' }}>
+        {src ? (
+          <Image source={src} style={{ width: size, height: h, tintColor: SILHOUETTE, opacity: 0.5 }} resizeMode="contain" />
+        ) : (
+          <Svg width={size * 0.86} height={size * 0.94} viewBox="0 0 100 110" style={{ opacity: 0.5 }}>
+            <Path d="M50 3 L94 28 L94 82 L50 107 L6 82 L6 28 Z" fill={SILHOUETTE} />
+          </Svg>
+        )}
+        <Text style={[styles.mark, { fontSize: size * 0.3 }]}>?</Text>
+      </View>
+    )
+  }
   return (
-    <View style={{ width: size, height: size * 0.96, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: size, height: h, alignItems: 'center', justifyContent: 'center' }}>
       {src ? (
-        <Image source={src} style={{ width: size, height: size * 0.96, opacity: locked ? 0.32 : 1 }} resizeMode="contain" />
+        <Image source={src} style={{ width: size, height: h }} resizeMode="contain" />
       ) : (
-        <View style={{ opacity: locked ? 0.3 : 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
           <Svg width={size * 0.86} height={size * 0.94} viewBox="0 0 100 110">
             <Defs>
               <LinearGradient id={`rim-${badge.id}`} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#F7F1F8" /><Stop offset="0.5" stopColor="#C9B8D3" /><Stop offset="1" stopColor="#EFE6F2" /></LinearGradient>
@@ -107,11 +126,6 @@ export function BadgeImage({ badge, size = 72, locked = false }) {
           {badge.icon ? <Ionicons name={badge.icon} size={size * 0.36} color="#FBF3FF" style={{ position: 'absolute' }} /> : null}
         </View>
       )}
-      {locked ? (
-        <View style={[styles.lock, { width: size * 0.32, height: size * 0.32, borderRadius: size * 0.16 }]}>
-          <Ionicons name="lock-closed" size={size * 0.16} color="#FFFFFF" />
-        </View>
-      ) : null}
     </View>
   )
 }
@@ -125,7 +139,7 @@ export function TierPill({ tier, style }) {
 }
 
 const styles = StyleSheet.create({
-  lock: { position: 'absolute', backgroundColor: 'rgba(62,51,70,0.75)', alignItems: 'center', justifyContent: 'center' },
+  mark: { position: 'absolute', color: '#FFFFFF', fontWeight: '300', opacity: 0.9 },
   pill: { alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 3, borderRadius: 999 },
   pillText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
 })

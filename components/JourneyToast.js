@@ -14,6 +14,7 @@ export default function JourneyToast({ onOpen }) {
   const [level, setLevel] = useState(null)
   const pop = useRef(new Animated.Value(0)).current
   const spin = useRef(new Animated.Value(0)).current
+  const reveal = useRef(new Animated.Value(0)).current
 
   useEffect(() => onJourneyNews(n => {
     if (n.badges.length) setQueue(q => [...q, ...n.badges])
@@ -25,8 +26,15 @@ export default function JourneyToast({ onOpen }) {
     if (!current) return
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     if (current.tier === 'legendary' || current.tier === 'epic') setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}), 380)
+    // The silhouette appears, then turns into the real art.
     pop.setValue(0)
-    Animated.spring(pop, { toValue: 1, friction: 6, tension: 45, useNativeDriver: true }).start()
+    reveal.setValue(0)
+    Animated.sequence([
+      Animated.spring(pop, { toValue: 1, friction: 6, tension: 45, useNativeDriver: true }),
+      Animated.delay(450),
+      Animated.timing(reveal, { toValue: 1, duration: 650, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start()
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}), 1000)
     const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 14000, easing: Easing.linear, useNativeDriver: true }))
     loop.start()
     return () => loop.stop()
@@ -59,7 +67,12 @@ export default function JourneyToast({ onOpen }) {
             </Svg>
           </Animated.View>
             <Animated.View style={{ alignItems: 'center', opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] }}>
-              <BadgeImage badge={current} size={200} />
+              <Animated.View style={{ opacity: reveal.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }}>
+                <BadgeImage badge={current} size={200} locked />
+              </Animated.View>
+              <Animated.View style={{ position: 'absolute', opacity: reveal, transform: [{ scale: reveal.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0.85, 1.08, 1] }) }] }}>
+                <BadgeImage badge={current} size={200} />
+              </Animated.View>
             </Animated.View>
           </View>
           <Text style={styles.title}>{t('New badge!')}</Text>

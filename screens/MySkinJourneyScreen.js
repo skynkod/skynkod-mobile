@@ -72,7 +72,7 @@ export default function MySkinJourneyScreen() {
 
   const badgeTile = b => (
     <Pressable key={b.id} onPress={() => setDetail(b)} style={({ pressed }) => [styles.tile, { width: col, opacity: pressed ? 0.7 : 1 }]} accessibilityLabel={t(b.name)}>
-      <BadgeImage badge={b} size={col * 0.86} locked={!b.earned && !b.mystery} />
+      <BadgeImage badge={b} size={col * 0.86} locked={!b.earned} />
       <Text numberOfLines={2} style={[styles.tileName, { color: b.earned ? colors.text : colors.textSecondary }]}>{t(b.name)}</Text>
       <Text numberOfLines={2} style={[styles.tileSub, { color: b.soon ? colors.primary : colors.muted }]}>{b.soon ? t('Coming soon') : t(b.condition)}</Text>
     </Pressable>
@@ -188,7 +188,7 @@ export default function MySkinJourneyScreen() {
               <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginTop: SPACING.sm }}>
                 {data.nextSteps.map((s, i) => (
                   <Pressable key={s.badge.id} onPress={() => setDetail(data.badges.find(b => b.id === s.badge.id))} style={[styles.row, i < data.nextSteps.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                    <BadgeImage badge={s.badge} size={40} />
+                    <BadgeImage badge={s.badge} size={40} locked />
                     <View style={{ flex: 1 }}>
                       <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.badge.name)}</Text>
                       <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(s.badge.condition)}</Text>
@@ -243,7 +243,7 @@ export default function MySkinJourneyScreen() {
             const status = detail.earned ? 'Obtained' : detail.soon ? 'Coming soon' : detail.mystery ? 'Secret' : detail.value > 0 ? 'In progress' : 'Locked'
             return (
               <Pressable style={[styles.detail, { backgroundColor: ts.card }]} onPress={() => {}}>
-                <BadgeImage badge={detail} size={150} locked={!detail.earned && !detail.mystery} />
+                <BadgeImage badge={detail} size={150} locked={!detail.earned} />
                 <TierPill tier={detail.tier} style={{ marginTop: SPACING.sm }} />
                 <Text style={[styles.detailName, { color: ts.ink }]}>{t(detail.name)}</Text>
                 <Text style={[styles.detailText, { color: ts.soft }]}>{detail.mystery ? t('A secret badge. Keep exploring Skynkod to discover it…') : detail.soon ? t('This badge arrives with a future feature of Skynkod.') : t(detail.earned ? detail.description : detail.condition)}</Text>
