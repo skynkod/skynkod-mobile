@@ -20,7 +20,7 @@ import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
-  decideStep, stepId, saveRekodPlan,
+  decideStep, stepId, saveRekodPlan, projectRekod,
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
@@ -101,6 +101,8 @@ export default function RekodScreen({ navigation }) {
   const [sheet, setSheet] = useState(null) // { period, idx }: a step's details
   const [checkOpen, setCheckOpen] = useState(false)
   const [scans, setScans] = useState([]) // Dekod scans, newest first
+  const [fullOpen, setFullOpen] = useState(false) // the whole programme, week by week
+  const [draft, setDraft] = useState(null) // the plan being previewed, before joining
   // The explanation shows until she hides it; then Rekod opens on the goals.
   const [introHidden, setIntroHidden] = useState(false)
   React.useEffect(() => { if (user?.id) isIntroHidden('rekod', user.id).then(setIntroHidden) }, [user?.id])
@@ -231,6 +233,7 @@ export default function RekodScreen({ navigation }) {
     setBusy(true)
     try {
       const draft = { ...final, sensitive: !!final.sensitive || isReactive(profile), reactive: isReactive(profile), level: { none: 0, some: 1, used: 2 }[final.experience] ?? 0, startedAt: new Date().toISOString(), checkins: [] }
+      setDraft(draft)
       setPreview(await buildRekodRoutine(user.id, draft, profile))
       setStep('preview')
     } catch (error) {
@@ -334,6 +337,12 @@ export default function RekodScreen({ navigation }) {
             )
           })}
         </View>
+
+        <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ alignSelf: 'center', marginTop: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="calendar-outline" size={15} color={C.primary} />
+          <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>See my {goal.weeks}-week plan</Text>
+        </Pressable>
+        <FullPlan visible={fullOpen} onClose={() => setFullOpen(false)} plan={plan} routine={routine} />
 
         {due ? (
           <Pressable onPress={() => { tap(); setCheckOpen(true) }} style={({ pressed }) => [styles.banner, { opacity: pressed ? 0.85 : 1 }]}>
@@ -523,6 +532,11 @@ export default function RekodScreen({ navigation }) {
           <Ionicons name="calendar-outline" size={14} color={C.primary} />
           <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>{goal.weeks} weeks · {goal.results.toLowerCase()}</Text>
         </View>
+        <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ marginTop: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="calendar-outline" size={15} color={C.primary} />
+          <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>See the {goal.weeks}-week plan</Text>
+        </Pressable>
+        {draft ? <FullPlan visible={fullOpen} onClose={() => setFullOpen(false)} plan={draft} routine={preview} /> : null}
         <RoutineTabs routine={preview} onOpen={(period, idx) => setSheet({ period, idx })} />
         <StepSheet step={sheet && preview?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
           onKeep={() => decide(sheet.period, sheet.idx, 'keep')} onRemove={() => decide(sheet.period, sheet.idx, 'remove')}
@@ -654,6 +668,89 @@ function RoutineTabs({ routine, onOpen }) {
         ))}
       </View>
     </View>
+  )
+}
+
+// The whole programme, week by week: what each morning and evening looks
+// like, and what comes in when. A forecast: check-ins can slow it down.
+const NIGHT_PRODUCT_HINT = { exfoliation: 'A gentle exfoliant, picked for your skin when it starts', retinoid: 'Your treatment, picked for your skin when it starts', repair: 'A repair serum', reset: 'Just cleanse and moisturize' }
+function FullPlan({ visible, onClose, plan, routine }) {
+  const [open, setOpen] = useState(null)
+  if (!plan) return null
+  const weeks = projectRekod(plan)
+  const now = weeks.find(w => w.now)?.week || 1
+  const morning = (routine?.morning || []).map(s => s.product || s.action)
+  const productFor = night => (routine?.evening || []).find(s => s.night === night)?.product
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <View style={[styles.topBar, { paddingTop: SPACING.lg }]}>
+          <View style={{ width: 26 }} />
+          <Text style={[TYPE.overline, { color: C.primary }]}>Your {weeks.length}-week plan</Text>
+          <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Close"><Ionicons name="close" size={24} color={C.text} /></Pressable>
+        </View>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text style={[styles.title, { color: C.text }]}>{goalsTitle(plan)}</Text>
+          <Text style={[TYPE.caption, { color: C.muted, marginTop: 4, lineHeight: 18 }]}>
+            The path if your skin feels good at each weekly check-in. If it reacts, your plan slows down, so some steps may come later.
+          </Text>
+
+          <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="sunny-outline" size={18} color={C.primary} />
+              <Text style={[TYPE.bodyStrong, { color: C.text }]}>Every morning, all {weeks.length} weeks</Text>
+            </View>
+            {morning.map((m, i) => <Text key={i} style={[TYPE.caption, { color: C.textSecondary }]}>{i + 1}. {m}</Text>)}
+          </View>
+
+          <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
+            {weeks.map(w => {
+              const isOpen = open === w.week || (open === null && w.week === now)
+              return (
+                <Pressable key={w.week} onPress={() => { tap(); setOpen(isOpen ? -1 : w.week) }}
+                  style={[styles.option, { backgroundColor: w.now ? C.primarySoft : C.card, borderWidth: 1, borderColor: w.now ? C.primary : C.border, opacity: w.past ? 0.6 : 1 }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                    <Text style={[TYPE.bodyStrong, { color: C.text, width: 70 }]}>Week {w.week}</Text>
+                    <Text style={[TYPE.caption, { color: C.muted, flex: 1 }]}>{w.phase}</Text>
+                    {w.now ? <Text style={{ color: C.primary, fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>NOW</Text> : null}
+                    <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.muted} />
+                  </View>
+                  {w.changes.length ? <Text style={[TYPE.caption, { color: C.primary, marginTop: 4 }]}>{w.changes.join(' · ')}</Text> : null}
+                  {isOpen ? (
+                    <View style={{ marginTop: SPACING.md, gap: SPACING.sm }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        {w.pattern.map((night, i) => {
+                          const strong = night === 'retinoid' || night === 'exfoliation'
+                          return (
+                            <View key={i} style={styles.dayCol}>
+                              <Text style={{ color: C.muted, fontSize: 11 }}>{DAY_LETTERS[i]}</Text>
+                              <View style={[styles.dayDot, { width: 30, height: 30, backgroundColor: strong ? C.primary : C.primarySoft }]}>
+                                <Ionicons name={NIGHTS[night].icon} size={13} color={strong ? C.onPrimary : C.primary} />
+                              </View>
+                            </View>
+                          )
+                        })}
+                      </View>
+                      {['retinoid', 'exfoliation', 'repair', 'reset'].filter(n => w.pattern.includes(n)).map(n => (
+                        <View key={n} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+                          <Ionicons name={NIGHTS[n].icon} size={15} color={C.primary} style={{ marginTop: 2 }} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={[TYPE.caption, { color: C.text, fontWeight: '700' }]}>
+                              {n === 'retinoid' && w.azelaic ? 'Azelaic acid night' : NIGHTS[n].label} · {w.pattern.filter(x => x === n).length}×
+                            </Text>
+                            <Text style={[TYPE.caption, { color: C.textSecondary }]}>{productFor(n) || NIGHT_PRODUCT_HINT[n]}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </Pressable>
+              )
+            })}
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
   )
 }
 

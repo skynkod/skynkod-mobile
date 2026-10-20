@@ -491,3 +491,36 @@ export const leaveRekod = async (userId) => {
   const { error } = await supabase.from('rekod_plans').delete().eq('user_id', userId)
   if (error) throw error
 }
+
+// ---------- The whole programme, week by week ----------
+// The path if every weekly check-in says "All good": the level goes up one
+// step a week until the target, and the nights follow the same rules as the
+// real plan. Check-ins can slow it down, so it is a forecast, not a promise.
+const PHASES = ['Gentle start', 'Building up', 'Steady rhythm', 'Full strength']
+export const projectRekod = (plan, now = new Date()) => {
+  const goal = goalOf(plan.goal)
+  const current = weekOf(plan, now)
+  const target = TARGET[plan.experience] ?? 2
+  const weeks = []
+  let previous = null
+  for (let w = 1; w <= goal.weeks; w += 1) {
+    const level = w <= current ? plan.level : Math.min(plan.level + (w - current), target)
+    // The same plan, as it would be in week w.
+    const startedAt = new Date(now.getTime() - (w - 1) * 7 * 86400000).toISOString()
+    const at = { ...plan, level, startedAt, extraReset: w === current ? plan.extraReset : false }
+    const counts = nightCounts(at)
+    const pattern = weekPattern(at)
+    const azelaic = plan.goal === 'calm' || (plan.reactive && w < 5)
+    const changes = []
+    if (previous) {
+      if (counts.ret > previous.ret) changes.push(previous.ret ? `${azelaic ? 'Azelaic acid' : 'Retinol'}: ${counts.ret} nights` : `New: ${azelaic ? 'azelaic acid' : 'retinol'} comes in (${counts.ret} nights)`)
+      if (counts.ex > previous.ex) changes.push(previous.ex ? `Exfoliation: ${counts.ex} nights` : `New: exfoliation comes in (${counts.ex} night${counts.ex > 1 ? 's' : ''})`)
+      if (plan.reactive && w === 5 && plan.goal !== 'calm') changes.push('Azelaic acid makes way for a gentle retinol')
+    } else {
+      changes.push('Your routine starts gently')
+    }
+    weeks.push({ week: w, level, phase: PHASES[Math.min(level, 3)], counts, pattern, azelaic, changes, past: w < current, now: w === current })
+    previous = counts
+  }
+  return weeks
+}
