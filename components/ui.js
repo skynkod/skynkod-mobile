@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import {
   View,
   Text,
@@ -53,6 +53,13 @@ export function Screen({
   const navigation = useContext(NavigationContext)
   const insets = useSafeAreaInsets()
   const showBack = back && navigation
+  // Once the big title scrolls away, a slim bar stays on top with the page
+  // name and the back button.
+  const [compact, setCompact] = useState(false)
+  const onScroll = e => {
+    const down = e.nativeEvent.contentOffset.y > 48
+    if (down !== compact) setCompact(down)
+  }
 
   const header = (title || showBack || right) && (
     <View style={[styles.header, !scroll && { paddingHorizontal: SPACING.xl }]}>
@@ -75,6 +82,8 @@ export function Screen({
   const body = scroll ? (
     <ScrollView
       ref={scrollRef}
+      onScroll={(title || showBack) ? onScroll : undefined}
+      scrollEventThrottle={32}
       contentContainerStyle={[styles.scrollContent, contentStyle]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -90,9 +99,24 @@ export function Screen({
     </View>
   )
 
+  const stickyBar = scroll && compact && (title || showBack) ? (
+    <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+      {showBack ? (
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back" style={styles.stickyBack}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+      ) : <View style={styles.stickyBack} />}
+      <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center' }]} numberOfLines={1}>{title || ''}</Text>
+      <View style={styles.stickyBack}>{right || null}</View>
+    </View>
+  ) : null
+
   const content = (
     <>
-      {body}
+      <View style={{ flex: 1 }}>
+        {body}
+        {stickyBar}
+      </View>
       {footer ? (
         <View
           style={[
@@ -435,6 +459,8 @@ export const ui = StyleSheet.create({
 
 const styles = StyleSheet.create({
   header: { paddingTop: SPACING.sm, paddingBottom: SPACING.xl },
+  sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', height: 48, paddingHorizontal: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
+  stickyBack: { width: 44, alignItems: 'flex-start', justifyContent: 'center' },
   headerBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.md },
   scrollContent: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
   footer: { paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth },
