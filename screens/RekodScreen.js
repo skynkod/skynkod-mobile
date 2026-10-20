@@ -376,11 +376,6 @@ function RoutineCard({ title, period, steps, colors, showDays, navigation, onAlt
             ) : null}
             {(s.issues?.length || !s.product) && onAlternative ? (
               <View style={styles.issueActions}>
-                {s.product ? (
-                  <Pressable onPress={() => onAlternative(period, idx)} style={[styles.smallBtn, { borderColor: colors.primary }]}>
-                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>Find a 100% safe alternative</Text>
-                  </Pressable>
-                ) : null}
                 <Pressable onPress={() => onOwn(period, idx)} style={[styles.smallBtn, { borderColor: colors.border }]}>
                   <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>Use my own product</Text>
                 </Pressable>

@@ -316,6 +316,19 @@ export const findSafeAlternative = async (userId, step) => {
   return found ? { product: found, owned: false, issues: [] } : null
 }
 
+// On a product page: if this product isn't 100% safe for her, a similar one
+// that is (same kind, same main actives when possible). null when none exists.
+export const safeAlternativeFor = async (userId, product) => {
+  const profile = await loadProfile(userId).catch(() => ({}))
+  if (isSafeFor(product, profile)) return { safe: true, alternative: null }
+  const actives = findIngredients(product).filter(f => f.pos <= 8 && f.entry.goodFor?.length).map(f => f.entry.id)
+  const strong = has(product, STRONG, 12)
+  const candidates = (await productsByCategory([product.category], 300).catch(() => [])).filter(p => p.id !== product.id)
+  const opts = { strictOnly: true, avoidHarsh: !strong, noStrong: !strong }
+  const found = (actives.length && pickFrom(candidates, profile, { ...opts, want: actives })) || pickFrom(candidates, profile, opts)
+  return { safe: false, alternative: found }
+}
+
 // The same step with another product (an alternative, or one the user chose).
 export const stepWithProduct = async (userId, step, product) => {
   const profile = await loadProfile(userId).catch(() => ({}))

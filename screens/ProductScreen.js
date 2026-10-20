@@ -12,6 +12,7 @@ import { getPriceStats } from '../utils/community-data'
 import { formatMAD } from '../utils/skynbudget'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
+import { safeAlternativeFor } from '../utils/rekod'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // A product: its match with the user's skin first, the why underneath, then
@@ -27,6 +28,12 @@ export default function ProductScreen({ navigation, route }) {
   const [adding, setAdding] = useState(false)
   const [status, setStatus] = useState(null) // null | 'owned' | 'to_buy'
   const [prices, setPrices] = useState(null)
+  const [alt, setAlt] = useState(null) // { safe, alternative } for her skin
+  useEffect(() => {
+    if (!user?.id || !product?.id) return
+    setAlt(null)
+    safeAlternativeFor(user.id, product).then(setAlt).catch(() => setAlt(null))
+  }, [user?.id, product?.id])
   useEffect(() => {
     if (!product?.id) return
     getPriceStats(product.id).then(setPrices).catch(() => setPrices(null))
@@ -135,6 +142,26 @@ export default function ProductScreen({ navigation, route }) {
           </Text>
         ) : null}
       </View>
+
+      {/* Not 100% safe for her: the closest product that is */}
+      {alt && !alt.safe ? (
+        alt.alternative ? (
+          <Pressable onPress={() => navigation.navigate('Product', { id: alt.alternative.id, product: undefined })} style={[styles.altCard, { backgroundColor: '#33202E' }]}>
+            <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{alt.alternative.brand} {alt.alternative.name}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 }}>{t('A similar product without the ingredients that bother your skin.')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
+          </Pressable>
+        ) : (
+          <View style={[styles.altCard, { backgroundColor: colors.surface }]}>
+            <Ionicons name="search-outline" size={20} color={colors.muted} />
+            <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
+          </View>
+        )
+      ) : null}
 
       {match.avoid.length ? (
         <View style={[styles.avoidCard, { backgroundColor: colors.dangerSoft }]}>
@@ -283,6 +310,7 @@ export default function ProductScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  altCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 20, padding: SPACING.lg, marginTop: SPACING.md },
   hero: { flexDirection: 'row', gap: SPACING.lg, alignItems: 'center' },
   image: { width: 96, height: 96, borderRadius: RADIUS.md, backgroundColor: '#FFFFFF' },
   noImage: { alignItems: 'center', justifyContent: 'center' },
