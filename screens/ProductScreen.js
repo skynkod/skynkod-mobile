@@ -151,14 +151,14 @@ export default function ProductScreen({ navigation, route }) {
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
               <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{alt.alternative.brand} {alt.alternative.name}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 }}>{t('A similar product without the ingredients that bother your skin.')}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 }}>{alt.active ? t('Also with {active}, without the ingredients that bother your skin.', { active: alt.active.toLowerCase() }) : t('A similar product without the ingredients that bother your skin.')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
           </Pressable>
         ) : (
           <View style={[styles.altCard, { backgroundColor: colors.surface }]}>
             <Ionicons name="search-outline" size={20} color={colors.muted} />
-            <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{alt.active ? t("We couldn't find another product with {active} that is 100% safe for your skin yet.", { active: alt.active.toLowerCase() }) : t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
           </View>
         )
       ) : null}

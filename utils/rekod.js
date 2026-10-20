@@ -149,6 +149,8 @@ export const applyCheckIn = (plan, answer, now = new Date()) => {
 // (the tail of an INCI list is under ~1%).
 const has = (product, ids, maxPos = 99) => findIngredients(product).some(f => ids.includes(f.entry.id) && f.pos <= maxPos)
 const STRONG = ['retinol', 'glycolic', 'salicylic', 'lactic', 'mandelic', 'benzoyl', 'azelaic']
+// Basics every product has: never the reason a product is "similar".
+const BASICS = ['glycerin', 'hyaluronic', 'dimethicone', 'petrolatum', 'squalane', 'shea', 'aloe', 'vitamine', 'allantoin', 'jojoba']
 const harsh = p => has(p, ['sls', 'scrub', 'alcohol', 'fragrance', 'essentialoils']) || /scrub|exfoli|peel/i.test(p?.name || '')
 
 // What each step looks for, per goal. `want` = guide ingredient ids.
@@ -369,12 +371,25 @@ export const findSafeAlternative = async (userId, step) => {
 export const safeAlternativeFor = async (userId, product) => {
   const profile = await loadProfile(userId).catch(() => ({}))
   if (isSafeFor(product, profile)) return { safe: true, alternative: null }
-  const actives = findIngredients(product).filter(f => f.pos <= 8 && f.entry.goodFor?.length).map(f => f.entry.id)
+  // The product's main active: the one in its name first ("Niacinamide 5%…"),
+  // else the first real active of the list (not a basic like glycerin).
+  const name = (product.name || '').toLowerCase()
+  const found = findIngredients(product).filter(f => f.pos <= 10 && f.entry.goodFor?.length && !BASICS.includes(f.entry.id))
+  const inName = found.filter(f => name.includes(f.entry.name.toLowerCase().split(' (')[0]) || (f.entry.match || []).some(m => name.includes(m)))
+  const main = (inName[0] || found.sort((a, b) => a.pos - b.pos)[0])?.entry || null
   const strong = has(product, STRONG, 12)
-  const candidates = (await productsByCategory([product.category], 300).catch(() => [])).filter(p => p.id !== product.id)
-  const opts = { strictOnly: true, avoidHarsh: !strong, noStrong: !strong }
-  const found = (actives.length && pickFrom(candidates, profile, { ...opts, want: actives })) || pickFrom(candidates, profile, opts)
-  return { safe: false, alternative: found }
+  const related = ['serum', 'moisturizer', 'toner']
+  const cats = related.includes(product.category) ? [product.category, ...related.filter(c => c !== product.category)] : [product.category]
+  // Cleansers and sunscreens are judged on their role; other products on their active.
+  const basicRole = ['cleanser', 'sunscreen'].includes(product.category)
+  const opts = { strictOnly: true, avoidHarsh: !strong, noStrong: !strong, want: main ? [main.id] : [], wantRequired: !!main && !basicRole }
+  // Same kind of product first, then a close kind (a serum for a cream…).
+  for (const cat of cats) {
+    const candidates = (await productsByCategory([cat], 300).catch(() => [])).filter(p => p.id !== product.id)
+    const alt = pickFrom(candidates, profile, opts)
+    if (alt) return { safe: false, alternative: alt, active: alt && main && has(alt, [main.id], 10) ? main.name.split(' (')[0] : null }
+  }
+  return { safe: false, alternative: null, active: main && !basicRole ? main.name.split(' (')[0] : null }
 }
 
 // The same step with another product (an alternative, or one the user chose).
