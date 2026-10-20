@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator, Alert, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { CommonActions } from '@react-navigation/native'
 import { useColors } from '../components/ui'
 import ProductVerdict from '../components/ProductVerdict'
 import { useAuth } from '../utils/AuthContext'
@@ -123,7 +124,21 @@ export default function RoutineBuilderScreen({ navigation, route }) {
 
   const inSummary = index >= essentials.length
   // Leaving always lands on Routines, not on the picker or Koda visited before.
-  const leave = () => navigation.navigate('Routines', { tab: period }, { merge: true })
+  // The builder, picker and scanner are dropped from the back history, so
+  // Back on Routines returns to where she came from instead of looping here.
+  const exitTo = params => {
+    const state = navigation.getState()
+    const target = state.routes.findIndex(route => route.name === 'Routines')
+    if (target < 0 || !Array.isArray(state.history)) return navigation.navigate('Routines', params, { merge: true })
+    const passing = new Set(state.routes.filter(route => ['RoutineBuilder', 'ProductPicker', 'Scanner', 'Routines'].includes(route.name)).map(route => route.key))
+    navigation.dispatch(CommonActions.reset({
+      ...state,
+      index: target,
+      routes: state.routes.map((route, i) => (i === target ? { ...route, params: { ...route.params, ...params } } : route)),
+      history: [...state.history.filter(entry => !passing.has(entry.key)), { type: 'route', key: state.routes[target].key }],
+    }))
+  }
+  const leave = () => exitTo({ tab: period })
   const stepKey = essentials[index]
   const step = STEP_TYPES[stepKey]
   const currentSlot = slots.find(slot => slot.uid === stepKey)
@@ -216,7 +231,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       await Promise.all(chosen.map(({ product }) =>
         addToMyProducts(user.id, product, 'owned').catch(error => logError('RoutineBuilder_addProduct', error, { id: product.id }, 'warn'))
       ))
-      navigation.navigate('Routines', { tab: period, savedAt: Date.now() })
+      exitTo({ tab: period, savedAt: Date.now() })
     } catch (error) {
       console.log('Routine save failed:', error?.message)
       await logError('RoutineBuilder_save', error, { period }, 'warn')
