@@ -344,14 +344,19 @@ export default function JournalScreen({ route, navigation }) {
           </>
         ) : null}
 
-        <TextInput
-          value={note}
-          onChangeText={setNoteLater}
-          placeholder={t('Add a note…')}
-          placeholderTextColor={colors.muted}
-          multiline
-          style={[styles.note, { backgroundColor: colors.surface, color: colors.text }]}
-        />
+        {/* Our own placeholder: iOS loses the built-in one once a note is erased */}
+        <View>
+          <TextInput
+            value={note}
+            onChangeText={setNoteLater}
+            multiline
+            accessibilityLabel={t('Add a note…')}
+            style={[styles.note, { backgroundColor: colors.surface, color: colors.text }]}
+          />
+          {!note ? (
+            <Text pointerEvents="none" style={[styles.notePlaceholder, { color: colors.muted }]}>{t('Add a note…')}</Text>
+          ) : null}
+        </View>
 
         <Pressable onPress={saveNow} disabled={status !== 'dirty'}
           style={({ pressed }) => [styles.saveBtn, { backgroundColor: status === 'saved' ? colors.successSoft || colors.primarySoft : colors.primary, opacity: status === 'idle' ? 0.45 : pressed ? 0.85 : 1 }]}>
@@ -449,6 +454,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
+  notePlaceholder: { position: 'absolute', top: SPACING.xl + SPACING.lg, left: SPACING.lg, fontSize: 15 },
   mood: { alignItems: 'center', gap: 6, width: 58 },
   face: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
