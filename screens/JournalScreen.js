@@ -7,7 +7,9 @@ import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
-import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
+import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions } from '../utils/journal-day';
+import { getMyProducts } from '../utils/catalog';
+import { getPausedProducts, setProductPaused } from '../utils/paused-products';
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
@@ -78,6 +80,17 @@ export default function JournalScreen({ route, navigation }) {
   const [entryId, setEntryId] = useState(null);
   const [mood, setMood] = useState(null);
   const [tags, setTags] = useState([]);
+  // "Used new product": which one(s), to spot reactions over the next days.
+  const [newProducts, setNewProducts] = useState([]);
+  const [owned, setOwned] = useState([]);
+  const [reactions, setReactions] = useState([]);
+  const [paused, setPaused] = useState([]);
+  useEffect(() => {
+    if (!user?.id) return;
+    getMyProducts(user.id).then(rows => setOwned(rows.filter(r => r.status === 'owned' && r.product_id).map(r => ({ id: r.product_id, name: [r.product?.brand || r.brand, r.product?.name || r.product_name].filter(Boolean).join(' ') })))).catch(() => {});
+    getProductReactions(user.id).then(setReactions).catch(() => {});
+    getPausedProducts(user.id).then(setPaused);
+  }, [user?.id]);
   const [note, setNote] = useState('');
   const [status, setStatus] = useState('idle'); // idle | dirty | saving | saved
   const [routineLog, setRoutineLog] = useState(null);
@@ -107,6 +120,7 @@ export default function JournalScreen({ route, navigation }) {
       if (dirty.current) return;
       setMood(MOODS.some(m => m.value === entry?.mood) ? entry.mood : null);
       setTags(entry?.skin_conditions || []);
+      setNewProducts(Array.isArray(entry?.products_used) ? entry.products_used : []);
       setNote(entry?.notes || '');
       setStatus('idle');
     } catch (error) {
@@ -166,8 +180,8 @@ export default function JournalScreen({ route, navigation }) {
 
   // Nothing saves by itself: she taps Save, so she knows it's kept. Leaving
   // with unsaved changes asks whether to save them.
-  const latest = useRef({ mood, tags, note });
-  latest.current = { mood, tags, note };
+  const latest = useRef({ mood, tags, note, newProducts });
+  latest.current = { mood, tags, note, newProducts };
   const entryRef = useRef(entryId);
   entryRef.current = entryId;
   const noteTimer = useRef(null);
@@ -224,6 +238,16 @@ export default function JournalScreen({ route, navigation }) {
     setMood(value);
     if (changed) setTags([]);
     markDirty();
+  };
+  const toggleNewProduct = (p) => {
+    const next = newProducts.some(x => x.id === p.id) ? newProducts.filter(x => x.id !== p.id) : [...newProducts, p];
+    latest.current = { ...latest.current, newProducts: next };
+    setNewProducts(next);
+    markDirty();
+  };
+  const togglePause = async (product) => {
+    const isPaused = paused.some(p => p.id === product.id);
+    setPaused(await setProductPaused(user.id, product, !isPaused));
   };
   const toggleTag = (tag) => {
     const next = tags.includes(tag) ? tags.filter(x => x !== tag) : [...tags, tag];
@@ -339,6 +363,27 @@ export default function JournalScreen({ route, navigation }) {
           })}
         </View>
 
+        {/* Which new product: the app can then spot reactions that follow it */}
+        {tags.includes('Used new product') ? (
+          <View style={{ marginTop: SPACING.md }}>
+            <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{t('Which new product?')}</Text>
+            {owned.length ? (
+              <View style={[styles.tags, { marginTop: SPACING.sm }]}>
+                {owned.slice(0, 12).map(p => {
+                  const on = newProducts.some(x => x.id === p.id);
+                  return (
+                    <Pressable key={p.id} onPress={() => toggleNewProduct(p)} style={[styles.tag, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primarySoft : colors.border }]}>
+                      <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600' }]} numberOfLines={1}>{p.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Add it to My products to follow how your skin reacts.')}</Text>
+            )}
+          </View>
+        ) : null}
+
         {tags.some(tag => TAG_TIPS[tag]) ? (
           <View style={[styles.tipBox, { backgroundColor: colors.surface, flexDirection: 'column', alignItems: 'stretch', gap: 6 }]}>
             {tags.filter(tag => TAG_TIPS[tag]).map(tag => (
@@ -390,6 +435,28 @@ export default function JournalScreen({ route, navigation }) {
           )}
         </Pressable>
       </View>
+
+      {/* A product that keeps being followed by a reaction */}
+      {reactions.slice(0, 2).map(r => {
+        const isPaused = paused.some(p => p.id === r.product.id);
+        return (
+          <View key={r.product.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.overline, { color: colors.primary }]}>{t('A PRODUCT TO WATCH')}</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+              {t('{tag} often appeared in the days after you started {product}.', { tag: t(r.tag), product: r.product.name })}
+            </Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Seen {n} times in your journal. It may be a coincidence.', { n: r.count })}</Text>
+            <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
+              <Pressable onPress={() => togglePause(r.product)} style={[styles.smallBtn, { backgroundColor: isPaused ? colors.primarySoft : colors.primary }]}>
+                <Text style={[TYPE.caption, { color: isPaused ? colors.primary : colors.onPrimary, fontWeight: '700' }]}>{t(isPaused ? 'Resume it' : 'Pause it')}</Text>
+              </Pressable>
+              <Pressable onPress={() => navigation.navigate('Koda', { prefill: t('My skin often reacts after I use {product}. What should I do?', { product: r.product.name }) })} style={[styles.smallBtn, { backgroundColor: colors.surface }]}>
+                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{t('Ask Koda')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        );
+      })}
 
       {/* What your skin tells you: links that keep coming back (observations, no advice) */}
       {skinPatterns ? (
@@ -471,6 +538,7 @@ const styles = StyleSheet.create({
   patternRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
   patternIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   saveBtn: { height: 50, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg },
+  smallBtn: { flex: 1, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   tipBox: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.md },
   planCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg },
   card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },

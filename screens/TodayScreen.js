@@ -24,6 +24,7 @@ import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { getWeekRecap, recapWeekKey, moodLabel } from '../utils/progress'
+import { getPausedProducts } from '../utils/paused-products'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -86,6 +87,9 @@ export default function TodayScreen({ navigation }) {
   const [sos, setSos] = useState({ plan: null, products: {}, newest: null })
   // The weekly recap: the week that just ended, until she closes it.
   const [recap, setRecap] = useState(null)
+  // Products she paused herself (after a reaction): left out of the routine.
+  const [pausedProducts, setPausedProducts] = useState([])
+  useFocusEffect(useCallback(() => { if (user?.id) getPausedProducts(user.id).then(setPausedProducts) }, [user?.id]))
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
     const key = `recap_seen_${user.id}_${recapWeekKey()}`
@@ -161,7 +165,15 @@ export default function TodayScreen({ navigation }) {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
 
-  const adjustedOf = period => adjustForPlan(todaySteps(routines[period]?.steps || []), sos.products, sos.plan, sos.newest)
+  const adjustedOf = period => {
+    const base = adjustForPlan(todaySteps(routines[period]?.steps || []), sos.products, sos.plan, sos.newest)
+    const mine = new Set(pausedProducts.map(p => p.id))
+    if (!mine.size) return base
+    return {
+      steps: base.steps.filter(st => !mine.has(st.product_id)),
+      paused: [...base.paused, ...base.steps.filter(st => mine.has(st.product_id)).map(step => ({ step, reason: 'paused by you' }))],
+    }
+  }
   const stepsOf = period => adjustedOf(period).steps
   const countOf = period => {
     const steps = stepsOf(period)
@@ -282,7 +294,7 @@ export default function TodayScreen({ navigation }) {
             ))}
             {adjustedOf(period).paused.length ? (
               <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
-                {t('Paused during your plan:')} {adjustedOf(period).paused.map(x => x.step.product).join(', ')}
+                {t('Paused for now:')} {adjustedOf(period).paused.map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
             <Pressable onPress={() => (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period }))} style={{ paddingTop: SPACING.sm }}>

@@ -50,7 +50,7 @@ const dayBounds = (day) => {
 export const getEntriesBetween = async (userId, start, end) => {
   const { data, error } = await supabase
     .from('journal_entries')
-    .select('id, date, mood, skin_conditions, notes')
+    .select('id, date, mood, skin_conditions, notes, products_used')
     .eq('user_id', userId)
     .gte('date', start.toISOString())
     .lt('date', end.toISOString())
@@ -60,7 +60,7 @@ export const getEntriesBetween = async (userId, start, end) => {
 }
 
 // Creates or updates the entry of one day.
-export const saveDay = async (userId, day, { mood, tags, notes }, existingId) => {
+export const saveDay = async (userId, day, { mood, tags, notes, newProducts }, existingId) => {
   const { start } = dayBounds(day)
   const noon = new Date(start)
   noon.setHours(12)
@@ -69,6 +69,8 @@ export const saveDay = async (userId, day, { mood, tags, notes }, existingId) =>
     skin_conditions: tags,
     notes: notes || '',
     ...levelsFrom(mood, tags),
+    // Which new product(s) she started that day, to spot reactions later.
+    ...(newProducts !== undefined ? { products_used: (tags || []).includes('Used new product') ? newProducts : [] } : {}),
   }
   if (existingId) {
     const { error } = await supabase.from('journal_entries').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', existingId)
@@ -123,4 +125,34 @@ export const getSkinPatterns = async (userId) => {
     routineDates,
     hasRoutine: (routines.data || []).length > 0,
   })
+}
+
+// ---------- Products and reactions ----------
+// When a reaction (spots, redness, itching, peeling) shows up 0 to 5 days after
+// she started a product, more than once, the journal points it out.
+const REACTIONS = ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking']
+export const getProductReactions = async (userId) => {
+  const since = new Date(Date.now() - 120 * 86400000)
+  const { data, error } = await supabase.from('journal_entries').select('date, skin_conditions, products_used')
+    .eq('user_id', userId).gte('date', since.toISOString()).order('date', { ascending: true })
+  if (error) throw error
+  const rows = (data || []).map(r => ({ t: new Date(r.date).getTime(), tags: r.skin_conditions || [], products: Array.isArray(r.products_used) ? r.products_used : [] }))
+  const found = {}
+  for (const intro of rows) {
+    for (const p of intro.products) {
+      if (!p?.id) continue
+      const after = rows.filter(r => r.t >= intro.t && r.t <= intro.t + 5 * 86400000)
+      for (const r of after) {
+        const hit = r.tags.filter(tag => REACTIONS.includes(tag))
+        if (!hit.length) continue
+        found[p.id] = found[p.id] || { product: p, days: new Set(), tags: {} }
+        found[p.id].days.add(new Date(r.t).toDateString())
+        hit.forEach(tag => { found[p.id].tags[tag] = (found[p.id].tags[tag] || 0) + 1 })
+      }
+    }
+  }
+  return Object.values(found)
+    .filter(f => f.days.size >= 2)
+    .map(f => ({ product: f.product, count: f.days.size, tag: Object.entries(f.tags).sort((a, b) => b[1] - a[1])[0][0] }))
+    .sort((a, b) => b.count - a.count)
 }
