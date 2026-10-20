@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Platform, Alert, Image, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Platform, Alert, Image, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,10 +9,12 @@ import { getUserRoutines } from '../utils/routines-service'
 import { describeDays } from '../utils/routine-checks'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
+import { searchProducts, getMyProducts } from '../utils/catalog'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import {
   GOALS, NIGHTS, goalOf, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
+  findSafeAlternative, stepWithProduct, replaceRoutineStep,
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
@@ -80,6 +82,51 @@ export default function RekodScreen({ navigation }) {
   const [step, setStep] = useState('intro') // intro | sensitive | experience | priority | preview
   const [preview, setPreview] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [own, setOwn] = useState(null) // { period, index } while choosing her own product
+
+  // A changed step goes into the saved routine (members) or the preview (before joining).
+  const applyStep = async (period, index, step) => {
+    if (plan) {
+      const steps = await replaceRoutineStep(user.id, period, index, step)
+      setRoutine(r => ({ ...r, [period]: steps }))
+    } else {
+      setPreview(pv => ({ ...pv, [period]: pv[period].map((s, i) => (i === index ? step : s)) }))
+    }
+  }
+  const currentStep = (period, index) => (plan ? routine : preview)?.[period]?.[index]
+
+  const findAlternative = async (period, index) => {
+    const step = currentStep(period, index)
+    try {
+      const alt = await findSafeAlternative(user.id, step)
+      if (!alt) {
+        Alert.alert('No 100% safe alternative yet', "We couldn't find a product in our catalogue that is 100% safe for your skin for this step. You can choose a product you know instead.", [
+          { text: 'OK', style: 'cancel' },
+          { text: 'Choose my own', onPress: () => setOwn({ period, index }) },
+        ])
+        return
+      }
+      Alert.alert('100% safe alternative found', `${alt.product.brand} ${alt.product.name}`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Use it', onPress: async () => { await applyStep(period, index, await stepWithProduct(user.id, step, alt.product)); track('rekod_alternative', { found: true }) } },
+      ])
+    } catch (error) {
+      await logError('Rekod_alternative', error)
+      Alert.alert('Something went wrong', 'Please try again.')
+    }
+  }
+
+  const chooseOwn = async (product) => {
+    const { period, index } = own
+    setOwn(null)
+    try {
+      await applyStep(period, index, await stepWithProduct(user.id, currentStep(period, index), product))
+      track('rekod_own_product')
+    } catch (error) {
+      await logError('Rekod_own', error)
+      Alert.alert('Something went wrong', 'Please try again.')
+    }
+  }
 
   const load = useCallback(async () => {
     if (!user?.id) return
@@ -204,9 +251,10 @@ export default function RekodScreen({ navigation }) {
           </View>
         ) : null}
 
-        <RoutineCard navigation={navigation} title="Morning" steps={routine?.morning} colors={colors} />
-        <RoutineCard navigation={navigation} title="Evening" steps={routine?.evening} colors={colors} showDays />
+        <RoutineCard navigation={navigation} title="Morning" period="morning" steps={routine?.morning} colors={colors} onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
+        <RoutineCard navigation={navigation} title="Evening" period="evening" steps={routine?.evening} colors={colors} showDays onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
 
+        <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.lg }}>
           <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Leave my programme</Text>
         </Pressable>
@@ -251,8 +299,9 @@ export default function RekodScreen({ navigation }) {
         subtitle={`${goal.weeks} weeks · ${goal.results.toLowerCase()}`}
         footer={<RButton title="Start my programme" onPress={adopt} loading={busy} />}
       >
-        <RoutineCard navigation={navigation} title="Morning" steps={preview.morning} colors={colors} />
-        <RoutineCard navigation={navigation} title="Evening" steps={preview.evening} colors={colors} showDays />
+        <RoutineCard navigation={navigation} title="Morning" period="morning" steps={preview.morning} colors={colors} onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
+        <RoutineCard navigation={navigation} title="Evening" period="evening" steps={preview.evening} colors={colors} showDays onAlternative={findAlternative} onOwn={(p, i) => setOwn({ period: p, index: i })} />
+        <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
         <Pressable onPress={() => setStep('intro')} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
           <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Change my goal</Text>
         </Pressable>
@@ -298,13 +347,13 @@ export default function RekodScreen({ navigation }) {
   )
 }
 
-function RoutineCard({ title, steps, colors, showDays, navigation }) {
+function RoutineCard({ title, period, steps, colors, showDays, navigation, onAlternative, onOwn }) {
   if (!steps?.length) return null
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[TYPE.overline, { color: colors.muted }]}>{title}</Text>
-      {steps.map((s, i) => (
-        <View key={`${s.key}-${i}`} style={styles.stepRow}>
+      {steps.map((s, idx) => (
+        <View key={`${s.key}-${idx}`} style={styles.stepRow}>
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={[TYPE.overline, { color: colors.muted, fontSize: 10 }]}>{s.action}</Text>
             <Pressable disabled={!s.product_id} onPress={() => navigation.navigate('Product', { id: s.product_id })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -313,6 +362,28 @@ function RoutineCard({ title, steps, colors, showDays, navigation }) {
             </Pressable>
             {showDays && s.days?.length ? <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600' }]}>{describeDays(s.days)}</Text> : null}
             {s.why ? <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{s.why}</Text> : null}
+            {s.issues?.length ? (
+              <View style={[styles.issueBox, { borderColor: s.issues[0].level === 'avoid' ? '#E9A3A3' : '#E7C07A' }]}>
+                <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? '#E9A3A3' : '#E7C07A', fontWeight: '700' }]}>
+                  {s.issues[0].level === 'avoid' ? 'Not recommended for your skin' : 'Not 100% safe for your skin'}
+                </Text>
+                {s.issues.map((i, n) => (
+                  <Text key={n} style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>• {i.text}{i.detail ? `. ${i.detail}` : ''}</Text>
+                ))}
+              </View>
+            ) : null}
+            {(s.issues?.length || !s.product) && onAlternative ? (
+              <View style={styles.issueActions}>
+                {s.product ? (
+                  <Pressable onPress={() => onAlternative(period, idx)} style={[styles.smallBtn, { borderColor: colors.primary }]}>
+                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>Find a 100% safe alternative</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable onPress={() => onOwn(period, idx)} style={[styles.smallBtn, { borderColor: colors.border }]}>
+                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>Use my own product</Text>
+                </Pressable>
+              </View>
+            ) : null}
             {s.keys?.length ? (
               <View style={styles.keys}>
                 {s.keys.map(k => (
@@ -353,6 +424,12 @@ const styles = StyleSheet.create({
   answers: { flexDirection: 'row', gap: SPACING.sm },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, paddingVertical: 4 },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  issueBox: { borderWidth: 1, borderRadius: 12, padding: SPACING.sm, gap: 2, marginTop: 2 },
+  issueActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  smallBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  sheet: { flex: 1, backgroundColor: '#33202E', paddingTop: SPACING.xl, paddingHorizontal: SPACING.xl },
+  search: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', borderRadius: 14, paddingHorizontal: 14, height: 46, color: '#FFFFFF', marginTop: SPACING.md },
+  resultRow: { paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.12)' },
   keyChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   product: { fontFamily: SERIF, fontSize: 15 },
   badge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
@@ -362,3 +439,40 @@ const styles = StyleSheet.create({
   question: { fontFamily: SERIF, fontSize: 30, lineHeight: 36, marginTop: SPACING.sm },
   option: { borderRadius: 18, padding: SPACING.lg },
 })
+
+// Her own product instead of the one we chose: her shelf first, then search.
+function OwnProductPicker({ visible, userId, onClose, onPick }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  React.useEffect(() => {
+    if (!visible) return
+    let active = true
+    const q = query.trim()
+    const run = q.length >= 2
+      ? searchProducts(q)
+      : getMyProducts(userId).then(rows => rows.filter(r => r.product).map(r => r.product))
+    const timer = setTimeout(() => run.then(r => active && setResults(r || [])).catch(() => active && setResults([])), 250)
+    return () => { active = false; clearTimeout(timer) }
+  }, [visible, query, userId])
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={styles.sheet}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.title, { color: C.text, fontSize: 24 }]}>Your own product</Text>
+          <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Close"><Ionicons name="close" size={24} color={C.text} /></Pressable>
+        </View>
+        <Text style={[TYPE.caption, { color: C.muted, marginTop: 4 }]}>{query.trim().length >= 2 ? 'Search results' : 'From your products. Type to search the catalogue.'}</Text>
+        <TextInput value={query} onChangeText={setQuery} placeholder="Search a product or brand" placeholderTextColor="rgba(255,255,255,0.45)" style={styles.search} autoFocus />
+        <ScrollView keyboardShouldPersistTaps="handled" style={{ marginTop: SPACING.md }}>
+          {results.map(p => (
+            <Pressable key={p.id} onPress={() => onPick(p)} style={styles.resultRow}>
+              <Text style={[TYPE.caption, { color: C.muted }]}>{p.brand}</Text>
+              <Text style={[styles.product, { color: C.text }]}>{p.name}</Text>
+            </Pressable>
+          ))}
+          {!results.length ? <Text style={[TYPE.caption, { color: C.muted, marginTop: SPACING.lg }]}>No products yet.</Text> : null}
+        </ScrollView>
+      </View>
+    </Modal>
+  )
+}

@@ -160,13 +160,34 @@ export const isSafeFor = (product, profile) => {
   return !m.partial && !isUnsuitable(m) && !m.avoid.length && !(m.triggers || []).length && !(m.care || []).length
 }
 
-const pickFrom = (candidates, profile, { want = [], avoidHarsh = false, noStrong = false, exclude = [], prefer = null } = {}) => {
-  const ok = candidates.filter(p => p && !exclude.includes(p.id) && isSafeFor(p, profile)
-    && (!avoidHarsh || !harsh(p)) && (!noStrong || !has(p, STRONG, 12)))
+// What makes a product less than 100% safe for this person, in plain words.
+// level: 'watch' (small amount or mild) · 'patch' (worth a patch test).
+export const safetyIssues = (product, profile) => {
+  const m = productMatch(product, profile || {})
+  return (m.triggers || []).filter(t => t.level !== 'avoid').map(t => ({ level: t.level, text: t.text, detail: t.detail || '' }))
+}
+
+// Second choice when nothing is 100% safe: never a product the engine says to
+// avoid, never one with an unknown ingredient list; only mild, explained issues.
+const isAcceptable = (product, profile) => {
+  if (!product?.ingredients_text) return false
+  const m = productMatch(product, profile || {})
+  const personal = (m.care || []).filter(c => !(m.triggers || []).includes(c))
+  return !m.partial && !isUnsuitable(m) && !personal.length && (m.triggers || []).every(t => t.level === 'watch' || t.level === 'patch')
+}
+
+const pickFrom = (candidates, profile, { want = [], avoidHarsh = false, noStrong = false, exclude = [], prefer = null, strictOnly = false } = {}) => {
+  const base = candidates.filter(p => p && !exclude.includes(p.id) && (!avoidHarsh || !harsh(p)) && (!noStrong || !has(p, STRONG, 12)))
   // The active must be one of the first ingredients, not a trace.
-  const pool = want.length ? ok.filter(p => has(p, want, 8)) : ok
+  const withActive = want.length ? base.filter(p => has(p, want, 8)) : base
   const rank = p => (productMatch(p, profile || {}).score || 0) + (prefer && prefer(p) ? 100 : 0)
-  return pool.map(p => ({ p, score: rank(p) })).sort((a, b) => b.score - a.score)[0]?.p || null
+  const best = list => list.map(p => ({ p, score: rank(p) })).sort((a, b) => b.score - a.score)[0]?.p || null
+  const safe = best(withActive.filter(p => isSafeFor(p, profile)))
+  if (safe || strictOnly) return safe
+  // Nothing 100% safe: the mildest acceptable one, fewest issues first.
+  const ok = withActive.filter(p => isAcceptable(p, profile))
+  return ok.map(p => ({ p, n: safetyIssues(p, profile).reduce((a, i) => a + (i.level === 'patch' ? 3 : 1), 0), score: rank(p) }))
+    .sort((a, b) => a.n - b.n || b.score - a.score)[0]?.p || null
 }
 
 // The user's own products first, then the catalogue.
@@ -185,7 +206,7 @@ const chooser = async (userId, profile) => {
       found = pickFrom(cache[key], profile, o)
     }
     if (found && opts.unique) used.push(found.id)
-    return found ? { product: found, owned: found === own } : null
+    return found ? { product: found, owned: found === own, issues: isSafeFor(found, profile) ? [] : safetyIssues(found, profile) } : null
   }
 }
 
@@ -216,7 +237,9 @@ const stepFrom = (key, action, choice, extra = {}, want = []) => {
     owned: !!choice?.owned,
     days: null,
     acks: null,
-    why: !choice ? 'No product in our catalogue is 100% safe for your skin for this step yet. We’re adding more every week.'
+    issues: choice?.issues || [],
+    want,
+    why: !choice ? 'No product in our catalogue is safe enough for your skin for this step yet. We’re adding more every week.'
       : main ? `${main.name}: ${main.what}` : ROLE_WHY[key] || (keys[0] ? `${keys[0].name}: ${keys[0].what}` : null),
     keys,
     ...extra,
@@ -249,10 +272,10 @@ export const buildRekodRoutine = async (userId, plan, givenProfile) => {
   const amSerum = await pick(['serum', 'toner'], { ...gentle, want: morningSerum[plan.goal], unique: true })
 
   const morning = [
-    stepFrom('cleanser', 'Cleanse', cleanser),
-    amSerum && stepFrom('serum', 'Serum', amSerum, {}, morningSerum[plan.goal]),
-    stepFrom('moisturizer', 'Moisturize', moisturizer),
-    stepFrom('sunscreen', 'SPF 50', sunscreen, {}, ['zincoxide', 'titanium', 'chemicalspf']),
+    stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
+    amSerum && stepFrom('serum', 'Serum', amSerum, { cats: ['serum', 'toner'] }, morningSerum[plan.goal]),
+    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
+    stepFrom('sunscreen', 'SPF 50', sunscreen, { cats: ['sunscreen'] }, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
   const week = weekPattern(plan)
@@ -269,14 +292,48 @@ export const buildRekodRoutine = async (userId, plan, givenProfile) => {
   const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides'], unique: true })
 
   const evening = [
-    stepFrom('cleanser', 'Cleanse', cleanser),
-    daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation' }, exfoliantFor(plan.goal, plan.sensitive)),
-    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid' }, retinoidWant),
-    daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair' }, repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides']),
-    stepFrom('moisturizer', 'Moisturize', moisturizer),
+    stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
+    daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exfoliantFor(plan.goal, plan.sensitive)),
+    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
+    daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides']),
+    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
   ].filter(Boolean)
 
   return { morning, evening }
+}
+
+// ---------- Changing one product ----------
+
+// A 100% safe product for the same step: with the same active first, then any
+// safe product of the same kind. null when the catalogue has none.
+export const findSafeAlternative = async (userId, step) => {
+  const profile = await loadProfile(userId).catch(() => ({}))
+  const cats = step.cats || [step.key === 'treatment' || step.key === 'exfoliant' ? 'serum' : step.key]
+  const candidates = (await productsByCategory(cats, 300).catch(() => [])).filter(p => p.id !== step.product_id)
+  const strong = ['exfoliant', 'treatment'].includes(step.key)
+  const opts = { strictOnly: true, avoidHarsh: !strong, noStrong: !strong }
+  const found = pickFrom(candidates, profile, { ...opts, want: step.want || [] }) || pickFrom(candidates, profile, opts)
+  return found ? { product: found, owned: false, issues: [] } : null
+}
+
+// The same step with another product (an alternative, or one the user chose).
+export const stepWithProduct = async (userId, step, product) => {
+  const profile = await loadProfile(userId).catch(() => ({}))
+  const choice = { product, owned: false, issues: isSafeFor(product, profile) ? [] : safetyIssues(product, profile) }
+  const unsafe = !isSafeFor(product, profile) && !isAcceptable(product, profile)
+  const next = stepFrom(step.key, step.action, choice, { days: step.days, night: step.night, cats: step.cats }, step.want || [])
+  return unsafe ? { ...next, issues: [{ level: 'avoid', text: 'Not recommended for your skin', detail: 'You chose this product yourself: we advise against it for your skin.' }, ...next.issues] } : next
+}
+
+// Saves a changed step into the user's current routine.
+export const replaceRoutineStep = async (userId, period, index, step) => {
+  const { data, error } = await supabase.from('routines').select('id, steps').eq('user_id', userId).eq('type', period).order('created_at', { ascending: false }).limit(1)
+  if (error) throw error
+  const steps = [...(data?.[0]?.steps || [])]
+  steps[index] = step
+  const res = await saveRoutine(userId, period, steps)
+  if (!res.success) throw new Error(res.error)
+  return steps
 }
 
 // ---------- Saving ----------
