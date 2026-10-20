@@ -140,7 +140,7 @@ export default function TodayScreen({ navigation }) {
   }
 
   const hour = new Date().getHours()
-  const greeting = hour >= 5 && hour < 12 ? t('Good morning') : hour >= 12 && hour < 18 ? t('Good afternoon') : hour >= 18 && hour < 23 ? t('Good evening') : t('Good night')
+  const greeting = hour >= 5 && hour < 12 ? t('Good morning') : hour >= 12 && hour < 18 ? t('Good afternoon') : t('Good evening')
   // The routine due now: morning from 5 am to 3 pm, then the evening one.
   const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
   const [compact, setCompact] = useState(false)
@@ -196,11 +196,11 @@ export default function TodayScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.sm, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl }}
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.md, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
       scrollEventThrottle={32}
       onScroll={e => { const down = e.nativeEvent.contentOffset.y > 56; if (down !== compact) setCompact(down) }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
-      {/* Date and weather, and the bell */}
+      {/* 1 · Header: date and weather, greeting, today's skin tip */}
       <View style={styles.top}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
           <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>
@@ -208,41 +208,38 @@ export default function TodayScreen({ navigation }) {
           </Text>
           {weather ? (
             <>
+              <Text style={[styles.date, { color: colors.accent }]}>·</Text>
               <Ionicons name={weather.icon} size={13} color={colors.primary} />
               <Text style={[styles.date, { color: colors.primary }]}>{weather.temp}°</Text>
             </>
           ) : null}
         </View>
-        <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
-          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+        <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')} style={[styles.bell, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="notifications-outline" size={19} color={colors.text} />
         </Pressable>
       </View>
-      <Text style={[styles.hello, { color: colors.text }]}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
+      <Text style={[styles.hello, { color: colors.text }]}>{greeting}{firstName ? `,\n${firstName}` : ''}</Text>
+      <View style={styles.tipLine}>
+        <Ionicons name={tip.icon} size={15} color={colors.primary} />
+        <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
+      </View>
 
-      {streak ? (
-        <View style={[styles.streak, { backgroundColor: '#FDEBDC', marginTop: SPACING.sm }]}>
-          <Ionicons name="flame" size={15} color="#E8742B" />
-          <Text style={[TYPE.caption, { color: '#B4561B', fontWeight: '700' }]}>{t('{n}-day streak', { n: streak })}</Text>
-        </View>
-      ) : null}
-
-      {/* The day's log */}
+      {/* 2 · The routine due now */}
+      <Text style={[styles.section, { color: colors.muted }]}>{now === 'morning' ? t('This morning') : t('Tonight')}</Text>
       {now === 'morning'
         ? <Row period="morning" icon="sunny-outline" title={t('Morning routine')} count={morning} />
-        : <Row period="evening" icon="moon-outline" title={tonight ? `${t('Tonight')} · ${t(tonight.short)}` : t('Evening routine')} count={evening} />}
+        : <Row period="evening" icon="moon-outline" title={tonight ? t(tonight.label) : t('Evening routine')} count={evening} />}
 
+      {/* 3 · Today's check-in */}
+      <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin today')}</Text>
       <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.logRow}>
-          <View style={[styles.logIcon, { backgroundColor: entry?.mood ? colors.successSoft : colors.primarySoft }]}>
-            <Ionicons name={entry?.mood ? 'checkmark' : 'happy-outline'} size={20} color={entry?.mood ? colors.success : colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('How is your skin today?')}</Text>
-            <Text style={[TYPE.caption, { color: colors.muted }]}>{entry?.mood ? t(MOODS.find(m => m.value === entry.mood)?.label) : t('One tap')}</Text>
-          </View>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
+            {entry?.mood ? t('Today: {mood}', { mood: t(MOODS.find(m => m.value === entry.mood)?.label).toLowerCase() }) : t('How does your skin feel?')}
+          </Text>
           {entry?.mood ? (
             <Pressable onPress={() => navigation.navigate('Journal')} hitSlop={8}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Details')}</Text>
+              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Add details')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -259,10 +256,10 @@ export default function TodayScreen({ navigation }) {
         </View>
       </View>
 
-
-      {/* Scan or search any product */}
+      {/* 4 · Check any product */}
+      <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
       <View style={styles.searchRow}>
-        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, marginTop: 0, backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="search" size={18} color={colors.muted} />
           <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
         </Pressable>
@@ -273,23 +270,16 @@ export default function TodayScreen({ navigation }) {
         </Pressable>
       </View>
 
-      {/* The programme */}
+      {/* 5 · The programme */}
+      <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My programme') : t('Go further')}</Text>
       <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.programme, { opacity: pressed ? 0.9 : 1 }]}>
-        <Ionicons name="diamond-outline" size={22} color="#FFFFFF" />
+        <View style={styles.programmeIcon}><Ionicons name="diamond-outline" size={20} color="#FFFFFF" /></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.programmeKicker}>{plan ? t('MY PROGRAMME') : t('PREMIUM · SKIN PROGRAMME')}</Text>
-          <Text style={styles.programmeTitle} numberOfLines={1}>
-            {plan ? `${goalsTitle(plan)} · ${t('Week {n} of {total}', { n: Math.min(weekOf(plan), goalOf(plan.goal).weeks), total: goalOf(plan.goal).weeks })}` : t('Your skin programme, made for you')}
-          </Text>
+          <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), goalOf(plan.goal).weeks), total: goalOf(plan.goal).weeks }) : t('PREMIUM · SKIN PROGRAMME')}</Text>
+          <Text style={styles.programmeTitle} numberOfLines={1}>{plan ? goalsTitle(plan) : t('Your skin programme, made for you')}</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
       </Pressable>
-
-      {/* One tip for today */}
-      <View style={[styles.tip, { backgroundColor: colors.primarySoft }]}>
-        <Ionicons name={tip.icon} size={16} color={colors.primary} />
-        <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
-      </View>
     </ScrollView>
 
     {/* Once the greeting scrolls away: a solid header with the date, weather and greeting */}
@@ -329,10 +319,14 @@ const styles = StyleSheet.create({
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  hello: { fontSize: 28, fontWeight: '800', letterSpacing: -0.6, marginTop: SPACING.sm },
+  hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 36, marginTop: SPACING.lg },
+  tipLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
+  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  bell: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  programmeIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
   today: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, borderWidth: 1, borderRadius: 24, padding: SPACING.lg, marginTop: SPACING.lg },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  logCard: { borderWidth: 1, borderRadius: 20, padding: SPACING.md, marginTop: SPACING.md },
+  logCard: { borderWidth: 1, borderRadius: 20, padding: SPACING.lg },
   logRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   logIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   miniTrack: { width: 44, height: 6, borderRadius: 3, overflow: 'hidden' },
@@ -340,10 +334,10 @@ const styles = StyleSheet.create({
   check: { width: 24, height: 24, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md },
   mood: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  searchRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
+  searchRow: { flexDirection: 'row', gap: SPACING.sm },
   scanBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, borderRadius: 999, paddingHorizontal: SPACING.lg },
-  search: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 52, marginTop: SPACING.lg },
-  programme: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#33202E', borderRadius: 22, padding: SPACING.lg, marginTop: SPACING.md },
+  search: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 52 },
+  programme: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#33202E', borderRadius: 22, padding: SPACING.lg },
   programmeKicker: { color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
   programmeTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginTop: 2 },
   tip: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.lg, padding: SPACING.md, marginTop: SPACING.md },
