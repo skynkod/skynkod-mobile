@@ -234,11 +234,7 @@ export default function ProductsScreen({ navigation }) {
           >
             {photoOf(product) ? (
               <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
-            ) : (
-              <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.surface }]}>
-                <Ionicons name="water-outline" size={20} color={colors.muted} />
-              </View>
-            )}
+            ) : null}
             <View style={{ flex: 1 }}>
               <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product?.brand || row.brand}</Text>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product?.name || row.product_name}</Text>

@@ -88,11 +88,7 @@ export default function ProductScreen({ navigation, route }) {
       <View style={styles.hero}>
         {photoOf(product) ? (
           <Image source={{ uri: photoOf(product) }} style={styles.image} resizeMode="contain" />
-        ) : (
-          <View style={[styles.image, styles.noImage, { backgroundColor: colors.surface }]}>
-            <Ionicons name="water-outline" size={36} color={colors.muted} />
-          </View>
-        )}
+        ) : null}
         <View style={{ flex: 1 }}>
           <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{product.brand}</Text>
           <Text style={[styles.name, { color: colors.text }]}>{product.name}</Text>
