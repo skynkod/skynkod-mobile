@@ -9,7 +9,6 @@ import { todaySteps } from '../utils/routine-checks';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
-import { getSituation } from '../utils/emergency-plans';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
 const planFor = tags => {
@@ -269,11 +268,11 @@ export default function JournalScreen({ route, navigation }) {
         {planFor(tags) ? (
           <Pressable
             onPress={() => navigation.navigate('Emergency', { situation: planFor(tags), openedAt: Date.now() })}
-            style={[styles.planCard, { backgroundColor: colors.primarySoft }]}
+            style={[styles.planCard, { backgroundColor: '#33202E' }]}
           >
-            <Ionicons name={getSituation(planFor(tags))?.icon || 'medkit-outline'} size={18} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', flex: 1, lineHeight: 18 }]}>{t(planPrompt(tags))}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            <Ionicons name="diamond" size={16} color="#E2C6DA" />
+            <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', flex: 1, lineHeight: 18 }]}>{t(planPrompt(tags))}</Text>
+            <Ionicons name="chevron-forward" size={16} color="#E2C6DA" />
           </Pressable>
         ) : null}
 
