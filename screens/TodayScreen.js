@@ -306,6 +306,10 @@ export default function TodayScreen({ navigation }) {
         <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')} style={[styles.bell, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="notifications-outline" size={19} color={colors.text} />
         </Pressable>
+        {/* Profile lives here now that Rekod and Dekod have the bottom bar */}
+        <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={[styles.bell, { backgroundColor: colors.primary, borderColor: colors.primary, marginLeft: SPACING.sm }]}>
+          {firstName ? <Text style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 15 }}>{firstName[0].toUpperCase()}</Text> : <Ionicons name="person" size={17} color={colors.onPrimary} />}
+        </Pressable>
       </View>
       {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
       <View>
@@ -404,6 +408,9 @@ export default function TodayScreen({ navigation }) {
         <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
           <Ionicons name="notifications-outline" size={22} color={colors.text} />
         </Pressable>
+        <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={[styles.avatarSmall, { backgroundColor: colors.primary }]}>
+          {firstName ? <Text style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 13 }}>{firstName[0].toUpperCase()}</Text> : <Ionicons name="person" size={14} color={colors.onPrimary} />}
+        </Pressable>
       </Animated.View>
     )}
     </View>
@@ -453,6 +460,7 @@ const styles = StyleSheet.create({
   hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38 },
   sosLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
   moodMessage: { fontSize: 13, lineHeight: 18, marginTop: SPACING.md },
+  avatarSmall: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.md },
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },

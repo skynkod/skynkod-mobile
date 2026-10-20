@@ -42,6 +42,14 @@ export const saveDekodResult = async (userId, result) => {
   if (error) throw error
 }
 
+// The user's scans, newest first: [{ id, created_at, result }].
+export const getDekodResults = async (userId, limit = 30) => {
+  const { data, error } = await supabase.from('dekod_results').select('id, created_at, result')
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(limit)
+  if (error) throw error
+  return data || []
+}
+
 // What the scan suggests for the journal and Emergency mode.
 export const journalFrom = points => {
   const levels = DEKOD_POINTS.map(p => points?.[p.key]?.level)

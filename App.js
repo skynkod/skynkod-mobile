@@ -35,6 +35,7 @@ import ProductPickerScreen from './screens/ProductPickerScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
 import SuggestionsScreen from './screens/SuggestionsScreen'
 import RekodScreen from './screens/RekodScreen'
+import DekodScreen from './screens/DekodScreen'
 
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -42,13 +43,14 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
 
-// Bottom bar: Home · Journal · (+) · Koda · Profile. Rekod opens from Home.
+// Bottom bar (option A, Lita 2026-10-20): Home · Rekod · (scan) · Dekod · Koda.
+// The journal opens from Home's "Your skin today"; Profile from Home's avatar.
 const TABS = [
   { name: 'Home', component: HomeScreen, label: 'Home', icon: 'home' },
-  { name: 'Journal', component: JournalScreen, label: 'Journal', icon: 'calendar' },
+  { name: 'Rekod', component: RekodScreen, label: 'Rekod', icon: 'sparkles' },
   { name: 'Add', label: '', icon: 'add' },
+  { name: 'Dekod', component: DekodScreen, label: 'Dekod', icon: 'scan-circle' },
   { name: 'Koda', component: KodaScreen, label: 'Koda', icon: 'koda' },
-  { name: 'More', component: MoreScreen, label: 'Profile', icon: 'person' },
 ]
 
 // What the big (+) button offers.
@@ -140,7 +142,8 @@ function AppTabs({ userId }) {
         { name: 'ProductPicker', component: ProductPickerScreen },
         { name: 'Privacy', component: PrivacyScreen },
         { name: 'Suggestions', component: SuggestionsScreen },
-        { name: 'Rekod', component: RekodScreen },
+        { name: 'Journal', component: JournalScreen },
+        { name: 'More', component: MoreScreen },
         ...MORE_SCREENS,
       ].map(screen => (
         <Tab.Screen
@@ -151,7 +154,7 @@ function AppTabs({ userId }) {
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
-            ...(['Scanner', 'RoutineBuilder', 'Rekod', 'Dekod'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
+            ...(['Scanner', 'RoutineBuilder'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
           }}
         />
       ))}

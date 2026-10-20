@@ -15,7 +15,6 @@ import NotificationsScreen from './NotificationsScreen'
 import PremiumScreen from './PremiumScreen'
 import AboutScreen from './AboutScreen'
 import EmergencyScreen from './EmergencyScreen'
-import DekodScreen from './DekodScreen'
 import BarcodeScannerScreen from './BarcodeScannerScreen'
 import SkyncyclopediaScreen from './SkyncyclopediaScreen'
 import SettingsScreen from './SettingsScreen'
@@ -30,7 +29,6 @@ export const MORE_SCREENS = [
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
   { name: 'Skyncyclopedia', component: SkyncyclopediaScreen, label: 'Skyncyclopedia', subtitle: 'Learn to care for your skin', icon: 'library-outline', group: 'learn' },
   { name: 'Quiz', component: SkinTypeQuizScreen, label: 'Skin type quiz', subtitle: 'Find your skin type', icon: 'help-circle-outline', group: 'learn' },
-  { name: 'Dekod', component: DekodScreen, label: 'Dekod', subtitle: 'Skin scan', icon: 'scan-circle-outline', group: 'learn', premium: true },
   { name: 'Emergency', component: EmergencyScreen, label: 'Emergency', subtitle: '7-day recovery plan', icon: 'medkit-outline', group: 'learn', premium: true },
   { name: 'Alerts', component: NotificationsScreen, label: 'Notifications', subtitle: 'Reminders', icon: 'notifications-outline', group: 'account' },
   { name: 'Premium', component: PremiumScreen, label: 'Premium', subtitle: 'Unlock everything', icon: 'diamond-outline', group: 'account' },
@@ -77,7 +75,7 @@ export default function MoreScreen({ navigation }) {
   }
 
   return (
-    <Screen title="Profile">
+    <Screen back title="Profile">
       <View style={[styles.profile, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.avatar, { backgroundColor: colors.primarySoft }]}>
           <Text style={[TYPE.heading, { color: colors.primary }]}>{(firstName || user?.email || '?')[0].toUpperCase()}</Text>

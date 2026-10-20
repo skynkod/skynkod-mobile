@@ -35,11 +35,14 @@ const C = {
 
 function Shell({ navigation, overline, title, subtitle, footer, children, onBack, scroll = true }) {
   return (
-    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={styles.topBar}>
-        <Pressable onPress={onBack || (() => navigation.goBack())} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back">
-          <Ionicons name="chevron-back" size={26} color={C.text} />
-        </Pressable>
+        {/* Rekod is a tab now: a back arrow only inside its own steps */}
+        {onBack ? (
+          <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back">
+            <Ionicons name="chevron-back" size={26} color={C.text} />
+          </Pressable>
+        ) : <View style={{ width: 26 }} />}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <Ionicons name="diamond-outline" size={14} color={C.primary} />
           <Text style={[TYPE.overline, { color: C.primary }]}>Rekod · Skin programme</Text>

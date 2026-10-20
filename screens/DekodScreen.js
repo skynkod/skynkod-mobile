@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, LoadingView, useColors } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
-import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom } from '../utils/dekod'
+import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults } from '../utils/dekod'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -17,6 +18,8 @@ const MAUVE = '#E2C6DA'
 const TESTERS = ['djedidilita@gmail.com']
 
 const LEVEL = { none: 'None', light: 'Light', visible: 'Visible' }
+const RANK = { none: 0, light: 1, visible: 2 }
+const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
 
 // Dekod, Skynkod's skin scan: intro → consent (first time) → photo tips →
 // front camera with an oval → analysis → what's visible, point by point.
@@ -30,6 +33,14 @@ export default function DekodScreen({ navigation }) {
   const [result, setResult] = useState(null)
   const [permission, requestPermission] = useCameraPermissions()
   const camera = useRef(null)
+  const [history, setHistory] = useState(null) // past scans, newest first
+  const [viewing, setViewing] = useState(null) // a past scan opened from the history
+
+  const loadHistory = useCallback(() => {
+    if (!user?.id) return
+    getDekodResults(user.id).then(setHistory).catch(() => setHistory([]))
+  }, [user?.id])
+  useFocusEffect(useCallback(() => { loadHistory() }, [loadHistory]))
 
   useEffect(() => {
     if (!user?.id) return
@@ -69,7 +80,7 @@ export default function DekodScreen({ navigation }) {
       setResult(res)
       setStage('result')
       track('dekod_done')
-      saveDekodResult(user.id, res).catch(error => logError('Dekod_save', error, {}, 'warn'))
+      saveDekodResult(user.id, res).then(loadHistory).catch(error => logError('Dekod_save', error, {}, 'warn'))
     } catch (error) {
       setStage('tips')
       await logError('Dekod_shoot', error, {}, 'warn')
@@ -94,9 +105,10 @@ export default function DekodScreen({ navigation }) {
     </View>
   )
 
-  // ---------- Camera ----------
+  // ---------- Camera (full screen, over the tab bar) ----------
   if (stage === 'camera') {
     return (
+      <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setStage('tips')}>
       <View style={{ flex: 1, backgroundColor: '#000' }}>
         <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="front" />
         <View pointerEvents="none" style={styles.ovalWrap}>
@@ -110,13 +122,14 @@ export default function DekodScreen({ navigation }) {
           <View style={styles.shutterInner} />
         </Pressable>
       </View>
+      </Modal>
     )
   }
 
   // ---------- Analysing ----------
   if (stage === 'analysing') {
     return (
-      <Screen back title="Dekod">
+      <Screen title="Dekod">
         <View style={{ alignItems: 'center', marginTop: SPACING.xxxl * 2, gap: SPACING.lg }}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Decoding your skin…')}</Text>
@@ -126,16 +139,10 @@ export default function DekodScreen({ navigation }) {
     )
   }
 
-  // ---------- Result ----------
-  if (stage === 'result' && result) {
-    const next = journalFrom(result.points)
-    return (
-      <Screen back title="Dekod">
-        <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR DEKOD · TODAY')}</Text>
-        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 22 }]}>{result.summary}</Text>
+  const Points = ({ points }) => (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {DEKOD_POINTS.map((p, i) => {
-            const r = result.points?.[p.key] || { level: 'none' }
+            const r = points?.[p.key] || { level: 'none' }
             const tone = r.level === 'visible' ? colors.primary : r.level === 'light' ? colors.accent || colors.primary : colors.success
             return (
               <View key={p.key} style={[styles.point, i < DEKOD_POINTS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
@@ -152,9 +159,35 @@ export default function DekodScreen({ navigation }) {
             )
           })}
         </View>
+  )
+  const Disclaimer = () => (
         <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md, lineHeight: 17 }]}>
           {t('Dekod describes what is visible on your skin. It is not a medical diagnosis: for anything that worries you, see a dermatologist.')}
         </Text>
+  )
+  const toHub = () => { setStage('intro'); setViewing(null) }
+
+  // ---------- A past scan ----------
+  if (viewing) {
+    return (
+      <Screen back onBack={toHub} title="Dekod">
+        <Text style={[TYPE.overline, { color: colors.primary }]}>{new Date(viewing.created_at).toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}</Text>
+        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 22 }]}>{viewing.result?.summary}</Text>
+        <Points points={viewing.result?.points} />
+        <Disclaimer />
+      </Screen>
+    )
+  }
+
+  // ---------- Result ----------
+  if (stage === 'result' && result) {
+    const next = journalFrom(result.points)
+    return (
+      <Screen back onBack={toHub} title="Dekod">
+        <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR DEKOD · TODAY')}</Text>
+        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 22 }]}>{result.summary}</Text>
+        <Points points={result.points} />
+        <Disclaimer />
         {next.tags.length ? (
           <Button label="Add to my journal" icon="create-outline" light
             onPress={() => navigation.navigate('Journal', { openNew: Date.now(), presetAt: Date.now(), presetTags: next.tags, presetMood: next.mood })} />
@@ -163,7 +196,7 @@ export default function DekodScreen({ navigation }) {
           <Button label="Emergency mode" icon="medkit-outline"
             onPress={() => navigation.navigate('Emergency', { issues: next.issues, openedAt: Date.now() })} />
         ) : null}
-        <Pressable onPress={() => navigation.navigate('Home')} style={{ alignSelf: 'center', padding: SPACING.lg }}>
+        <Pressable onPress={toHub} style={{ alignSelf: 'center', padding: SPACING.lg }}>
           <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{t('Done')}</Text>
         </Pressable>
       </Screen>
@@ -173,7 +206,7 @@ export default function DekodScreen({ navigation }) {
   // ---------- Consent (first time) ----------
   if (stage === 'consent') {
     return (
-      <Screen back title="Dekod">
+      <Screen back onBack={toHub} title="Dekod">
         <Text style={[TYPE.heading, { color: colors.text }]}>{t('Before your first scan')}</Text>
         {[
           ['camera-outline', 'Dekod looks at one photo of your face to describe what is visible on your skin.'],
@@ -187,7 +220,7 @@ export default function DekodScreen({ navigation }) {
           </View>
         ))}
         <Button label="I agree" onPress={async () => { await giveDekodConsent(user.id); setConsent(true); setStage('tips') }} />
-        <Pressable onPress={() => navigation.goBack()} style={{ alignSelf: 'center', padding: SPACING.lg }}>
+        <Pressable onPress={toHub} style={{ alignSelf: 'center', padding: SPACING.lg }}>
           <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{t('Not now')}</Text>
         </Pressable>
       </Screen>
@@ -197,7 +230,7 @@ export default function DekodScreen({ navigation }) {
   // ---------- Photo tips ----------
   if (stage === 'tips') {
     return (
-      <Screen back title="Dekod">
+      <Screen back onBack={toHub} title="Dekod">
         <Text style={[TYPE.heading, { color: colors.text }]}>{t('For a good scan')}</Text>
         {[
           ['sunny-outline', 'Daylight, facing a window'],
@@ -215,9 +248,72 @@ export default function DekodScreen({ navigation }) {
     )
   }
 
+  // ---------- Dekod home: latest scan, evolution, history ----------
+  if (premium && history?.length) {
+    const latest = history[0]
+    const scannedToday = sameDay(latest.created_at, new Date())
+    const ordered = [...history].reverse().slice(-8) // oldest → newest, last 8
+    const first = history[history.length - 1]
+    return (
+      <Screen title="Dekod" subtitle={t('Your skin scan')}>
+        <Pressable onPress={begin} disabled={scannedToday}
+          style={({ pressed }) => [styles.button, { backgroundColor: PLUM, opacity: scannedToday ? 0.45 : pressed ? 0.85 : 1, marginTop: 0 }]}>
+          <Ionicons name="scan-outline" size={17} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t(scannedToday ? 'Next scan tomorrow' : 'New scan')}</Text>
+        </Pressable>
+
+        <Text style={[styles.section, { color: colors.muted }]}>{t('LATEST SCAN')} · {new Date(latest.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
+        <Text style={[TYPE.body, { color: colors.text, lineHeight: 22 }]}>{latest.result?.summary}</Text>
+        <Points points={latest.result?.points} />
+
+        {history.length > 1 ? (
+          <>
+            <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR EVOLUTION')}</Text>
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 0 }]}>
+              {DEKOD_POINTS.map((p, i) => {
+                const from = first.result?.points?.[p.key]?.level || 'none'
+                const to = latest.result?.points?.[p.key]?.level || 'none'
+                const better = RANK[to] < RANK[from]
+                const worse = RANK[to] > RANK[from]
+                return (
+                  <View key={p.key} style={[styles.point, i < DEKOD_POINTS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+                    <View style={styles.pointHead}>
+                      <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(p.label)}</Text>
+                      <Text style={{ color: better ? colors.success : worse ? colors.primary : colors.muted, fontSize: 12, fontWeight: '700' }}>
+                        {t(LEVEL[from])} → {t(LEVEL[to])}
+                      </Text>
+                    </View>
+                    <View style={styles.dots}>
+                      {ordered.map(h => {
+                        const lvl = h.result?.points?.[p.key]?.level || 'none'
+                        return <View key={h.id} style={[styles.dot, { height: 6 + RANK[lvl] * 7, backgroundColor: lvl === 'none' ? colors.success : lvl === 'light' ? colors.accent || colors.primary : colors.primary }]} />
+                      })}
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+          </>
+        ) : null}
+
+        <Text style={[styles.section, { color: colors.muted }]}>{t('HISTORY')}</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 0 }]}>
+          {history.map((h, i) => (
+            <Pressable key={h.id} onPress={() => setViewing(h)} style={[styles.point, styles.pointHead, i < history.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text, width: 70 }]}>{new Date(h.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>{h.result?.summary}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+            </Pressable>
+          ))}
+        </View>
+        <Disclaimer />
+      </Screen>
+    )
+  }
+
   // ---------- Intro (and locked view without Premium) ----------
   return (
-    <Screen back title="Dekod">
+    <Screen title="Dekod">
       <Hero>
         <Text style={styles.heroText}>
           {t('Dekod is Skynkod’s skin scan. Take one selfie, and in a few seconds Dekod reads what is visible on your skin.')}
@@ -249,6 +345,9 @@ const styles = StyleSheet.create({
   heroLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: SPACING.md },
   button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, marginTop: SPACING.lg },
   consentLine: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.lg },
+  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  dots: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: SPACING.sm, height: 22 },
+  dot: { width: 10, borderRadius: 3 },
   card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.lg, overflow: 'hidden' },
   point: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
   pointHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
