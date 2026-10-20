@@ -44,7 +44,7 @@ export default function KodaScreen({ route, navigation }) {
   }, [prefill]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  // Free users: 3 questions a week, back every Monday. null = unknown/unlimited.
+  // Free users: 5 questions a week, back every Monday. null = unknown/unlimited.
   const [quota, setQuota] = useState(null);
   useFocusEffect(useCallback(() => { getKodaQuota().then(q => q && setQuota(q)); }, [user?.id]));
   const limited = quota && !quota.unlimited;
@@ -183,9 +183,9 @@ export default function KodaScreen({ route, navigation }) {
 
       {outOfQuestions ? (
         <View style={[styles.outCard, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, textAlign: 'center' }]}>{t("You've used your 3 free questions this week 🌸")}</Text>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, textAlign: 'center' }]}>{t("You've used your {n} free questions this week 🌸", { n: quota.limit || 5 })}</Text>
           <Text style={[TYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>
-            {t('Koda will be back for you on Monday, with 3 new free questions.')}{'\n'}{t('Want to keep chatting now? Premium gives you Koda every day.')}
+            {t('Koda will be back for you on Monday, with {n} new free questions.', { n: quota.limit || 5 })}{'\n'}{t('Want to keep chatting now? Premium gives you Koda every day.')}
           </Text>
           <Pressable onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Koda every day very soon.'))}
             style={({ pressed }) => [styles.unlock, { opacity: pressed ? 0.85 : 1 }]}>
@@ -200,9 +200,9 @@ export default function KodaScreen({ route, navigation }) {
         <Text style={[styles.quotaLine, { color: quota.left === 1 ? colors.primary : colors.muted }]}>
           {quota.left === 1
             ? t('This is your last free question this week. Make it count! 💬')
-            : quota.left >= (quota.limit || 3)
-              ? t('Every Monday, you get {n} free questions with Koda 🌸', { n: quota.limit || 3 })
-              : t('{n} free questions left this week · back to {limit} on Monday', { n: quota.left, limit: quota.limit || 3 })}
+            : quota.left >= (quota.limit || 5)
+              ? t('Every Monday, you get {n} free questions with Koda 🌸', { n: quota.limit || 5 })
+              : t('{n} free questions left this week · back to {limit} on Monday', { n: quota.left, limit: quota.limit || 5 })}
         </Text>
       ) : null}
       <View style={[styles.composer, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>

@@ -42,7 +42,7 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
     }
 
     if (data.error === 'weekly_limit') {
-      return { error: 'weekly_limit', left: 0, resetsAt: data.resetsAt, message: "You've used your 3 free questions this week." };
+      return { error: 'weekly_limit', left: 0, resetsAt: data.resetsAt, message: "You've used your free questions this week." };
     }
 
     if (data.error === 'daily_limit') {
