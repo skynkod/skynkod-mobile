@@ -154,7 +154,7 @@ export default function JournalScreen({ route, navigation }) {
   }, [route?.params?.openNew]);
 
   // Nothing saves by itself: she taps Save, so she knows it's kept. Leaving
-  // the screen without saving drops the changes.
+  // with unsaved changes asks whether to save them.
   const latest = useRef({ mood, tags, note });
   latest.current = { mood, tags, note };
   const entryRef = useRef(entryId);
@@ -187,8 +187,11 @@ export default function JournalScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => () => {
       clearTimeout(noteTimer.current);
-      dirty.current = false;
-      setStatus('idle');
+      if (!dirty.current) return;
+      Alert.alert(t('Save your check-in?'), t('You left the journal without saving.'), [
+        { text: t("Don't save"), style: 'destructive', onPress: () => { dirty.current = false; setStatus('idle'); } },
+        { text: t('Save'), onPress: () => saveNow() },
+      ]);
     }, [selected.toDateString(), user?.id])
   );
 
