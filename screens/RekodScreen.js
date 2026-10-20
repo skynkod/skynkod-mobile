@@ -204,8 +204,8 @@ export default function RekodScreen({ navigation }) {
           </View>
         ) : null}
 
-        <RoutineCard title="Morning" steps={routine?.morning} colors={colors} />
-        <RoutineCard title="Evening" steps={routine?.evening} colors={colors} showDays />
+        <RoutineCard navigation={navigation} title="Morning" steps={routine?.morning} colors={colors} />
+        <RoutineCard navigation={navigation} title="Evening" steps={routine?.evening} colors={colors} showDays />
 
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.lg }}>
           <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Leave my programme</Text>
@@ -251,8 +251,8 @@ export default function RekodScreen({ navigation }) {
         subtitle={`${goal.weeks} weeks · ${goal.results.toLowerCase()}`}
         footer={<RButton title="Start my programme" onPress={adopt} loading={busy} />}
       >
-        <RoutineCard title="Morning" steps={preview.morning} colors={colors} />
-        <RoutineCard title="Evening" steps={preview.evening} colors={colors} showDays />
+        <RoutineCard navigation={navigation} title="Morning" steps={preview.morning} colors={colors} />
+        <RoutineCard navigation={navigation} title="Evening" steps={preview.evening} colors={colors} showDays />
         <Pressable onPress={() => setStep('intro')} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.md }}>
           <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>Change my goal</Text>
         </Pressable>
@@ -298,17 +298,30 @@ export default function RekodScreen({ navigation }) {
   )
 }
 
-function RoutineCard({ title, steps, colors, showDays }) {
+function RoutineCard({ title, steps, colors, showDays, navigation }) {
   if (!steps?.length) return null
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[TYPE.overline, { color: colors.muted }]}>{title}</Text>
       {steps.map((s, i) => (
         <View key={`${s.key}-${i}`} style={styles.stepRow}>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, gap: 4 }}>
             <Text style={[TYPE.overline, { color: colors.muted, fontSize: 10 }]}>{s.action}</Text>
-            <Text style={[styles.product, { color: colors.text }]} numberOfLines={2}>{s.product || 'Pick a product'}</Text>
+            <Pressable disabled={!s.product_id} onPress={() => navigation.navigate('Product', { id: s.product_id })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={[styles.product, { color: colors.text, flexShrink: 1 }]} numberOfLines={2}>{s.product || 'Pick a product'}</Text>
+              {s.product_id ? <Ionicons name="chevron-forward" size={14} color={colors.muted} /> : null}
+            </Pressable>
             {showDays && s.days?.length ? <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600' }]}>{describeDays(s.days)}</Text> : null}
+            {s.why ? <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{s.why}</Text> : null}
+            {s.keys?.length ? (
+              <View style={styles.keys}>
+                {s.keys.map(k => (
+                  <Pressable key={k.id} onPress={() => navigation.navigate('Ingredient', { id: k.id })} style={[styles.keyChip, { backgroundColor: colors.primarySoft }]} accessibilityLabel={`${k.name}, see ingredient`}>
+                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600', fontSize: 12 }]}>{k.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
           </View>
           {PROVEN.includes(s.action) ? (
             <View style={[styles.badge, { backgroundColor: colors.successSoft }]}><Text style={[styles.badgeText, { color: colors.success }]}>Proven</Text></View>
@@ -338,7 +351,9 @@ const styles = StyleSheet.create({
   dayCol: { alignItems: 'center', gap: 4 },
   dayDot: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   answers: { flexDirection: 'row', gap: SPACING.sm },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, paddingVertical: 4 },
+  keys: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  keyChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   product: { fontFamily: SERIF, fontSize: 15 },
   badge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   badgeText: { fontSize: 11, fontWeight: '700' },

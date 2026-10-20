@@ -165,17 +165,38 @@ const chooser = async (userId, profile) => {
   }
 }
 
-const stepFrom = (key, action, choice, extra = {}) => ({
-  key,
-  action,
-  product: choice ? `${choice.product.brand} ${choice.product.name}` : null,
-  product_id: choice?.product.id || null,
-  image_url: choice?.product.image_url || null,
-  owned: !!choice?.owned,
-  days: null,
-  acks: null,
-  ...extra,
-})
+// Why each step is there, in plain words. Active steps explain their main
+// active from the ingredient guide instead.
+const ROLE_WHY = {
+  cleanser: 'Cleans gently without stripping, so your skin handles the actives better.',
+  moisturizer: 'Locks in hydration and protects your skin barrier: the base of every result.',
+  sunscreen: 'The step that protects your results: without it, actives can’t do their job.',
+}
+
+// The product's key ingredients (guide entries), the ones this step is for first.
+const keyIngredients = (product, want = []) => {
+  const found = findIngredients(product).map(f => f.entry).filter(e => e.goodFor?.length)
+  const ranked = [...found.filter(e => want.includes(e.id)), ...found.filter(e => !want.includes(e.id))]
+  return ranked.slice(0, 3).map(e => ({ id: e.id, name: e.name, what: e.what }))
+}
+
+const stepFrom = (key, action, choice, extra = {}, want = []) => {
+  const keys = choice ? keyIngredients(choice.product, want) : []
+  const main = keys.find(k => want.includes(k.id))
+  return {
+    key,
+    action,
+    product: choice ? `${choice.product.brand} ${choice.product.name}` : null,
+    product_id: choice?.product.id || null,
+    image_url: choice?.product.image_url || null,
+    owned: !!choice?.owned,
+    days: null,
+    acks: null,
+    why: main ? `${main.name}: ${main.what}` : ROLE_WHY[key] || (keys[0] ? `${keys[0].name}: ${keys[0].what}` : null),
+    keys,
+    ...extra,
+  }
+}
 
 // Builds the Rekod routine for a plan: { morning: steps, evening: steps }.
 // Evening steps carry `days`, so the Home routine shows the right products
@@ -192,9 +213,9 @@ export const buildRekodRoutine = async (userId, plan, profile) => {
 
   const morning = [
     stepFrom('cleanser', 'Cleanse', cleanser),
-    amSerum && stepFrom('serum', 'Serum', amSerum),
+    amSerum && stepFrom('serum', 'Serum', amSerum, {}, morningSerum[plan.goal]),
     stepFrom('moisturizer', 'Moisturize', moisturizer),
-    stepFrom('sunscreen', 'SPF 50', sunscreen),
+    stepFrom('sunscreen', 'SPF 50', sunscreen, {}, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
   const week = weekPattern(plan)
@@ -207,9 +228,9 @@ export const buildRekodRoutine = async (userId, plan, profile) => {
 
   const evening = [
     stepFrom('cleanser', 'Cleanse', cleanser),
-    daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation' }),
-    daysFor('retinoid').length && retinoid && stepFrom('treatment', plan.goal === 'calm' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid' }),
-    daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair' }),
+    daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation' }, exfoliantFor(plan.goal, plan.sensitive)),
+    daysFor('retinoid').length && retinoid && stepFrom('treatment', plan.goal === 'calm' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid' }, retinoidWant),
+    daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair' }, repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides']),
     stepFrom('moisturizer', 'Moisturize', moisturizer),
   ].filter(Boolean)
 
