@@ -263,14 +263,18 @@ export default function TodayScreen({ navigation }) {
 
       <Row period="evening" icon="moon-outline" title={tonight ? `${t('Tonight')} · ${t(tonight.short)}` : t('Evening routine')} count={evening} />
 
-      {/* Scan or search before buying: does it suit my skin? */}
-      <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Ionicons name="search" size={18} color={colors.muted} />
-        <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]}>{t('Does this product suit my skin?')}</Text>
-        <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={12} accessibilityLabel={t('Scan a product')}>
-          <Ionicons name="scan-outline" size={20} color={colors.primary} />
+      {/* Scan or search any product */}
+      <View style={styles.searchRow}>
+        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, marginTop: 0, backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
         </Pressable>
-      </Pressable>
+        <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
+          style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
+          <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
+          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
+        </Pressable>
+      </View>
 
       {/* The programme */}
       <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.programme, { opacity: pressed ? 0.9 : 1 }]}>
@@ -321,6 +325,8 @@ const styles = StyleSheet.create({
   check: { width: 24, height: 24, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md },
   mood: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  searchRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
+  scanBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, borderRadius: 999, paddingHorizontal: SPACING.lg },
   search: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 52, marginTop: SPACING.lg },
   programme: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#33202E', borderRadius: 22, padding: SPACING.lg, marginTop: SPACING.md },
   programmeKicker: { color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },

@@ -93,16 +93,18 @@ function AppTabs({ userId }) {
             component={Empty}
             options={{
               tabBarLabel: () => null,
-              tabBarAccessibilityLabel: t('Quick actions'),
+              tabBarAccessibilityLabel: t('Scan a product'),
               tabBarButton: () => (
                 <View style={styles.addSlot}>
                   <Pressable
-                    onPress={() => setQuickOpen(true)}
+                    // The scanner is the heart of the app: one tap opens it; a long press shows the other quick actions.
+                    onPress={() => { if (navigationRef.isReady()) navigationRef.navigate('Scanner') }}
+                    onLongPress={() => setQuickOpen(true)}
                     accessibilityRole="button"
-                    accessibilityLabel={t('Quick actions')}
+                    accessibilityLabel={t('Scan a product')}
                     style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, shadowColor: colors.shadow, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
                   >
-                    <Ionicons name="add" size={30} color="#FFFFFF" />
+                    <Ionicons name="scan" size={28} color="#FFFFFF" />
                   </Pressable>
                 </View>
               ),
