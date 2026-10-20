@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
+import { trackOpened } from '../utils/journey'
 import { View, Text, Pressable, StyleSheet, Image, Alert, RefreshControl, Modal } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -106,7 +107,7 @@ export default function ProductsScreen({ navigation }) {
 
   const openedToday = async (row) => {
     setRows(prev => prev.map(r => (r.id === row.id ? { ...r, opened_at: new Date().toISOString().slice(0, 10) } : r)))
-    await setOpened(row.id).catch(error => logError('ProductsScreen_opened', error, {}, 'warn'))
+    await setOpened(row.id).then(() => trackOpened(user.id, row.id)).catch(error => logError('ProductsScreen_opened', error, {}, 'warn'))
   }
 
   const openLife = (row) => {
@@ -131,7 +132,7 @@ export default function ProductsScreen({ navigation }) {
     const iso = d => (d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : null)
     setRows(prev => prev.map(r => (r.id === row.id ? { ...r, opened_at: iso(openedDraft), expires_at: iso(expiryDraft), pao_months: paoDraft } : r)))
     try {
-      if (openedDraft) await setOpened(row.id, openedDraft)
+      if (openedDraft) { await setOpened(row.id, openedDraft); if (!row.opened_at) trackOpened(user.id, row.id) }
       await setExpiry(row.id, expiryDraft)
       await setPao(row.id, paoDraft)
     } catch (error) {

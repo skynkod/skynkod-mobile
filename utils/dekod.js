@@ -40,6 +40,7 @@ export const runDekod = async (base64, language = 'en') => {
 export const saveDekodResult = async (userId, result) => {
   const { error } = await supabase.from('dekod_results').insert({ user_id: userId, result })
   if (error) throw error
+  require('./journey').syncSoon(userId)
 }
 
 // She can delete any of her results, as promised before the first scan.

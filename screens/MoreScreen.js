@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import MyProgressScreen from './MyProgressScreen'
-import MySpaceScreen from './MySpaceScreen'
+import MySkinJourneyScreen from './MySkinJourneyScreen'
 import ProductsScreen from './ProductsScreen'
 import PhotosScreen from './PhotosScreen'
 import SkinTypeQuizScreen from './SkinTypeQuizScreen'
@@ -25,7 +25,7 @@ export const MORE_SCREENS = [
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
-  { name: 'MySpace', component: MySpaceScreen, label: 'My space', subtitle: 'A box from your week, every week', icon: 'cube-outline', group: 'track' },
+  { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and your Koda box', icon: 'ribbon-outline', group: 'track' },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
@@ -44,8 +44,8 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
 // Premium waits until in-app purchases work (stores refuse "coming soon" screens).
-// V1: Budget and Skyncyclopedia come back later as new features.
-const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Premium', 'Budget', 'Skyncyclopedia']
+// V1: Budget comes back later as a new feature.
+const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Premium', 'Budget']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {

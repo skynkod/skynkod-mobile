@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { syncSoon } from '../utils/journey';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,7 +105,7 @@ export default function KodaScreen({ route, navigation }) {
 
     setMessages(prev => [...prev, reply]);
     // Error bubbles stay local so they never get replayed to the API.
-    if (user?.id && !reply.error) saveChatMessage(user.id, reply);
+    if (user?.id && !reply.error) { saveChatMessage(user.id, reply); syncSoon(user.id, 2000); }
     setLoading(false);
     scrollToBottom();
   };

@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productsWithIngredient, photoOf } from '../utils/catalog'
+import { trackIngredient } from '../utils/journey'
 import { getIngredient, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
 import { HOWTO, PREGNANCY } from '../utils/encyclopedia/howto'
 import { ARTICLES } from '../utils/encyclopedia'
@@ -22,6 +23,9 @@ export default function IngredientScreen({ navigation, route }) {
   const entry = getIngredient(route?.params?.id)
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+
+  // A page read counts once for My Skin Journey.
+  useEffect(() => { if (entry && user?.id) trackIngredient(user.id, entry.id) }, [entry?.id, user?.id])
 
   useEffect(() => {
     if (!entry) return

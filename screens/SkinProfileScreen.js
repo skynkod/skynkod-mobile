@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react'
+import { syncSoon } from '../utils/journey'
 import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Alert } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -41,6 +42,7 @@ export default function SkinProfileScreen({ navigation }) {
     if (!ok) return Alert.alert(t('Error'), t("Couldn't save your answer. Try again."))
     setAnswers(next)
     setEditing(null)
+    syncSoon(user.id)
   }
 
   const open = (q) => { setDraft(answers[q.id] ?? (q.type === 'multi' ? [] : null)); setEditing(q.id) }

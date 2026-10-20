@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { View, ActivityIndicator, Platform, Pressable, Modal, StyleSheet, Image } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import JourneyToast from './components/JourneyToast'
 import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -386,6 +387,7 @@ function AppContent() {
           }}
         >
           <AppTabs userId={user.userId} />
+          <JourneyToast onOpen={() => { if (navigationRef.isReady()) navigationRef.navigate('Journey') }} />
         </NavigationContainer>
       </AuthProvider>
     )

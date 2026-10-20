@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { syncSoon } from '../utils/journey';
 import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -204,6 +205,7 @@ export default function JournalScreen({ route, navigation }) {
       }
       entryRef.current = id;
       setEntryId(id);
+      syncSoon(user.id);
       dirty.current = false;
       setStatus('saved');
       setWeekEntries(prev => (prev.some(e => e.id === id) ? prev : [...prev, { id, date: selected.toISOString() }]));

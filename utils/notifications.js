@@ -96,7 +96,7 @@ const SMART_TEXT = {
   checkin: { en: 'Your Rekod weekly check-in is ready 📈', fr: 'Ton bilan Rekod de la semaine est prêt 📈' },
   dekod: { en: 'Time for this week’s Dekod: see how your skin changed 🔍', fr: 'C’est l’heure du Dekod de la semaine : vois comment ta peau évolue 🔍' },
   sos: { en: (day, title) => `Day ${day} of 7 · ${title}`, fr: (day, title) => `Jour ${day} sur 7 · ${title}` },
-  recap: { en: 'Your week with Skynkod is ready: see how your skin did 🌸', fr: 'Ta semaine avec Skynkod est prête : vois comment va ta peau 🌸' },
+  recap: { en: 'Your Koda box has arrived 📦 Open it to see what your week brought you.', fr: 'Ta box de Koda est arrivée 📦 Ouvre-la pour voir ce que ta semaine t’a apporté.' },
 }
 const cancel = id => Notifications.cancelScheduledNotificationAsync(id).catch(() => {})
 // Monday-first index (0..6) → expo weekday (1 = Sunday … 7 = Saturday).
@@ -139,9 +139,9 @@ export const syncSmartReminders = async (userId) => {
       await scheduleEveningReminder(userId)
     }
 
-    // The weekly recap, every Monday morning.
+    // The Koda box (and the weekly recap on Home), every Monday morning.
     await cancel(`recap-weekly-${userId}`)
-    await scheduleWeekly(`recap-weekly-${userId}`, SMART_TEXT.recap[l], 2, 9, 30, 'Home')
+    await scheduleWeekly(`recap-weekly-${userId}`, SMART_TEXT.recap[l], 2, 9, 30, 'Journey')
 
     // Dekod: once she has scanned, a weekly nudge on Sunday morning.
     await cancel(`dekod-weekly-${userId}`)

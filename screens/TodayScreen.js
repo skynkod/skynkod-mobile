@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
+import { syncSoon } from '../utils/journey'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
 import { supabase } from '../utils/supabase'
 import { useAuth } from '../utils/AuthContext'
@@ -193,6 +194,7 @@ export default function TodayScreen({ navigation }) {
     await AsyncStorage.setItem(doneKey(user.id, period), JSON.stringify(next)).catch(() => {})
     logStep({ userId: user.id, routineId: routines[period]?.id, type: period, stepIndex: idx, done: !!next[idx] })
     track('routine_step', { period })
+    syncSoon(user.id, 2500)
     const steps = stepsOf(period)
     if (next[idx] && steps.every((_, i) => next[i])) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
@@ -430,9 +432,9 @@ export default function TodayScreen({ navigation }) {
         <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </Pressable>
-      <Pressable onPress={() => navigation.navigate('MySpace')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <Ionicons name="cube-outline" size={18} color={colors.primary} />
-        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('My space')}</Text>
+      <Pressable onPress={() => navigation.navigate('Journey')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Ionicons name="ribbon-outline" size={18} color={colors.primary} />
+        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('My Skin Journey')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </Pressable>
 

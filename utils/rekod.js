@@ -451,6 +451,7 @@ export const getRekodPlan = async (userId) => {
 export const saveRekodPlan = async (userId, plan) => {
   const { error } = await supabase.from('rekod_plans').upsert({ user_id: userId, plan, updated_at: new Date().toISOString() })
   if (error) throw error
+  require('./journey').syncSoon(userId)
 }
 
 // Joins Rekod: keeps the current routine in the archive, saves the new one.
