@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal, Image } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal, Image, Dimensions } from 'react-native'
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
@@ -21,6 +22,28 @@ const RANK = { none: 0, light: 1, visible: 2 }
 const LEVEL_COLOR = { none: P.success, light: P.primary, visible: P.warn }
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
 
+// Keeps only the face: the part of the photo under the on-screen oval (plus a
+// small margin), resized so the analysis sees the skin, not the room.
+// The preview fills the screen ("cover"), so screen points map to photo pixels
+// with one scale and a centred offset.
+const cropToOval = async (photo, oval) => {
+  const { width: W, height: H } = Dimensions.get('screen')
+  const scale = Math.max(W / photo.width, H / photo.height)
+  const offX = (W - photo.width * scale) / 2
+  const offY = (H - photo.height * scale) / 2
+  const mx = oval.width * 0.12
+  const my = oval.height * 0.08
+  const x = Math.max(0, Math.round((oval.x - mx - offX) / scale))
+  const y = Math.max(0, Math.round((oval.y - my - offY) / scale))
+  const w = Math.min(photo.width - x, Math.round((oval.width + 2 * mx) / scale))
+  const h = Math.min(photo.height - y, Math.round((oval.height + 2 * my) / scale))
+  const context = ImageManipulator.manipulate(photo.uri)
+  if (w > 50 && h > 50) context.crop({ originX: x, originY: y, width: w, height: h })
+  context.resize({ width: 720 })
+  const image = await context.renderAsync()
+  return image.saveAsync({ format: SaveFormat.JPEG, compress: 0.75, base64: true })
+}
+
 const SLIDES = [
   { icon: 'scan-circle-outline', title: 'Dekod: read your skin in seconds', text: 'Dekod is Skynkod’s skin scan. Take one selfie, and Dekod reads what is visible on your skin.' },
   { icon: 'grid-outline', title: 'Five points, one tip each', text: 'Redness, shine, blemishes, dryness and tone, each with a simple tip, and your evolution scan after scan.' },
@@ -39,6 +62,8 @@ export default function DekodScreen({ navigation }) {
   const [result, setResult] = useState(null)
   const [permission, requestPermission] = useCameraPermissions()
   const camera = useRef(null)
+  const ovalRef = useRef(null)
+  const ovalRect = useRef(null) // where the oval sits on screen
   const [history, setHistory] = useState(null) // past scans, newest first
   const [shot, setShot] = useState(null) // { uri, checks, ok, retake } right after the photo
   const [viewing, setViewing] = useState(null) // a past scan opened from the history
@@ -69,11 +94,20 @@ export default function DekodScreen({ navigation }) {
 
   const shoot = async () => {
     try {
-      const photo = await camera.current?.takePictureAsync({ base64: true, quality: 0.35, shutterSound: false })
-      if (!photo?.base64) return
-      setShot({ uri: photo.uri, checks: null })
+      const raw = await camera.current?.takePictureAsync({ quality: 0.8, shutterSound: false })
+      if (!raw?.uri) return
+      const photo = ovalRect.current ? await cropToOval(raw, ovalRect.current).catch(() => null) : null
+      if (!photo?.base64) {
+        // Cropping failed: fall back to the whole photo, resized.
+        const ctx = ImageManipulator.manipulate(raw.uri)
+        ctx.resize({ width: 720 })
+        Object.assign(raw, await (await ctx.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 0.7, base64: true }))
+      }
+      const final = photo?.base64 ? photo : raw
+      if (!final?.base64) return
+      setShot({ uri: final.uri, checks: null })
       setStage('analysing')
-      const res = await runDekod(photo.base64, language)
+      const res = await runDekod(final.base64, language)
       if (res.error === 'daily_limit') {
         toHome()
         return Alert.alert(t('See you tomorrow 🌸'), t('You’ve had your Dekod today. Come back tomorrow for a new scan.'))
@@ -83,7 +117,7 @@ export default function DekodScreen({ navigation }) {
         return Alert.alert(t('Dekod is unavailable'), t('Please try again in a moment.'))
       }
       // The oval turns green (all good) or orange (what to change) on the photo.
-      setShot({ uri: photo.uri, checks: res.checks || null, ok: !!res.ok, retake: res.retake })
+      setShot({ uri: final.uri, checks: res.checks || null, ok: !!res.ok, retake: res.retake })
       if (!res.ok) return
       setResult(res)
       setTimeout(() => setStage('result'), 1400)
@@ -135,7 +169,8 @@ export default function DekodScreen({ navigation }) {
         <View style={{ flex: 1, backgroundColor: '#000' }}>
           <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="front" />
           <View pointerEvents="none" style={styles.ovalWrap}>
-            <View style={styles.oval} />
+            <View ref={ovalRef} style={styles.oval}
+              onLayout={() => ovalRef.current?.measureInWindow((x, y, width, height) => { ovalRect.current = { x, y, width, height } })} />
             <Text style={styles.ovalHint}>{t('Place your face in the oval')}</Text>
           </View>
           <Pressable onPress={() => setStage('tips')} hitSlop={12} style={styles.close} accessibilityLabel={t('Close')}>
