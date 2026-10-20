@@ -140,25 +140,28 @@ export default function TodayScreen({ navigation }) {
   }
 
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? t('Good morning') : hour < 18 ? t('Good afternoon') : t('Good evening')
+  const greeting = hour >= 5 && hour < 12 ? t('Good morning') : hour >= 12 && hour < 18 ? t('Good afternoon') : hour >= 18 && hour < 23 ? t('Good evening') : t('Good night')
+  // The routine due now: morning from 5 am to 3 pm, then the evening one.
+  const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
+  const [compact, setCompact] = useState(false)
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
   const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
   const tip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
   const tonight = plan ? NIGHTS[tonightNight(plan)] : null
 
   const Row = ({ period, icon, title, count }) => {
-    const isOpen = open === period
     const complete = count.total > 0 && count.done === count.total
+    const isOpen = !complete
     return (
       <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Pressable onPress={() => { tap(); count.total ? setOpen(isOpen ? null : period) : navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() }) }} style={styles.logRow}>
+        <Pressable disabled={!!count.total && !complete} onPress={() => { tap(); count.total ? (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period })) : navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() }) }} style={styles.logRow}>
           <View style={[styles.logIcon, { backgroundColor: complete ? colors.successSoft : colors.primarySoft }]}>
             <Ionicons name={complete ? 'checkmark' : icon} size={20} color={complete ? colors.success : colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
             <Text style={[TYPE.caption, { color: colors.muted }]}>
-              {count.total ? (complete ? t('Done') : t('{done} of {total} steps', { done: count.done, total: count.total })) : t('Set up my routine')}
+              {count.total ? (complete ? (period === 'morning' ? t('Done · see you tonight') : t('Done · sleep well')) : t('{done} of {total} steps', { done: count.done, total: count.total })) : t('Set up my routine')}
             </Text>
           </View>
           {count.total ? (
@@ -166,7 +169,7 @@ export default function TodayScreen({ navigation }) {
               <View style={{ width: `${Math.round(part(count) * 100)}%`, height: '100%', backgroundColor: complete ? colors.success : colors.primary, borderRadius: 3 }} />
             </View>
           ) : null}
-          <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
+          {!isOpen ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
         </Pressable>
         {isOpen ? (
           <View style={{ marginTop: SPACING.sm }}>
@@ -192,7 +195,10 @@ export default function TodayScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: insets.top + SPACING.sm, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl }}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.sm, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl }}
+      scrollEventThrottle={32}
+      onScroll={e => { const down = e.nativeEvent.contentOffset.y > 56; if (down !== compact) setCompact(down) }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
       {/* Date and weather, and the bell */}
       <View style={styles.top}>
@@ -213,25 +219,17 @@ export default function TodayScreen({ navigation }) {
       </View>
       <Text style={[styles.hello, { color: colors.text }]}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
 
-      {/* The day's ring and the streak */}
-      <View style={[styles.today, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Ring progress={progress} colors={colors} />
-        <View style={{ flex: 1, gap: SPACING.sm }}>
-          <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Today')}</Text>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>
-            {progress >= 1 ? t('Perfect day for your skin!') : t('{n} of 3 done', { n: [morning.total && morning.done === morning.total, !!entry?.mood, evening.total && evening.done === evening.total].filter(Boolean).length })}
-          </Text>
-          <View style={[styles.streak, { backgroundColor: streak ? '#FDEBDC' : colors.surface }]}>
-            <Ionicons name="flame" size={16} color={streak ? '#E8742B' : colors.muted} />
-            <Text style={[TYPE.caption, { color: streak ? '#B4561B' : colors.muted, fontWeight: '700' }]}>
-              {streak ? t('{n}-day streak', { n: streak }) : t('Start your streak today')}
-            </Text>
-          </View>
+      {streak ? (
+        <View style={[styles.streak, { backgroundColor: '#FDEBDC', marginTop: SPACING.sm }]}>
+          <Ionicons name="flame" size={15} color="#E8742B" />
+          <Text style={[TYPE.caption, { color: '#B4561B', fontWeight: '700' }]}>{t('{n}-day streak', { n: streak })}</Text>
         </View>
-      </View>
+      ) : null}
 
       {/* The day's log */}
-      <Row period="morning" icon="sunny-outline" title={t('Morning routine')} count={morning} />
+      {now === 'morning'
+        ? <Row period="morning" icon="sunny-outline" title={t('Morning routine')} count={morning} />
+        : <Row period="evening" icon="moon-outline" title={tonight ? `${t('Tonight')} · ${t(tonight.short)}` : t('Evening routine')} count={evening} />}
 
       <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.logRow}>
@@ -261,7 +259,6 @@ export default function TodayScreen({ navigation }) {
         </View>
       </View>
 
-      <Row period="evening" icon="moon-outline" title={tonight ? `${t('Tonight')} · ${t(tonight.short)}` : t('Evening routine')} count={evening} />
 
       {/* Scan or search any product */}
       <View style={styles.searchRow}>
@@ -294,6 +291,23 @@ export default function TodayScreen({ navigation }) {
         <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
       </View>
     </ScrollView>
+
+    {/* Once the greeting scrolls away: a solid header with the date, weather and greeting */}
+    {compact ? (
+      <View style={[styles.sticky, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+            {weather ? <><Ionicons name={weather.icon} size={12} color={colors.primary} /><Text style={[styles.date, { color: colors.primary }]}>{weather.temp}°</Text></> : null}
+          </View>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 2 }]} numberOfLines={1}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
+        </View>
+        <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
+          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+        </Pressable>
+      </View>
+    ) : null}
+    </View>
   )
 }
 
@@ -312,6 +326,7 @@ function Ring({ progress, colors }) {
 }
 
 const styles = StyleSheet.create({
+  sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   hello: { fontSize: 28, fontWeight: '800', letterSpacing: -0.6, marginTop: SPACING.sm },
