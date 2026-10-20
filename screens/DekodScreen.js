@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal, Image } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
@@ -34,6 +34,7 @@ export default function DekodScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions()
   const camera = useRef(null)
   const [history, setHistory] = useState(null) // past scans, newest first
+  const [shot, setShot] = useState(null) // { uri, checks, ok, retake } right after the photo
   const [viewing, setViewing] = useState(null) // a past scan opened from the history
 
   const loadHistory = useCallback(() => {
@@ -63,6 +64,7 @@ export default function DekodScreen({ navigation }) {
     try {
       const photo = await camera.current?.takePictureAsync({ base64: true, quality: 0.35, shutterSound: false })
       if (!photo?.base64) return
+      setShot({ uri: photo.uri, checks: null })
       setStage('analysing')
       const res = await runDekod(photo.base64, language)
       if (res.error === 'daily_limit') {
@@ -73,12 +75,11 @@ export default function DekodScreen({ navigation }) {
         setStage('tips')
         return Alert.alert(t('Dekod is unavailable'), t('Please try again in a moment.'))
       }
-      if (!res.ok) {
-        setStage('tips')
-        return Alert.alert(t('Let’s retake it'), res.retake || t('We couldn’t see your skin clearly. Try daylight, facing the camera.'))
-      }
+      // The oval turns green (all good) or orange (what to change) on the photo.
+      setShot({ uri: photo.uri, checks: res.checks || null, ok: !!res.ok, retake: res.retake })
+      if (!res.ok) return
       setResult(res)
-      setStage('result')
+      setTimeout(() => setStage('result'), 1400)
       track('dekod_done')
       saveDekodResult(user.id, res).then(loadHistory).catch(error => logError('Dekod_save', error, {}, 'warn'))
     } catch (error) {
@@ -126,16 +127,52 @@ export default function DekodScreen({ navigation }) {
     )
   }
 
-  // ---------- Analysing ----------
+  // ---------- Checking the photo, then decoding ----------
   if (stage === 'analysing') {
+    const c = shot?.checks
+    const done = !!c
+    const color = !done ? 'rgba(255,255,255,0.85)' : shot.ok ? '#5BD08A' : '#F2A65A'
+    const lines = done ? [
+      [c.light === 'ok', c.light === 'dark' ? 'A bit too dark: face a window' : c.light === 'bright' ? 'Too bright: avoid direct sun' : 'Light OK'],
+      [c.position === 'ok', c.position === 'far' ? 'Come a little closer' : c.position === 'off' ? 'Face the camera, in the oval' : c.position === 'none' ? 'We can’t see your face' : 'Face well placed'],
+      [c.sharp, c.sharp ? 'Sharp photo' : 'A little blurry: hold still'],
+    ] : []
     return (
-      <Screen title="Dekod">
-        <View style={{ alignItems: 'center', marginTop: SPACING.xxxl * 2, gap: SPACING.lg }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Decoding your skin…')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('Your photo is analysed, then deleted.')}</Text>
+      <View style={styles.checkWrap}>
+        <View style={[styles.ovalPhoto, { borderColor: color }]}>
+          {shot?.uri ? <Image source={{ uri: shot.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
         </View>
-      </Screen>
+        {!done ? (
+          <View style={{ alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xl }}>
+            <ActivityIndicator color="#FFFFFF" />
+            <Text style={styles.checkTitle}>{t('Checking light and position…')}</Text>
+            <Text style={styles.checkSub}>{t('Your photo is analysed, then deleted.')}</Text>
+          </View>
+        ) : (
+          <View style={{ marginTop: SPACING.xl, gap: SPACING.sm, alignSelf: 'stretch', paddingHorizontal: SPACING.xxl }}>
+            {lines.map(([ok, label]) => (
+              <View key={label} style={styles.checkLine}>
+                <Ionicons name={ok ? 'checkmark-circle' : 'alert-circle'} size={20} color={ok ? '#5BD08A' : '#F2A65A'} />
+                <Text style={styles.checkText}>{t(label)}</Text>
+              </View>
+            ))}
+            {shot.ok ? (
+              <Text style={[styles.checkSub, { marginTop: SPACING.md, textAlign: 'center' }]}>{t('Decoding your skin…')}</Text>
+            ) : (
+              <>
+                {shot.retake ? <Text style={[styles.checkSub, { marginTop: SPACING.sm }]}>{shot.retake}</Text> : null}
+                <Pressable onPress={() => { setShot(null); setStage('camera') }} style={({ pressed }) => [styles.button, { backgroundColor: '#FFFFFF', opacity: pressed ? 0.85 : 1 }]}>
+                  <Ionicons name="camera-outline" size={17} color={PLUM} />
+                  <Text style={{ color: PLUM, fontWeight: '700', fontSize: 15 }}>{t('Retake the photo')}</Text>
+                </Pressable>
+                <Pressable onPress={() => { setShot(null); setStage('tips') }} style={{ alignSelf: 'center', padding: SPACING.md }}>
+                  <Text style={styles.checkSub}>{t('See the tips again')}</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        )}
+      </View>
     )
   }
 
@@ -345,6 +382,12 @@ const styles = StyleSheet.create({
   heroLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: SPACING.md },
   button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, marginTop: SPACING.lg },
   consentLine: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.lg },
+  checkWrap: { flex: 1, backgroundColor: PLUM, alignItems: 'center', justifyContent: 'center', paddingVertical: SPACING.xxl },
+  ovalPhoto: { width: 210, height: 286, borderRadius: 143, borderWidth: 5, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.08)' },
+  checkTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  checkSub: { color: MAUVE, fontSize: 13, lineHeight: 18 },
+  checkLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  checkText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
   dots: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: SPACING.sm, height: 22 },
   dot: { width: 10, borderRadius: 3 },
