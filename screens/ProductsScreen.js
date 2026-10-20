@@ -125,6 +125,8 @@ export default function ProductsScreen({ navigation }) {
 
   const saveLife = async () => {
     const row = lifeRow
+    // A second tap on Save (the sheet is already closing) has nothing to save.
+    if (!row) return
     setLifeRow(null)
     const iso = d => (d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : null)
     setRows(prev => prev.map(r => (r.id === row.id ? { ...r, opened_at: iso(openedDraft), expires_at: iso(expiryDraft), pao_months: paoDraft } : r)))
