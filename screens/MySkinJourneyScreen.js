@@ -72,9 +72,9 @@ export default function MySkinJourneyScreen() {
 
   const badgeTile = b => (
     <Pressable key={b.id} onPress={() => setDetail(b)} style={({ pressed }) => [styles.tile, { width: col, opacity: pressed ? 0.7 : 1 }]} accessibilityLabel={t(b.name)}>
-      <BadgeImage badge={b} size={col * 0.86} locked={!b.earned} />
+      <BadgeImage badge={b} size={col * 0.86} locked={!b.earned && !b.mystery} />
       <Text numberOfLines={2} style={[styles.tileName, { color: b.earned ? colors.text : colors.textSecondary }]}>{t(b.name)}</Text>
-      <Text numberOfLines={2} style={[styles.tileSub, { color: colors.muted }]}>{t(b.condition)}</Text>
+      <Text numberOfLines={2} style={[styles.tileSub, { color: b.soon ? colors.primary : colors.muted }]}>{b.soon ? t('Coming soon') : t(b.condition)}</Text>
     </Pressable>
   )
 
@@ -116,7 +116,7 @@ export default function MySkinJourneyScreen() {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'badges', label: `${t('Badges')} ${data.earnedCount}/${data.badges.length}` },
+            { value: 'badges', label: `${t('Badges')} ${data.earnedCount}/${data.earnableCount}` },
             { value: 'challenges', label: t('Challenges') },
             { value: 'stats', label: t('Stats') },
           ]}
@@ -212,7 +212,7 @@ export default function MySkinJourneyScreen() {
           <View style={[styles.statGrid, { marginTop: SPACING.lg }]}>
             {[
               { icon: 'sparkles-outline', value: data.xp, label: 'XP earned' },
-              { icon: 'ribbon-outline', value: `${data.earnedCount}/${data.badges.length}`, label: 'Badges' },
+              { icon: 'ribbon-outline', value: `${data.earnedCount}/${data.earnableCount}`, label: 'Badges' },
               { icon: 'star-outline', value: data.stars, label: 'Seniority stars' },
               { icon: streak.active ? 'flame' : 'flame-outline', value: streak.current, label: 'Current series' },
               { icon: 'trophy-outline', value: streak.best, label: 'Best series' },
@@ -240,24 +240,24 @@ export default function MySkinJourneyScreen() {
         <Pressable style={[styles.back, { backgroundColor: 'rgba(30,20,30,0.55)' }]} onPress={() => setDetail(null)}>
           {detail ? (() => {
             const ts = TIER_STYLE[detail.tier]
-            const status = detail.earned ? 'Obtained' : detail.value > 0 ? 'In progress' : 'Locked'
+            const status = detail.earned ? 'Obtained' : detail.soon ? 'Coming soon' : detail.mystery ? 'Secret' : detail.value > 0 ? 'In progress' : 'Locked'
             return (
               <Pressable style={[styles.detail, { backgroundColor: ts.card }]} onPress={() => {}}>
-                <BadgeImage badge={detail} size={150} locked={!detail.earned} />
+                <BadgeImage badge={detail} size={150} locked={!detail.earned && !detail.mystery} />
                 <TierPill tier={detail.tier} style={{ marginTop: SPACING.sm }} />
                 <Text style={[styles.detailName, { color: ts.ink }]}>{t(detail.name)}</Text>
-                <Text style={[styles.detailText, { color: ts.soft }]}>{t(detail.earned ? detail.description : detail.condition)}</Text>
-                <View style={{ alignSelf: 'stretch', marginTop: SPACING.md }}>
+                <Text style={[styles.detailText, { color: ts.soft }]}>{detail.mystery ? t('A secret badge. Keep exploring Skynkod to discover it…') : detail.soon ? t('This badge arrives with a future feature of Skynkod.') : t(detail.earned ? detail.description : detail.condition)}</Text>
+                {!detail.soon && !detail.mystery ? <View style={{ alignSelf: 'stretch', marginTop: SPACING.md }}>
                   <Text style={[styles.detailCount, { color: ts.soft }]}>{detail.earned ? detail.target : detail.value}/{detail.target}</Text>
                   <View style={[styles.bar, { backgroundColor: detail.tier === 'legendary' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }]}>
                     <View style={{ width: `${(detail.earned ? 1 : detail.value / detail.target) * 100}%`, height: '100%', borderRadius: 4, backgroundColor: ts.bar }} />
                   </View>
-                </View>
+                </View> : null}
                 <View style={[styles.status, detail.earned || detail.value > 0 ? { backgroundColor: ts.bar } : { borderWidth: 1, borderColor: ts.soft }]}>
                   <Text style={[styles.statusText, { color: detail.earned || detail.value > 0 ? '#FFFFFF' : ts.ink }]}>{t(status).toUpperCase()}</Text>
                 </View>
                 <Text style={[styles.detailDate, { color: ts.soft }]}>
-                  {detail.earned ? fmt(detail.earned.at) : t('Keep going to unlock this badge.')}
+                  {detail.earned ? fmt(detail.earned.at) : detail.soon || detail.mystery ? '' : t('Keep going to unlock this badge.')}
                 </Text>
                 {detail.earned ? <Text style={[styles.detailKoda, { color: ts.ink }]}>“{t(detail.koda)}” · Koda</Text> : null}
               </Pressable>

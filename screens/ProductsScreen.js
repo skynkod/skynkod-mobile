@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { trackOpened } from '../utils/journey'
+import { trackOpened, trackFinished } from '../utils/journey'
 import { View, Text, Pressable, StyleSheet, Image, Alert, RefreshControl, Modal } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -99,9 +99,20 @@ export default function ProductsScreen({ navigation }) {
     Alert.alert(name, null, [
       ...(owned && !row.opened_at ? [{ text: t('I opened it today'), onPress: () => openedToday(row) }] : []),
       ...(owned ? [{ text: t('Opening & expiry dates'), onPress: () => openLife(row) }] : []),
+      ...(row.status === 'owned' ? [{ text: t('I used it up'), onPress: () => usedUp(row) }] : []),
       move,
       { text: t('Remove'), style: 'destructive', onPress: () => remove(row) },
       { text: t('Cancel'), style: 'cancel' },
+    ])
+  }
+
+  // Finished to the last drop: counts for My Skin Journey, then she decides
+  // whether it leaves her shelf.
+  const usedUp = (row) => {
+    trackFinished(user.id, row.id)
+    Alert.alert(t('Not a drop wasted 🌿'), t('Remove it from your shelf?'), [
+      { text: t('Keep it'), style: 'cancel' },
+      { text: t('Remove'), style: 'destructive', onPress: () => remove(row) },
     ])
   }
 

@@ -1,9 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './supabase'
-import { programmeFinished } from './rekod'
+import { programmeFinished, weekOf, goalOf } from './rekod'
+import { getSosHistory } from './emergency-state'
+import { getPausedProducts } from './paused-products'
+import { getDekodResults, compareScans } from './dekod'
+import { questionsFor, fromRow } from './skin-quiz'
+import { BASICS } from './encyclopedia/basics'
 import { logError } from './errorLogger'
 import {
-  VISIBLE_BADGES, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
+  VISIBLE_BADGES, canEarn, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
   levelFor, streakFrom, weekStart, dayKey, addDays, activeDaysIn, boxContents,
 } from './journey-core'
 
@@ -15,16 +20,23 @@ import {
 //   events   { key: { xp, at } }       every XP ever given, one per unique key
 //   badges   { id: { at } }            earned badges
 //   ingredients / productPages / opened  { id: firstTimestamp }
-//   shared   timestamp of the first time she shared Skynkod
+//   shares   [timestamps] each time she shared Skynkod
+//   articles / finished  { id: firstTimestamp }  articles read, products used up
 //   box      { lastWeek }              week of the last Koda box opened
 //   stars    [{ week, at }]            seniority stars, one per active week
 //   comeback true once the Welcome Back badge was given
 
 const key = userId => `journey_${userId}`
-const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shared: null, box: null, stars: [], comeback: false })
+const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shares: [], articles: {}, finished: {}, box: null, stars: [], comeback: false })
 
 export const loadJourney = async (userId) => {
-  try { return { ...fresh(), ...JSON.parse((await AsyncStorage.getItem(key(userId))) || '{}') } } catch { return fresh() }
+  try {
+    const state = { ...fresh(), ...JSON.parse((await AsyncStorage.getItem(key(userId))) || '{}') }
+    // Older saves kept one share timestamp.
+    if (state.shared && !state.shares.length) state.shares = [state.shared]
+    delete state.shared
+    return state
+  } catch { return fresh() }
 }
 const save = (userId, state) => AsyncStorage.setItem(key(userId), JSON.stringify(state)).catch(() => {})
 
@@ -52,14 +64,15 @@ const remember = (field) => (userId, id) => {
 export const trackIngredient = remember('ingredients')
 export const trackProductPage = remember('productPages')
 export const trackOpened = remember('opened')
+export const trackArticle = remember('articles')
+export const trackFinished = remember('finished')
 
 // She shared Skynkod (the share sheet says it was sent, not just opened).
 export const trackShared = (userId) => {
   if (!userId) return Promise.resolve()
   return serial(async () => {
     const state = await loadJourney(userId)
-    if (state.shared) return
-    state.shared = Date.now()
+    state.shares.push(Date.now())
     await save(userId, state)
   }).then(() => syncSoon(userId, 300))
 }
@@ -68,36 +81,63 @@ export const trackShared = (userId) => {
 
 const count = async (query) => { const { count: n, error } = await query; if (error) throw error; return n || 0 }
 
+const answered = v => (Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== '')
+
 const gather = async (userId, state) => {
-  const [profile, routines, products, ticks, journal, dekodScans, kodaQuestions, rekod] = await Promise.all([
-    supabase.from('users').select('skin_type, skin_concerns, skin_goals').eq('id', userId).maybeSingle(),
-    supabase.from('routines').select('steps').eq('user_id', userId),
-    supabase.from('user_products').select('id, product_id, created_at, opened_at, status').eq('user_id', userId).eq('status', 'owned'),
+  const [profile, routines, products, ticks, journal, dekod, kodaQuestions, rekod, sos, paused] = await Promise.all([
+    supabase.from('users').select('skin_type, skin_concerns, skin_goals, skin_profile, acne_types, skin_conditions, avoid_ingredients, pregnancy, consent_health_at, created_at').eq('id', userId).maybeSingle(),
+    supabase.from('routines').select('type, steps').eq('user_id', userId),
+    supabase.from('user_products').select('id, product_id, category, created_at, opened_at, status').eq('user_id', userId).eq('status', 'owned'),
     supabase.from('routine_completions').select('date, routine_type').eq('user_id', userId),
-    supabase.from('journal_entries').select('date, mood').eq('user_id', userId),
-    count(supabase.from('dekod_results').select('id', { count: 'exact', head: true }).eq('user_id', userId)).catch(() => 0),
+    supabase.from('journal_entries').select('date, mood, skin_conditions').eq('user_id', userId),
+    getDekodResults(userId, 30).catch(() => []),
     count(supabase.from('chat_history').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('role', 'user')).catch(() => 0),
     supabase.from('rekod_plans').select('plan').eq('user_id', userId).maybeSingle(),
+    getSosHistory(userId),
+    getPausedProducts(userId),
   ])
   for (const r of [profile, routines, products, ticks, journal]) if (r.error) throw r.error
   const p = profile.data || {}
   const plan = rekod.data?.plan || null
+  const rekodFinished = !!plan && (!!plan.maintenance || programmeFinished(plan))
+  // Sun Guardian: a sunscreen among the morning routine's products.
+  const morningIds = (routines.data || []).filter(r => r.type === 'morning').flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean)
+  let morningHasSpf = false
+  if (morningIds.length) {
+    const { data } = await supabase.from('products').select('category').in('id', morningIds)
+    morningHasSpf = (data || []).some(x => x.category === 'sunscreen')
+  }
+  // Real Results can come from Dekod: the latest scan better than the first.
+  const dekodBetter = dekod.length > 1 && compareScans(dekod[dekod.length - 1].result?.points, dekod[0].result?.points).some(c => c.trend === 'better')
+  const answers = fromRow(p)
   return {
     profileComplete: !!p.skin_type && ((p.skin_concerns || []).length > 0 || (p.skin_goals || []).length > 0),
+    profileFull: !!p.skin_profile && questionsFor(answers, !!p.consent_health_at).every(q => answered(answers[q.id])),
     routineSaved: (routines.data || []).some(r => (r.steps || []).length > 0),
+    morningHasSpf,
     products: products.data || [],
     openedCount: (products.data || []).filter(r => r.opened_at).length,
     ticks: ticks.data || [],
     journal: journal.data || [],
-    dekodScans,
+    dekodScans: dekod.length,
+    dekodBetter,
     kodaQuestions,
     rekodStarted: !!plan,
-    rekodFinished: !!plan && (!!plan.maintenance || programmeFinished(plan)),
+    rekodHalf: !!plan && (rekodFinished || weekOf(plan) > goalOf(plan.goal).weeks / 2),
+    rekodFinished,
+    sosPlanDone: !!sos.plan,
+    sosReturnDone: !!sos.return,
+    reactionSpotted: (paused || []).length > 0,
+    accountCreated: p.created_at || null,
+    comeback: !!state.comeback,
+    stars: state.stars,
+    shares: state.shares.length,
     ingredients: state.ingredients,
     productPages: state.productPages,
     opened: state.opened,
-    shared: !!state.shared,
-    comeback: !!state.comeback,
+    articles: state.articles,
+    finished: state.finished,
+    basicsIds: BASICS.map(a => a.id),
   }
 }
 
@@ -138,8 +178,9 @@ const picture = (state, stats, challenges) => {
     xp,
     level: levelFor(xp),
     streak: streakFrom(stats.routineDayList, dayKey()),
-    badges: VISIBLE_BADGES.filter(b => !b.secret || state.badges[b.id]).map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
+    badges: VISIBLE_BADGES.map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
     earnedCount: VISIBLE_BADGES.filter(b => state.badges[b.id]).length,
+    earnableCount: VISIBLE_BADGES.filter(canEarn).length,
     stars: state.stars.length,
     nextSteps: nextSteps(stats, state.badges),
     challenges,

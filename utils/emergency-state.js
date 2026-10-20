@@ -8,6 +8,18 @@ import { findIngredients } from './ingredients-guide'
 const key = userId => `skynkod_emergency_${userId}`
 const DAY = 86400000
 
+// What was finished, for My Skin Journey: { plan: ts, return: ts }.
+const doneKey = userId => `skynkod_emergency_done_${userId}`
+export const getSosHistory = async (userId) => {
+  try { return JSON.parse((await AsyncStorage.getItem(doneKey(userId))) || '{}') } catch { return {} }
+}
+const noteDone = async (userId, part) => {
+  const h = await getSosHistory(userId)
+  if (h[part]) return
+  h[part] = Date.now()
+  await AsyncStorage.setItem(doneKey(userId), JSON.stringify(h)).catch(() => {})
+}
+
 const dayIndexSince = (startedAt) => {
   const start = new Date(startedAt)
   start.setHours(0, 0, 0, 0)
@@ -43,7 +55,9 @@ export const getActivePlan = async (userId) => {
     if (!situation || situation.urgent) { await AsyncStorage.removeItem(key(userId)); return null }
     const schedule = returnSchedule(situation.pause || [], saved.repaused || [])
     const lastDay = schedule.length ? schedule[schedule.length - 1].day + returnEvery(schedule.length) : 7
+    if (dayIndex > 6) await noteDone(userId, 'plan')
     if (dayIndex >= lastDay || (dayIndex > 6 && !schedule.length)) {
+      if (schedule.length) await noteDone(userId, 'return')
       await AsyncStorage.removeItem(key(userId))
       return null
     }

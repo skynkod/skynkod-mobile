@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen, EmptyState, Button, useColors } from '../components/ui';
 import ArticleBody from '../components/ArticleBody';
 import { useT } from '../utils/LanguageContext';
+import { useAuth } from '../utils/AuthContext';
+import { trackArticle } from '../utils/journey';
 import { getArticle, SECTIONS, ARTICLES } from '../utils/encyclopedia';
 import { getIngredient } from '../utils/ingredients-guide';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -13,6 +15,9 @@ export default function ArticleScreen({ navigation, route }) {
   const colors = useColors();
   const t = useT();
   const article = getArticle(route?.params?.id);
+  const { user } = useAuth();
+  // An article read counts once for My Skin Journey.
+  useEffect(() => { if (article && user?.id) trackArticle(user.id, article.id); }, [article?.id, user?.id]);
 
   if (!article) return <Screen back><EmptyState icon="alert-circle-outline" title={t('Article not found')} /></Screen>;
 

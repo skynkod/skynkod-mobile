@@ -27,56 +27,138 @@ export const LEVELS = [
   { level: 5, name: 'Skynkod Insider', xp: 1500 },
 ]
 
-// Rarity, from common to legendary (the badge art and card follow it).
+// Rarity (the badge art and card follow it), plus the special families.
 export const TIERS = {
   common: { name: 'Common', description: 'The first steps of your journey.' },
   rare: { name: 'Rare', description: 'Important milestones.' },
   epic: { name: 'Epic', description: 'Bigger achievements.' },
   legendary: { name: 'Legendary', description: 'Unique, exceptional challenges.' },
+  secret: { name: 'Secret', description: 'Hidden badges to discover.' },
 }
-export const TIER_ORDER = ['common', 'rare', 'epic', 'legendary']
+export const TIER_ORDER = ['common', 'rare', 'epic', 'legendary', 'secret']
 
 export const CATEGORIES = [
-  { id: 'start', title: 'First steps', subtitle: 'Start your adventure.' },
+  { id: 'start', title: 'First steps', subtitle: 'Start your adventure on Skynkod.' },
+  { id: 'routines', title: 'Routines & consistency', subtitle: 'Small habits make big changes.' },
+  { id: 'skynkod', title: 'Dekod, Rekod & Koda', subtitle: 'Understand your skin, ask your questions, follow your progress.' },
+  { id: 'journal', title: 'Journal & feelings', subtitle: 'Observe, understand, celebrate every step.' },
   { id: 'knowledge', title: 'Skincare knowledge', subtitle: 'Discover, learn, explore.' },
-  { id: 'regularity', title: 'Consistency', subtitle: 'Small habits make big changes.' },
-  { id: 'advanced', title: 'Going further', subtitle: 'You keep going.' },
+  { id: 'collection', title: 'Product collection', subtitle: 'Know your products better, use them better.' },
+  { id: 'tracking', title: 'Tracking & results', subtitle: 'Observe, understand, progress.' },
+  { id: 'community', title: 'Community & sharing', subtitle: 'A community that grows together.' },
+  { id: 'meta', title: 'Your collection', subtitle: 'Collect them all.' },
+  { id: 'stars', title: 'Seniority stars', subtitle: 'Celebrate your journey on Skynkod.', special: true },
+  { id: 'seasonal', title: 'Seasonal badges', subtitle: 'Available for a limited time.', special: true },
+  { id: 'secret', title: 'Secret badges', subtitle: 'To discover…', special: true },
 ]
 
+// Seniority stars: one small star per active week (the Koda box), and these
+// milestones as the stars add up.
+export const STAR_MILESTONES = [4, 13, 26, 52, 104, 156]
+// Seasons (by month, 0 = January). A seasonal badge = 4 active weeks in one season.
+export const SEASONS = { spring: [2, 3, 4], summer: [5, 6, 7], fall: [8, 9, 10], winter: [11, 0, 1] }
+export const SEASON_WEEKS = 4
+
+const b = (id, name, tier, category, metric, target, condition, description, koda, extra = {}) => ({ id, name, tier, category, metric, target, condition, description, koda, ...extra })
+
 // Badges: `metric` reads the stats, `target` is the threshold. Each badge is
-// earned once and kept forever. `hidden` ones are set aside for now (no art yet).
-// `secret` ones only show once earned and don't count towards other badges.
+// earned once and kept forever.
+// soon: shown as "Coming soon" (the feature isn't there yet), never earned.
+// mystery: a secret badge whose rule isn't decided yet, never earned.
+// hidden: set aside for now.
 export const BADGES = [
-  { id: 'first-steps', name: 'First Steps', tier: 'common', category: 'start', metric: 'profileComplete', target: 1, description: 'Your skin profile is complete.', condition: 'Complete your skin profile.', koda: 'Now I know your skin. Let’s take care of it together.' },
-  { id: 'routine-rookie', name: 'Routine Rookie', tier: 'rare', category: 'start', metric: 'routineSaved', target: 1, description: 'Your first routine is saved.', condition: 'Save your first routine.', koda: 'Every glow starts with a first routine.' },
-  { id: 'product-curator', name: 'Product Curator', tier: 'epic', category: 'start', metric: 'productsOwned', target: 5, description: '5 products in your collection.', condition: 'Add 5 products to your collection.', koda: 'A shelf that knows you. Nicely curated.' },
-  { id: 'shelf-organized', name: 'Shelf Organized', tier: 'epic', category: 'start', metric: 'openedCount', target: 5, description: 'Opening dates noted for 5 products.', condition: 'Add the opening date of 5 products.', koda: 'Nothing expires behind your back anymore.' },
-  { id: 'skin-scholar', name: 'Skin Scholar', tier: 'common', category: 'knowledge', metric: 'ingredientViews', target: 10, description: '10 ingredients discovered.', condition: 'Read 10 different ingredient pages.', koda: 'Ten ingredients you now understand. Labels speak to you.' },
-  { id: 'ingredient-explorer', name: 'Ingredient Explorer', tier: 'rare', category: 'knowledge', metric: 'ingredientViews', target: 25, description: '25 ingredients discovered.', condition: 'Read 25 different ingredient pages.', koda: 'Twenty-five ingredients. You read labels like a pro.' },
-  { id: 'product-detective', name: 'Product Detective', tier: 'epic', category: 'knowledge', metric: 'productViews', target: 10, description: '10 product pages studied.', condition: 'Open the details of 10 different products.', koda: 'You check before you trust. Smart.' },
-  { id: 'skincare-expert', name: 'Skincare Expert', tier: 'legendary', category: 'knowledge', metric: 'ingredientViews', target: 50, description: '50 ingredients discovered.', condition: 'Read 50 different ingredient pages.', koda: 'Fifty ingredients. You could teach this now.' },
-  { id: 'consistency-club', name: 'Consistency Club', tier: 'common', category: 'regularity', metric: 'routineDays', target: 7, description: 'Your routine followed on 7 days.', condition: 'Tick your routine on 7 different days.', koda: 'Seven days. This is how skin changes.' },
-  { id: 'one-month-strong', name: 'One Month Strong', tier: 'epic', category: 'regularity', metric: 'routineDays', target: 30, description: 'Your routine followed on 30 days.', condition: 'Tick your routine on 30 different days.', koda: 'Thirty days. This isn’t a try anymore, it’s who you are.' },
-  { id: 'journal-keeper', name: 'Journal Keeper', tier: 'common', category: 'regularity', metric: 'journalDays', target: 10, description: '10 days in your skin journal.', condition: 'Fill in your journal on 10 different days.', koda: 'Ten days of listening. You know your skin better than ever.' },
-  { id: 'self-care-queen', name: 'Self Care Queen', tier: 'legendary', category: 'regularity', metric: 'routineDays', target: 90, description: 'Three months of care.', condition: 'Tick your routine on 90 different days.', koda: 'Three months. Your skin and you are a team now.' },
-  { id: 'skincare-enthusiast', name: 'Skincare Enthusiast', tier: 'common', category: 'advanced', metric: 'otherBadges', target: 5, description: '5 badges earned.', condition: 'Earn 5 badges.', koda: 'Five badges. This is becoming a real passion.' },
-  { id: 'skynkod-explorer', name: 'Skynkod Explorer', tier: 'rare', category: 'advanced', metric: 'sectionsUsed', target: 4, description: 'You used 4 parts of Skynkod.', condition: 'Use 4 different parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', koda: 'You know your way around now.' },
-  { id: 'skinfluencer', name: 'Skinfluencer', tier: 'epic', category: 'advanced', metric: 'shared', target: 1, description: 'You shared Skynkod with a friend.', condition: 'Share Skynkod with a friend.', koda: 'Good skin is better shared. Thank you for spreading the word.' },
-  { id: 'skynkod-insider', name: 'Skynkod Insider', tier: 'legendary', category: 'advanced', metric: 'otherBadges', target: 15, description: 'Every other badge earned.', condition: 'Earn all 15 other badges.', koda: 'You’ve seen it all. You’re a true Skynkod insider.' },
-  { id: 'welcome-back', name: 'Welcome Back', tier: 'common', category: 'regularity', secret: true, icon: 'cafe-outline', metric: 'comeback', target: 1, description: 'You came back after a quiet week.', condition: 'A surprise from your Koda box.', koda: 'So nice to see you again. Your skin missed you too.' },
-  // Set aside for now (no art yet).
-  { id: 'dear-diary', name: 'Dear Diary', tier: 'common', category: 'regularity', hidden: true, metric: 'journalDays', target: 1, description: 'You told your journal how your skin feels.', condition: 'Fill in your journal once.', koda: 'Listening to your skin is the first skill.' },
-  { id: 'first-look', name: 'First Look', tier: 'common', category: 'start', hidden: true, metric: 'dekodScans', target: 1, description: 'Your first Dekod scan.', condition: 'Do your first Dekod scan.', koda: 'You dared to really look. That’s where it all begins.' },
-  { id: 'curious', name: 'Curious', tier: 'common', category: 'knowledge', hidden: true, metric: 'kodaQuestions', target: 1, description: 'Your first question to Koda.', condition: 'Ask Koda a question.', koda: 'You ask the right questions. Your skin thanks you.' },
-  { id: 'rekod-started', name: 'Here We Go', tier: 'common', category: 'advanced', hidden: true, metric: 'rekodStarted', target: 1, description: 'You started a Rekod programme.', condition: 'Start a Rekod programme.', koda: 'A goal, a plan, and you. Let’s go.' },
-  { id: 'night-owl', name: 'Night Owl', tier: 'rare', category: 'regularity', hidden: true, metric: 'bestWeekEvenings', target: 7, description: 'Seven evening routines in one week.', condition: 'Do your evening routine every night of a week.', koda: 'Seven nights in a row. Your skin worked while you slept.' },
-  { id: 'glow-up', name: 'Glow Up', tier: 'rare', category: 'regularity', hidden: true, metric: 'glowUp', target: 1, description: 'Your skin felt better than the week before.', condition: 'Have a better skin week than the one before, in your journal.', koda: 'Better than last week. Keep doing what you’re doing.' },
-  { id: 'perfect-week', name: 'Perfect Week', tier: 'epic', category: 'regularity', hidden: true, metric: 'bestWeekFull', target: 7, description: 'Every morning and every evening of a week.', condition: 'Do both routines every day of a week (14 out of 14).', koda: 'Every morning, every evening. A week without a miss. I’m proud of you.' },
-  { id: 'rekod-complete', name: 'Rekod Complete', tier: 'legendary', category: 'advanced', hidden: true, metric: 'rekodFinished', target: 1, description: 'You finished a Rekod programme.', condition: 'Go all the way through a Rekod programme.', koda: 'Weeks of care, a skin that changed. You did it. Very few have this one.' },
+  // First steps
+  b('first-steps', 'First Steps', 'common', 'start', 'profileComplete', 1, 'Complete your skin profile.', 'Your skin profile is complete.', 'Now I know your skin. Let’s take care of it together.'),
+  b('routine-rookie', 'Routine Rookie', 'rare', 'start', 'routineSaved', 1, 'Save your first routine.', 'Your first routine is saved.', 'Every glow starts with a first routine.'),
+  b('product-curator', 'Product Curator', 'epic', 'start', 'productsOwned', 5, 'Add 5 products to your collection.', '5 products in your collection.', 'A shelf that knows you. Nicely curated.'),
+  b('shelf-organized', 'Shelf Organized', 'epic', 'start', 'openedCount', 5, 'Add the opening date of 5 products.', 'Opening dates noted for 5 products.', 'Nothing expires behind your back anymore.'),
+  b('profile-perfectionist', 'Profile Perfectionist', 'rare', 'start', 'profileFull', 1, 'Answer every question of your skin profile.', 'Your profile is 100% complete.', 'Every detail counts. Now I really know you.'),
+  b('skynkod-explorer', 'Skynkod Explorer', 'rare', 'start', 'sectionsUsed', 4, 'Use 4 parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', 'You used 4 parts of Skynkod.', 'You know your way around now.'),
+  // Routines & consistency
+  b('consistency-club', 'Consistency Club', 'common', 'routines', 'routineDays', 7, 'Tick your routine on 7 different days.', 'Your routine followed on 7 days.', 'Seven days. This is how skin changes.'),
+  b('one-month-strong', 'One Month Strong', 'rare', 'routines', 'routineDays', 30, 'Tick your routine on 30 different days.', 'Your routine followed on 30 days.', 'Thirty days. This isn’t a try anymore, it’s who you are.'),
+  b('habit-master', 'Habit Master', 'epic', 'routines', 'routineDays', 100, 'Tick your routine on 100 different days.', 'Your routine followed on 100 days.', 'A hundred days. Your routine is part of you now.'),
+  b('comeback-queen', 'Comeback Queen', 'rare', 'routines', 'comeback', 1, 'Come back after a week away.', 'You came back after a week away.', 'So nice to see you again. Your skin missed you too.'),
+  b('unstoppable', 'Unstoppable', 'legendary', 'routines', 'longComeback', 1, 'Come back after a month away.', 'You came back after a month away.', 'Whatever happens, you always come back. Unstoppable.'),
+  b('morning-glow', 'Morning Glow', 'rare', 'routines', 'bestWeekMornings', 7, 'Do your morning routine every day of a week.', 'Seven morning routines in one week.', 'Seven mornings of care. Your days start well.'),
+  b('night-ritual', 'Night Ritual', 'rare', 'routines', 'bestWeekEvenings', 7, 'Do your evening routine every night of a week.', 'Seven evening routines in one week.', 'Seven nights in a row. Your skin worked while you slept.'),
+  b('perfect-balance', 'Perfect Balance', 'epic', 'routines', 'bestWeekFull', 7, 'Do both routines every day of a week (14 out of 14).', 'Every morning and every evening of a week.', 'Every morning, every evening. A week without a miss. I’m proud of you.'),
+  b('sun-guardian', 'Sun Guardian', 'rare', 'routines', 'sunGuardian', 1, 'Have a sunscreen in your morning routine and do it every day of a week.', 'Sunscreen every morning for a week.', 'The best anti-ageing there is. Well done.'),
+  // Dekod, Rekod & Koda
+  b('first-light', 'First Light', 'common', 'skynkod', 'dekodScans', 1, 'Do your first Dekod scan.', 'Your first Dekod scan.', 'You dared to really look. That’s where it all begins.'),
+  b('deeper-insights', 'Deeper Insights', 'rare', 'skynkod', 'dekodScans', 4, 'Do 4 Dekod scans.', '4 Dekod scans done.', 'Four looks at your skin. You see it change now.'),
+  b('new-chapter', 'New Chapter', 'common', 'skynkod', 'rekodStarted', 1, 'Start a Rekod programme.', 'You started a Rekod programme.', 'A goal, a plan, and you. Let’s go.'),
+  b('halfway-glow', 'Halfway Glow', 'rare', 'skynkod', 'rekodHalf', 1, 'Reach the middle of your Rekod.', 'Halfway through your Rekod.', 'Halfway there. The best part is coming.'),
+  b('rekod-master', 'Rekod Master', 'legendary', 'skynkod', 'rekodFinished', 1, 'Finish your Rekod.', 'You finished your Rekod.', 'Weeks of care, a skin that changed. You did it.'),
+  b('first-question', 'First Question', 'common', 'skynkod', 'kodaQuestions', 1, 'Ask Koda your first question.', 'Your first question to Koda.', 'You ask the right questions. Your skin thanks you.'),
+  b('kodas-companion', 'Koda’s Companion', 'rare', 'skynkod', 'kodaQuestions', 10, 'Ask Koda 10 questions.', '10 questions to Koda.', 'Ten questions. We make a good team, you and me.'),
+  b('barrier-healed', 'Barrier Healed', 'epic', 'skynkod', 'sosPlanDone', 1, 'Finish a 7-day SOS plan.', 'You finished a 7-day SOS plan.', 'Seven days of gentle care. Your barrier thanks you.'),
+  b('gentle-comeback', 'Gentle Comeback', 'rare', 'skynkod', 'sosReturnDone', 1, 'Finish the gentle return after an SOS plan.', 'Your products are all back, gently.', 'Step by step, everything is back. Patience pays.'),
+  // Journal & feelings
+  b('first-entry', 'First Entry', 'common', 'journal', 'journalDays', 1, 'Fill in your journal for the first time.', 'Your first day in the journal.', 'Listening to your skin is the first skill.'),
+  b('skin-detective', 'Skin Detective', 'epic', 'journal', 'reactionSpotted', 1, 'Spot a product that makes your skin react.', 'You spotted a product that makes you react.', 'You found the culprit. That’s real skin knowledge.'),
+  b('brave-skin', 'Brave Skin', 'rare', 'journal', 'braveDay', 1, 'Note a bad skin day and still do your routine.', 'A bad day noted, and your routine done anyway.', 'Hard days count the most. Well done for showing up.'),
+  b('glow-progress', 'Glow Progress', 'rare', 'journal', 'glowUp', 1, 'Have a better skin week than the one before.', 'Your skin felt better than the week before.', 'Better than last week. Keep doing what you’re doing.'),
+  b('calm-week', 'Calm Week', 'rare', 'journal', 'calmWeek', 1, 'Fill in your journal 3 times in a week with no skin problem noted.', 'A whole week without a skin problem.', 'A calm week. Your skin is happy.'),
+  b('bounce-back', 'Bounce Back', 'epic', 'journal', 'bounceBack', 1, 'Go from a bad day to a good day in the same week.', 'From bad to good in the same week.', 'Your skin bounced back, and so did you.'),
+  // Skincare knowledge
+  b('skin-scholar', 'Skin Scholar', 'common', 'knowledge', 'ingredientViews', 10, 'Read 10 different ingredient pages.', '10 ingredients discovered.', 'Ten ingredients you now understand. Labels speak to you.'),
+  b('ingredient-explorer', 'Ingredient Explorer', 'rare', 'knowledge', 'ingredientViews', 25, 'Read 25 different ingredient pages.', '25 ingredients discovered.', 'Twenty-five ingredients. You read labels like a pro.'),
+  b('active-ingredient-pro', 'Active Ingredient Pro', 'epic', 'knowledge', 'ingredientViews', 50, 'Read 50 different ingredient pages.', '50 ingredients discovered.', 'Fifty ingredients. You could teach this now.'),
+  b('barrier-expert', 'Barrier Expert', 'rare', 'knowledge', 'advancedArticles', 10, 'Read 10 Skyncyclopedia articles beyond Skincare 101.', '10 advanced topics read.', 'You go deeper than most. Impressive.'),
+  b('skincare-genius', 'Skincare Genius', 'legendary', 'knowledge', 'basicsDone', 1, 'Read every Skincare 101 article in Skyncyclopedia.', 'Every basic of Skyncyclopedia read.', 'All the basics, mastered. Skincare genius.'),
+  // Product collection
+  b('minimalist', 'Minimalist', 'common', 'collection', 'minimalist', 1, 'Build a routine with fewer than 10 products in your collection.', 'A routine with fewer than 10 products.', 'Less, but better. Your skin likes simple.'),
+  b('collection-builder', 'Collection Builder', 'rare', 'collection', 'productsOwned', 20, 'Add 20 products to your collection.', '20 products in your collection.', 'Quite the collection. Let’s make every one count.'),
+  b('ingredient-matcher', 'Ingredient Matcher', 'epic', 'collection', 'productViews', 10, 'Scan or open the ingredients of 10 different products.', 'The ingredients of 10 products checked.', 'You check before you trust. Smart.'),
+  b('no-waste-hero', 'No Waste Hero', 'rare', 'collection', 'finishedProducts', 1, 'Finish a product to the very end.', 'A product used to the very end.', 'Not a drop wasted. Good for your skin and the planet.'),
+  b('curated-collection', 'Curated Collection', 'legendary', 'collection', 'curated', 1, 'Own a cleanser, a moisturizer, a sunscreen and a treatment, all with their opening date.', 'A complete, well-kept collection.', 'Everything you need, nothing you don’t. Perfect.'),
+  b('mindful-beauty', 'Mindful Beauty', 'rare', 'collection', 'mindful', 1, 'Add 3 new products, one at a time, at least a week apart.', 'One new product at a time.', 'One at a time: the safest way to find what works.'),
+  // Tracking & results
+  b('journal-keeper', 'Journal Keeper', 'common', 'tracking', 'journalDays', 10, 'Fill in your journal on 10 different days.', '10 days in your skin journal.', 'Ten days of listening. You know your skin better than ever.'),
+  b('skin-observer', 'Skin Observer', 'rare', 'tracking', 'photos', 10, 'Add 10 progress photos.', '10 progress photos.', 'A picture is worth a thousand words.', { soon: true }),
+  b('progress-tracker', 'Progress Tracker', 'epic', 'tracking', 'journalWeeks', 12, 'Fill in your journal during 12 different weeks.', 'Three months of tracking.', 'Three months of watching your skin. Now you really know it.'),
+  b('real-results', 'Real Results', 'epic', 'tracking', 'realResults', 1, 'See a real improvement: a better month in your journal, or a better Dekod scan.', 'A real improvement.', 'This is what all your care was for.'),
+  b('glow-journey', 'Glow Journey', 'legendary', 'tracking', 'accountDays', 365, 'Be on Skynkod for a year.', 'One year on Skynkod.', 'A whole year together. Thank you.'),
+  // Community & sharing
+  b('helpful-friend', 'Helpful Friend', 'common', 'community', 'shares', 1, 'Share Skynkod with a friend.', 'You shared Skynkod with a friend.', 'Good skin is better shared.'),
+  b('skynkod-ambassador', 'Skynkod Ambassador', 'rare', 'community', 'shares', 5, 'Share Skynkod 5 times.', 'You shared Skynkod 5 times.', 'You’re spreading the word. Thank you, ambassador.'),
+  b('community-star', 'Community Star', 'rare', 'community', 'community', 10, 'Interact with 10 pieces of educational content.', 'Active in the community.', 'Coming soon.', { soon: true }),
+  b('skincare-advocate', 'Skincare Advocate', 'epic', 'community', 'community', 1, 'Help the community discover an ingredient.', 'You helped others discover an ingredient.', 'Coming soon.', { soon: true }),
+  b('skynkod-icon', 'Skynkod Icon', 'legendary', 'community', 'community', 1, 'Become a very active, inspiring member.', 'An inspiring member.', 'Coming soon.', { soon: true }),
+  // Your collection
+  b('skincare-enthusiast', 'Skincare Enthusiast', 'common', 'meta', 'otherBadges', 5, 'Earn 5 badges.', '5 badges earned.', 'Five badges. This is becoming a real passion.'),
+  b('skynkod-insider', 'Skynkod Insider', 'legendary', 'meta', 'otherBadges', 0, 'Earn every other badge.', 'Every badge earned.', 'You’ve seen it all. You’re a true Skynkod insider.'),
+  // Seniority stars
+  b('star-welcome', 'Welcome Star', 'common', 'stars', 'stars', 4, '4 active weeks (about 1 month).', 'About a month with Skynkod.', 'One month together. Welcome, truly.'),
+  b('star-explorer', 'Explorer Star', 'rare', 'stars', 'stars', 13, '13 active weeks (about 3 months).', 'About 3 months with Skynkod.', 'Three months. You’re finding your way.'),
+  b('star-dedicated', 'Dedicated Star', 'rare', 'stars', 'stars', 26, '26 active weeks (about 6 months).', 'About 6 months with Skynkod.', 'Six months of care. Dedicated indeed.'),
+  b('star-loyal', 'Loyal Star', 'epic', 'stars', 'stars', 52, '52 active weeks (about 1 year).', 'About a year with Skynkod.', 'A year of active weeks. Thank you for your loyalty.'),
+  b('star-expert', 'Expert Star', 'epic', 'stars', 'stars', 104, '104 active weeks (about 2 years).', 'About 2 years with Skynkod.', 'Two years. You’re an expert now.'),
+  b('star-veteran', 'Skynkod Veteran', 'legendary', 'stars', 'stars', 156, '156 active weeks (about 3 years).', 'About 3 years with Skynkod.', 'Three years together. A true veteran.'),
+  // Seasonal
+  b('spring-glow', 'Spring Glow', 'rare', 'seasonal', 'seasonSpring', SEASON_WEEKS, '4 active weeks in spring.', 'Spring edition.', 'Your skin blossomed this spring.'),
+  b('summer-care', 'Summer Care', 'rare', 'seasonal', 'seasonSummer', SEASON_WEEKS, '4 active weeks in summer.', 'Summer edition.', 'Sun, care and consistency. Lovely summer.'),
+  b('self-care-fall', 'Self Care Fall', 'rare', 'seasonal', 'seasonFall', SEASON_WEEKS, '4 active weeks in autumn.', 'Autumn edition.', 'Autumn care, done right.'),
+  b('winter-rituals', 'Winter Rituals', 'rare', 'seasonal', 'seasonWinter', SEASON_WEEKS, '4 active weeks in winter.', 'Winter edition.', 'Cosy rituals for cold days. Well done.'),
+  // Secrets (rules to come)
+  b('secret-1', 'Secret #1', 'secret', 'secret', 'never', 1, '???', '???', '', { mystery: true }),
+  b('secret-2', 'Secret #2', 'secret', 'secret', 'never', 1, '???', '???', '', { mystery: true }),
+  b('secret-3', 'Secret #3', 'secret', 'secret', 'never', 1, '???', '???', '', { mystery: true }),
+  // Set aside for now (they repeat other badges).
+  b('self-care-queen', 'Self Care Queen', 'legendary', 'routines', 'routineDays', 90, 'Tick your routine on 90 different days.', 'Three months of care.', 'Three months. Your skin and you are a team now.', { hidden: true }),
+  b('product-detective', 'Product Detective', 'epic', 'collection', 'productViews', 10, 'Open the details of 10 different products.', '10 product pages studied.', 'You check before you trust. Smart.', { hidden: true }),
+  b('skincare-expert', 'Skincare Expert', 'legendary', 'knowledge', 'ingredientViews', 50, 'Read 50 different ingredient pages.', '50 ingredients discovered.', 'Fifty ingredients. You could teach this now.', { hidden: true }),
+  b('skinfluencer', 'Skinfluencer', 'epic', 'community', 'shares', 1, 'Share Skynkod with a friend.', 'You shared Skynkod with a friend.', 'Good skin is better shared.', { hidden: true }),
 ]
-export const VISIBLE_BADGES = BADGES.filter(b => !b.hidden)
-const COUNTED = new Set(VISIBLE_BADGES.filter(b => !b.secret).map(b => b.id))
-export const badgeOf = id => BADGES.find(b => b.id === id) || null
+export const VISIBLE_BADGES = BADGES.filter(x => !x.hidden)
+export const canEarn = x => !x.hidden && !x.soon && !x.mystery
+// Badges that count for Skincare Enthusiast and Skynkod Insider: the regular
+// ones (not stars, seasons, secrets or coming soon).
+const COUNTED = new Set(VISIBLE_BADGES.filter(x => canEarn(x) && !CATEGORIES.find(c => c.id === x.category)?.special && x.metric !== 'otherBadges').map(x => x.id))
+COUNTED.add('skincare-enthusiast')
+BADGES.find(x => x.id === 'skynkod-insider').target = COUNTED.size
+export const badgeOf = id => BADGES.find(x => x.id === id) || null
 
 // Weekly challenges (Monday to Sunday, local time).
 export const CHALLENGES = [
@@ -135,40 +217,78 @@ export const streakFrom = (days, today = dayKey()) => {
 
 const MOOD = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 }
 
-// raw: { profileComplete, routineSaved, products: [{product_id, created_at}],
-// openedCount, ticks: [{date, routine_type}], journal: [{date, mood}],
-// dekodScans, rekodStarted, rekodFinished, kodaQuestions, shared,
-// ingredients: {id: ts}, productPages: {id: ts}, opened: {rowId: ts} }
+// raw: { profileComplete, profileFull, routineSaved, morningHasSpf,
+//   products: [{product_id, created_at, opened_at, category}], openedCount,
+//   ticks: [{date, routine_type}], journal: [{date, mood, skin_conditions}],
+//   dekodScans, dekodBetter, rekodStarted, rekodHalf, rekodFinished, kodaQuestions,
+//   sosPlanDone, sosReturnDone, reactionSpotted, accountCreated, comeback,
+//   stars: [{week}], shares, ingredients, productPages, opened, articles, finished: {id: ts},
+//   basicsIds: [articleIds] }
+const gapsBetween = days => { const out = []; for (let i = 1; i < days.length; i += 1) out.push(Math.round((fromKey(days[i]) - fromKey(days[i - 1])) / DAY) - 1); return out }
+const seasonOf = key => { const m = fromKey(key).getMonth(); const y = fromKey(key).getFullYear(); const s = Object.keys(SEASONS).find(k => SEASONS[k].includes(m)); return `${s}-${s === 'winter' && m === 11 ? y + 1 : y}` }
+
 export const buildStats = (raw, now = new Date()) => {
   const routineDaySet = new Set(raw.ticks.map(t => t.date))
-  // Per week: evenings done and days with both routines.
-  const weeks = {}
+  // Per day and per week: which routines were done.
   const byDay = {}
   for (const t of raw.ticks) {
     byDay[t.date] = byDay[t.date] || {}
     byDay[t.date][t.routine_type] = true
   }
+  const weeks = {}
   for (const [d, done] of Object.entries(byDay)) {
     const w = weekStart(fromKey(d))
-    weeks[w] = weeks[w] || { evenings: 0, full: 0 }
+    weeks[w] = weeks[w] || { mornings: 0, evenings: 0, full: 0 }
+    if (done.morning) weeks[w].mornings += 1
     if (done.evening) weeks[w].evenings += 1
     if (done.morning && done.evening) weeks[w].full += 1
   }
-  const journalDaySet = new Set(raw.journal.filter(e => e.mood).map(e => dayKey(new Date(e.date))))
-  // Glow up: a week whose average mood beats the week before by half a point.
-  const moodWeeks = {}
-  for (const e of raw.journal) {
-    if (!MOOD[e.mood]) continue
-    const w = weekStart(new Date(e.date))
-    moodWeeks[w] = moodWeeks[w] || []
-    moodWeeks[w].push(MOOD[e.mood])
-  }
-  const avg = l => l.reduce((a, b) => a + b, 0) / l.length
-  const glowUp = Object.keys(moodWeeks).some(w => moodWeeks[addDays(w, -7)] && avg(moodWeeks[w]) - avg(moodWeeks[addDays(w, -7)]) >= 0.5)
+  const best = key => Math.max(0, ...Object.values(weeks).map(w => w[key]))
 
-  const productIds = new Set(raw.products.map(p => p.product_id || p.id))
-  const ingredientIds = Object.keys(raw.ingredients || {})
-  const productPageIds = Object.keys(raw.productPages || {})
+  const entries = raw.journal.filter(e => MOOD[e.mood]).map(e => ({ ...e, day: dayKey(new Date(e.date)), score: MOOD[e.mood] }))
+  const journalDaySet = new Set(entries.map(e => e.day))
+  const avg = l => l.reduce((a, b) => a + b, 0) / l.length
+  const byWeek = {}
+  for (const e of entries) { const w = weekStart(fromKey(e.day)); (byWeek[w] = byWeek[w] || []).push(e) }
+  // Glow Progress: a week whose average mood beats the week before by half a point.
+  const glowUp = Object.keys(byWeek).some(w => byWeek[addDays(w, -7)] && avg(byWeek[w].map(e => e.score)) - avg(byWeek[addDays(w, -7)].map(e => e.score)) >= 0.5)
+  // Calm Week: at least 3 entries in a week and no problem noted.
+  const calmWeek = Object.values(byWeek).some(l => l.length >= 3 && l.every(e => !(e.skin_conditions || []).length))
+  // Bounce Back: a bad day, then a good one later the same week.
+  const bounceBack = Object.values(byWeek).some(l => {
+    const sorted = [...l].sort((a, b) => a.day.localeCompare(b.day))
+    const firstBad = sorted.findIndex(e => e.score <= 2)
+    return firstBad >= 0 && sorted.slice(firstBad + 1).some(e => e.score >= 4)
+  })
+  // Brave Skin: a bad day noted, and a routine ticked that day.
+  const braveDay = entries.some(e => e.score <= 2 && routineDaySet.has(e.day))
+  // Real Results: the last 4 weeks of mood beat the 4 before, or a better Dekod scan.
+  const cut = addDays(weekStart(now), -21)
+  const recent = entries.filter(e => e.day >= cut).map(e => e.score)
+  const before = entries.filter(e => e.day < cut && e.day >= addDays(cut, -28)).map(e => e.score)
+  const realResults = raw.dekodBetter || (recent.length >= 3 && before.length >= 3 && avg(recent) - avg(before) >= 0.5)
+
+  // Active days (routine or journal): coming back after a week or a month away.
+  const activeDays = [...new Set([...routineDaySet, ...journalDaySet])].sort()
+  const gaps = gapsBetween(activeDays)
+
+  const owned = raw.products
+  const productIds = new Set(owned.map(p => p.product_id || p.id))
+  const cats = new Set(owned.map(p => String(p.category || '').toLowerCase()))
+  const curated = ['cleanser', 'moisturizer', 'sunscreen'].every(c => cats.has(c))
+    && ['serum', 'treatment', 'exfoliator', 'exfoliant'].some(c => cats.has(c))
+    && owned.length > 0 && owned.every(p => p.opened_at)
+  // Mindful Beauty: 3 additions in a row, each at least a week after the one before.
+  const added = owned.map(p => new Date(p.created_at).getTime()).filter(Boolean).sort((a, b) => a - b)
+  let spaced = added.length ? 1 : 0, bestSpaced = spaced
+  for (let i = 1; i < added.length; i += 1) { spaced = added[i] - added[i - 1] >= 7 * DAY ? spaced + 1 : 1; bestSpaced = Math.max(bestSpaced, spaced) }
+
+  const articleIds = Object.keys(raw.articles || {})
+  const basics = raw.basicsIds || []
+  const stars = raw.stars || []
+  const seasonCount = {}
+  for (const st of stars) { const k = seasonOf(st.week); seasonCount[k] = (seasonCount[k] || 0) + 1 }
+  const bestSeason = name => Math.max(0, ...Object.entries(seasonCount).filter(([k]) => k.startsWith(name)).map(([, n]) => n))
 
   const ws = weekStart(now)
   const we = addDays(ws, 7)
@@ -176,25 +296,51 @@ export const buildStats = (raw, now = new Date()) => {
 
   const stats = {
     profileComplete: raw.profileComplete ? 1 : 0,
+    profileFull: raw.profileFull ? 1 : 0,
     routineSaved: raw.routineSaved ? 1 : 0,
     productsOwned: productIds.size,
     openedCount: raw.openedCount || 0,
-    ingredientViews: ingredientIds.length,
-    productViews: productPageIds.length,
+    ingredientViews: Object.keys(raw.ingredients || {}).length,
+    productViews: Object.keys(raw.productPages || {}).length,
     routineDays: routineDaySet.size,
     journalDays: journalDaySet.size,
+    journalWeeks: Object.keys(byWeek).length,
     dekodScans: raw.dekodScans || 0,
     kodaQuestions: raw.kodaQuestions || 0,
-    shared: raw.shared ? 1 : 0,
-    comeback: raw.comeback ? 1 : 0,
+    shares: raw.shares || 0,
+    comeback: raw.comeback || gaps.some(g => g >= 7) ? 1 : 0,
+    longComeback: gaps.some(g => g >= 30) ? 1 : 0,
     rekodStarted: raw.rekodStarted ? 1 : 0,
+    rekodHalf: raw.rekodHalf || raw.rekodFinished ? 1 : 0,
     rekodFinished: raw.rekodFinished ? 1 : 0,
-    bestWeekEvenings: Math.max(0, ...Object.values(weeks).map(w => w.evenings)),
-    bestWeekFull: Math.max(0, ...Object.values(weeks).map(w => w.full)),
+    sosPlanDone: raw.sosPlanDone ? 1 : 0,
+    sosReturnDone: raw.sosReturnDone ? 1 : 0,
+    reactionSpotted: raw.reactionSpotted ? 1 : 0,
+    bestWeekMornings: best('mornings'),
+    bestWeekEvenings: best('evenings'),
+    bestWeekFull: best('full'),
+    sunGuardian: raw.morningHasSpf && best('mornings') >= 7 ? 1 : 0,
     glowUp: glowUp ? 1 : 0,
+    calmWeek: calmWeek ? 1 : 0,
+    bounceBack: bounceBack ? 1 : 0,
+    braveDay: braveDay ? 1 : 0,
+    realResults: realResults ? 1 : 0,
+    advancedArticles: articleIds.filter(id => !basics.includes(id)).length,
+    basicsDone: basics.length > 0 && basics.every(id => raw.articles?.[id]) ? 1 : 0,
+    minimalist: raw.routineSaved && productIds.size >= 3 && productIds.size < 10 ? 1 : 0,
+    finishedProducts: Object.keys(raw.finished || {}).length,
+    curated: curated ? 1 : 0,
+    mindful: bestSpaced >= 3 ? 1 : 0,
+    accountDays: raw.accountCreated ? Math.floor((now - new Date(raw.accountCreated)) / DAY) : 0,
+    stars: stars.length,
+    seasonSpring: bestSeason('spring'),
+    seasonSummer: bestSeason('summer'),
+    seasonFall: bestSeason('fall'),
+    seasonWinter: bestSeason('winter'),
+    never: 0,
     weekRoutineDays: [...routineDaySet].filter(d => d >= ws && d < we).length,
     weekIngredients: Object.values(raw.ingredients || {}).filter(inWeek).length,
-    weekProducts: raw.products.filter(p => inWeek(p.created_at)).length,
+    weekProducts: owned.filter(p => inWeek(p.created_at)).length,
     weekOpened: Object.values(raw.opened || {}).filter(inWeek).length,
   }
   stats.sectionsUsed = [stats.routineDays, stats.journalDays, stats.productsOwned, stats.ingredientViews, stats.dekodScans, stats.rekodStarted, stats.kodaQuestions].filter(v => v > 0).length
@@ -211,8 +357,8 @@ export const metricOf = (badge, stats, earnedCount = 0) => (badge.metric === 'ot
 // are checked last, smallest target first.
 export const reachedBadges = (stats, earned = {}) => {
   const out = new Set(Object.keys(earned))
-  for (const b of VISIBLE_BADGES) if (b.metric !== 'otherBadges' && metricOf(b, stats) >= b.target) out.add(b.id)
-  for (const b of VISIBLE_BADGES.filter(x => x.metric === 'otherBadges').sort((x, y) => x.target - y.target)) {
+  for (const b of BADGES) if (canEarn(b) && b.metric !== 'otherBadges' && metricOf(b, stats) >= b.target) out.add(b.id)
+  for (const b of BADGES.filter(x => canEarn(x) && x.metric === 'otherBadges').sort((x, y) => x.target - y.target)) {
     const others = [...out].filter(id => id !== b.id && COUNTED.has(id)).length
     if (others >= b.target) out.add(b.id)
   }
@@ -225,7 +371,7 @@ export const earnedOthers = (badge, earned = {}) => Object.keys(earned).filter(i
 export const progressOf = (badge, stats, earned = {}) => Math.min(metricOf(badge, stats, earnedOthers(badge, earned)), badge.target)
 
 export const nextSteps = (stats, earned = {}, limit = 3) => VISIBLE_BADGES
-  .filter(b => !earned[b.id] && !b.secret)
+  .filter(b => !earned[b.id] && canEarn(b))
   .map(b => ({ badge: b, value: progressOf(b, stats, earned), target: b.target }))
   .filter(s => s.target > 1 || s.value === 0)
   .sort((a, b) => b.value / b.target - a.value / a.target)
