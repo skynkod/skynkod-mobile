@@ -3,33 +3,39 @@ import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal, Ima
 import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen, LoadingView, useColors } from '../components/ui'
+import { P, PremiumShell, PButton, PLoading, Carousel, tap } from '../components/PremiumSpace'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
 import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults } from '../utils/dekod'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, TYPE } from '../utils/theme'
 
-const PLUM = '#33202E'
-const MAUVE = '#E2C6DA'
 // Lets the owner try Premium features before in-app purchase exists.
 const TESTERS = ['djedidilita@gmail.com']
+const LABEL = 'Dekod · Skin scan'
 
 const LEVEL = { none: 'None', light: 'Light', visible: 'Visible' }
 const RANK = { none: 0, light: 1, visible: 2 }
+const LEVEL_COLOR = { none: P.success, light: P.primary, visible: P.warn }
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
 
-// Dekod, Skynkod's skin scan: intro → consent (first time) → photo tips →
-// front camera with an oval → analysis → what's visible, point by point.
+const SLIDES = [
+  { icon: 'scan-circle-outline', title: 'Dekod: read your skin in seconds', text: 'Dekod is Skynkod’s skin scan. Take one selfie, and Dekod reads what is visible on your skin.' },
+  { icon: 'grid-outline', title: 'Five points, one tip each', text: 'Redness, shine, blemishes, dryness and tone, each with a simple tip, and your evolution scan after scan.' },
+  { icon: 'shield-checkmark-outline', title: 'Private by design', text: 'Your photo is analysed, then deleted. Only the result is kept in your account.' },
+]
+
+// Dekod, Skynkod's skin scan, in the same plum space as Rekod:
+// intro → consent (first time) → photo tips → camera → check → result,
+// and once she has scans, a home with the latest one, evolution and history.
 export default function DekodScreen({ navigation }) {
-  const colors = useColors()
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const [premium, setPremium] = useState(undefined)
   const [consent, setConsent] = useState(undefined)
-  const [stage, setStage] = useState('intro') // intro | consent | tips | camera | analysing | result
+  const [stage, setStage] = useState('home') // home | consent | tips | camera | analysing | result
   const [result, setResult] = useState(null)
   const [permission, requestPermission] = useCameraPermissions()
   const camera = useRef(null)
@@ -49,9 +55,10 @@ export default function DekodScreen({ navigation }) {
     hasDekodConsent(user.id).then(setConsent)
   }, [user?.id])
 
-  if (premium === undefined || consent === undefined) return <LoadingView />
+  if (premium === undefined || consent === undefined) return <PLoading />
 
-  const begin = () => setStage(consent ? 'tips' : 'consent')
+  const toHome = () => { setStage('home'); setViewing(null); setShot(null) }
+  const begin = () => { tap(); setStage(consent ? 'tips' : 'consent') }
   const openCamera = async () => {
     if (!permission?.granted) {
       const res = await requestPermission()
@@ -68,7 +75,7 @@ export default function DekodScreen({ navigation }) {
       setStage('analysing')
       const res = await runDekod(photo.base64, language)
       if (res.error === 'daily_limit') {
-        setStage('intro')
+        toHome()
         return Alert.alert(t('See you tomorrow 🌸'), t('You’ve had your Dekod today. Come back tomorrow for a new scan.'))
       }
       if (res.error) {
@@ -88,21 +95,36 @@ export default function DekodScreen({ navigation }) {
     }
   }
 
-  const Button = ({ label, icon, onPress, light }) => (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: light ? colors.primarySoft : PLUM, opacity: pressed ? 0.85 : 1 }]}>
-      {icon ? <Ionicons name={icon} size={17} color={light ? colors.primary : '#FFFFFF'} /> : null}
-      <Text style={{ color: light ? colors.primary : '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t(label)}</Text>
-    </Pressable>
+  // One compact row per point, like Rekod's routine steps.
+  const Points = ({ points }) => (
+    <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
+      {DEKOD_POINTS.map(p => {
+        const r = points?.[p.key] || { level: 'none' }
+        return (
+          <View key={p.key} style={styles.row}>
+            <View style={styles.rowIcon}><Ionicons name={p.icon} size={18} color={P.primary} /></View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <Text style={[TYPE.bodyStrong, { color: P.text, flex: 1 }]}>{t(p.label)}</Text>
+                <Text style={[styles.chip, { color: LEVEL_COLOR[r.level], borderColor: LEVEL_COLOR[r.level] }]}>{t(LEVEL[r.level])}</Text>
+              </View>
+              {r.note ? <Text style={[TYPE.caption, { color: P.textSecondary, marginTop: 3, lineHeight: 18 }]}>{r.note}</Text> : null}
+              {r.level !== 'none' && r.tip ? <Text style={[TYPE.caption, { color: P.primary, marginTop: 3, lineHeight: 18 }]}>{r.tip}</Text> : null}
+            </View>
+          </View>
+        )
+      })}
+    </View>
   )
-
-  const Hero = ({ children }) => (
-    <View style={[styles.hero, { backgroundColor: PLUM }]}>
-      <View style={styles.badge}>
-        <Ionicons name="diamond" size={13} color={MAUVE} />
-        <Text style={styles.badgeText}>{t('PREMIUM · SKIN SCAN')}</Text>
-      </View>
-      <Text style={styles.heroTitle}>Dekod</Text>
-      {children}
+  const Disclaimer = () => (
+    <Text style={[TYPE.caption, { color: P.muted, marginTop: SPACING.lg, lineHeight: 17 }]}>
+      {t('Dekod describes what is visible on your skin. It is not a medical diagnosis: for anything that worries you, see a dermatologist.')}
+    </Text>
+  )
+  const Line = ({ icon, text }) => (
+    <View style={styles.line}>
+      <View style={styles.rowIcon}><Ionicons name={icon} size={18} color={P.primary} /></View>
+      <Text style={[TYPE.body, { color: P.text, flex: 1, lineHeight: 22 }]}>{t(text)}</Text>
     </View>
   )
 
@@ -110,19 +132,19 @@ export default function DekodScreen({ navigation }) {
   if (stage === 'camera') {
     return (
       <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setStage('tips')}>
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="front" />
-        <View pointerEvents="none" style={styles.ovalWrap}>
-          <View style={styles.oval} />
-          <Text style={styles.ovalHint}>{t('Place your face in the oval')}</Text>
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="front" />
+          <View pointerEvents="none" style={styles.ovalWrap}>
+            <View style={styles.oval} />
+            <Text style={styles.ovalHint}>{t('Place your face in the oval')}</Text>
+          </View>
+          <Pressable onPress={() => setStage('tips')} hitSlop={12} style={styles.close} accessibilityLabel={t('Close')}>
+            <Ionicons name="close" size={26} color="#FFFFFF" />
+          </Pressable>
+          <Pressable onPress={shoot} accessibilityLabel={t('Take the photo')} style={({ pressed }) => [styles.shutter, { transform: [{ scale: pressed ? 0.92 : 1 }] }]}>
+            <View style={styles.shutterInner} />
+          </Pressable>
         </View>
-        <Pressable onPress={() => setStage('tips')} hitSlop={12} style={styles.close} accessibilityLabel={t('Close')}>
-          <Ionicons name="close" size={26} color="#FFFFFF" />
-        </Pressable>
-        <Pressable onPress={shoot} accessibilityLabel={t('Take the photo')} style={({ pressed }) => [styles.shutter, { transform: [{ scale: pressed ? 0.92 : 1 }] }]}>
-          <View style={styles.shutterInner} />
-        </Pressable>
-      </View>
       </Modal>
     )
   }
@@ -131,88 +153,57 @@ export default function DekodScreen({ navigation }) {
   if (stage === 'analysing') {
     const c = shot?.checks
     const done = !!c
-    const color = !done ? 'rgba(255,255,255,0.85)' : shot.ok ? '#5BD08A' : '#F2A65A'
+    const color = !done ? 'rgba(255,255,255,0.85)' : shot.ok ? '#5BD08A' : P.warn
     const lines = done ? [
       [c.light === 'ok', c.light === 'dark' ? 'A bit too dark: face a window' : c.light === 'bright' ? 'Too bright: avoid direct sun' : 'Light OK'],
       [c.position === 'ok', c.position === 'far' ? 'Come a little closer' : c.position === 'off' ? 'Face the camera, in the oval' : c.position === 'none' ? 'We can’t see your face' : 'Face well placed'],
       [c.sharp, c.sharp ? 'Sharp photo' : 'A little blurry: hold still'],
     ] : []
     return (
-      <View style={styles.checkWrap}>
-        <View style={[styles.ovalPhoto, { borderColor: color }]}>
-          {shot?.uri ? <Image source={{ uri: shot.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
+      <PremiumShell label={LABEL} scroll={false}
+        footer={done && !shot.ok ? (
+          <>
+            <PButton title={t('Retake the photo')} icon="camera-outline" onPress={() => { setShot(null); setStage('camera') }} />
+            <PButton title={t('See the tips again')} outline onPress={() => { setShot(null); setStage('tips') }} />
+          </>
+        ) : null}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={[styles.ovalPhoto, { borderColor: color }]}>
+            {shot?.uri ? <Image source={{ uri: shot.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
+          </View>
+          {!done ? (
+            <View style={{ alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xl }}>
+              <ActivityIndicator color={P.primary} />
+              <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t('Checking light and position…')}</Text>
+              <Text style={[TYPE.caption, { color: P.muted }]}>{t('Your photo is analysed, then deleted.')}</Text>
+            </View>
+          ) : (
+            <View style={{ marginTop: SPACING.xl, gap: SPACING.sm, alignSelf: 'stretch', paddingHorizontal: SPACING.lg }}>
+              {lines.map(([ok, label]) => (
+                <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                  <Ionicons name={ok ? 'checkmark-circle' : 'alert-circle'} size={20} color={ok ? '#5BD08A' : P.warn} />
+                  <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t(label)}</Text>
+                </View>
+              ))}
+              {shot.ok
+                ? <Text style={[TYPE.caption, { color: P.primary, marginTop: SPACING.md, textAlign: 'center' }]}>{t('Decoding your skin…')}</Text>
+                : shot.retake ? <Text style={[TYPE.caption, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{shot.retake}</Text> : null}
+            </View>
+          )}
         </View>
-        {!done ? (
-          <View style={{ alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xl }}>
-            <ActivityIndicator color="#FFFFFF" />
-            <Text style={styles.checkTitle}>{t('Checking light and position…')}</Text>
-            <Text style={styles.checkSub}>{t('Your photo is analysed, then deleted.')}</Text>
-          </View>
-        ) : (
-          <View style={{ marginTop: SPACING.xl, gap: SPACING.sm, alignSelf: 'stretch', paddingHorizontal: SPACING.xxl }}>
-            {lines.map(([ok, label]) => (
-              <View key={label} style={styles.checkLine}>
-                <Ionicons name={ok ? 'checkmark-circle' : 'alert-circle'} size={20} color={ok ? '#5BD08A' : '#F2A65A'} />
-                <Text style={styles.checkText}>{t(label)}</Text>
-              </View>
-            ))}
-            {shot.ok ? (
-              <Text style={[styles.checkSub, { marginTop: SPACING.md, textAlign: 'center' }]}>{t('Decoding your skin…')}</Text>
-            ) : (
-              <>
-                {shot.retake ? <Text style={[styles.checkSub, { marginTop: SPACING.sm }]}>{shot.retake}</Text> : null}
-                <Pressable onPress={() => { setShot(null); setStage('camera') }} style={({ pressed }) => [styles.button, { backgroundColor: '#FFFFFF', opacity: pressed ? 0.85 : 1 }]}>
-                  <Ionicons name="camera-outline" size={17} color={PLUM} />
-                  <Text style={{ color: PLUM, fontWeight: '700', fontSize: 15 }}>{t('Retake the photo')}</Text>
-                </Pressable>
-                <Pressable onPress={() => { setShot(null); setStage('tips') }} style={{ alignSelf: 'center', padding: SPACING.md }}>
-                  <Text style={styles.checkSub}>{t('See the tips again')}</Text>
-                </Pressable>
-              </>
-            )}
-          </View>
-        )}
-      </View>
+      </PremiumShell>
     )
   }
-
-  const Points = ({ points }) => (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {DEKOD_POINTS.map((p, i) => {
-            const r = points?.[p.key] || { level: 'none' }
-            const tone = r.level === 'visible' ? colors.primary : r.level === 'light' ? colors.accent || colors.primary : colors.success
-            return (
-              <View key={p.key} style={[styles.point, i < DEKOD_POINTS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <View style={styles.pointHead}>
-                  <Ionicons name={p.icon} size={18} color={colors.textSecondary} />
-                  <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(p.label)}</Text>
-                  <View style={[styles.level, { borderColor: tone }]}>
-                    <Text style={{ color: tone, fontSize: 12, fontWeight: '700' }}>{t(LEVEL[r.level])}</Text>
-                  </View>
-                </View>
-                {r.note ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{r.note}</Text> : null}
-                {r.level !== 'none' && r.tip ? <Text style={[TYPE.caption, { color: colors.primary, marginTop: 4, lineHeight: 18 }]}>{r.tip}</Text> : null}
-              </View>
-            )
-          })}
-        </View>
-  )
-  const Disclaimer = () => (
-        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md, lineHeight: 17 }]}>
-          {t('Dekod describes what is visible on your skin. It is not a medical diagnosis: for anything that worries you, see a dermatologist.')}
-        </Text>
-  )
-  const toHub = () => { setStage('intro'); setViewing(null) }
 
   // ---------- A past scan ----------
   if (viewing) {
     return (
-      <Screen back onBack={toHub} title="Dekod">
-        <Text style={[TYPE.overline, { color: colors.primary }]}>{new Date(viewing.created_at).toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}</Text>
-        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 22 }]}>{viewing.result?.summary}</Text>
+      <PremiumShell label={LABEL} onBack={toHome}
+        overline={new Date(viewing.created_at).toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
+        title={t('Your Dekod')} subtitle={viewing.result?.summary}>
         <Points points={viewing.result?.points} />
         <Disclaimer />
-      </Screen>
+      </PremiumShell>
     )
   }
 
@@ -220,68 +211,51 @@ export default function DekodScreen({ navigation }) {
   if (stage === 'result' && result) {
     const next = journalFrom(result.points)
     return (
-      <Screen back onBack={toHub} title="Dekod">
-        <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR DEKOD · TODAY')}</Text>
-        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 22 }]}>{result.summary}</Text>
+      <PremiumShell label={LABEL} onBack={toHome} overline={t('Today')} title={t('Your Dekod')} subtitle={result.summary}
+        footer={(
+          <>
+            {next.issues.length ? <PButton title={t('Emergency mode')} icon="medkit-outline" onPress={() => navigation.navigate('Emergency', { issues: next.issues, openedAt: Date.now() })} /> : null}
+            {next.tags.length ? (
+              <PButton title={t('Add to my journal')} icon="create-outline" outline={!!next.issues.length}
+                onPress={() => navigation.navigate('Journal', { openNew: Date.now(), presetAt: Date.now(), presetTags: next.tags, presetMood: next.mood })} />
+            ) : null}
+            {!next.tags.length ? <PButton title={t('Done')} onPress={toHome} /> : null}
+          </>
+        )}>
         <Points points={result.points} />
         <Disclaimer />
-        {next.tags.length ? (
-          <Button label="Add to my journal" icon="create-outline" light
-            onPress={() => navigation.navigate('Journal', { openNew: Date.now(), presetAt: Date.now(), presetTags: next.tags, presetMood: next.mood })} />
-        ) : null}
-        {next.issues.length ? (
-          <Button label="Emergency mode" icon="medkit-outline"
-            onPress={() => navigation.navigate('Emergency', { issues: next.issues, openedAt: Date.now() })} />
-        ) : null}
-        <Pressable onPress={toHub} style={{ alignSelf: 'center', padding: SPACING.lg }}>
-          <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{t('Done')}</Text>
-        </Pressable>
-      </Screen>
+      </PremiumShell>
     )
   }
 
   // ---------- Consent (first time) ----------
   if (stage === 'consent') {
     return (
-      <Screen back onBack={toHub} title="Dekod">
-        <Text style={[TYPE.heading, { color: colors.text }]}>{t('Before your first scan')}</Text>
-        {[
-          ['camera-outline', 'Dekod looks at one photo of your face to describe what is visible on your skin.'],
-          ['trash-outline', 'Your photo is analysed, then deleted. It is never stored or shared.'],
-          ['document-text-outline', 'Only the result is saved in your account, and you can delete it anytime.'],
-          ['medical-outline', 'Dekod gives cosmetic observations, not a medical diagnosis.'],
-        ].map(([icon, line]) => (
-          <View key={line} style={styles.consentLine}>
-            <Ionicons name={icon} size={20} color={colors.primary} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1, lineHeight: 22 }]}>{t(line)}</Text>
-          </View>
-        ))}
-        <Button label="I agree" onPress={async () => { await giveDekodConsent(user.id); setConsent(true); setStage('tips') }} />
-        <Pressable onPress={toHub} style={{ alignSelf: 'center', padding: SPACING.lg }}>
-          <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{t('Not now')}</Text>
-        </Pressable>
-      </Screen>
+      <PremiumShell label={LABEL} onBack={toHome} title={t('Before your first scan')}
+        footer={(
+          <>
+            <PButton title={t('I agree')} onPress={async () => { tap(); await giveDekodConsent(user.id); setConsent(true); setStage('tips') }} />
+            <PButton title={t('Not now')} outline onPress={toHome} />
+          </>
+        )}>
+        <Line icon="camera-outline" text="Dekod looks at one photo of your face to describe what is visible on your skin." />
+        <Line icon="trash-outline" text="Your photo is analysed, then deleted. It is never stored or shared." />
+        <Line icon="document-text-outline" text="Only the result is saved in your account, and you can delete it anytime." />
+        <Line icon="medical-outline" text="Dekod gives cosmetic observations, not a medical diagnosis." />
+      </PremiumShell>
     )
   }
 
   // ---------- Photo tips ----------
   if (stage === 'tips') {
     return (
-      <Screen back onBack={toHub} title="Dekod">
-        <Text style={[TYPE.heading, { color: colors.text }]}>{t('For a good scan')}</Text>
-        {[
-          ['sunny-outline', 'Daylight, facing a window'],
-          ['sparkles-outline', 'No makeup, clean face'],
-          ['person-outline', 'Face the camera, hair tied back'],
-          ['phone-portrait-outline', 'Phone at eye level, no filter'],
-        ].map(([icon, line]) => (
-          <View key={line} style={styles.consentLine}>
-            <Ionicons name={icon} size={20} color={colors.primary} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(line)}</Text>
-          </View>
-        ))}
-        <Button label="Take my photo" icon="camera-outline" onPress={openCamera} />
-      </Screen>
+      <PremiumShell label={LABEL} onBack={toHome} title={t('For a good scan')}
+        footer={<PButton title={t('Take my photo')} icon="camera-outline" onPress={openCamera} />}>
+        <Line icon="sunny-outline" text="Daylight, facing a window" />
+        <Line icon="sparkles-outline" text="No makeup, clean face" />
+        <Line icon="person-outline" text="Face the camera, hair tied back" />
+        <Line icon="phone-portrait-outline" text="Phone at eye level, no filter" />
+      </PremiumShell>
     )
   }
 
@@ -292,38 +266,33 @@ export default function DekodScreen({ navigation }) {
     const ordered = [...history].reverse().slice(-8) // oldest → newest, last 8
     const first = history[history.length - 1]
     return (
-      <Screen title="Dekod" subtitle={t('Your skin scan')}>
-        <Pressable onPress={begin} disabled={scannedToday}
-          style={({ pressed }) => [styles.button, { backgroundColor: PLUM, opacity: scannedToday ? 0.45 : pressed ? 0.85 : 1, marginTop: 0 }]}>
-          <Ionicons name="scan-outline" size={17} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t(scannedToday ? 'Next scan tomorrow' : 'New scan')}</Text>
-        </Pressable>
-
-        <Text style={[styles.section, { color: colors.muted }]}>{t('LATEST SCAN')} · {new Date(latest.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
-        <Text style={[TYPE.body, { color: colors.text, lineHeight: 22 }]}>{latest.result?.summary}</Text>
+      <PremiumShell label={LABEL}
+        overline={`${t('Latest scan')} · ${new Date(latest.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}`}
+        title={t('Your skin today')} subtitle={latest.result?.summary}
+        footer={<PButton title={t(scannedToday ? 'Next scan tomorrow' : 'New scan')} icon="scan-outline" disabled={scannedToday} onPress={begin} />}>
         <Points points={latest.result?.points} />
 
         {history.length > 1 ? (
           <>
-            <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR EVOLUTION')}</Text>
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 0 }]}>
-              {DEKOD_POINTS.map((p, i) => {
+            <Text style={[styles.section, { color: P.primary }]}>{t('Your evolution')}</Text>
+            <View style={{ gap: SPACING.sm }}>
+              {DEKOD_POINTS.map(p => {
                 const from = first.result?.points?.[p.key]?.level || 'none'
                 const to = latest.result?.points?.[p.key]?.level || 'none'
                 const better = RANK[to] < RANK[from]
                 const worse = RANK[to] > RANK[from]
                 return (
-                  <View key={p.key} style={[styles.point, i < DEKOD_POINTS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                    <View style={styles.pointHead}>
-                      <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(p.label)}</Text>
-                      <Text style={{ color: better ? colors.success : worse ? colors.primary : colors.muted, fontSize: 12, fontWeight: '700' }}>
+                  <View key={p.key} style={styles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t(p.label)}</Text>
+                      <Text style={{ color: better ? P.success : worse ? P.warn : P.muted, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
                         {t(LEVEL[from])} → {t(LEVEL[to])}
                       </Text>
                     </View>
-                    <View style={styles.dots}>
+                    <View style={styles.bars}>
                       {ordered.map(h => {
                         const lvl = h.result?.points?.[p.key]?.level || 'none'
-                        return <View key={h.id} style={[styles.dot, { height: 6 + RANK[lvl] * 7, backgroundColor: lvl === 'none' ? colors.success : lvl === 'light' ? colors.accent || colors.primary : colors.primary }]} />
+                        return <View key={h.id} style={[styles.bar, { height: 6 + RANK[lvl] * 8, backgroundColor: LEVEL_COLOR[lvl] }]} />
                       })}
                     </View>
                   </View>
@@ -333,72 +302,46 @@ export default function DekodScreen({ navigation }) {
           </>
         ) : null}
 
-        <Text style={[styles.section, { color: colors.muted }]}>{t('HISTORY')}</Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 0 }]}>
-          {history.map((h, i) => (
-            <Pressable key={h.id} onPress={() => setViewing(h)} style={[styles.point, styles.pointHead, i < history.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text, width: 70 }]}>{new Date(h.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>{h.result?.summary}</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+        <Text style={[styles.section, { color: P.primary }]}>{t('History')}</Text>
+        <View style={{ gap: SPACING.sm }}>
+          {history.map(h => (
+            <Pressable key={h.id} onPress={() => { tap(); setViewing(h) }} style={styles.row}>
+              <Text style={[TYPE.bodyStrong, { color: P.text, width: 64 }]}>{new Date(h.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
+              <Text style={[TYPE.caption, { color: P.textSecondary, flex: 1 }]} numberOfLines={1}>{h.result?.summary}</Text>
+              <Ionicons name="chevron-forward" size={16} color={P.muted} />
             </Pressable>
           ))}
         </View>
         <Disclaimer />
-      </Screen>
+      </PremiumShell>
     )
   }
 
-  // ---------- Intro (and locked view without Premium) ----------
+  // ---------- Intro: a swipeable presentation (locked without Premium) ----------
   return (
-    <Screen title="Dekod">
-      <Hero>
-        <Text style={styles.heroText}>
-          {t('Dekod is Skynkod’s skin scan. Take one selfie, and in a few seconds Dekod reads what is visible on your skin.')}
-        </Text>
-        {['Redness, shine, blemishes, dryness and tone', 'A simple tip for each point', 'Adds what it sees to your journal', 'Your photo is never stored'].map(line => (
-          <View key={line} style={styles.heroLine}>
-            <Ionicons name="checkmark" size={15} color={MAUVE} />
-            <Text style={{ color: '#FFFFFF', fontSize: 13, lineHeight: 18, flex: 1 }}>{t(line)}</Text>
-          </View>
-        ))}
-      </Hero>
-      {premium ? (
-        <Button label="Start my Dekod" icon="scan-outline" onPress={begin} />
-      ) : (
-        <Button label="Unlock with Premium" icon="lock-open-outline"
-          onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Dekod very soon.'))} />
-      )}
-      <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('One scan a day with Premium')}</Text>
-    </Screen>
+    <PremiumShell label={LABEL} scroll={false}
+      footer={premium
+        ? <PButton title={t('Start my Dekod')} icon="scan-outline" onPress={begin} />
+        : <PButton title={t('Unlock with Premium')} icon="lock-open-outline" onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Dekod very soon.'))} />}>
+      <Carousel slides={SLIDES.map(s => ({ ...s, title: t(s.title), text: t(s.text) }))} />
+      <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginBottom: SPACING.sm }]}>{t('One scan a day with Premium')}</Text>
+    </PremiumShell>
   )
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: RADIUS.xl, padding: SPACING.xl, marginTop: SPACING.sm },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  badgeText: { color: MAUVE, fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
-  heroTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: SPACING.md },
-  heroText: { color: MAUVE, fontSize: 14, lineHeight: 20, marginTop: SPACING.sm },
-  heroLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: SPACING.md },
-  button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 999, marginTop: SPACING.lg },
-  consentLine: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.lg },
-  checkWrap: { flex: 1, backgroundColor: PLUM, alignItems: 'center', justifyContent: 'center', paddingVertical: SPACING.xxl },
-  ovalPhoto: { width: 210, height: 286, borderRadius: 143, borderWidth: 5, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.08)' },
-  checkTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  checkSub: { color: MAUVE, fontSize: 13, lineHeight: 18 },
-  checkLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  checkText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
-  dots: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: SPACING.sm, height: 22 },
-  dot: { width: 10, borderRadius: 3 },
-  card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.lg, overflow: 'hidden' },
-  point: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
-  pointHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  level: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderColor: P.border, backgroundColor: P.card, borderRadius: 18, padding: SPACING.md },
+  rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: P.primarySoft },
+  chip: { fontSize: 11, fontWeight: '700', borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
+  line: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: SPACING.lg },
+  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 24 },
+  bar: { width: 8, borderRadius: 3 },
   // Centred a little below the middle, where the face sits when holding the phone at eye level.
   ovalWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingTop: 90 },
   oval: { width: 250, height: 340, borderRadius: 170, borderWidth: 3, borderColor: 'rgba(255,255,255,0.85)' },
   ovalHint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, fontWeight: '600' },
+  ovalPhoto: { width: 210, height: 286, borderRadius: 143, borderWidth: 5, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.08)' },
   close: { position: 'absolute', top: 60, left: 20 },
   shutter: { position: 'absolute', bottom: 50, alignSelf: 'center', width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF' },
