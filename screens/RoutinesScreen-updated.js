@@ -66,7 +66,8 @@ export default function RoutinesScreen({ route, navigation }) {
       .catch(() => setDone({}));
   }, [user?.id, tab]);
 
-  const saved = savedRoutines.find(r => r.type === tab && Array.isArray(r.steps) && r.steps.length);
+  // A routine counts only if it has at least one product in it.
+  const saved = savedRoutines.find(r => r.type === tab && Array.isArray(r.steps) && r.steps.some(s => s.product));
 
   // Full product records, to say whether each one suits the user's skin.
   const savedIds = (saved?.steps || []).map(s => s.product_id).filter(Boolean).join(',');
@@ -113,15 +114,19 @@ export default function RoutinesScreen({ route, navigation }) {
 
       {!saved ? (
         <Card style={{ marginTop: SPACING.xl, padding: SPACING.xl }}>
-          <Text style={[TYPE.overline, { color: colors.primary }]}>{t('Start here')}</Text>
+          <Text style={[TYPE.overline, { color: colors.primary }]}>{t('No products in this routine')}</Text>
           <Text style={[TYPE.heading, { color: colors.text, marginTop: SPACING.sm }]}>
             {tab === 'morning' ? t('Build your morning routine') : t('Build your night routine')}
           </Text>
           <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
-            {t('3 quick steps. Tell us what you use, or let Koda help you choose.')}
+            {t('Add the products you already use, or let us build a routine made for your skin.')}
           </Text>
           <Pressable onPress={build} style={[styles.buildButton, { backgroundColor: colors.primary }]}>
-            <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '600' }}>{t('Start')}</Text>
+            <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '600' }}>{t('Add my products')}</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.buildButton, styles.programmeButton]}>
+            <Ionicons name="diamond-outline" size={16} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>{t('Get a routine made for me')}</Text>
           </Pressable>
         </Card>
       ) : null}
@@ -215,6 +220,7 @@ export default function RoutinesScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  programmeButton: { backgroundColor: '#33202E', flexDirection: 'row', gap: 8, marginTop: SPACING.sm },
   buildButton: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
   productRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 6 },
   productPhoto: { width: 36, height: 36, borderRadius: 6, backgroundColor: '#FFFFFF' },

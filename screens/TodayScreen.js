@@ -71,7 +71,7 @@ export default function TodayScreen({ navigation }) {
         AsyncStorage.getItem(doneKey(user.id, 'evening')).catch(() => null),
         getRekodPlan(user.id).catch(() => null),
       ])
-      const latest = type => (res.success ? (res.data || []).find(r => r.type === type && Array.isArray(r.steps) && r.steps.length) : null)
+      const latest = type => (res.success ? (res.data || []).find(r => r.type === type && Array.isArray(r.steps) && r.steps.some(x => x.product)) : null)
       const morning = latest('morning')
       const evening = latest('evening')
       setRoutines({ morning, evening })
@@ -155,6 +155,22 @@ export default function TodayScreen({ navigation }) {
   const Row = ({ period, icon, title, count }) => {
     const complete = count.total > 0 && count.done === count.total
     const isOpen = !complete
+    // No products in this routine: add hers, or get one made for her skin.
+    if (!count.total) {
+      return (
+        <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border, gap: SPACING.md }]}>
+          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('No products in your {period} routine yet', { period: period === 'morning' ? t('morning') : t('evening') })}</Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Add the products you already use, or let us build a routine made for your skin.')}</Text>
+          <Pressable onPress={() => navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() })} style={[styles.emptyBtn, { backgroundColor: colors.primary }]}>
+            <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Add my products')}</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.emptyBtn, { backgroundColor: '#33202E', flexDirection: 'row', gap: 8 }]}>
+            <Ionicons name="diamond-outline" size={16} color="#FFFFFF" />
+            <Text style={[TYPE.bodyStrong, { color: '#FFFFFF' }]}>{t('Get a routine made for me')}</Text>
+          </Pressable>
+        </View>
+      )
+    }
     return (
       <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Pressable disabled={!!count.total && !complete} onPress={() => { tap(); count.total ? (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period })) : navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() }) }} style={styles.logRow}>
@@ -350,6 +366,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38 },
+  emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },
   tipLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
