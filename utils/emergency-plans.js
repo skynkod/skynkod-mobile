@@ -111,6 +111,8 @@ export const NEEDS = {
   patch: { label: 'Pimple patches', ids: ['hydrocolloid'], categories: ['mask', 'other'] },
   gentleCleanser: { label: 'A gentle cleanser', ids: ['ceramides', 'glycerin', 'panthenol', 'centella'], categories: ['cleanser'] },
   spot: { label: 'Spot treatment', ids: ['salicylic', 'benzoyl', 'azelaic', 'sulfur'], categories: ['serum', 'exfoliant', 'other'] },
+  spotGentle: { label: 'Gentle spot care', ids: ['azelaic', 'niacinamide'], categories: ['serum', 'moisturizer', 'other'] },
+  fungalSpot: { label: 'Care for fungal acne', ids: ['sulfur', 'zincpyrithione'], categories: ['cleanser', 'serum', 'other', 'mask'] },
   soothe: { label: 'Something soothing', ids: ['centella', 'panthenol', 'allantoin', 'betaglucan', 'bisabolol', 'oat'], categories: ['serum', 'moisturizer', 'toner'] },
   hydrate: { label: 'Hydration', ids: ['hyaluronic', 'polyglutamic', 'glycerin'], categories: ['serum', 'toner', 'moisturizer'] },
   barrier: { label: 'Barrier repair', ids: ['ceramides', 'cholesterol', 'panthenol'], categories: ['moisturizer'] },

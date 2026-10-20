@@ -1,54 +1,89 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, LoadingView, useColors } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
-import { SITUATIONS, getSituation } from '../utils/emergency-plans'
+import { useSkinProfile } from '../utils/useSkinProfile'
+import { getMyProducts } from '../utils/catalog'
+import { ISSUES, questionsFor, buildSosPlan, issuesFromSituation } from '../utils/sos-plan'
 import { getActivePlan, startPlan, endPlan } from '../utils/emergency-state'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
+const PLUM = '#33202E'
 const PAUSE_LABELS = {
   retinoid: 'Retinol', acid: 'Acids', exfoliant: 'Exfoliants', vitaminC: 'Vitamin C',
-  fragrance: 'Fragranced products', scrub: 'Scrubs', mask: 'Masks', newest: 'Your newest product',
+  fragrance: 'Fragranced products', scrub: 'Scrubs', mask: 'Masks', newest: 'Your new product',
 }
 
-// Emergency mode from the mockup: pick what's going on, preview the 7-day
-// plan, start it. While it runs, the plan pauses some products in the routine.
+// Emergency mode: pick the problems (several at once), answer a few quick
+// questions, then get ONE 7-day plan that treats everything together.
 export default function EmergencyScreen({ navigation, route }) {
   const colors = useColors()
   const t = useT()
   const { user } = useAuth()
+  const profile = useSkinProfile(user?.id)
   const [active, setActive] = useState(undefined) // undefined = loading
-  const [preview, setPreview] = useState(null) // situation being previewed
-  const [openDay, setOpenDay] = useState(null)
+  const [stage, setStage] = useState('pick') // pick | quiz | preview
+  const [issues, setIssues] = useState([])
+  const [answers, setAnswers] = useState({})
+  const [qIndex, setQIndex] = useState(0)
+  const [owned, setOwned] = useState(null)
+  const [openDay, setOpenDay] = useState(0)
 
   const load = useCallback(async () => {
     if (!user?.id) return
     const plan = await getActivePlan(user.id)
     setActive(plan)
-    setOpenDay(plan ? plan.dayIndex : null)
+    if (plan) setOpenDay(plan.dayIndex)
   }, [user?.id])
-
   useFocusEffect(useCallback(() => { load() }, [load]))
 
-  // Opened with a situation (from the Journal or Koda): go straight to it.
+  // Opened from the journal (problems ticked) or Koda (one situation).
   useEffect(() => {
-    const s = getSituation(route?.params?.situation)
-    if (s) {
-      setPreview(s)
-      setOpenDay(0)
+    const fromParams = route?.params?.issues || issuesFromSituation(route?.params?.situation)
+    if (fromParams?.length) {
+      setIssues(fromParams)
+      setAnswers({})
+      setQIndex(0)
+      setStage('pick')
     }
-  }, [route?.params?.situation, route?.params?.openedAt])
+  }, [route?.params?.openedAt])
+
+  // The products she owns, for "which product is new?".
+  useEffect(() => {
+    if (stage !== 'quiz' || owned || !user?.id) return
+    getMyProducts(user.id).then(rows => setOwned(rows.filter(r => r.status === 'owned' && r.product_id))).catch(() => setOwned([]))
+  }, [stage, user?.id])
 
   if (active === undefined) return <LoadingView />
 
+  const questions = questionsFor(issues, answers, profile)
+  const question = questions[qIndex]
+  const plan = stage === 'preview' ? buildSosPlan(issues, answers, profile) : null
+
+  const next = nextAnswers => {
+    const list = questionsFor(issues, nextAnswers, profile)
+    if (qIndex + 1 < list.length) setQIndex(qIndex + 1)
+    else { setStage('preview'); setOpenDay(0) }
+  }
+  const answer = (id, value, advance = true) => {
+    const nextAnswers = { ...answers, [id]: value }
+    setAnswers(nextAnswers)
+    if (advance) next(nextAnswers)
+  }
+  const back = () => {
+    if (stage === 'preview') { setStage('quiz'); setQIndex(Math.max(0, questions.length - 1)) }
+    else if (stage === 'quiz' && qIndex > 0) setQIndex(qIndex - 1)
+    else setStage('pick')
+  }
+  const reset = () => { setStage('pick'); setIssues([]); setAnswers({}); setQIndex(0); navigation.setParams({ issues: undefined, situation: undefined }) }
+
   const start = async () => {
     const begin = async () => {
-      await startPlan(user.id, preview.id)
-      setPreview(null)
-      navigation.setParams({ situation: undefined })
+      await startPlan(user.id, plan)
+      reset()
       load()
     }
     if (!active) return begin()
@@ -57,25 +92,33 @@ export default function EmergencyScreen({ navigation, route }) {
       { text: t('Start new plan'), onPress: begin },
     ])
   }
-
   const stop = () =>
     Alert.alert(t('End this plan?'), t('Your usual routine comes back straight away.'), [
       { text: t('Cancel'), style: 'cancel' },
       { text: t('End plan'), style: 'destructive', onPress: async () => { await endPlan(user.id); load() } },
     ])
 
-  const DayList = ({ situation, current }) => (
+  const Lines = ({ label, icon, items }) => (
+    <View style={{ marginTop: SPACING.sm }}>
+      <View style={styles.partHead}>
+        <Ionicons name={icon} size={13} color={colors.muted} />
+        <Text style={[styles.part, { color: colors.muted }]}>{t(label)}</Text>
+      </View>
+      {items.map((s, k) => (
+        <Text key={k} style={[TYPE.caption, { color: colors.text, lineHeight: 19, marginTop: 2 }]}>{k + 1}. {t(s.text)}</Text>
+      ))}
+    </View>
+  )
+
+  const DayList = ({ days, current }) => (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {situation.days.map((day, i) => {
+      {days.map((day, i) => {
         const isOpen = openDay === i
         const isToday = current === i
-        const past = current !== undefined && current !== null && i < current
+        const past = current !== null && current !== undefined && i < current
         return (
-          <Pressable
-            key={i}
-            onPress={() => setOpenDay(isOpen ? null : i)}
-            style={[styles.dayRow, i < 6 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, isToday && { backgroundColor: colors.primarySoft }]}
-          >
+          <Pressable key={i} onPress={() => setOpenDay(isOpen ? null : i)}
+            style={[styles.dayRow, i < 6 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, isToday && { backgroundColor: colors.primarySoft }]}>
             <View style={styles.dayHead}>
               <Ionicons name={past ? 'checkmark-circle' : day.icon} size={20} color={past ? colors.success : isToday ? colors.primary : colors.textSecondary} />
               <Text style={[TYPE.bodyStrong, { color: colors.text, width: 62 }]}>{t('Day {n}', { n: i + 1 })}</Text>
@@ -84,17 +127,19 @@ export default function EmergencyScreen({ navigation, route }) {
             </View>
             {isOpen ? (
               <View style={styles.dayBody}>
-                <Text style={[TYPE.body, { color: colors.text }]}>{t(day.focus)}</Text>
+                <Lines label="MORNING" icon="sunny-outline" items={day.morning} />
+                <Lines label="EVENING" icon="moon-outline" items={day.evening} />
+                {day.tips.map((tip, k) => (
+                  <Text key={k} style={[TYPE.caption, { color: colors.primary, marginTop: SPACING.sm, lineHeight: 18 }]}>{t(tip)}</Text>
+                ))}
                 <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>
                   <Text style={{ fontWeight: '700' }}>{t('Avoid')}: </Text>{t(day.avoid)}
                 </Text>
                 {day.needs?.length ? (
-                  <Pressable
-                    onPress={() => navigation.navigate('Suggestions', { situation: situation.id, day: i })}
-                    style={[styles.suggest, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  >
+                  <Pressable onPress={() => navigation.navigate('Suggestions', { needs: day.needs, title: day.title, day: i, ownedOnly: day.ownedOnly, cautions: (plan || active?.situation)?.cautions })}
+                    style={[styles.suggest, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Ionicons name="sparkles-outline" size={15} color={colors.primary} />
-                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Suggest products for this day')}</Text>
+                    <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(day.ownedOnly ? 'Which of my products to use' : 'Suggest products for this day')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -105,25 +150,35 @@ export default function EmergencyScreen({ navigation, route }) {
     </View>
   )
 
+  const Notes = ({ notes }) => (notes?.length ? (
+    <View style={[styles.note, { backgroundColor: colors.surface }]}>
+      {notes.map((n, k) => (
+        <Text key={k} style={[TYPE.caption, { color: colors.text, lineHeight: 18, marginTop: k ? 6 : 0 }]}>{t(n)}</Text>
+      ))}
+    </View>
+  ) : null)
+
+  const PrimaryButton = ({ label, onPress, disabled }) => (
+    <Pressable onPress={onPress} disabled={disabled}
+      style={({ pressed }) => [styles.primary, { backgroundColor: PLUM, opacity: disabled ? 0.4 : pressed ? 0.85 : 1 }]}>
+      <Text style={styles.primaryText}>{t(label)}</Text>
+    </Pressable>
+  )
+
   // ---------- A plan is running ----------
-  if (active && !preview) {
+  if (active && stage === 'pick' && !issues.length) {
     const s = active.situation
     return (
       <Screen back title={t('Emergency Mode')}>
-        <Text style={[styles.planTitle, { color: colors.primary }]}>{t('Your 7-Day Plan')}</Text>
-        <Text style={[TYPE.body, { color: colors.textSecondary }]}>
-          {t(s.title)} · {t('Day {n} of 7', { n: active.dayIndex + 1 })}
-        </Text>
-        <DayList situation={s} current={active.dayIndex} />
-
+        <Text style={[styles.planTitle, { color: colors.text }]}>{t(s.title)}</Text>
+        <Text style={[TYPE.body, { color: colors.textSecondary }]}>{t('Day {n} of 7', { n: active.dayIndex + 1 })}</Text>
+        <Notes notes={s.notes} />
+        <DayList days={s.days} current={active.dayIndex} />
         <View style={[styles.note, { backgroundColor: colors.surface }]}>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Paused in your routine')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
-            {s.pause.map(p => t(PAUSE_LABELS[p])).join(' · ')}
-          </Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{s.pause.map(p => t(PAUSE_LABELS[p])).join(' · ')}</Text>
           <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6 }]}>{t('Your Home routine already leaves them out until the plan ends.')}</Text>
         </View>
-
         <Pressable onPress={stop} style={{ alignSelf: 'center', padding: SPACING.lg }}>
           <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{t('End plan')}</Text>
         </Pressable>
@@ -131,78 +186,138 @@ export default function EmergencyScreen({ navigation, route }) {
     )
   }
 
-  // ---------- Preview of a plan before starting ----------
-  if (preview) {
+  // ---------- The plan, before starting ----------
+  if (plan) {
     return (
       <Screen back title={t('Emergency Mode')}>
-        <Pressable onPress={() => { setPreview(null); navigation.setParams({ situation: undefined }) }} hitSlop={8} style={{ marginBottom: SPACING.sm }}>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>← {t('Choose another situation')}</Text>
+        <Pressable onPress={back} hitSlop={8} style={{ marginBottom: SPACING.sm }}>
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>← {t('Change my answers')}</Text>
         </Pressable>
-        <Text style={[styles.planTitle, { color: colors.primary }]}>{t('Your 7-Day Plan')}</Text>
-        <Text style={[TYPE.body, { color: colors.textSecondary }]}>{t(preview.title)}</Text>
-        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.md }]}>{t(preview.intro)}</Text>
-
-        {preview.urgent ? (
-          <View style={[styles.note, { backgroundColor: colors.dangerSoft, marginTop: SPACING.md }]}>
-            <Text style={[TYPE.caption, { color: colors.danger, fontWeight: '700', lineHeight: 18 }]}>{t(preview.urgent)}</Text>
+        {plan.urgent ? (
+          <View style={[styles.note, { backgroundColor: colors.dangerSoft }]}>
+            <Text style={[TYPE.bodyStrong, { color: colors.danger }]}>{t(plan.title)}</Text>
+            <Text style={[TYPE.caption, { color: colors.danger, marginTop: 4, lineHeight: 18 }]}>{t(plan.intro)}</Text>
           </View>
-        ) : null}
-
-        <DayList situation={preview} current={null} />
-
-        <View style={[styles.note, { backgroundColor: colors.surface }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('What changes in your routine')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
-            {t('Paused for 7 days:')} {preview.pause.map(p => t(PAUSE_LABELS[p])).join(' · ')}
-          </Text>
-        </View>
-
-        <Pressable onPress={start} style={({ pressed }) => [styles.primary, { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 }]}>
-          <Text style={styles.primaryText}>{t('Start plan')}</Text>
-        </Pressable>
+        ) : (
+          <>
+            <Text style={[styles.overline, { color: colors.primary }]}>{t('YOUR 7-DAY PLAN')}</Text>
+            <Text style={[styles.planTitle, { color: colors.text }]}>{t(plan.title)}</Text>
+            <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.xs }]}>{t(plan.intro)}</Text>
+            <Notes notes={plan.notes} />
+            <DayList days={plan.days} current={null} />
+            <View style={[styles.note, { backgroundColor: colors.surface }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('What changes in your routine')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
+                {t('Paused for 7 days:')} {plan.pause.map(p => t(PAUSE_LABELS[p])).join(' · ')}
+              </Text>
+            </View>
+            <PrimaryButton label="Start plan" onPress={start} />
+          </>
+        )}
       </Screen>
     )
   }
 
-  // ---------- Choose what's going on ----------
+  // ---------- Quick questions, one at a time ----------
+  if (stage === 'quiz' && question) {
+    const value = answers[question.id]
+    const multi = question.type === 'multi'
+    const toggle = v => {
+      const cur = value || []
+      const nextVal = v === 'nothing' ? ['nothing'] : cur.includes(v) ? cur.filter(x => x !== v) : [...cur.filter(x => x !== 'nothing'), v]
+      answer(question.id, nextVal, false)
+    }
+    return (
+      <Screen back title={t('Emergency Mode')}>
+        <Pressable onPress={back} hitSlop={8} style={{ marginBottom: SPACING.sm }}>
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>← {t('Back')}</Text>
+        </Pressable>
+        <Text style={[styles.overline, { color: colors.muted }]}>{t('QUESTION {n} OF {total}', { n: qIndex + 1, total: questions.length })}</Text>
+        <Text style={[TYPE.heading, { color: colors.text, marginTop: SPACING.xs }]}>{t(question.title)}</Text>
+        {question.subtitle ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t(question.subtitle)}</Text> : null}
+
+        {question.type === 'product' ? (
+          <View style={{ marginTop: SPACING.lg, gap: SPACING.sm }}>
+            {!owned ? <ActivityIndicator color={colors.primary} /> : owned.map(r => (
+              <Pressable key={r.id} onPress={() => answer('product', r.product_id)}
+                style={[styles.option, { backgroundColor: value === r.product_id ? colors.primarySoft : colors.card, borderColor: value === r.product_id ? colors.primary : colors.border }]}>
+                <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{r.brand || r.product?.brand}</Text>
+                <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{r.product_name || r.product?.name}</Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => answer('product', null)} style={[styles.option, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('It’s not in my products')}</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={{ marginTop: SPACING.lg, gap: SPACING.sm }}>
+            {question.options.map(opt => {
+              const on = multi ? (value || []).includes(opt.value) : value === opt.value
+              return (
+                <Pressable key={opt.value} onPress={() => (multi ? toggle(opt.value) : answer(question.id, opt.value))}
+                  style={[styles.option, styles.optionRow, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primary : colors.border }]}>
+                  <Text style={[TYPE.bodyStrong, { color: on ? colors.primary : colors.text, flex: 1 }]}>{t(opt.label)}</Text>
+                  {on ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+                </Pressable>
+              )
+            })}
+          </View>
+        )}
+        {multi ? <PrimaryButton label="Next" disabled={!(value || []).length} onPress={() => next(answers)} /> : null}
+      </Screen>
+    )
+  }
+
+  // ---------- What's going on? (several at once) ----------
+  const toggleIssue = id => setIssues(cur => (cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]))
   return (
     <Screen back title={t('Emergency Mode')}>
       <Text style={[TYPE.heading, { color: colors.text }]}>{t("What's going on?")}</Text>
-      <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: 4 }]}>{t('Choose what best describes your situation.')}</Text>
+      <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: 4 }]}>{t('Select everything that applies: we build one plan for all of it.')}</Text>
       <View style={styles.grid}>
-        {SITUATIONS.map(s => (
-          <Pressable
-            key={s.id}
-            onPress={() => { setPreview(s); setOpenDay(0) }}
-            style={({ pressed }) => [styles.tile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Ionicons name={s.icon} size={24} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600', flex: 1 }]}>{t(s.label)}</Text>
-          </Pressable>
-        ))}
+        {ISSUES.map(s => {
+          const on = issues.includes(s.id)
+          return (
+            <Pressable key={s.id} onPress={() => toggleIssue(s.id)}
+              style={({ pressed }) => [styles.tile, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primary : colors.border, opacity: pressed ? 0.85 : 1 }]}>
+              <Ionicons name={s.icon} size={22} color={colors.primary} />
+              <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600', flex: 1 }]}>{t(s.label)}</Text>
+            </Pressable>
+          )
+        })}
         <Pressable
           onPress={() => navigation.navigate('Koda', { returnTo: 'Emergency', prefill: t("My skin isn't doing well and I'm not sure why. Can you help?") })}
-          style={({ pressed }) => [styles.tile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={24} color={colors.primary} />
+          style={({ pressed }) => [styles.tile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}>
+          <Ionicons name="ellipsis-horizontal" size={22} color={colors.primary} />
           <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600', flex: 1 }]}>{t('Other')}</Text>
         </Pressable>
       </View>
+      <PrimaryButton label="Continue" disabled={!issues.length} onPress={() => { setAnswers({}); setQIndex(0); setStage('quiz') }} />
+      {active ? (
+        <Pressable onPress={reset} style={{ alignSelf: 'center', padding: SPACING.md }}>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('See my current plan')}</Text>
+        </Pressable>
+      ) : null}
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginTop: SPACING.xl },
-  tile: { width: '47%', flexGrow: 1, minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg },
-  planTitle: { fontSize: 24, fontWeight: '700', letterSpacing: -0.3 },
+  tile: { width: '47%', flexGrow: 1, minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg },
+  overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
+  planTitle: { fontSize: 24, fontWeight: '700', letterSpacing: -0.3, marginTop: SPACING.xs },
   card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.lg, overflow: 'hidden' },
   dayRow: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  dayBody: { marginTop: SPACING.sm, marginLeft: 32 },
+  dayBody: { marginTop: SPACING.xs, marginLeft: 32 },
+  partHead: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  part: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
   suggest: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: SPACING.md },
   today: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
   note: { borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.lg },
-  primary: { height: 54, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl, marginBottom: SPACING.md },
+  option: { borderRadius: RADIUS.md, borderWidth: 1, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  optionRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52 },
+  primary: { height: 54, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl, marginBottom: SPACING.md },
   primaryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 })

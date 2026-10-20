@@ -18,10 +18,20 @@ export default function SuggestionsScreen({ navigation, route }) {
   const colors = useColors()
   const t = useT()
   const { user } = useAuth()
-  const profile = useSkinProfile(user?.id)
-  const situation = getSituation(route?.params?.situation)
-  const dayIndex = route?.params?.day ?? 0
-  const day = situation?.days[dayIndex]
+  const baseProfile = useSkinProfile(user?.id)
+  const params = route?.params || {}
+  const dayIndex = params.day ?? 0
+  // Combined SOS plans pass the day's needs directly; older links a situation.
+  const day = params.needs ? { needs: params.needs, title: params.title } : getSituation(params.situation)?.days[dayIndex]
+  const ownedOnly = !!params.ownedOnly
+  // The plan's extra cautions (fungal acne, rosacea…) also filter suggestions.
+  const c = params.cautions
+  const profile = baseProfile && c ? {
+    ...baseProfile,
+    acne_types: [...new Set([...(baseProfile.acne_types || []), ...(c.acne || [])])],
+    skin_conditions: [...new Set([...(baseProfile.skin_conditions || []), ...(c.conditions || [])])],
+    pregnancy: c.pregnant ? baseProfile.pregnancy || 'pregnant' : baseProfile.pregnancy,
+  } : baseProfile
   const [sections, setSections] = useState(null)
 
   useEffect(() => {
@@ -40,6 +50,7 @@ export default function SuggestionsScreen({ navigation, route }) {
           const hasNeed = p => findIngredients(p).some(f => need.ids.includes(f.entry.id))
           const fromShelf = owned.filter(p => fits(p) && hasNeed(p) && !isUnsuitable(productMatch(p, profile)))
 
+          if (ownedOnly) { result.push({ key, label: need.label, fromShelf, options: [] }); continue }
           const lists = await Promise.all(need.ids.map(id => getIngredient(id)).filter(Boolean).map(e => productsWithIngredient(e, 25).catch(() => [])))
           const ownedIds = new Set(owned.map(p => p.id))
           const seen = new Set()
@@ -60,7 +71,7 @@ export default function SuggestionsScreen({ navigation, route }) {
     }
     run()
     return () => { active = false }
-  }, [route?.params?.situation, dayIndex, user?.id, profile])
+  }, [params.situation, (params.needs || []).join(','), dayIndex, user?.id, !!baseProfile])
 
   if (!day) return <Screen back title={t('Suggestions')} />
 

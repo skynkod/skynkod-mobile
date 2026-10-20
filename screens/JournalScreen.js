@@ -9,6 +9,7 @@ import { todaySteps } from '../utils/routine-checks';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
+import { issuesFromTags } from '../utils/sos-plan';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
 const planFor = tags => {
@@ -267,7 +268,7 @@ export default function JournalScreen({ route, navigation }) {
 
         {planFor(tags) ? (
           <Pressable
-            onPress={() => navigation.navigate('Emergency', { situation: planFor(tags), openedAt: Date.now() })}
+            onPress={() => navigation.navigate('Emergency', { issues: issuesFromTags(tags), openedAt: Date.now() })}
             style={[styles.planCard, { backgroundColor: '#33202E' }]}
           >
             <Ionicons name="diamond" size={16} color="#E2C6DA" />

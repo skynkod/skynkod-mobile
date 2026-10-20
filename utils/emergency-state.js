@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { getSituation } from './emergency-plans'
+import { buildSosPlan, issuesFromSituation } from './sos-plan'
 import { activesOf } from './routine-checks'
 import { findIngredients } from './ingredients-guide'
 
-// The running 7-day plan, kept on the phone: { id, startedAt }.
+// The running 7-day plan, kept on the phone: { plan, startedAt } (older
+// saves held a single situation id: { id, startedAt }).
 const key = userId => `skynkod_emergency_${userId}`
 const DAY = 86400000
 
@@ -21,7 +22,7 @@ export const getActivePlan = async (userId) => {
     const raw = await AsyncStorage.getItem(key(userId))
     if (!raw) return null
     const saved = JSON.parse(raw)
-    const situation = getSituation(saved.id)
+    const situation = saved.plan || (saved.id ? buildSosPlan(issuesFromSituation(saved.id)) : null)
     const dayIndex = dayIndexSince(saved.startedAt)
     if (!situation || dayIndex > 6) {
       await AsyncStorage.removeItem(key(userId))
@@ -33,7 +34,7 @@ export const getActivePlan = async (userId) => {
   }
 }
 
-export const startPlan = (userId, id) => AsyncStorage.setItem(key(userId), JSON.stringify({ id, startedAt: new Date().toISOString() }))
+export const startPlan = (userId, plan) => AsyncStorage.setItem(key(userId), JSON.stringify({ plan, startedAt: new Date().toISOString() }))
 export const endPlan = userId => AsyncStorage.removeItem(key(userId))
 
 const PAUSE_REASONS = {
@@ -64,7 +65,9 @@ export const adjustForPlan = (steps, productsById, plan, newestProductId = null)
       (p === 'fragrance' && ids.has('fragrance')) ||
       (p === 'scrub' && ids.has('scrub')) ||
       (p === 'mask' && product?.category === 'mask') ||
-      (p === 'newest' && newestProductId && step.product_id === newestProductId)
+      (p === 'newest' && (plan.situation.pauseProductId
+        ? step.product_id === plan.situation.pauseProductId
+        : newestProductId && step.product_id === newestProductId))
     )
     if (hit) paused.push({ step, reason: PAUSE_REASONS[hit] })
     else kept.push(step)
