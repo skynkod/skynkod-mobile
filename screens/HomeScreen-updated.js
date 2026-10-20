@@ -362,7 +362,7 @@ export default function HomeScreen({ navigation }) {
 
 
   // White over the sky: the text sits on its deeper top part.
-  const ink = '#FFFFFF';
+  const ink = colors.text;
   const weatherTips = skyToday ? pickSkinTips(skyToday.weather, profile, skyToday.city) : [];
   // Calm weather: a Ramadan tip during the month, otherwise a season tip.
   const ramadan = ramadanDay();
@@ -381,32 +381,13 @@ export default function HomeScreen({ navigation }) {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: SPACING.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* The calm hero: the sky, the greeting, one thing to do */}
-        {/* The sky sits behind the top of the page; the sections float over it as glass */}
+        {/* The calm hero: the greeting, one thing to do (no photo: plain background) */}
         <View>
-        <ImageBackground source={isNight || isDark ? NIGHT_SKY : SKY} resizeMode="cover" style={[styles.sky, { height: heroHeight }]}>
-          <Svg style={styles.fade} width="100%" height={heroHeight * 0.5}>
-            <Defs>
-              <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.bg} stopOpacity="0" />
-                <Stop offset="0.6" stopColor={colors.bg} stopOpacity="0.55" />
-                <Stop offset="1" stopColor={colors.bg} stopOpacity="1" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#fade)" />
-          </Svg>
-        </ImageBackground>
 
           {/* Date and bell on top, the greeting centred in the space above the sections */}
-          <View style={{ minHeight: introHeight }}>
-          {/* Tonight's real moon, in its true shape, on the lavender sky */}
-          {isNight || isDark ? (
-            <View pointerEvents="none" style={[styles.moon, { top: insets.top + 64 }]}>
-              <Moon size={58} />
-            </View>
-          ) : null}
+          <View>
           <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
             {/* The date, and the weather right now in small beside it */}
             <View style={styles.dateRow}>
@@ -416,7 +397,7 @@ export default function HomeScreen({ navigation }) {
               {weatherNow ? (
                 <>
                   <Text style={styles.dateDot}>·</Text>
-                  <Ionicons name={weatherNow.icon} size={13} color="#FFFFFF" />
+                  <Ionicons name={weatherNow.icon} size={13} color={colors.primary} />
                   <Animated.Text style={[styles.dateWeather, { opacity: weatherFade }]}>
                     {weatherStep === 0 ? t(weatherNow.label) : `${weatherNow.temp}°`}
                   </Animated.Text>
@@ -425,12 +406,12 @@ export default function HomeScreen({ navigation }) {
             </View>
             <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
               <Pressable onPress={() => navigation.navigate('Alerts')} style={styles.glass} accessibilityLabel={t('Notifications')}>
-                <Ionicons name="notifications-outline" size={19} color="#FFFFFF" />
+                <Ionicons name="notifications-outline" size={19} color={colors.primary} />
               </Pressable>
             </View>
           </View>
 
-          <View style={[styles.heroTop, { paddingBottom: Math.round(introHeight * 0.3) }]}>
+          <View style={[styles.heroTop, { paddingBottom: SPACING.xl }]}>
             <Text style={[styles.hello, { color: ink }]}>{greeting}{firstName ? ',' : ''}</Text>
             {firstName ? <Text style={[styles.name, { color: ink }]}>{firstName}</Text> : null}
             {/* Skin weather: the day's one tip from the local weather (daytime only) */}
@@ -455,21 +436,21 @@ export default function HomeScreen({ navigation }) {
               <>
                 <View style={styles.moods}>
                   {MOODS.map(m => (
-                    <Pressable key={m.value} onPress={() => pickMood(m.value)} style={({ pressed }) => [styles.mood, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.7)', transform: [{ scale: pressed ? 0.94 : 1 }] }]} accessibilityLabel={t(m.label)}>
+                    <Pressable key={m.value} onPress={() => pickMood(m.value)} style={({ pressed }) => [styles.mood, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : colors.primarySoft, transform: [{ scale: pressed ? 0.94 : 1 }] }]} accessibilityLabel={t(m.label)}>
                       <MaterialCommunityIcons name={m.icon} size={26} color={isDark ? colors.text : colors.primary} />
                     </Pressable>
                   ))}
                 </View>
                 <Pressable onPress={skipCheckIn} hitSlop={10} style={{ marginTop: SPACING.md }}>
-                  <Text style={[TYPE.caption, { color: 'rgba(255,255,255,0.85)' }]}>{t('Not now')}</Text>
+                  <Text style={[TYPE.caption, { color: colors.muted }]}>{t('Not now')}</Text>
                 </Pressable>
               </>
             ) : null}
 
             {action ? (
-              <Pressable onPress={action.onPress} style={({ pressed }) => [styles.begin, { backgroundColor: '#FFFFFF', opacity: pressed ? 0.88 : 1 }]}>
-                <Text style={[styles.beginText, { color: INK }]}>{action.label}</Text>
-                <Ionicons name="arrow-forward" size={16} color={INK} />
+              <Pressable onPress={action.onPress} style={({ pressed }) => [styles.begin, { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 }]}>
+                <Text style={[styles.beginText, { color: colors.onPrimary }]}>{action.label}</Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.onPrimary} />
               </Pressable>
             ) : null}
 
@@ -603,13 +584,6 @@ export default function HomeScreen({ navigation }) {
                 ))}
               </View>
               <View style={styles.stepRow}>
-                {photoOf(current) ? (
-                  <Image source={{ uri: photoOf(current) }} style={styles.photo} resizeMode="contain" />
-                ) : (
-                  <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.primarySoft }]}>
-                    <Ionicons name="water-outline" size={24} color={colors.primary} />
-                  </View>
-                )}
                 <View style={{ flex: 1 }}>
                   <Text style={[TYPE.overline, { color: colors.muted }]}>
                     {t('Step {n}', { n: currentIdx + 1 })} · {t(current.action)}
@@ -838,7 +812,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const SHADOW = { textShadowColor: 'rgba(60,35,55,0.25)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
+const SHADOW = {};
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
 
 const styles = StyleSheet.create({
@@ -873,11 +847,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: SERIF, fontSize: 20, marginTop: 2 },
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.xl },
-  date: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
+  date: { color: '#8A6380', fontSize: 12, fontWeight: '700', letterSpacing: 1.6, textTransform: 'uppercase' },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  dateDot: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
-  dateWeather: { color: '#FFFFFF', fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
-  glass: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.22)' },
+  dateDot: { color: '#C5A8BB', fontSize: 12 },
+  dateWeather: { color: '#8A6380', fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
+  glass: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(197,168,187,0.18)' },
   heroTop: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xl },
   hello: { fontFamily: SERIF, fontSize: 24, fontStyle: 'italic', ...SHADOW },
   name: { fontFamily: SERIF, fontSize: 46, letterSpacing: -0.5, marginTop: 2, ...SHADOW },
