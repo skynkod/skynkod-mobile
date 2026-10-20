@@ -146,7 +146,10 @@ export default function TodayScreen({ navigation }) {
   const [compact, setCompact] = useState(false)
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
   const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
-  const tip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
+  // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
+  const sleepTip = { icon: 'bed-outline', text: 'Aim for 7 to 9 hours of sleep tonight: your skin repairs itself while you sleep.' }
+  const dayTip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
+  const tip = (hour >= 5 && hour < 15) ? dayTip : sleepTip
   const tonight = plan ? NIGHTS[tonightNight(plan)] : null
 
   const Row = ({ period, icon, title, count }) => {
@@ -224,6 +227,20 @@ export default function TodayScreen({ navigation }) {
         <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
       </View>
 
+      {/* 2 · Check any product: the heart of the app */}
+      <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
+      <View style={styles.searchRow}>
+        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
+        </Pressable>
+        <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
+          style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
+          <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
+          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
+        </Pressable>
+      </View>
+
       {/* 2 · The routine due now */}
       <Text style={[styles.section, { color: colors.muted }]}>{now === 'morning' ? t('This morning') : t('Tonight')}</Text>
       {now === 'morning'
@@ -254,20 +271,6 @@ export default function TodayScreen({ navigation }) {
             )
           })}
         </View>
-      </View>
-
-      {/* 4 · Check any product */}
-      <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
-      <View style={styles.searchRow}>
-        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="search" size={18} color={colors.muted} />
-          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
-        </Pressable>
-        <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
-          style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
-          <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
-        </Pressable>
       </View>
 
       {/* 5 · The programme */}
