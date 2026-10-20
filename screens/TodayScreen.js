@@ -43,6 +43,12 @@ const streakFrom = (days) => {
   return n
 }
 
+// The skin check-in day starts with the morning (5 am, when the greeting
+// turns to Good morning), not at midnight.
+const MORNING_HOUR = 5
+const skinDay = (d = new Date()) => new Date(new Date(d).getTime() - MORNING_HOUR * 3600000)
+const sameSkinDay = date => !!date && new Date(date).toDateString() === skinDay().toDateString()
+
 export default function TodayScreen({ navigation }) {
   const colors = useColors()
   const t = useT()
@@ -98,7 +104,7 @@ export default function TodayScreen({ navigation }) {
         supabase.from('routine_completions').select('date').eq('user_id', user.id).gte('date', localDay(since)),
         supabase.from('journal_entries').select('id, date, mood, skin_conditions').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
       ])
-      const today = (entries || []).find(x => new Date(x.date).toDateString() === new Date().toDateString())
+      const today = (entries || []).find(x => sameSkinDay(x.date))
       setEntry(today || null)
       setStreak(streakFrom([...(ticks || []).map(x => x.date), ...(entries || []).filter(x => x.mood).map(x => localDay(new Date(x.date)))]))
     } catch (error) {
@@ -111,6 +117,14 @@ export default function TodayScreen({ navigation }) {
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => { if (state === 'active') load() })
     return () => sub.remove()
+  }, [load])
+  // Left open overnight: reload at 5 am so the new day starts fresh.
+  useEffect(() => {
+    const next = new Date()
+    next.setHours(MORNING_HOUR, 0, 5, 0)
+    if (next <= new Date()) next.setDate(next.getDate() + 1)
+    const timer = setTimeout(() => load(), next - new Date())
+    return () => clearTimeout(timer)
   }, [load])
 
   useEffect(() => {
@@ -131,7 +145,7 @@ export default function TodayScreen({ navigation }) {
   const evening = countOf('evening')
   const part = c => (c.total ? c.done / c.total : 0)
   // Today's mood only: yesterday's never stays on screen.
-  const todayMood = entry?.date && new Date(entry.date).toDateString() === new Date().toDateString() ? entry.mood : null
+  const todayMood = sameSkinDay(entry?.date) ? entry.mood : null
   const progress = (part(morning) + (todayMood ? 1 : 0) + part(evening)) / 3
 
   const toggle = async (period, idx) => {
@@ -154,9 +168,10 @@ export default function TodayScreen({ navigation }) {
     tap()
     try {
       // Only today's entry is updated; an older one on screen is never touched.
-      const current = entry?.date && new Date(entry.date).toDateString() === new Date().toDateString() ? entry : null
-      const id = await saveDay(user.id, new Date(), { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
-      setEntry({ ...(current || {}), id, mood, date: current?.date || new Date().toISOString() })
+      const current = sameSkinDay(entry?.date) ? entry : null
+      const day = skinDay()
+      const id = await saveDay(user.id, day, { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
+      setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString() })
       if (!entry?.mood) track('checkin_done')
     } catch (error) {
       await logError('Today_mood', error)
