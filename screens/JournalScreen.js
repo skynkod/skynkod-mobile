@@ -353,7 +353,7 @@ export default function JournalScreen({ route, navigation }) {
             accessibilityLabel={t('Add a note…')}
             style={[styles.note, { backgroundColor: colors.surface, color: colors.text }]}
           />
-          {!note ? (
+          {!note?.trim() ? (
             <Text pointerEvents="none" style={[styles.notePlaceholder, { color: colors.muted }]}>{t('Add a note…')}</Text>
           ) : null}
         </View>
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
-  notePlaceholder: { position: 'absolute', top: SPACING.xl + SPACING.lg, left: SPACING.lg, fontSize: 15 },
+  notePlaceholder: { position: 'absolute', top: SPACING.xl + SPACING.lg, left: SPACING.lg, fontSize: 15, zIndex: 2, elevation: 2 },
   mood: { alignItems: 'center', gap: 6, width: 58 },
   face: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
