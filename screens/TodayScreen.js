@@ -44,6 +44,12 @@ const streakFrom = (days) => {
   return n
 }
 
+// On Home there is nothing "below" to tick: point to the journal instead.
+const HOME_MOOD_MESSAGES = {
+  bad: 'Sorry your skin isn’t at its best. Tap here to note what’s going on and get a few simple tips.',
+  terrible: 'Rough day for your skin. Keep it simple and gentle today, and tap here to note what’s going on.',
+}
+
 // The day starts at the real sunrise where she is (5 am when we don't know
 // the place): the greeting turns to Good morning and the skin check-in resets.
 const sameSkinDay = (date, coords) => !!date && new Date(date).toDateString() === skinDay(new Date(), coords).toDateString()
@@ -369,7 +375,7 @@ export default function TodayScreen({ navigation }) {
           })}
         </View>
         {todayMood && MOOD_MESSAGES[todayMood] ? (
-          <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>{t(MOOD_MESSAGES[todayMood])}</Text>
+          <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>{t(HOME_MOOD_MESSAGES[todayMood] || MOOD_MESSAGES[todayMood])}</Text>
         ) : null}
       </Pressable>
 
