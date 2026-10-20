@@ -4,7 +4,7 @@ import { programmeFinished } from './rekod'
 import { logError } from './errorLogger'
 import {
   VISIBLE_BADGES, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
-  levelFor, streakFrom, weekStart, dayKey,
+  levelFor, streakFrom, weekStart, dayKey, addDays, activeDaysIn, boxContents,
 } from './journey-core'
 
 // The service behind My Skin Journey: reads what she really did (Supabase),
@@ -13,13 +13,15 @@ import {
 //
 // Stored on the phone (key journey_<userId>):
 //   events   { key: { xp, at } }       every XP ever given, one per unique key
-//   badges   { id: { at, revealed } }  earned badges; revealed = shown in a Koda box recap
+//   badges   { id: { at } }            earned badges
 //   ingredients / productPages / opened  { id: firstTimestamp }
 //   shared   timestamp of the first time she shared Skynkod
 //   box      { lastWeek }              week of the last Koda box opened
+//   stars    [{ week, at }]            seniority stars, one per active week
+//   comeback true once the Welcome Back badge was given
 
 const key = userId => `journey_${userId}`
-const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shared: null, box: null })
+const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shared: null, box: null, stars: [], comeback: false })
 
 export const loadJourney = async (userId) => {
   try { return { ...fresh(), ...JSON.parse((await AsyncStorage.getItem(key(userId))) || '{}') } } catch { return fresh() }
@@ -95,6 +97,7 @@ const gather = async (userId, state) => {
     productPages: state.productPages,
     opened: state.opened,
     shared: !!state.shared,
+    comeback: !!state.comeback,
   }
 }
 
@@ -114,7 +117,7 @@ export const syncJourney = (userId) => serial(async () => {
 
   const reached = reachedBadges(stats, state.badges)
   const newBadges = reached.filter(id => !state.badges[id])
-  for (const id of newBadges) state.badges[id] = { at: Date.now(), revealed: false }
+  for (const id of newBadges) state.badges[id] = { at: Date.now() }
 
   const challenges = weekChallenges(stats, week, state.events)
   const fresh = newXpEvents({ raw, stats, badges: reached, challenges, week }, state.events)
@@ -135,8 +138,9 @@ const picture = (state, stats, challenges) => {
     xp,
     level: levelFor(xp),
     streak: streakFrom(stats.routineDayList, dayKey()),
-    badges: VISIBLE_BADGES.map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
+    badges: VISIBLE_BADGES.filter(b => !b.secret || state.badges[b.id]).map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
     earnedCount: VISIBLE_BADGES.filter(b => state.badges[b.id]).length,
+    stars: state.stars.length,
     nextSteps: nextSteps(stats, state.badges),
     challenges,
     stats,
@@ -156,22 +160,21 @@ export const syncSoon = (userId, delay = 800) => {
 
 // ---------- The Koda box (every Monday) ----------
 
-// Ready when a new week started since the last one was opened. Inside: a
-// recap of the badges earned since the last box, or a cup of tea.
-const unboxed = state => Object.entries(state.badges)
-  .filter(([id, b]) => !b.revealed && !badgeOf(id)?.hidden)
-  .map(([id, b]) => ({ ...badgeOf(id), earned: b }))
-  .filter(b => b.id)
+// Ready when a new week started since the last one was opened.
+const boxOf = (state) => ({ ready: !!state.box && weekStart() > state.box.lastWeek })
 
-const boxOf = (state) => ({ ready: !!state.box && weekStart() > state.box.lastWeek, inside: unboxed(state) })
-
+// Opens the box for the week that just ended: a seniority star if she was
+// active, otherwise a cup of tea (and the Welcome Back badge, once).
 export const openBox = (userId) => serial(async () => {
   const state = await loadJourney(userId)
-  const inside = unboxed(state)
-  for (const b of inside) state.badges[b.id] = { ...state.badges[b.id], revealed: true }
+  const raw = await gather(userId, state)
+  const week = addDays(weekStart(), -7)
+  const contents = boxContents({ activeDays: activeDaysIn(raw, week), stars: state.stars.length, comebackEarned: state.comeback })
+  if (contents.kind === 'star') state.stars.push({ week, at: Date.now() })
+  if (contents.comeback) state.comeback = true
   state.box = { lastWeek: weekStart() }
   await save(userId, state)
-  return inside
+  return contents
 })
 
 // Tester only: make this week's box ready now.

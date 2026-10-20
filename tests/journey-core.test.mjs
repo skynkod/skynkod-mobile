@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  XP, LEVELS, VISIBLE_BADGES, levelFor, streakFrom, buildStats, reachedBadges, weekChallenges, newXpEvents, totalXp, weekStart, dayKey, nextSteps,
+  XP, LEVELS, VISIBLE_BADGES, ACTIVE_DAYS, activeDaysIn, boxContents, levelFor, streakFrom, buildStats, reachedBadges, weekChallenges, newXpEvents, totalXp, weekStart, dayKey, nextSteps,
 } from '../utils/journey-core.js'
 
 const empty = (over = {}) => ({
@@ -53,7 +53,12 @@ test('badges that count badges: enthusiast at 5, insider at 15 others', () => {
   assert.ok(!reachedBadges(buildStats(empty()), five).includes('skynkod-insider'))
   const all = Object.fromEntries(visible.map(id => [id, { at: 1 }]))
   assert.ok(reachedBadges(buildStats(empty()), all).includes('skynkod-insider'))
-  assert.equal(VISIBLE_BADGES.length, 16)
+  assert.equal(VISIBLE_BADGES.filter(b => !b.secret).length, 16)
+  // The secret Welcome Back badge never counts towards the others.
+  const withSecret = { ...five, 'welcome-back': { at: 1 } }
+  const four = Object.fromEntries(visible.slice(0, 4).map(id => [id, { at: 1 }]))
+  assert.ok(!reachedBadges(buildStats(empty()), { ...four, 'welcome-back': { at: 1 } }).includes('skincare-enthusiast'))
+  assert.ok(reachedBadges(buildStats(empty()), withSecret).includes('skincare-enthusiast'))
 })
 
 test('xp: no double award on repeated syncs', () => {
@@ -104,4 +109,15 @@ test('next steps show progress towards locked badges', () => {
   assert.ok(scholar)
   assert.equal(scholar.value, 7)
   assert.equal(scholar.target, 10)
+})
+
+test('koda box: a star for an active week, tea and Welcome Back once otherwise', () => {
+  const raw = empty({ ticks: [{ date: '2026-10-13', routine_type: 'morning' }, { date: '2026-10-13', routine_type: 'evening' }], journal: [{ date: new Date(2026, 9, 15, 10).toISOString(), mood: 'good' }] })
+  assert.equal(activeDaysIn(raw, '2026-10-12'), 2)
+  assert.equal(activeDaysIn(raw, '2026-10-19'), 0)
+  assert.deepEqual(boxContents({ activeDays: ACTIVE_DAYS, stars: 2, comebackEarned: false }), { kind: 'star', star: 3 })
+  assert.deepEqual(boxContents({ activeDays: 1, stars: 2, comebackEarned: false }), { kind: 'tea', comeback: true })
+  assert.deepEqual(boxContents({ activeDays: 0, stars: 2, comebackEarned: true }), { kind: 'tea', comeback: false })
+  // The badge itself comes from the comeback flag.
+  assert.ok(reachedBadges(buildStats(empty({ comeback: true }))).includes('welcome-back'))
 })

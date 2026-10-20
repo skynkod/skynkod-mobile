@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, Image, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
 import { TIERS } from '../utils/journey-core'
 
 // Badge art, cut from Lita's badge mockup (assets/badges). Replace a file to
@@ -39,7 +40,17 @@ export function BadgeImage({ badge, size = 72, locked = false }) {
       {src ? (
         <Image source={src} style={{ width: size, height: size * 0.96, opacity: locked ? 0.32 : 1 }} resizeMode="contain" />
       ) : (
-        <View style={{ width: size * 0.8, height: size * 0.8, borderRadius: size * 0.2, backgroundColor: TIER_STYLE[badge.tier].pill, opacity: locked ? 0.3 : 1, transform: [{ rotate: '30deg' }] }} />
+        <View style={{ opacity: locked ? 0.3 : 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={size * 0.86} height={size * 0.94} viewBox="0 0 100 110">
+            <Defs>
+              <LinearGradient id={`rim-${badge.id}`} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#F7F1F8" /><Stop offset="0.5" stopColor="#C9B8D3" /><Stop offset="1" stopColor="#EFE6F2" /></LinearGradient>
+              <LinearGradient id={`in-${badge.id}`} x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor="#B9A6D6" /><Stop offset="1" stopColor="#7E68A8" /></LinearGradient>
+            </Defs>
+            <Path d="M50 3 L94 28 L94 82 L50 107 L6 82 L6 28 Z" fill={`url(#rim-${badge.id})`} />
+            <Path d="M50 13 L85 33 L85 77 L50 97 L15 77 L15 33 Z" fill={`url(#in-${badge.id})`} />
+          </Svg>
+          {badge.icon ? <Ionicons name={badge.icon} size={size * 0.36} color="#FBF3FF" style={{ position: 'absolute' }} /> : null}
+        </View>
       )}
       {locked ? (
         <View style={[styles.lock, { width: size * 0.32, height: size * 0.32, borderRadius: size * 0.16 }]}>

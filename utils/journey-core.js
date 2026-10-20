@@ -15,6 +15,10 @@ export const XP = {
   badge: { common: 10, rare: 25, epic: 50, legendary: 100 },
 }
 
+// The Koda box: a week counts as active with at least this many days with a
+// ticked routine or a journal entry.
+export const ACTIVE_DAYS = 2
+
 export const LEVELS = [
   { level: 1, name: 'Curious', xp: 0 },
   { level: 2, name: 'Explorer', xp: 100 },
@@ -41,6 +45,7 @@ export const CATEGORIES = [
 
 // Badges: `metric` reads the stats, `target` is the threshold. Each badge is
 // earned once and kept forever. `hidden` ones are set aside for now (no art yet).
+// `secret` ones only show once earned and don't count towards other badges.
 export const BADGES = [
   { id: 'first-steps', name: 'First Steps', tier: 'common', category: 'start', metric: 'profileComplete', target: 1, description: 'Your skin profile is complete.', condition: 'Complete your skin profile.', koda: 'Now I know your skin. Let’s take care of it together.' },
   { id: 'routine-rookie', name: 'Routine Rookie', tier: 'rare', category: 'start', metric: 'routineSaved', target: 1, description: 'Your first routine is saved.', condition: 'Save your first routine.', koda: 'Every glow starts with a first routine.' },
@@ -58,6 +63,7 @@ export const BADGES = [
   { id: 'skynkod-explorer', name: 'Skynkod Explorer', tier: 'rare', category: 'advanced', metric: 'sectionsUsed', target: 4, description: 'You used 4 parts of Skynkod.', condition: 'Use 4 different parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', koda: 'You know your way around now.' },
   { id: 'skinfluencer', name: 'Skinfluencer', tier: 'epic', category: 'advanced', metric: 'shared', target: 1, description: 'You shared Skynkod with a friend.', condition: 'Share Skynkod with a friend.', koda: 'Good skin is better shared. Thank you for spreading the word.' },
   { id: 'skynkod-insider', name: 'Skynkod Insider', tier: 'legendary', category: 'advanced', metric: 'otherBadges', target: 15, description: 'Every other badge earned.', condition: 'Earn all 15 other badges.', koda: 'You’ve seen it all. You’re a true Skynkod insider.' },
+  { id: 'welcome-back', name: 'Welcome Back', tier: 'common', category: 'regularity', secret: true, icon: 'cafe-outline', metric: 'comeback', target: 1, description: 'You came back after a quiet week.', condition: 'A surprise from your Koda box.', koda: 'So nice to see you again. Your skin missed you too.' },
   // Set aside for now (no art yet).
   { id: 'dear-diary', name: 'Dear Diary', tier: 'common', category: 'regularity', hidden: true, metric: 'journalDays', target: 1, description: 'You told your journal how your skin feels.', condition: 'Fill in your journal once.', koda: 'Listening to your skin is the first skill.' },
   { id: 'first-look', name: 'First Look', tier: 'common', category: 'start', hidden: true, metric: 'dekodScans', target: 1, description: 'Your first Dekod scan.', condition: 'Do your first Dekod scan.', koda: 'You dared to really look. That’s where it all begins.' },
@@ -69,6 +75,7 @@ export const BADGES = [
   { id: 'rekod-complete', name: 'Rekod Complete', tier: 'legendary', category: 'advanced', hidden: true, metric: 'rekodFinished', target: 1, description: 'You finished a Rekod programme.', condition: 'Go all the way through a Rekod programme.', koda: 'Weeks of care, a skin that changed. You did it. Very few have this one.' },
 ]
 export const VISIBLE_BADGES = BADGES.filter(b => !b.hidden)
+const COUNTED = new Set(VISIBLE_BADGES.filter(b => !b.secret).map(b => b.id))
 export const badgeOf = id => BADGES.find(b => b.id === id) || null
 
 // Weekly challenges (Monday to Sunday, local time).
@@ -88,7 +95,7 @@ export const dayKey = (date = new Date()) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 const fromKey = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d) }
-const addDays = (key, n) => { const d = fromKey(key); d.setDate(d.getDate() + n); return dayKey(d) }
+export const addDays = (key, n) => { const d = fromKey(key); d.setDate(d.getDate() + n); return dayKey(d) }
 export const weekStart = (date = new Date()) => {
   const d = new Date(date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
   return dayKey(d)
@@ -179,6 +186,7 @@ export const buildStats = (raw, now = new Date()) => {
     dekodScans: raw.dekodScans || 0,
     kodaQuestions: raw.kodaQuestions || 0,
     shared: raw.shared ? 1 : 0,
+    comeback: raw.comeback ? 1 : 0,
     rekodStarted: raw.rekodStarted ? 1 : 0,
     rekodFinished: raw.rekodFinished ? 1 : 0,
     bestWeekEvenings: Math.max(0, ...Object.values(weeks).map(w => w.evenings)),
@@ -204,24 +212,20 @@ export const metricOf = (badge, stats, earnedCount = 0) => (badge.metric === 'ot
 export const reachedBadges = (stats, earned = {}) => {
   const out = new Set(Object.keys(earned))
   for (const b of VISIBLE_BADGES) if (b.metric !== 'otherBadges' && metricOf(b, stats) >= b.target) out.add(b.id)
-  const visible = new Set(VISIBLE_BADGES.map(b => b.id))
   for (const b of VISIBLE_BADGES.filter(x => x.metric === 'otherBadges').sort((x, y) => x.target - y.target)) {
-    const others = [...out].filter(id => id !== b.id && visible.has(id)).length
+    const others = [...out].filter(id => id !== b.id && COUNTED.has(id)).length
     if (others >= b.target) out.add(b.id)
   }
   return [...out]
 }
 
-export const earnedOthers = (badge, earned = {}) => {
-  const visible = new Set(VISIBLE_BADGES.map(b => b.id))
-  return Object.keys(earned).filter(id => id !== badge.id && visible.has(id)).length
-}
+export const earnedOthers = (badge, earned = {}) => Object.keys(earned).filter(id => id !== badge.id && COUNTED.has(id)).length
 
 // The closest badges still to earn, with their progress.
 export const progressOf = (badge, stats, earned = {}) => Math.min(metricOf(badge, stats, earnedOthers(badge, earned)), badge.target)
 
 export const nextSteps = (stats, earned = {}, limit = 3) => VISIBLE_BADGES
-  .filter(b => !earned[b.id])
+  .filter(b => !earned[b.id] && !b.secret)
   .map(b => ({ badge: b, value: progressOf(b, stats, earned), target: b.target }))
   .filter(s => s.target > 1 || s.value === 0)
   .sort((a, b) => b.value / b.target - a.value / a.target)
@@ -266,3 +270,24 @@ export const newXpEvents = ({ raw, stats, badges, challenges, week }, events = {
 }
 
 export const totalXp = events => Object.values(events).reduce((n, e) => n + (e.xp || 0), 0)
+
+// ---------- The Koda box ----------
+
+// Days with a ticked routine or a journal entry during the week starting on `week`.
+export const activeDaysIn = (raw, week) => {
+  const end = addDays(week, 7)
+  const days = new Set([
+    ...raw.ticks.map(t => t.date),
+    ...raw.journal.filter(e => e.mood).map(e => dayKey(new Date(e.date))),
+  ])
+  return [...days].filter(d => d >= week && d < end).length
+}
+
+// What the box holds for the week that just ended: a seniority star for an
+// active week; otherwise a cup of tea, plus the Welcome Back badge the first time.
+export const boxContents = ({ activeDays, stars, comebackEarned }) => (
+  activeDays >= ACTIVE_DAYS
+    ? { kind: 'star', star: stars + 1 }
+    : { kind: 'tea', comeback: !comebackEarned }
+)
+

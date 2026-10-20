@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Screen, Card, Button, ProgressBar, Banner, Chip, SegmentedControl, useColors } from '../components/ui'
 import { BadgeImage, TierPill, TIER_STYLE } from '../components/Badge'
-import { BoxArt, TeaArt } from '../components/KodaBox'
+import { BoxArt, TeaArt, StarArt } from '../components/KodaBox'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { syncJourney, openBox, makeBoxReadyForTest } from '../utils/journey'
@@ -30,7 +30,7 @@ export default function MySkinJourneyScreen() {
   const [tab, setTab] = useState('badges')
   const [filter, setFilter] = useState('all')
   const [detail, setDetail] = useState(null)
-  const [box, setBox] = useState(null) // { items, step } while opening
+  const [box, setBox] = useState(null) // { contents, open } while opening
   const tester = TESTERS.includes(user?.email)
 
   const load = useCallback(() => {
@@ -56,20 +56,19 @@ export default function MySkinJourneyScreen() {
 
   const startBox = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
-    const items = await openBox(user.id).catch(() => [])
-    setBox({ items, step: -1 })
-  }
-  const nextInBox = () => {
-    const next = box.step + 1
-    if (next < Math.max(box.items.length, 1)) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-      return setBox({ ...box, step: next })
+    try {
+      const contents = await openBox(user.id)
+      setBox({ contents, open: false })
+    } catch (e) {
+      logError('Journey_box', e, {}, 'warn')
     }
-    setBox(null)
-    load()
   }
-  const boxItem = box && box.step >= 0 ? box.items[box.step] : null
-  const isLast = box && box.step >= Math.max(box.items.length, 1) - 1
+  const openIt = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    setBox({ ...box, open: true })
+  }
+  // Closing the box syncs: the Welcome Back badge then shows its own screen.
+  const closeBox = () => { setBox(null); load() }
 
   const badgeTile = b => (
     <Pressable key={b.id} onPress={() => setDetail(b)} style={({ pressed }) => [styles.tile, { width: col, opacity: pressed ? 0.7 : 1 }]} accessibilityLabel={t(b.name)}>
@@ -86,7 +85,15 @@ export default function MySkinJourneyScreen() {
         <View style={styles.levelRow}>
           <BadgeImage badge={showcase} size={64} locked={!showcase.earned} />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 17 }]}>{t('Level {n}', { n: level.level })}</Text>
+            <View style={styles.rowBetween}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 17 }]}>{t('Level {n}', { n: level.level })}</Text>
+              {data.stars ? (
+                <View style={styles.stars}>
+                  <Ionicons name="star" size={13} color="#C99A45" />
+                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{data.stars}</Text>
+                </View>
+              ) : null}
+            </View>
             <View style={styles.rowBetween}>
               <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t(level.name)}</Text>
               <Text style={[TYPE.caption, { color: colors.muted }]}>{level.next ? `${data.xp} / ${level.next.xp} XP` : `${data.xp} XP`}</Text>
@@ -142,7 +149,7 @@ export default function MySkinJourneyScreen() {
             <Card style={{ marginTop: SPACING.lg, alignItems: 'center' }}>
               <BoxArt size={110} />
               <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{data.box.ready ? t('Your Koda box has arrived') : t('Your next Koda box comes on Monday')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>{t('Your week in a box: your new badges, or a little treat.')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>{t('Every active week earns you a seniority star.')}</Text>
               {data.box.ready ? <Button title={t('Open my box')} onPress={startBox} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
               {tester && !data.box.ready ? <Button title={t('Test: get my box now')} variant="secondary" icon="cube-outline" onPress={() => makeBoxReadyForTest(user.id).then(load)} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
             </Card>
@@ -206,6 +213,7 @@ export default function MySkinJourneyScreen() {
             {[
               { icon: 'sparkles-outline', value: data.xp, label: 'XP earned' },
               { icon: 'ribbon-outline', value: `${data.earnedCount}/${data.badges.length}`, label: 'Badges' },
+              { icon: 'star-outline', value: data.stars, label: 'Seniority stars' },
               { icon: streak.active ? 'flame' : 'flame-outline', value: streak.current, label: 'Current series' },
               { icon: 'trophy-outline', value: streak.best, label: 'Best series' },
               { icon: 'water-outline', value: data.stats.routineDays, label: 'Days with a routine' },
@@ -258,24 +266,27 @@ export default function MySkinJourneyScreen() {
         </Pressable>
       </Modal>
 
-      {/* Opening the Koda box: the week's badges, or a cup of tea */}
+      {/* Opening the Koda box: a seniority star, or a cup of tea */}
       <Modal visible={!!box} transparent animationType="fade" onRequestClose={() => {}}>
         <View style={[styles.back, { backgroundColor: '#1E141D' }]}>
-          {box && box.step < 0 ? (
+          {box && !box.open ? (
             <View style={{ alignItems: 'center' }}>
               <Text style={styles.kicker}>{t('YOUR KODA BOX')}</Text>
-              <Pressable onPress={nextInBox} style={{ marginTop: SPACING.lg }}><BoxArt size={210} /></Pressable>
-              <Button title={t('Open it')} onPress={nextInBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
+              <Pressable onPress={openIt} style={{ marginTop: SPACING.lg }}><BoxArt size={210} /></Pressable>
+              <Button title={t('Open it')} onPress={openIt} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
             </View>
           ) : box ? (
             <View style={{ alignItems: 'center', maxWidth: 320 }}>
-              {boxItem ? <BadgeImage badge={boxItem} size={190} /> : <TeaArt size={170} />}
-              <Text style={styles.boxTitle}>{boxItem ? t(boxItem.name) : t('A cup of tea for you')}</Text>
-              <Text style={styles.boxText}>
-                {boxItem ? t('Earned this week: {text}', { text: t(boxItem.description) }) : t('Last week was a quiet one, and that’s okay. Let’s start this week together.')}
+              {box.contents.kind === 'star' ? <StarArt n={box.contents.star} size={190} /> : <TeaArt size={170} />}
+              <Text style={styles.boxTitle}>
+                {box.contents.kind === 'star' ? t('Star n°{n}', { n: box.contents.star }) : t('So nice to see you again')}
               </Text>
-              {box.items.length > 1 ? <Text style={styles.boxCount}>{box.step + 1} / {box.items.length}</Text> : null}
-              <Button title={isLast ? t('Let’s go') : t('Next')} onPress={nextInBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
+              <Text style={styles.boxText}>
+                {box.contents.kind === 'star'
+                  ? (box.contents.star === 1 ? t('Your first week with Skynkod. Thank you for being here ✨') : t('{n} active weeks with Skynkod. Thank you for being here ✨', { n: box.contents.star }))
+                  : t('Here’s a cup of tea to start this week gently, together.')}
+              </Text>
+              <Button title={t('Let’s go')} onPress={closeBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />
             </View>
           ) : null}
         </View>
@@ -307,8 +318,8 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: '700', letterSpacing: 1.6 },
   detailDate: { fontSize: 12, marginTop: SPACING.md, textAlign: 'center' },
   detailKoda: { fontSize: 13, fontStyle: 'italic', marginTop: SPACING.sm, textAlign: 'center', lineHeight: 19 },
+  stars: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(201,154,69,0.14)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, fontWeight: '600' },
   boxTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '600', marginTop: SPACING.lg, textAlign: 'center' },
   boxText: { color: '#D8C8D3', fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: SPACING.sm },
-  boxCount: { color: '#9F8D9A', fontSize: 12, marginTop: SPACING.sm },
 })

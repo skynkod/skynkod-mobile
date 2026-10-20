@@ -1,7 +1,8 @@
 import React from 'react'
-import Svg, { Rect, Circle, Ellipse, Path, G } from 'react-native-svg'
+import Svg, { Rect, Circle, Ellipse, Path, G, Defs, LinearGradient, RadialGradient, Stop, Text as SvgText } from 'react-native-svg'
 
-// The Koda box that arrives every Monday, and the cup of tea for quiet weeks.
+// The Koda box that arrives every Monday, the seniority star for an active
+// week, and the cup of tea for a quiet one.
 const C = {
   blush: '#F3D9E4', mauve: '#C5A8BB', plum: '#8A6380', deep: '#5E3F56', cream: '#FBF3EE',
   sage: '#C9D8C5', leaf: '#8FB08A', wood: '#D9B99B', woodDark: '#B8926F', marble: '#F1ECEA',
@@ -31,6 +32,23 @@ export function BoxArt({ open = false, size = 160 }) {
       </G>)}
       <Rect x="44" y="96" width="40" height="20" rx="3" fill={C.cream} opacity="0.9" />
       <Path d="M50 104 h28 M50 110 h18" stroke={C.mauve} strokeWidth="2" />
+    </Svg>
+  )
+}
+
+// A seniority star, gold and soft, with its number.
+export function StarArt({ n = 1, size = 170 }) {
+  const star = 'M80 14 L98 58 L146 62 L110 94 L121 141 L80 116 L39 141 L50 94 L14 62 L62 58 Z'
+  return (
+    <Svg width={size} height={size} viewBox="0 0 160 160">
+      <Defs>
+        <RadialGradient id="halo" cx="50%" cy="52%" r="50%"><Stop offset="0" stopColor="#F6E3B0" stopOpacity="0.55" /><Stop offset="1" stopColor="#F6E3B0" stopOpacity="0" /></RadialGradient>
+        <LinearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#FFF4D2" /><Stop offset="0.35" stopColor="#E7C277" /><Stop offset="0.6" stopColor="#FFE9B0" /><Stop offset="1" stopColor="#B88A3E" /></LinearGradient>
+      </Defs>
+      <Circle cx="80" cy="84" r="78" fill="url(#halo)" />
+      <Path d={star} fill="url(#gold)" stroke="#FFF6DD" strokeWidth="2" strokeLinejoin="round" />
+      <Path d="M80 14 L98 58 L80 70z M146 62 L110 94 L98 80z" fill="#FFFFFF" opacity="0.35" />
+      <SvgText x="80" y="100" textAnchor="middle" fontSize="34" fontWeight="700" fill="#5E3F2A">{String(n)}</SvgText>
     </Svg>
   )
 }
