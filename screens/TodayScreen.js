@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated, Dimensions, AppState } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -106,6 +106,12 @@ export default function TodayScreen({ navigation }) {
     }
   }, [user?.id])
   useFocusEffect(useCallback(() => { load() }, [load]))
+  // Coming back to the app (e.g. the next morning): reload, so yesterday's
+  // skin check-in and ticks don't stay on screen.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') load() })
+    return () => sub.remove()
+  }, [load])
 
   useEffect(() => {
     if (!coords) return
@@ -124,7 +130,9 @@ export default function TodayScreen({ navigation }) {
   const morning = countOf('morning')
   const evening = countOf('evening')
   const part = c => (c.total ? c.done / c.total : 0)
-  const progress = (part(morning) + (entry?.mood ? 1 : 0) + part(evening)) / 3
+  // Today's mood only: yesterday's never stays on screen.
+  const todayMood = entry?.date && new Date(entry.date).toDateString() === new Date().toDateString() ? entry.mood : null
+  const progress = (part(morning) + (todayMood ? 1 : 0) + part(evening)) / 3
 
   const toggle = async (period, idx) => {
     tap()
@@ -145,8 +153,10 @@ export default function TodayScreen({ navigation }) {
   const pickMood = async (mood) => {
     tap()
     try {
-      const id = await saveDay(user.id, new Date(), { mood, tags: entry?.skin_conditions || [], notes: '' }, entry?.id)
-      setEntry({ ...(entry || {}), id, mood })
+      // Only today's entry is updated; an older one on screen is never touched.
+      const current = entry?.date && new Date(entry.date).toDateString() === new Date().toDateString() ? entry : null
+      const id = await saveDay(user.id, new Date(), { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
+      setEntry({ ...(current || {}), id, mood, date: current?.date || new Date().toISOString() })
       if (!entry?.mood) track('checkin_done')
     } catch (error) {
       await logError('Today_mood', error)
@@ -313,9 +323,9 @@ export default function TodayScreen({ navigation }) {
       <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.logRow}>
           <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
-            {entry?.mood ? t('Today: {mood}', { mood: t(MOODS.find(m => m.value === entry.mood)?.label).toLowerCase() }) : t('How does your skin feel?')}
+            {todayMood ? t('Today: {mood}', { mood: t(MOODS.find(m => m.value === todayMood)?.label).toLowerCase() }) : t('How does your skin feel?')}
           </Text>
-          {entry?.mood ? (
+          {todayMood ? (
             <Pressable onPress={() => navigation.navigate('Journal')} hitSlop={8}>
               <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Add details')}</Text>
             </Pressable>
@@ -323,7 +333,7 @@ export default function TodayScreen({ navigation }) {
         </View>
         <View style={styles.moods}>
           {MOODS.map(m => {
-            const on = entry?.mood === m.value
+            const on = todayMood === m.value
             return (
               <Pressable key={m.value} onPress={() => pickMood(m.value)} accessibilityLabel={t(m.label)}
                 style={({ pressed }) => [styles.mood, { backgroundColor: on ? colors.primary : colors.primarySoft, transform: [{ scale: pressed ? 0.92 : 1 }] }]}>
