@@ -9,6 +9,25 @@ import { todaySteps } from '../utils/routine-checks';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, getEntriesBetween, saveDay, getSkinPatterns } from '../utils/journal-day';
 import { logError } from '../utils/errorLogger';
+import { getSituation } from '../utils/emergency-plans';
+
+// A ticked problem suggests the matching 7-day plan (Emergency mode).
+const planFor = tags => {
+  const red = tags.includes('Redness') || tags.includes('Itchiness / Sensitivity');
+  if (tags.includes('Used new product') && red) return 'reaction';
+  if (tags.includes('New pimple')) return 'breakout';
+  if (red) return 'irritation';
+  if (tags.includes('Peeling / Flaking')) return 'peeling';
+  if (tags.includes('Dryness')) return 'barrier';
+  return null;
+};
+const PLAN_PROMPTS = {
+  reaction: 'Reacting to a new product? Start a 7-day plan to reset your skin',
+  breakout: 'A new pimple? Start a 7-day plan to calm your skin',
+  irritation: 'Redness? Start a 7-day plan to calm your skin',
+  peeling: 'Peeling skin? Start a 7-day plan to soothe it',
+  barrier: 'Dry skin? Start a 7-day plan to repair your barrier',
+};
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -242,6 +261,17 @@ export default function JournalScreen({ route, navigation }) {
           })}
         </View>
 
+        {planFor(tags) ? (
+          <Pressable
+            onPress={() => navigation.navigate('Emergency', { situation: planFor(tags), openedAt: Date.now() })}
+            style={[styles.planCard, { backgroundColor: colors.primarySoft }]}
+          >
+            <Ionicons name={getSituation(planFor(tags))?.icon || 'medkit-outline'} size={18} color={colors.primary} />
+            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', flex: 1, lineHeight: 18 }]}>{t(PLAN_PROMPTS[planFor(tags)])}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </Pressable>
+        ) : null}
+
         <TextInput
           value={note}
           onChangeText={setNoteLater}
@@ -331,6 +361,7 @@ const styles = StyleSheet.create({
   progressFill: { height: 6, borderRadius: 3 },
   patternRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
   patternIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  planCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg },
   card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },

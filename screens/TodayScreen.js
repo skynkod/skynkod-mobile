@@ -19,6 +19,8 @@ import { MOODS, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
+import { getActivePlan, adjustForPlan } from '../utils/emergency-state'
+import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
@@ -61,6 +63,8 @@ export default function TodayScreen({ navigation }) {
   const [weather, setWeather] = useState(null)
   const [sky, setSky] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  // A 7-day skin plan (Emergency) pauses strong products while it runs.
+  const [sos, setSos] = useState({ plan: null, products: {}, newest: null })
 
   const load = useCallback(async () => {
     if (!user?.id) return
@@ -78,6 +82,15 @@ export default function TodayScreen({ navigation }) {
       setDone({ morning: JSON.parse(m || '{}'), evening: JSON.parse(e || '{}') })
       setPlan(p)
       syncTodayTicks(user.id, { morning: morning?.id, evening: evening?.id })
+      const active = await getActivePlan(user.id)
+      if (active) {
+        const ids = [...(morning?.steps || []), ...(evening?.steps || [])].map(x => x.product_id).filter(Boolean)
+        const [products, newest] = await Promise.all([
+          getProductsByIds(ids).catch(() => []),
+          active.situation.pause.includes('newest') ? getNewestProductId(user.id).catch(() => null) : null,
+        ])
+        setSos({ plan: active, products: Object.fromEntries(products.map(x => [x.id, x])), newest })
+      } else setSos({ plan: null, products: {}, newest: null })
 
       // Today's check-in and the streak (last 60 days of routine steps and check-ins).
       const since = new Date(Date.now() - 60 * 86400000)
@@ -102,7 +115,8 @@ export default function TodayScreen({ navigation }) {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
 
-  const stepsOf = period => todaySteps(routines[period]?.steps || [])
+  const adjustedOf = period => adjustForPlan(todaySteps(routines[period]?.steps || []), sos.products, sos.plan, sos.newest)
+  const stepsOf = period => adjustedOf(period).steps
   const countOf = period => {
     const steps = stepsOf(period)
     return { total: steps.length, done: steps.filter((_, i) => done[period][i]).length }
@@ -164,7 +178,7 @@ export default function TodayScreen({ navigation }) {
     const complete = count.total > 0 && count.done === count.total
     const isOpen = !complete
     // No products in this routine: add hers, or get one made for her skin.
-    if (!count.total) {
+    if (!routines[period]) {
       return (
         <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border, gap: SPACING.md }]}>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('No products in your {period} routine yet', { period: period === 'morning' ? t('morning') : t('evening') })}</Text>
@@ -212,6 +226,11 @@ export default function TodayScreen({ navigation }) {
                 </Pressable>
               </View>
             ))}
+            {adjustedOf(period).paused.length ? (
+              <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
+                {t('Paused during your plan:')} {adjustedOf(period).paused.map(x => x.step.product).join(', ')}
+              </Text>
+            ) : null}
             <Pressable onPress={() => (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period }))} style={{ paddingTop: SPACING.sm }}>
               <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('See my whole routine')} ›</Text>
             </Pressable>
@@ -279,6 +298,15 @@ export default function TodayScreen({ navigation }) {
       {now === 'morning'
         ? <Row period="morning" icon="sunny-outline" title={t('Morning routine')} count={morning} />
         : <Row period="evening" icon="moon-outline" title={tonight ? t(tonight.label) : t('Evening routine')} count={evening} />}
+      {sos.plan ? (
+        <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.sosLine, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name={sos.plan.situation.icon} size={16} color={colors.primary} />
+          <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+            {t('Day {day} of 7 · {title}', { day: sos.plan.dayIndex + 1, title: t(sos.plan.situation.title) })}
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.muted} />
+        </Pressable>
+      ) : null}
 
       {/* 3 · Today's check-in */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin today')}</Text>
@@ -378,6 +406,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38 },
+  sosLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },
