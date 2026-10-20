@@ -188,10 +188,18 @@ export default function RoutineBuilderScreen({ navigation, route }) {
 
   const save = async () => {
     const chosen = slots.filter(slot => slot.product)
+    // No products left: she can empty the routine, after a quick confirmation.
     if (!chosen.length) {
-      Alert.alert(t('Add at least one product'), t('Pick a product for one of the steps first.'))
+      Alert.alert(t('Empty this routine?'), t('All products will be removed from this routine. You can add them again anytime.'), [
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Empty it'), style: 'destructive', onPress: () => store(chosen) },
+      ])
       return
     }
+    store(chosen)
+  }
+
+  const store = async chosen => {
     setSaving(true)
     try {
       const routineSteps = chosen.map(({ key, product, days, acks }) => ({
