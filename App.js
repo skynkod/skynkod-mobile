@@ -285,6 +285,18 @@ function AppContent() {
     check()
   }, [])
 
+  // Tapping a reminder opens its page: Home for routines, the journal for the check-in.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(response => {
+      const screen = response?.notification?.request?.content?.data?.screen
+      if (!screen) return
+      const go = () => navigationRef.navigate(screen, screen === 'Journal' ? { openNew: Date.now() } : undefined)
+      if (navigationRef.isReady()) go()
+      else setTimeout(() => navigationRef.isReady() && go(), 1500)
+    })
+    return () => sub.remove()
+  }, [])
+
   const handleLogin = async (email, userId) => {
     const data = { email, userId }
     await AsyncStorage.setItem('skynkod_user', JSON.stringify(data))

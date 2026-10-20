@@ -42,6 +42,12 @@ export const saveDekodResult = async (userId, result) => {
   if (error) throw error
 }
 
+// She can delete any of her results, as promised before the first scan.
+export const deleteDekodResult = async (id) => {
+  const { error } = await supabase.from('dekod_results').delete().eq('id', id)
+  if (error) throw error
+}
+
 // The user's scans, newest first: [{ id, created_at, result }].
 export const getDekodResults = async (userId, limit = 30) => {
   const { data, error } = await supabase.from('dekod_results').select('id, created_at, result')

@@ -12,7 +12,7 @@ import { SPACING, TYPE } from '../utils/theme'
 const LANGS = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  // Spanish comes back once the app is translated (languages come last).
 ]
 
 export default function SettingsScreen({ route, navigation }) {

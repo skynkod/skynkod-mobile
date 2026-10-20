@@ -47,8 +47,8 @@ The messages you exchange with Koda.
 ### g) What you share with the community
 Prices and stores you enter, barcodes you link to a product, and products you ask us to add to the catalogue.
 
-### h) Progress photos (when the feature is available)
-Photos of your face that you choose to save.
+### h) Dekod, the skin scan
+When you use Dekod, you take one photo of your face. It is cropped to your face, sent once to be analysed, then deleted: **it is never stored, by us or by our provider**. Only the result is kept in your account (what is visible: redness, shine, blemishes, dryness, tone, with a short tip for each). You give your agreement before your first scan, and you can delete any result at any time from the app. Dekod gives cosmetic observations, never a medical diagnosis.
 
 ### i) How you use the app, and errors
 Which screens you open and which features you use (for example: routine finished, morning check-in done, a message sent to Koda, a product scanned or not found), with the date, your phone type (iPhone or Android), the app version and its language. When a search finds no product, the words searched. When the app runs into an error, a technical report (screen, error message). **Never** what you write in your journal, your mood, or the content of your messages to Koda. This data is linked to your account. You can turn it off at any time in Settings › Privacy › "Help improve Skynkod".
@@ -56,7 +56,7 @@ Which screens you open and which features you use (for example: routine finished
 ### j) Data that stays on your phone
 We don't receive this data:
 - **Approximate location** (rounded to about 10 km): only if you allow it, to work out sunrise and sunset (day or night mode) and for your "skin weather". It is stored on your phone; for the weather, only these rounded coordinates are sent to the Open-Meteo weather service, without your name, email or any identifier.
-- **Camera**: to scan a product's barcode. No image is saved or sent; only the barcode number is used.
+- **Camera**: to scan a product's barcode (no image is saved or sent; only the barcode number is used), and for Dekod (see 3h).
 - **Notifications**: reminders are scheduled on your phone.
 
 ## 4. Why we use it
@@ -80,7 +80,9 @@ When you write to Koda, your message is sent to our AI provider, **Anthropic PBC
 - a summary of your situation: your routine, products opened or added recently, and any 7-day plan in progress;
 - **if you consented to health data**: your journal for the last 7 days and the trends spotted in it.
 
-This information is only used to generate Koda's answer. [To check with the lawyer and in the current Anthropic agreement: under its commercial terms, Anthropic does not use data sent through its API to train its models and keeps it only for a limited time.]
+**Dekod** works the same way: your photo is sent to Anthropic only to read what is visible on your skin, then deleted.
+
+This information is only used to generate Koda's and Dekod's answers. [To check with the lawyer and in the current Anthropic agreement: under its commercial terms, Anthropic does not use data sent through its API to train its models and keeps it only for a limited time.]
 
 ## 6. Who receives your data
 
@@ -89,7 +91,7 @@ We use service providers who process data on our behalf and on our instructions:
 | Provider | Role | Location |
 |---|---|---|
 | Supabase Inc. | Hosting of the database, accounts and files | Servers in **Frankfurt (Germany, European Union)** |
-| Anthropic PBC | Runs Koda | United States |
+| Anthropic PBC | Runs Koda and Dekod | United States |
 | Apple / Google | App distribution; Premium payments (when available) | Under their own terms |
 
 When you scan an unknown product, only the **barcode number** is sent to the open database Open Beauty Facts. No personal data is shared.

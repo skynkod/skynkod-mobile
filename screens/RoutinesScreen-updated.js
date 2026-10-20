@@ -162,11 +162,11 @@ export default function RoutinesScreen({ route, navigation }) {
       ) : null}
 
       {!skinType && !saved ? (
-        <Card tone="soft" style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('Quiz')}>
+        <Card tone="soft" style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('SkinProfile')}>
           <View style={styles.quizRow}>
             <Ionicons name="help-circle-outline" size={22} color={colors.primary} />
             <Text style={[TYPE.caption, { color: colors.text, flex: 1, fontWeight: '600' }]}>
-              {t('Take the skin type quiz to personalize this routine')}
+              {t('Complete your skin profile to personalize this routine')}
             </Text>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
           </View>

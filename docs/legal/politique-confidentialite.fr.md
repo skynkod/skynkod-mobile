@@ -47,8 +47,8 @@ Les messages que vous échangez avec Koda.
 ### g) Ce que vous partagez avec la communauté
 Les prix et magasins que vous indiquez, les codes-barres que vous associez à un produit, et les produits que vous demandez à ajouter au catalogue.
 
-### h) Les photos de progression (quand la fonctionnalité est disponible)
-Les photos de votre visage que vous choisissez d'enregistrer.
+### h) Dekod, le scan de peau
+Quand vous utilisez Dekod, vous prenez une photo de votre visage. Elle est recadrée sur votre visage, envoyée une seule fois pour être analysée, puis supprimée : **elle n'est jamais conservée, ni par nous ni par notre prestataire**. Seul le résultat est gardé dans votre compte (ce qui est visible : rougeurs, brillance, imperfections, sécheresse, teint, avec un court conseil pour chacun). Vous donnez votre accord avant votre premier scan, et vous pouvez supprimer chaque résultat à tout moment depuis l'application. Dekod donne des observations cosmétiques, jamais un diagnostic médical.
 
 ### i) Votre utilisation de l'application, et les erreurs
 Les écrans que vous ouvrez et les fonctionnalités que vous utilisez (par exemple : routine terminée, check-in du matin fait, message envoyé à Koda, produit scanné ou introuvable), avec la date, le type de téléphone (iPhone ou Android), la version de l'application et sa langue. Quand une recherche ne trouve aucun produit, les mots recherchés. Quand l'application rencontre une erreur, un rapport technique (écran, message d'erreur). **Jamais** ce que vous écrivez dans votre journal, votre humeur, ni le contenu de vos messages à Koda. Ces données sont liées à votre compte. Vous pouvez les désactiver à tout moment dans Réglages › Confidentialité › « Aider à améliorer Skynkod ».
@@ -56,7 +56,7 @@ Les écrans que vous ouvrez et les fonctionnalités que vous utilisez (par exemp
 ### j) Les données qui restent sur votre téléphone
 Nous ne recevons pas ces données :
 - **Localisation approximative** (arrondie à environ 10 km) : uniquement si vous l'autorisez, pour calculer l'heure du lever et du coucher du soleil (mode jour ou nuit) et pour la « météo de votre peau ». Elle est enregistrée sur votre téléphone ; pour la météo, seules ces coordonnées arrondies sont envoyées au service météo Open-Meteo, sans votre nom, votre email ni aucun identifiant.
-- **Caméra** : pour scanner le code-barres d'un produit. Aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé.
+- **Caméra** : pour scanner le code-barres d'un produit (aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé), et pour Dekod (voir 3h).
 - **Notifications** : les rappels sont programmés sur votre téléphone.
 
 ## 4. Pourquoi nous les utilisons
@@ -80,7 +80,9 @@ Quand vous écrivez à Koda, votre message est envoyé à notre prestataire d'IA
 - un résumé de votre situation : votre routine, les produits ouverts ou ajoutés récemment et un éventuel plan de 7 jours en cours ;
 - **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours et les tendances repérées dans votre journal.
 
-Ces informations servent uniquement à générer la réponse de Koda. [À vérifier avec l'avocat et dans le contrat Anthropic en vigueur : selon ses conditions commerciales, Anthropic n'utilise pas les données envoyées via son API pour entraîner ses modèles et ne les conserve que pour une durée limitée.]
+**Dekod** fonctionne de la même façon : votre photo est envoyée à Anthropic uniquement pour lire ce qui est visible sur votre peau, puis supprimée.
+
+Ces informations servent uniquement à générer les réponses de Koda et de Dekod. [À vérifier avec l'avocat et dans le contrat Anthropic en vigueur : selon ses conditions commerciales, Anthropic n'utilise pas les données envoyées via son API pour entraîner ses modèles et ne les conserve que pour une durée limitée.]
 
 ## 6. Qui reçoit vos données
 
@@ -89,7 +91,7 @@ Nous faisons appel à des prestataires qui traitent les données pour notre comp
 | Prestataire | Rôle | Lieu |
 |---|---|---|
 | Supabase Inc. | Hébergement de la base de données, des comptes et des fichiers | Serveurs à **Francfort (Allemagne, Union européenne)** |
-| Anthropic PBC | Fonctionnement de Koda | États-Unis |
+| Anthropic PBC | Fonctionnement de Koda et de Dekod | États-Unis |
 | Apple / Google | Distribution de l'application ; paiements Premium (quand ils seront disponibles) | Selon leurs conditions |
 
 Quand vous scannez un produit inconnu, seul le **numéro du code-barres** est envoyé à la base ouverte Open Beauty Facts. Aucune donnée personnelle n'est transmise.

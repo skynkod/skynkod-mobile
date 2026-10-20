@@ -8,7 +8,7 @@ import { P, PremiumShell, PButton, PLoading, Carousel, tap, isIntroHidden, hideI
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
-import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults } from '../utils/dekod'
+import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults, deleteDekodResult } from '../utils/dekod'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { SPACING, TYPE } from '../utils/theme'
@@ -237,7 +237,13 @@ export default function DekodScreen({ navigation }) {
     return (
       <PremiumShell label={LABEL} onBack={toHome}
         overline={new Date(viewing.created_at).toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}
-        title={t('Your Dekod')} subtitle={viewing.result?.summary}>
+        title={t('Your Dekod')} subtitle={viewing.result?.summary}
+        footer={<PButton title={t('Delete this scan')} icon="trash-outline" outline onPress={() => Alert.alert(t('Delete this scan?'), t('This result will be erased for good.'), [
+          { text: t('Cancel'), style: 'cancel' },
+          { text: t('Delete'), style: 'destructive', onPress: async () => {
+            try { await deleteDekodResult(viewing.id); toHome(); loadHistory() } catch (error) { logError('Dekod_delete', error, {}, 'warn'); Alert.alert(t('Couldn’t delete'), t('Please try again.')) }
+          } },
+        ])} />}>
         <Points points={viewing.result?.points} />
         <Disclaimer />
       </PremiumShell>
