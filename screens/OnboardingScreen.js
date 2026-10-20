@@ -14,6 +14,8 @@ import { useColors } from '../components/ui'
 import QuizQuestion from '../components/QuizQuestion'
 import { CHAPTERS, questionsFor, toColumns, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, PHOTOTYPE } from '../utils/skin-quiz'
 import { useT } from '../utils/LanguageContext'
+
+const OFFERS_ENABLED = false
 import { SPACING, TYPE } from '../utils/theme'
 
 const LOGO = require('../assets/images/skynkod-logo.png')
@@ -393,10 +395,11 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
             </Text>
             <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Without it, we skip those questions.')}</Text>
           </Check>
-          <Check value={offers} onChange={setOffers}>
+          {/* Brand offers come back once real offers exist (no empty options in the stores). */}
+          {OFFERS_ENABLED ? <Check value={offers} onChange={setOffers}>
             <Text style={[TYPE.body, { color: colors.text }]}>{t('Get offers and product tests from brands')}</Text>
             <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Optional. Brands never see who you are.')}</Text>
-          </Check>
+          </Check> : null}
           <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 18 }]}>
             {t('Koda, our AI, runs on Anthropic (USA): your messages and a summary of your week are sent to it to answer you.')}
           </Text>

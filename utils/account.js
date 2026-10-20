@@ -27,3 +27,21 @@ export const deleteAccount = async () => {
     return { success: false, error: error.message };
   }
 };
+
+// Right of access: asks the team for a copy of all her data. The backend
+// emails the request to the Skynkod team, who answer by email (by hand at first).
+export const requestMyData = async () => {
+  try {
+    if (!API_URL) return { success: false, error: 'EXPO_PUBLIC_API_URL is not set' };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return { success: false, error: 'Please sign in again first.' };
+    const response = await fetch(`${API_URL.replace(/\/$/, '')}/data-request`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const data = await response.json().catch(() => ({}));
+    return response.ok && data.success ? { success: true } : { success: false, error: data.error || `HTTP ${response.status}` };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};

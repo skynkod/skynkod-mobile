@@ -9,6 +9,9 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { setAnalyticsOff } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { requestMyData } from '../utils/account'
+
+const OFFERS_ENABLED = false
 
 const PRIVACY_URL = 'https://skynkod.com/privacy'
 const TERMS_URL = 'https://skynkod.com/terms'
@@ -27,6 +30,14 @@ export default function PrivacyScreen({ navigation }) {
   }, [user?.id])
 
   if (!profile) return <LoadingView />
+
+  const askData = () => Alert.alert(t('Get a copy of my data'), t('We will email you a copy of all your Skynkod data, within 30 days.'), [
+    { text: t('Cancel'), style: 'cancel' },
+    { text: t('Send the request'), onPress: async () => {
+      const res = await requestMyData()
+      Alert.alert(res.success ? t('Request sent 🌸') : t('Something went wrong'), res.success ? t('You will receive your data by email.') : t('Please try again.'))
+    } },
+  ])
 
   const save = async (changes) => {
     const previous = profile
@@ -94,14 +105,18 @@ export default function PrivacyScreen({ navigation }) {
           subtitle={t('Counts which screens and features you use, and reports errors. Never what you write in your journal or to Koda.')}
           value={!profile.analytics_off}
           onChange={setImprove}
+          last={!OFFERS_ENABLED}
         />
-        <Row
-          title={t('Offers and product tests')}
-          subtitle={t('Offers from brands, without them knowing who you are.')}
-          value={profile.consent_offers}
-          onChange={v => save({ consent_offers: v })}
-          last
-        />
+        {/* Brand offers come back once real offers exist. */}
+        {OFFERS_ENABLED ? (
+          <Row
+            title={t('Offers and product tests')}
+            subtitle={t('Offers from brands, without them knowing who you are.')}
+            value={profile.consent_offers}
+            onChange={v => save({ consent_offers: v })}
+            last
+          />
+        ) : null}
       </Card>
 
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
@@ -115,6 +130,7 @@ export default function PrivacyScreen({ navigation }) {
         {[
           { icon: 'document-text-outline', title: t('Privacy policy'), onPress: () => WebBrowser.openBrowserAsync(PRIVACY_URL) },
           { icon: 'reader-outline', title: t('Terms of use'), onPress: () => WebBrowser.openBrowserAsync(TERMS_URL) },
+          { icon: 'download-outline', title: t('Get a copy of my data'), onPress: askData },
           { icon: 'trash-outline', title: t('Delete my account and data'), onPress: () => navigation.navigate('Settings') },
         ].map((item, idx, arr) => (
           <Pressable
