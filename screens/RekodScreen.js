@@ -12,7 +12,7 @@ import { track } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import {
   GOALS, NIGHTS, goalOf, weekOf, weekPattern, tonightNight, checkInDue,
-  buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod,
+  buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
 } from '../utils/rekod'
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
@@ -107,7 +107,7 @@ export default function RekodScreen({ navigation }) {
   const buildPreview = async (final) => {
     setBusy(true)
     try {
-      const draft = { ...final, level: { none: 0, some: 1, used: 2 }[final.experience] ?? 0, startedAt: new Date().toISOString(), checkins: [] }
+      const draft = { ...final, sensitive: !!final.sensitive || isReactive(profile), reactive: isReactive(profile), level: { none: 0, some: 1, used: 2 }[final.experience] ?? 0, startedAt: new Date().toISOString(), checkins: [] }
       setPreview(await buildRekodRoutine(user.id, draft, profile))
       setStep('preview')
     } catch (error) {

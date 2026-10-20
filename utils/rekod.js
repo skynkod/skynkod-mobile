@@ -8,6 +8,7 @@ import { supabase } from './supabase'
 import { findIngredients, productMatch, isUnsuitable } from './ingredients-guide'
 import { productsByCategory, getMyProducts } from './catalog'
 import { saveRoutine } from './routines-service'
+import { getUserProfile } from './supabase'
 import { archiveCurrentRoutines } from './seasons'
 
 // ---------- Goals ----------
@@ -44,6 +45,8 @@ const PRIORITY = {
   exfoliation: { ex: 3, ret: 2, rep: 1, reset: 1 },
 }
 const START = { none: 0, some: 1, used: 2 }
+const REACTIVE_CONDITIONS = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Seborrheic dermatitis']
+export const isReactive = profile => (profile?.skin_conditions || []).some(c => REACTIVE_CONDITIONS.includes(c))
 const TARGET = { none: 2, some: 2, used: 3 }
 
 // The counts for a plan's current level, adapted to the goal and the skin.
@@ -53,6 +56,10 @@ export const nightCounts = (plan) => {
   if (plan.sensitive) {
     // Never more than 2 exfoliation nights; the extra goes to repair.
     if (c.ex > 2) { c.rep += c.ex - 2; c.ex = 2 }
+  }
+  if (plan.reactive) {
+    // Rosacea, eczema, perioral or seborrheic dermatitis: no exfoliating acids.
+    c.rep += c.ex; c.ex = 0
   }
   if (plan.goal === 'calm') {
     // No acids; the "retinoid" night becomes azelaic acid from week 3.
@@ -132,36 +139,53 @@ export const applyCheckIn = (plan, answer, now = new Date()) => {
 
 // ---------- Choosing products ----------
 
-const has = (product, ids) => {
-  const found = new Set(findIngredients(product).map(f => f.entry.id))
-  return ids.some(id => found.has(id))
-}
+// `ids` present in the product; for an active, high enough in the list to matter
+// (the tail of an INCI list is under ~1%).
+const has = (product, ids, maxPos = 99) => findIngredients(product).some(f => ids.includes(f.entry.id) && f.pos <= maxPos)
+const STRONG = ['retinol', 'glycolic', 'salicylic', 'lactic', 'mandelic', 'benzoyl', 'azelaic']
 const harsh = p => has(p, ['sls', 'scrub', 'alcohol', 'fragrance', 'essentialoils']) || /scrub|exfoli|peel/i.test(p?.name || '')
 
 // What each step looks for, per goal. `want` = guide ingredient ids.
 const morningSerum = { clear: ['niacinamide'], antiaging: ['vitaminc', 'peptides'], spots: ['vitaminc', 'niacinamide', 'arbutin'], glow: ['vitaminc'], pores: ['niacinamide'], calm: ['niacinamide', 'centella', 'panthenol'], hydration: ['hyaluronic', 'polyglutamic'] }
 const exfoliantFor = (goal, sensitive) => (sensitive ? ['mandelic', 'pha', 'lactic'] : goal === 'clear' || goal === 'pores' ? ['salicylic'] : ['glycolic', 'lactic'])
-const repairFor = { antiaging: ['peptides'], spots: ['azelaic', 'txa'], calm: ['ceramides', 'panthenol', 'centella'], hydration: ['hyaluronic', 'ceramides'] }
+const repairFor = { antiaging: ['peptides'], spots: ['txa', 'arbutin', 'niacinamide'], calm: ['ceramides', 'panthenol', 'centella'], hydration: ['hyaluronic', 'ceramides'] }
 
-const pickFrom = (candidates, profile, { want = [], avoidHarsh = false } = {}) => {
-  const ok = candidates.filter(p => p && !isUnsuitable(productMatch(p, profile || {})) && (!avoidHarsh || !harsh(p)))
-  const wanted = want.length ? ok.filter(p => has(p, want)) : ok
-  const pool = wanted.length ? wanted : (want.length ? [] : ok)
-  // Products with a full ingredient list first.
-  return pool.sort((a, b) => (b.ingredients_text ? 1 : 0) - (a.ingredients_text ? 1 : 0))[0] || null
+// A paid programme only proposes products that are 100% safe for this person:
+// a full ingredient list, and nothing the engine flags for her skin (fungal
+// acne triggers, rosacea triggers, pore-cloggers for acne, allergies,
+// pregnancy…). If nothing qualifies, the step stays empty rather than unsafe.
+export const isSafeFor = (product, profile) => {
+  if (!product?.ingredients_text) return false
+  const m = productMatch(product, profile || {})
+  return !m.partial && !isUnsuitable(m) && !m.avoid.length && !(m.triggers || []).length && !(m.care || []).length
+}
+
+const pickFrom = (candidates, profile, { want = [], avoidHarsh = false, noStrong = false, exclude = [], prefer = null } = {}) => {
+  const ok = candidates.filter(p => p && !exclude.includes(p.id) && isSafeFor(p, profile)
+    && (!avoidHarsh || !harsh(p)) && (!noStrong || !has(p, STRONG, 12)))
+  // The active must be one of the first ingredients, not a trace.
+  const pool = want.length ? ok.filter(p => has(p, want, 8)) : ok
+  const rank = p => (productMatch(p, profile || {}).score || 0) + (prefer && prefer(p) ? 100 : 0)
+  return pool.map(p => ({ p, score: rank(p) })).sort((a, b) => b.score - a.score)[0]?.p || null
 }
 
 // The user's own products first, then the catalogue.
 const chooser = async (userId, profile) => {
   const mine = (await getMyProducts(userId).catch(() => [])).filter(r => r.status !== 'to_buy' && r.product).map(r => r.product)
   const cache = {}
-  return async (categories, opts) => {
-    const own = pickFrom(mine.filter(p => categories.includes(p.category)), profile, opts)
-    if (own) return { product: own, owned: true }
-    const key = categories.join('|')
-    cache[key] = cache[key] || await productsByCategory(categories, 200).catch(() => [])
-    const found = pickFrom(cache[key], profile, opts)
-    return found ? { product: found, owned: false } : null
+  const used = []
+  return async (categories, opts = {}) => {
+    // Each treatment step gets its own product (the same serum isn't both the treatment and the repair).
+    const o = { ...opts, exclude: opts.unique ? used : [] }
+    const own = pickFrom(mine.filter(p => categories.includes(p.category)), profile, o)
+    let found = own
+    if (!found) {
+      const key = categories.join('|')
+      cache[key] = cache[key] || await productsByCategory(categories, 200).catch(() => [])
+      found = pickFrom(cache[key], profile, o)
+    }
+    if (found && opts.unique) used.push(found.id)
+    return found ? { product: found, owned: found === own } : null
   }
 }
 
@@ -192,7 +216,8 @@ const stepFrom = (key, action, choice, extra = {}, want = []) => {
     owned: !!choice?.owned,
     days: null,
     acks: null,
-    why: main ? `${main.name}: ${main.what}` : ROLE_WHY[key] || (keys[0] ? `${keys[0].name}: ${keys[0].what}` : null),
+    why: !choice ? 'No product in our catalogue is 100% safe for your skin for this step yet. We’re adding more every week.'
+      : main ? `${main.name}: ${main.what}` : ROLE_WHY[key] || (keys[0] ? `${keys[0].name}: ${keys[0].what}` : null),
     keys,
     ...extra,
   }
@@ -201,15 +226,27 @@ const stepFrom = (key, action, choice, extra = {}, want = []) => {
 // Builds the Rekod routine for a plan: { morning: steps, evening: steps }.
 // Evening steps carry `days`, so the Home routine shows the right products
 // on the right nights.
-export const buildRekodRoutine = async (userId, plan, profile) => {
+// The skin answers always come fresh from the database: a safe routine must
+// never be built on a profile that hasn't loaded yet.
+const loadProfile = async (userId) => {
+  const p = await getUserProfile(userId)
+  return p ? {
+    skin_type: p.skin_type, skin_concerns: p.skin_concerns || [], acne_types: p.acne_types || [],
+    skin_conditions: p.skin_conditions || [], avoid_ingredients: p.avoid_ingredients || [], pregnancy: p.pregnancy || null,
+  } : {}
+}
+
+export const buildRekodRoutine = async (userId, plan, givenProfile) => {
+  const profile = await loadProfile(userId).catch(() => givenProfile || {})
   const pick = await chooser(userId, profile)
   const pregnant = ['pregnant', 'breastfeeding'].includes(profile?.pregnancy)
-  const gentle = { avoidHarsh: true }
+  const gentle = { avoidHarsh: true, noStrong: true }
+  const spf50 = p => /50/.test(p.name || '')
 
   const cleanser = await pick(['cleanser'], gentle)
-  const moisturizer = await pick(['moisturizer'], plan.goal === 'calm' || plan.goal === 'hydration' ? { want: ['ceramides'], avoidHarsh: true } : gentle)
-  const sunscreen = await pick(['sunscreen'], plan.sensitive ? { want: ['zincoxide', 'titanium'], avoidHarsh: true } : gentle)
-  const amSerum = await pick(['serum', 'toner'], { want: morningSerum[plan.goal], avoidHarsh: true })
+  const moisturizer = await pick(['moisturizer'], plan.goal === 'calm' || plan.goal === 'hydration' ? { ...gentle, want: ['ceramides'] } : gentle)
+  const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50 } : { ...gentle, prefer: spf50 })
+  const amSerum = await pick(['serum', 'toner'], { ...gentle, want: morningSerum[plan.goal], unique: true })
 
   const morning = [
     stepFrom('cleanser', 'Cleanse', cleanser),
@@ -221,15 +258,20 @@ export const buildRekodRoutine = async (userId, plan, profile) => {
   const week = weekPattern(plan)
   const daysFor = night => week.map((n, i) => (n === night ? JS_DAY[i] : null)).filter(d => d !== null)
 
-  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exfoliantFor(plan.goal, plan.sensitive) })
-  const retinoidWant = plan.goal === 'calm' ? ['azelaic'] : pregnant ? ['bakuchiol', 'peptides'] : ['retinol']
-  const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant })
-  const repair = await pick(['serum', 'moisturizer'], { want: repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides'], avoidHarsh: true })
+  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exfoliantFor(plan.goal, plan.sensitive), unique: true, prefer: p => p.category === 'exfoliant' })
+  // Reactive conditions start with azelaic acid; a retinoid only after 4 calm weeks.
+  const retinoidWant = plan.goal === 'calm' || (plan.reactive && weekOf(plan) < 5) ? ['azelaic'] : pregnant ? ['bakuchiol', 'peptides'] : ['retinol']
+  // Start low: a gentle strength for beginners and reactive skin (rules, section 3).
+  const gentleStrength = p => /0[.,]0?[12]\s?%|0[.,]2|starter|0[.,]1|2\s?% emulsion|emulsion/i.test(p.name || '')
+  const midStrength = p => /0[.,][2-5]|emulsion|2\s?%/i.test(p.name || '')
+  const strength = plan.experience === 'used' && !plan.sensitive ? null : plan.experience === 'some' && !plan.sensitive ? midStrength : gentleStrength
+  const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
+  const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides'], unique: true })
 
   const evening = [
     stepFrom('cleanser', 'Cleanse', cleanser),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation' }, exfoliantFor(plan.goal, plan.sensitive)),
-    daysFor('retinoid').length && retinoid && stepFrom('treatment', plan.goal === 'calm' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid' }, retinoidWant),
+    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid' }, retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair' }, repairFor[plan.goal] || ['ceramides', 'panthenol', 'centella', 'peptides']),
     stepFrom('moisturizer', 'Moisturize', moisturizer),
   ].filter(Boolean)
@@ -251,10 +293,12 @@ export const saveRekodPlan = async (userId, plan) => {
 }
 
 // Joins Rekod: keeps the current routine in the archive, saves the new one.
-export const startRekod = async (userId, answers, profile) => {
+export const startRekod = async (userId, answers, givenProfile) => {
+  const profile = await loadProfile(userId).catch(() => givenProfile || {})
   const plan = {
     goal: answers.goal,
-    sensitive: !!answers.sensitive,
+    sensitive: !!answers.sensitive || isReactive(profile),
+    reactive: isReactive(profile),
     experience: answers.experience,
     priority: answers.priority || null,
     level: START[answers.experience] ?? 0,
