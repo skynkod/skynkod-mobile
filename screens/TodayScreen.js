@@ -199,7 +199,7 @@ export default function TodayScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.md, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
       scrollEventThrottle={32}
       onScroll={e => { const down = e.nativeEvent.contentOffset.y > 56; if (down !== compact) setCompact(down) }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
@@ -322,9 +322,9 @@ const styles = StyleSheet.create({
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 36, marginTop: SPACING.lg },
-  tipLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38, marginTop: SPACING.xxl },
+  tipLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
+  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxxl, marginBottom: SPACING.md },
   bell: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   programmeIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
   today: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, borderWidth: 1, borderRadius: 24, padding: SPACING.lg, marginTop: SPACING.lg },
