@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
   sosChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   sosAll: { paddingHorizontal: 4, paddingVertical: 7 },
   // A touch closer to the greeting, a touch more space before the cards.
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: -SPACING.lg, marginBottom: SPACING.sm },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, marginBottom: SPACING.sm },
   doneLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 999, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, marginTop: SPACING.xl },
   doneIcon: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 52, paddingHorizontal: SPACING.lg },
