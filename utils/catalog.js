@@ -29,6 +29,8 @@ export const searchProducts = async (query) => {
 // Products containing one of the guide ingredient's INCI names.
 export const productsWithIngredient = async (entry, limit = 20) => {
   const filters = entry.match.flatMap(m => [`ingredients_text.ilike.%${safe(m)}%`, `key_ingredients.cs.{"${safe(m)}"}`])
+  // Group entries (fungal-acne triggers…) have no single name to look for.
+  if (!filters.length) return []
   const { data, error } = await visible(supabase.from('products').select(FIELDS).or(filters.join(','))).limit(limit)
   if (error) throw error
   return data || []
