@@ -222,11 +222,11 @@ export default function TodayScreen({ navigation }) {
         </Pressable>
       </View>
       {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
-      <View style={styles.helloRow}>
-        <Text style={[styles.hello, { color: colors.text }]}>{greeting}{firstName ? ',' : ''}</Text>
+      {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: SPACING.xxl }]}>{greeting},</Text> : null}
+      <View style={[styles.helloRow, firstName && { marginTop: 0 }]}>
+        <Text style={[styles.hello, { color: colors.text }]}>{firstName || greeting}</Text>
         <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
       </View>
-      {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: 0 }]}>{firstName}</Text> : null}
       <View style={styles.tipLine}>
         <Ionicons name={tip.icon} size={15} color={colors.primary} />
         <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip.text)}</Text>
