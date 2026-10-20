@@ -584,14 +584,16 @@ export default function HomeScreen({ navigation }) {
                   <View key={idx} style={[styles.dot, { backgroundColor: done[idx] ? colors.accent : idx === currentIdx ? colors.primary : colors.border }]} />
                 ))}
               </View>
-              <View style={styles.stepRow}>
+              {/* Tapping the step opens the whole routine (the programme for members). */}
+              <Pressable onPress={() => (rekod ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period }))} style={({ pressed }) => [styles.stepRow, { opacity: pressed ? 0.7 : 1 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[TYPE.overline, { color: colors.muted }]}>
                     {t('Step {n}', { n: currentIdx + 1 })} · {t(current.action)}
                   </Text>
                   <Text style={[styles.product, { color: colors.text }]} numberOfLines={2}>{current.product}</Text>
                 </View>
-              </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+              </Pressable>
               <Pressable onPress={markDone} style={({ pressed }) => [styles.primary, { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 }]}>
                 <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
                 <Text style={[styles.primaryText, { color: colors.onPrimary }]}>
