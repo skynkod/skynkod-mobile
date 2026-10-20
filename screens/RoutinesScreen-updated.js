@@ -186,10 +186,16 @@ export default function RoutinesScreen({ route, navigation }) {
                   {step.time ? <Badge label={t(step.time)} /> : null}
                 </View>
                 {step.product ? (
-                  <View style={styles.productRow}>
+                  <Pressable
+                    disabled={!step.product_id}
+                    onPress={() => navigation.navigate('Product', { id: step.product_id })}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.productRow, { opacity: pressed ? 0.7 : 1 }]}
+                  >
                     {photoOf(step) ? <Image source={{ uri: photoOf(step) }} style={styles.productPhoto} resizeMode="contain" /> : null}
-                    <Text style={[TYPE.body, { color: colors.textSecondary, flex: 1 }]}>{t(step.product)}</Text>
-                  </View>
+                    <Text style={[TYPE.body, { color: step.product_id ? colors.primary : colors.textSecondary, flex: 1, fontWeight: step.product_id ? '600' : '400' }]}>{t(step.product)}</Text>
+                    {step.product_id ? <Ionicons name="chevron-forward" size={16} color={colors.muted} /> : null}
+                  </Pressable>
                 ) : null}
                 {productsById[step.product_id] ? <ProductVerdict product={productsById[step.product_id]} profile={profile} /> : null}
                 {step.tip ? (
