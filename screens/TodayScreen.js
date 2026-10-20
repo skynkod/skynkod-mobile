@@ -144,14 +144,12 @@ export default function TodayScreen({ navigation }) {
   // The routine due now: morning from 5 am to 3 pm, then the evening one.
   const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
   const [compact, setCompact] = useState(false)
-  // As she scrolls, the big greeting fades and shrinks while the small bar
-  // fades in at the same spot, like Apple's large titles: never both at once.
+  // As soon as she scrolls, the whole top (date, greeting, tip) fades away
+  // and the small bar takes its place: nothing ever slides over the date.
   const scrollY = useRef(new Animated.Value(0)).current
-  const [helloBottom, setHelloBottom] = useState(200)
-  const swapAt = Math.max(41, helloBottom - insets.top - 56)
-  const bigFade = scrollY.interpolate({ inputRange: [0, swapAt - 30, swapAt], outputRange: [1, 0.6, 0], extrapolate: 'clamp' })
-  const bigScale = scrollY.interpolate({ inputRange: [-80, 0, swapAt], outputRange: [1.04, 1, 0.92], extrapolate: 'clamp' })
-  const smallFade = scrollY.interpolate({ inputRange: [swapAt - 20, swapAt + 10], outputRange: [0, 1], extrapolate: 'clamp' })
+  const swapAt = 24
+  const bigFade = scrollY.interpolate({ inputRange: [0, swapAt], outputRange: [1, 0], extrapolate: 'clamp' })
+  const smallFade = scrollY.interpolate({ inputRange: [0, swapAt], outputRange: [0, 1], extrapolate: 'clamp' })
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
   const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
   // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
@@ -225,9 +223,10 @@ export default function TodayScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <Animated.ScrollView style={{ flex: 1 }} alwaysBounceVertical={false} contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
       scrollEventThrottle={32}
-      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: e => { const down = e.nativeEvent.contentOffset.y > swapAt - 10; if (down !== compact) setCompact(down) } })}
+      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: e => { const down = e.nativeEvent.contentOffset.y > swapAt / 2; if (down !== compact) setCompact(down) } })}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
       {/* 1 · Header: date and weather, greeting, today's skin tip */}
+      <Animated.View style={{ opacity: bigFade }}>
       <View style={styles.top}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
           <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>
@@ -246,18 +245,18 @@ export default function TodayScreen({ navigation }) {
         </Pressable>
       </View>
       {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
-      <Animated.View style={{ opacity: bigFade, transform: [{ scale: bigScale }], transformOrigin: 'left' }}
-        onLayout={e => setHelloBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
+      <View>
         {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: SPACING.xxl }]}>{greeting},</Text> : null}
         <View style={[styles.helloRow, firstName && { marginTop: 0 }]}>
           <Text style={[styles.hello, { color: colors.text }]}>{firstName || greeting}</Text>
           <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
         </View>
-      </Animated.View>
+      </View>
       <View style={styles.tipLine}>
         <Ionicons name={tip.icon} size={14} color={colors.muted} />
         <Text style={{ color: colors.muted, flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '300', fontStyle: 'italic' }}>{t(tip.text)}</Text>
       </View>
+      </Animated.View>
 
       {/* 2 · Check any product: the heart of the app */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
