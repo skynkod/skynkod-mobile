@@ -4,7 +4,7 @@ import Svg, { Defs, RadialGradient, Stop, Circle, Path, G } from 'react-native-s
 import * as Haptics from 'expo-haptics'
 import { onJourneyNews } from '../utils/journey'
 import { useLanguage } from '../utils/LanguageContext'
-import { BadgeImage, TierPill } from './Badge'
+import { BadgeImage, LevelEmblem, TierPill } from './Badge'
 
 // "New badge!": a dark, glowing screen the moment a badge is earned (one
 // after another if several), and a short note when a level is reached.
@@ -95,12 +95,19 @@ export default function JourneyToast({ onOpen }) {
   if (level) {
     return (
       <Modal visible transparent animationType="fade" onRequestClose={() => setLevel(null)}>
-        <Pressable style={[styles.back, { backgroundColor: 'rgba(30,20,29,0.9)' }]} onPress={() => setLevel(null)}>
-          <Text style={styles.kicker}>{t('NEW LEVEL')}</Text>
-          <Text style={styles.title}>{t('Level {n} · {name}', { n: level.level, name: t(level.name) })}</Text>
-          <Text style={styles.text}>{t('Your skin journey goes on.')}</Text>
-          <Pressable onPress={() => setLevel(null)} style={styles.button}><Text style={styles.buttonText}>{t('Continue')}</Text></Pressable>
-        </Pressable>
+        <View style={styles.back}>
+          <Text style={styles.kicker}>{t(level.tier.name).toUpperCase()}</Text>
+          <View style={{ marginTop: 18 }}><LevelEmblem level={level.level} size={210} /></View>
+          <Text style={styles.title}>{t('New level!')}</Text>
+          <Text style={styles.name}>{t('Level {n}', { n: level.level })} · {t(level.name)}</Text>
+          <Text style={styles.text}>{t(level.description)}</Text>
+          <Pressable onPress={() => setLevel(null)} style={styles.button} accessibilityRole="button">
+            <Text style={styles.buttonText}>{t('Continue')}</Text>
+          </Pressable>
+          <Pressable onPress={seeAll} hitSlop={10} accessibilityRole="button">
+            <Text style={styles.link}>{t('See my journey')}</Text>
+          </Pressable>
+        </View>
       </Modal>
     )
   }

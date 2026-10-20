@@ -19,13 +19,32 @@ export const XP = {
 // ticked routine or a journal entry.
 export const ACTIVE_DAYS = 2
 
-export const LEVELS = [
-  { level: 1, name: 'Curious', xp: 0 },
-  { level: 2, name: 'Explorer', xp: 100 },
-  { level: 3, name: 'Enthusiast', xp: 300 },
-  { level: 4, name: 'Skin Scholar', xp: 700 },
-  { level: 5, name: 'Skynkod Insider', xp: 1500 },
+// 15 levels in 5 tiers, spread over about two years of regular use.
+export const LEVEL_TIERS = [
+  { id: 'curious', name: 'The Curious', levels: [1, 3], description: 'Discover Skynkod and understand your skin.' },
+  { id: 'explorer', name: 'The Explorer', levels: [4, 6], description: 'Explore ingredients, products and features.' },
+  { id: 'enthusiast', name: 'The Enthusiast', levels: [7, 9], description: 'Build your habits and your consistency.' },
+  { id: 'scholar', name: 'The Skin Scholar', levels: [10, 12], description: 'Deepen your knowledge and refine your routine.' },
+  { id: 'icon', name: 'The Skynkod Icon', levels: [13, 15], description: 'A rich, inspiring journey and complete mastery.' },
 ]
+export const LEVELS = [
+  { level: 1, name: 'The Newcomer', xp: 0, description: 'You take your first steps on Skynkod.' },
+  { level: 2, name: 'The Curious', xp: 60, description: 'You discover your skin.' },
+  { level: 3, name: 'The Starter', xp: 150, description: 'You lay the foundations.' },
+  { level: 4, name: 'The Explorer', xp: 300, description: 'You explore ingredients and products.' },
+  { level: 5, name: 'The Learner', xp: 500, description: 'You learn and ask questions.' },
+  { level: 6, name: 'The Builder', xp: 750, description: 'You build your routine.' },
+  { level: 7, name: 'The Committed', xp: 1050, description: 'You’re becoming consistent.' },
+  { level: 8, name: 'The Balanced', xp: 1400, description: 'You find your rhythm.' },
+  { level: 9, name: 'The Consistent', xp: 1800, description: 'Skynkod is part of your everyday life.' },
+  { level: 10, name: 'The Knowledgeable', xp: 2300, description: 'You deepen your skincare knowledge.' },
+  { level: 11, name: 'The Strategist', xp: 2900, description: 'You make wiser choices.' },
+  { level: 12, name: 'The Expert', xp: 3600, description: 'You master your routine and your products.' },
+  { level: 13, name: 'The Advisor', xp: 4400, description: 'You share your knowledge and help others.' },
+  { level: 14, name: 'The Ambassador', xp: 5400, description: 'You inspire the community.' },
+  { level: 15, name: 'The Skynkod Icon', xp: 6600, description: 'You’re a reference on Skynkod.' },
+]
+export const levelTierOf = level => LEVEL_TIERS.find(t => level >= t.levels[0] && level <= t.levels[1]) || LEVEL_TIERS[0]
 
 // Rarity (the badge art and card follow it), plus the special families.
 export const TIERS = {
@@ -191,7 +210,7 @@ export const levelFor = (xp) => {
   while (i + 1 < LEVELS.length && xp >= LEVELS[i + 1].xp) i += 1
   const current = LEVELS[i]
   const next = LEVELS[i + 1] || null
-  return { ...current, next, progress: next ? (xp - current.xp) / (next.xp - current.xp) : 1, toNext: next ? next.xp - xp : 0 }
+  return { ...current, tier: levelTierOf(current.level), next, progress: next ? (xp - current.xp) / (next.xp - current.xp) : 1, toNext: next ? next.xp - xp : 0 }
 }
 
 // ---------- Streaks ----------

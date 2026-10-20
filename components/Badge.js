@@ -130,6 +130,36 @@ export function BadgeImage({ badge, size = 72, locked = false }) {
   )
 }
 
+// Level emblems, cut from Lita's levels mockup (assets/levels).
+export const LEVEL_IMAGES = {
+  1: require('../assets/levels/level-01.webp'),
+  2: require('../assets/levels/level-02.webp'),
+  3: require('../assets/levels/level-03.webp'),
+  4: require('../assets/levels/level-04.webp'),
+  5: require('../assets/levels/level-05.webp'),
+  6: require('../assets/levels/level-06.webp'),
+  7: require('../assets/levels/level-07.webp'),
+  8: require('../assets/levels/level-08.webp'),
+  9: require('../assets/levels/level-09.webp'),
+  10: require('../assets/levels/level-10.webp'),
+  11: require('../assets/levels/level-11.webp'),
+  12: require('../assets/levels/level-12.webp'),
+  13: require('../assets/levels/level-13.webp'),
+  14: require('../assets/levels/level-14.webp'),
+  15: require('../assets/levels/level-15.webp'),
+}
+
+// A level emblem; a level not reached yet stays a silhouette.
+export function LevelEmblem({ level, size = 64, locked = false }) {
+  const src = LEVEL_IMAGES[level]
+  return (
+    <View style={{ width: size * 0.7, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Image source={src} style={{ width: size * 0.7, height: size, ...(locked ? { tintColor: SILHOUETTE, opacity: 0.5 } : null) }} resizeMode="contain" />
+      {locked ? <Text style={[styles.mark, { fontSize: size * 0.22 }]}>?</Text> : null}
+    </View>
+  )
+}
+
 export function TierPill({ tier, style }) {
   return (
     <View style={[styles.pill, { backgroundColor: TIER_STYLE[tier].pill }, style]}>

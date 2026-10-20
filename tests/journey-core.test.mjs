@@ -19,10 +19,12 @@ const run = (raw, events = {}, badgesEarned = {}, now = new Date(2026, 9, 21, 12
 const apply = (events, fresh) => { const out = { ...events }; for (const e of fresh) out[e.key] = { xp: e.xp, at: e.at }; return out }
 
 test('levels: thresholds and progress', () => {
-  assert.equal(levelFor(0).name, 'Curious')
-  assert.equal(levelFor(99).level, 1)
-  assert.equal(levelFor(100).name, 'Explorer')
+  assert.equal(levelFor(0).name, 'The Newcomer')
+  assert.equal(levelFor(59).level, 1)
+  assert.equal(levelFor(60).name, 'The Curious')
   assert.equal(levelFor(299).toNext, 1)
+  assert.equal(levelFor(1050).tier.name, 'The Enthusiast')
+  assert.equal(LEVELS.length, 15)
   assert.equal(levelFor(LEVELS.at(-1).xp + 500).level, LEVELS.length)
   assert.equal(levelFor(LEVELS.at(-1).xp + 500).progress, 1)
 })

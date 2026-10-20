@@ -4,12 +4,12 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Screen, Card, Button, ProgressBar, Banner, Chip, SegmentedControl, useColors } from '../components/ui'
-import { BadgeImage, TierPill, TIER_STYLE } from '../components/Badge'
+import { BadgeImage, LevelEmblem, TierPill, TIER_STYLE } from '../components/Badge'
 import { BoxArt, TeaArt, StarArt } from '../components/KodaBox'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { syncJourney, openBox, makeBoxReadyForTest } from '../utils/journey'
-import { CATEGORIES, TIERS, TIER_ORDER } from '../utils/journey-core'
+import { CATEGORIES, TIERS, TIER_ORDER, LEVELS, LEVEL_TIERS } from '../utils/journey-core'
 import { shareSkynkod } from '../utils/share'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -30,6 +30,7 @@ export default function MySkinJourneyScreen() {
   const [tab, setTab] = useState('badges')
   const [filter, setFilter] = useState('all')
   const [detail, setDetail] = useState(null)
+  const [levelsOpen, setLevelsOpen] = useState(false)
   const [box, setBox] = useState(null) // { contents, open } while opening
   const tester = TESTERS.includes(user?.email)
 
@@ -51,8 +52,6 @@ export default function MySkinJourneyScreen() {
   const fmt = ts => new Date(ts).toLocaleDateString(language, { day: 'numeric', month: 'long', year: 'numeric' })
   const fmtDay = key => { const [y, m, d] = key.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(language, { day: 'numeric', month: 'short' }) }
   const col = (Math.min(width, 600) - SPACING.lg * 2) / 4
-  // The level card shows her rarest badge (or the first one to aim for).
-  const showcase = [...data.badges].filter(b => b.earned).sort((a, b) => TIER_ORDER.indexOf(b.tier) - TIER_ORDER.indexOf(a.tier))[0] || data.badges[0]
 
   const startBox = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
@@ -81,12 +80,12 @@ export default function MySkinJourneyScreen() {
   return (
     <Screen back title={t('My Skin Journey')} subtitle={t('Your progress, your way.')}>
       {/* Level and XP */}
-      <Card style={{ marginTop: SPACING.md }}>
+      <Card style={{ marginTop: SPACING.md }} onPress={() => setLevelsOpen(true)}>
         <View style={styles.levelRow}>
-          <BadgeImage badge={showcase} size={64} locked={!showcase.earned} />
+          <LevelEmblem level={level.level} size={78} />
           <View style={{ flex: 1 }}>
             <View style={styles.rowBetween}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 17 }]}>{t('Level {n}', { n: level.level })}</Text>
+              <Text style={[TYPE.overline, { color: colors.primary }]}>{t(level.tier.name).toUpperCase()}</Text>
               {data.stars ? (
                 <View style={styles.stars}>
                   <Ionicons name="star" size={13} color="#C99A45" />
@@ -94,8 +93,9 @@ export default function MySkinJourneyScreen() {
                 </View>
               ) : null}
             </View>
-            <View style={styles.rowBetween}>
-              <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t(level.name)}</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 17, marginTop: 2 }]}>{t('Level {n}', { n: level.level })} · {t(level.name)}</Text>
+            <View style={[styles.rowBetween, { marginTop: 4 }]}>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>{t(level.description)}</Text>
               <Text style={[TYPE.caption, { color: colors.muted }]}>{level.next ? `${data.xp} / ${level.next.xp} XP` : `${data.xp} XP`}</Text>
             </View>
             <ProgressBar value={level.progress} style={{ marginTop: 6 }} />
@@ -235,6 +235,39 @@ export default function MySkinJourneyScreen() {
         </>
       ) : null}
 
+      {/* All 15 levels, by tier; the ones not reached yet stay silhouettes */}
+      <Modal visible={levelsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setLevelsOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg }}>
+          <View style={[styles.sheetHead, { borderBottomColor: colors.border }]}>
+            <Text style={[TYPE.heading, { color: colors.text }]}>{t('Your levels')}</Text>
+            <Pressable onPress={() => setLevelsOpen(false)} hitSlop={10} accessibilityLabel={t('Close')}><Ionicons name="close" size={24} color={colors.text} /></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: SPACING.xxxl }}>
+            {LEVEL_TIERS.map(tier => (
+              <View key={tier.id} style={{ marginBottom: SPACING.xl }}>
+                <Text style={[styles.section, { color: colors.text }]}>{t(tier.name).toUpperCase()}</Text>
+                <Text style={[TYPE.caption, { color: colors.muted, fontStyle: 'italic', marginBottom: SPACING.sm }]}>{t('Levels {a}–{b}', { a: tier.levels[0], b: tier.levels[1] })} · {t(tier.description)}</Text>
+                {LEVELS.filter(l => l.level >= tier.levels[0] && l.level <= tier.levels[1]).map(l => {
+                  const reached = level.level >= l.level
+                  const current = level.level === l.level
+                  return (
+                    <View key={l.level} style={[styles.levelItem, { backgroundColor: current ? colors.primarySoft : colors.card, borderColor: current ? colors.primary : colors.border }]}>
+                      <LevelEmblem level={l.level} size={64} locked={!reached} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('LEVEL {n}', { n: String(l.level).padStart(2, '0') })}{current ? ` · ${t('YOU ARE HERE')}` : ''}</Text>
+                        <Text style={[TYPE.bodyStrong, { color: reached ? colors.text : colors.textSecondary, marginTop: 2 }]}>{t(l.name)}</Text>
+                        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(l.description)}</Text>
+                      </View>
+                      <Text style={[TYPE.caption, { color: colors.muted }]}>{reached ? <Ionicons name="checkmark-circle" size={18} color={colors.success} /> : `${l.xp} XP`}</Text>
+                    </View>
+                  )
+                })}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
+
       {/* Badge detail card */}
       <Modal visible={!!detail} transparent animationType="fade" onRequestClose={() => setDetail(null)}>
         <Pressable style={[styles.back, { backgroundColor: 'rgba(30,20,30,0.55)' }]} onPress={() => setDetail(null)}>
@@ -318,6 +351,8 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: '700', letterSpacing: 1.6 },
   detailDate: { fontSize: 12, marginTop: SPACING.md, textAlign: 'center' },
   detailKoda: { fontSize: 13, fontStyle: 'italic', marginTop: SPACING.sm, textAlign: 'center', lineHeight: 19 },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: SPACING.lg, borderBottomWidth: StyleSheet.hairlineWidth },
+  levelItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, marginBottom: SPACING.sm },
   stars: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(201,154,69,0.14)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
   kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, fontWeight: '600' },
   boxTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '600', marginTop: SPACING.lg, textAlign: 'center' },
