@@ -20,6 +20,7 @@ import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
 import { getActivePlan, adjustForPlan } from '../utils/emergency-state'
+import { sunTimes } from '../utils/daylight'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
@@ -43,11 +44,24 @@ const streakFrom = (days) => {
   return n
 }
 
-// The skin check-in day starts with the morning (5 am, when the greeting
-// turns to Good morning), not at midnight.
-const MORNING_HOUR = 5
-const skinDay = (d = new Date()) => new Date(new Date(d).getTime() - MORNING_HOUR * 3600000)
-const sameSkinDay = date => !!date && new Date(date).toDateString() === skinDay().toDateString()
+// The day starts at the real sunrise where she is (5 am when we don't know
+// the place): the greeting turns to Good morning and the skin check-in resets.
+const sunriseOn = (date, coords) => {
+  if (coords) {
+    const times = sunTimes(date, coords.latitude, coords.longitude)
+    if (times.sunrise) return times.sunrise
+  }
+  const d = new Date(date)
+  d.setHours(5, 0, 0, 0)
+  return d
+}
+const skinDay = (coords, now = new Date()) => {
+  if (now >= sunriseOn(now, coords)) return now
+  const d = new Date(now)
+  d.setDate(d.getDate() - 1)
+  return d
+}
+const sameSkinDay = (date, coords) => !!date && new Date(date).toDateString() === skinDay(coords).toDateString()
 
 export default function TodayScreen({ navigation }) {
   const colors = useColors()
@@ -104,13 +118,13 @@ export default function TodayScreen({ navigation }) {
         supabase.from('routine_completions').select('date').eq('user_id', user.id).gte('date', localDay(since)),
         supabase.from('journal_entries').select('id, date, mood, skin_conditions').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
       ])
-      const today = (entries || []).find(x => sameSkinDay(x.date))
+      const today = (entries || []).find(x => sameSkinDay(x.date, coords))
       setEntry(today || null)
       setStreak(streakFrom([...(ticks || []).map(x => x.date), ...(entries || []).filter(x => x.mood).map(x => localDay(new Date(x.date)))]))
     } catch (error) {
       await logError('Today_load', error, {}, 'warn')
     }
-  }, [user?.id])
+  }, [user?.id, coords?.latitude, coords?.longitude])
   useFocusEffect(useCallback(() => { load() }, [load]))
   // Coming back to the app (e.g. the next morning): reload, so yesterday's
   // skin check-in and ticks don't stay on screen.
@@ -118,12 +132,11 @@ export default function TodayScreen({ navigation }) {
     const sub = AppState.addEventListener('change', state => { if (state === 'active') load() })
     return () => sub.remove()
   }, [load])
-  // Left open overnight: reload at 5 am so the new day starts fresh.
+  // Left open overnight: reload at sunrise so the new day starts fresh.
   useEffect(() => {
-    const next = new Date()
-    next.setHours(MORNING_HOUR, 0, 5, 0)
-    if (next <= new Date()) next.setDate(next.getDate() + 1)
-    const timer = setTimeout(() => load(), next - new Date())
+    let next = sunriseOn(new Date(), coords)
+    if (next <= new Date()) { const d = new Date(); d.setDate(d.getDate() + 1); next = sunriseOn(d, coords) }
+    const timer = setTimeout(() => load(), next - new Date() + 5000)
     return () => clearTimeout(timer)
   }, [load])
 
@@ -145,7 +158,7 @@ export default function TodayScreen({ navigation }) {
   const evening = countOf('evening')
   const part = c => (c.total ? c.done / c.total : 0)
   // Today's mood only: yesterday's never stays on screen.
-  const todayMood = sameSkinDay(entry?.date) ? entry.mood : null
+  const todayMood = sameSkinDay(entry?.date, coords) ? entry.mood : null
   const progress = (part(morning) + (todayMood ? 1 : 0) + part(evening)) / 3
 
   const toggle = async (period, idx) => {
@@ -168,8 +181,8 @@ export default function TodayScreen({ navigation }) {
     tap()
     try {
       // Only today's entry is updated; an older one on screen is never touched.
-      const current = sameSkinDay(entry?.date) ? entry : null
-      const day = skinDay()
+      const current = sameSkinDay(entry?.date, coords) ? entry : null
+      const day = skinDay(coords)
       const id = await saveDay(user.id, day, { mood, tags: current?.skin_conditions || [], notes: '' }, current?.id)
       setEntry({ ...(current || {}), id, mood, date: current?.date || day.toISOString() })
       if (!entry?.mood) track('checkin_done')
@@ -179,9 +192,10 @@ export default function TodayScreen({ navigation }) {
   }
 
   const hour = new Date().getHours()
-  const greeting = hour >= 5 && hour < 12 ? t('Good morning') : hour >= 12 && hour < 18 ? t('Good afternoon') : t('Good evening')
+  const afterSunrise = new Date() >= sunriseOn(new Date(), coords)
+  const greeting = afterSunrise && hour < 12 ? t('Good morning') : hour >= 12 && hour < 18 ? t('Good afternoon') : t('Good evening')
   // The routine due now: morning from 5 am to 3 pm, then the evening one.
-  const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
+  const now = afterSunrise && hour < 15 ? 'morning' : 'evening'
   const [compact, setCompact] = useState(false)
   // The top (date, greeting, tip) is either fully shown or fully gone: a small
   // scroll snaps it away and the small bar takes its place, with no empty gap.
@@ -196,7 +210,7 @@ export default function TodayScreen({ navigation }) {
   // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
   const sleepTip = { icon: 'bed-outline', text: 'Aim for 7 to 9 hours of sleep tonight: your skin repairs itself while you sleep.' }
   const dayTip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
-  const tip = (hour >= 5 && hour < 15) ? dayTip : sleepTip
+  const tip = (afterSunrise && hour < 15) ? dayTip : sleepTip
   const tonight = plan ? NIGHTS[tonightNight(plan)] : null
 
   const Row = ({ period, icon, title, count }) => {
@@ -295,7 +309,7 @@ export default function TodayScreen({ navigation }) {
         {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: SPACING.xxl }]}>{greeting},</Text> : null}
         <View style={[styles.helloRow, firstName && { marginTop: 0 }]}>
           <Text style={[styles.hello, { color: colors.text }]}>{firstName || greeting}</Text>
-          <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
+          <View style={styles.glyph}>{afterSunrise && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
         </View>
       </View>
       <View style={styles.tipLine}>
