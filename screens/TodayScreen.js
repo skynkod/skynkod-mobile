@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -144,7 +144,14 @@ export default function TodayScreen({ navigation }) {
   // The routine due now: morning from 5 am to 3 pm, then the evening one.
   const now = hour >= 5 && hour < 15 ? 'morning' : 'evening'
   const [compact, setCompact] = useState(false)
-  const helloBottom = useRef(200) // bottom of the greeting, so the sticky header waits until it is gone
+  // As she scrolls, the big greeting fades and shrinks while the small bar
+  // fades in at the same spot, like Apple's large titles: never both at once.
+  const scrollY = useRef(new Animated.Value(0)).current
+  const [helloBottom, setHelloBottom] = useState(200)
+  const swapAt = Math.max(41, helloBottom - insets.top - 56)
+  const bigFade = scrollY.interpolate({ inputRange: [0, swapAt - 30, swapAt], outputRange: [1, 0.6, 0], extrapolate: 'clamp' })
+  const bigScale = scrollY.interpolate({ inputRange: [-80, 0, swapAt], outputRange: [1.04, 1, 0.92], extrapolate: 'clamp' })
+  const smallFade = scrollY.interpolate({ inputRange: [swapAt - 20, swapAt + 10], outputRange: [0, 1], extrapolate: 'clamp' })
   const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
   const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
   // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
@@ -216,9 +223,9 @@ export default function TodayScreen({ navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
+    <Animated.ScrollView style={{ flex: 1 }} alwaysBounceVertical={false} contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2 }}
       scrollEventThrottle={32}
-      onScroll={e => { const down = e.nativeEvent.contentOffset.y > helloBottom.current - insets.top - 56; if (down !== compact) setCompact(down) }}
+      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: e => { const down = e.nativeEvent.contentOffset.y > swapAt - 10; if (down !== compact) setCompact(down) } })}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
       {/* 1 · Header: date and weather, greeting, today's skin tip */}
       <View style={styles.top}>
@@ -239,11 +246,14 @@ export default function TodayScreen({ navigation }) {
         </Pressable>
       </View>
       {/* The greeting with a tiny brand-coloured sun or crescent, like an emoji */}
-      {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: SPACING.xxl }]}>{greeting},</Text> : null}
-      <View style={[styles.helloRow, firstName && { marginTop: 0 }]} onLayout={e => { helloBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height }}>
-        <Text style={[styles.hello, { color: colors.text }]}>{firstName || greeting}</Text>
-        <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
-      </View>
+      <Animated.View style={{ opacity: bigFade, transform: [{ scale: bigScale }], transformOrigin: 'left' }}
+        onLayout={e => setHelloBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
+        {firstName ? <Text style={[styles.hello, { color: colors.text, marginTop: SPACING.xxl }]}>{greeting},</Text> : null}
+        <View style={[styles.helloRow, firstName && { marginTop: 0 }]}>
+          <Text style={[styles.hello, { color: colors.text }]}>{firstName || greeting}</Text>
+          <View style={styles.glyph}>{hour >= 5 && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
+        </View>
+      </Animated.View>
       <View style={styles.tipLine}>
         <Ionicons name={tip.icon} size={14} color={colors.muted} />
         <Text style={{ color: colors.muted, flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '300', fontStyle: 'italic' }}>{t(tip.text)}</Text>
@@ -305,11 +315,11 @@ export default function TodayScreen({ navigation }) {
         </View>
         <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
       </Pressable>
-    </ScrollView>
+    </Animated.ScrollView>
 
-    {/* Once the greeting scrolls away: a solid header with the date, weather and greeting */}
-    {compact ? (
-      <View style={[styles.sticky, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+    {/* Fades in as the big greeting fades out: date, weather and greeting */}
+    {(
+      <Animated.View pointerEvents={compact ? 'auto' : 'none'} style={[styles.sticky, { opacity: smallFade }, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
@@ -320,8 +330,8 @@ export default function TodayScreen({ navigation }) {
         <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
           <Ionicons name="notifications-outline" size={22} color={colors.text} />
         </Pressable>
-      </View>
-    ) : null}
+      </Animated.View>
+    )}
     </View>
   )
 }
