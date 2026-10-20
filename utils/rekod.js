@@ -464,6 +464,8 @@ export const startRekod = async (userId, answers, givenProfile) => {
     extraReset: false,
     removed: answers.removed || [],
     accepted: answers.accepted || [],
+    // Day 0 Dekod scan, to show progress and guide the weekly check-ins.
+    baseline: answers.baseline || null,
   }
   const routine = await buildRekodRoutine(userId, plan, profile)
   await archiveCurrentRoutines(userId, 'before-rekod').catch(() => {})

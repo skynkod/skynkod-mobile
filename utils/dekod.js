@@ -58,3 +58,41 @@ export const journalFrom = points => {
   const issues = DEKOD_POINTS.filter(p => p.issue && points?.[p.key]?.level === 'visible').map(p => p.issue)
   return { mood, tags, issues }
 }
+
+// ---------- Dekod × Rekod ----------
+// Dekod reads the skin, Rekod transforms it: the scan suggests Rekod goals
+// (Day 0), feeds the weekly check-in, and shows the before / after.
+
+const RANK = { none: 0, light: 1, visible: 2 }
+const levelOf = (points, key) => points?.[key]?.level || 'none'
+
+// A scan from the last `days` days, newest first, or null.
+export const recentScan = (history, days = 7) =>
+  (history || []).find(h => Date.now() - new Date(h.created_at).getTime() <= days * 86400000) || null
+
+// Rekod goals suggested by what Dekod saw (most visible first, max 3).
+export const goalsFromDekod = points => {
+  const map = [['blemishes', 'clear'], ['redness', 'calm'], ['dryness', 'hydration'], ['tone', 'spots'], ['shine', 'pores']]
+  return map
+    .filter(([key, goal]) => levelOf(points, key) !== 'none' && (goal !== 'pores' || levelOf(points, key) === 'visible'))
+    .sort((a, b) => RANK[levelOf(points, b[0])] - RANK[levelOf(points, a[0])])
+    .map(([, goal]) => goal)
+    .slice(0, 3)
+}
+
+// Point by point, from the Day 0 scan to the latest: { key, from, to, trend }.
+export const compareScans = (fromPoints, toPoints) =>
+  DEKOD_POINTS.map(p => {
+    const from = levelOf(fromPoints, p.key)
+    const to = levelOf(toPoints, p.key)
+    return { key: p.key, label: p.label, from, to, trend: RANK[to] < RANK[from] ? 'better' : RANK[to] > RANK[from] ? 'worse' : 'same' }
+  })
+
+// The weekly check-in answer the scan points to: irritation signs (redness,
+// dryness) getting worse slow the plan down; otherwise it can move on.
+export const checkInFromDekod = (fromPoints, toPoints) => {
+  const irritation = compareScans(fromPoints, toPoints).filter(c => c.key === 'redness' || c.key === 'dryness')
+  if (irritation.some(c => c.to === 'visible' && c.trend === 'worse')) return 'lot'
+  if (irritation.some(c => c.trend === 'worse')) return 'little'
+  return 'good'
+}

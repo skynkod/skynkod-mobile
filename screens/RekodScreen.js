@@ -14,6 +14,7 @@ import { track } from '../utils/analytics'
 import { searchProducts, getMyProducts } from '../utils/catalog'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
 import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
@@ -23,6 +24,7 @@ import {
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const LEVEL_LABEL = { none: 'None', light: 'Light', visible: 'Visible' }
 const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']
 
 // Premium features live in a deep plum space, like a members' area.
@@ -97,6 +99,7 @@ export default function RekodScreen({ navigation }) {
   const [own, setOwn] = useState(null) // { period, index } while choosing her own product
   const [sheet, setSheet] = useState(null) // { period, idx }: a step's details
   const [checkOpen, setCheckOpen] = useState(false)
+  const [scans, setScans] = useState([]) // Dekod scans, newest first
 
   // A changed step goes into the saved routine (members) or the preview (before joining).
   const applyStep = async (period, index, step) => {
@@ -169,7 +172,17 @@ export default function RekodScreen({ navigation }) {
   const load = useCallback(async () => {
     if (!user?.id) return
     try {
-      const p = await getRekodPlan(user.id)
+      let p = await getRekodPlan(user.id)
+      const dekod = await getDekodResults(user.id).catch(() => [])
+      setScans(dekod)
+      // No Day 0 yet: the first Dekod scan since the start becomes it.
+      if (p && !p.baseline) {
+        const first = [...dekod].reverse().find(h => new Date(h.created_at) >= new Date(p.startedAt) - 86400000)
+        if (first) {
+          p = { ...p, baseline: { id: first.id, at: first.created_at, points: first.result?.points } }
+          saveRekodPlan(user.id, p).catch(error => logError('Rekod_baseline', error, {}, 'warn'))
+        }
+      }
       setPlan(p)
       if (p) {
         const res = await getUserRoutines(user.id)
@@ -246,7 +259,8 @@ export default function RekodScreen({ navigation }) {
   const adopt = async () => {
     setBusy(true)
     try {
-      const res = await startRekod(user.id, answers, profile)
+      const day0 = recentScan(scans)
+      const res = await startRekod(user.id, { ...answers, baseline: day0 ? { id: day0.id, at: day0.created_at, points: day0.result?.points } : null }, profile)
       track('rekod_start', { goal: answers.goal, experience: answers.experience })
       setPlan(res.plan)
       setRoutine(res.routine)
@@ -294,7 +308,7 @@ export default function RekodScreen({ navigation }) {
         <View style={styles.dash}>
           <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />
           <View style={{ flex: 1, gap: 6 }}>
-            <Text style={[TYPE.overline, { color: C.primary }]}>My programme</Text>
+            <Text style={[TYPE.overline, { color: C.primary }]}>My Rekod</Text>
             <Text style={[styles.dashTitle, { color: C.text }]} numberOfLines={2}>{goalsTitle(plan)}</Text>
             <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
               <Ionicons name={NIGHTS[tonight].icon} size={14} color={C.primary} />
@@ -325,6 +339,45 @@ export default function RekodScreen({ navigation }) {
           </Pressable>
         ) : null}
 
+        {/* Dekod × Rekod: progress since Day 0, or the invitation to scan */}
+        {(() => {
+          const latest = scans[0]
+          const base = plan.baseline
+          const finished = weekOf(plan) > goal.weeks
+          if (base && latest && latest.id !== base.id) {
+            const rows = compareScans(base.points, latest.result?.points)
+            return (
+              <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="scan-circle-outline" size={20} color={C.primary} />
+                  <Text style={[TYPE.overline, { color: C.primary, flex: 1 }]}>{finished ? 'Before / after' : 'Your progress since Day 0'}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={C.muted} />
+                </View>
+                {rows.map(r => (
+                  <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
+                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? '#F2B37A' : C.muted, fontSize: 13, fontWeight: '700' }}>
+                      {LEVEL_LABEL[r.from]} → {LEVEL_LABEL[r.to]}
+                    </Text>
+                  </View>
+                ))}
+              </Pressable>
+            )
+          }
+          const lastScanDays = latest ? (Date.now() - new Date(latest.created_at)) / 86400000 : Infinity
+          if (lastScanDays < 7) return null
+          return (
+            <Pressable onPress={() => { tap(); navigation.navigate('Dekod') }} style={({ pressed }) => [styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.85 : 1 }]}>
+              <Ionicons name="scan-circle-outline" size={26} color={C.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[TYPE.bodyStrong, { color: C.text }]}>{base ? 'Time for this week’s Dekod' : 'Add your Day 0 with Dekod'}</Text>
+                <Text style={[TYPE.caption, { color: C.muted, marginTop: 2 }]}>{base ? 'See what changed since Day 0.' : 'A first scan, to see your progress week after week.'}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.muted} />
+            </Pressable>
+          )
+        })()}
+
         <RoutineTabs routine={routine} onOpen={(period, idx) => setSheet({ period, idx })} />
 
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.xl }}>
@@ -337,14 +390,32 @@ export default function RekodScreen({ navigation }) {
         <BottomSheetModal visible={checkOpen} onClose={() => setCheckOpen(false)}>
           <Text style={[styles.sheetTitle, { color: C.text }]}>Any stinging or redness this week?</Text>
           <Text style={[TYPE.caption, { color: C.muted, marginTop: 4 }]}>Your plan adapts to your answer.</Text>
-          <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
-            {[['good', 'All good', 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
-              <Pressable key={v} disabled={busy} onPress={async () => { tap(); await checkIn(v); setCheckOpen(false) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderColor: C.border, borderWidth: 1, opacity: pressed ? 0.8 : 1 }]}>
-                <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}</Text>
-                <Text style={[TYPE.caption, { color: C.muted }]}>{h}</Text>
-              </Pressable>
-            ))}
-          </View>
+          {(() => {
+            // A Dekod from the last 3 days points to an answer.
+            const week = recentScan(scans, 3)
+            const suggested = week && plan.baseline ? checkInFromDekod(plan.baseline.points, week.result?.points) : null
+            return (
+              <>
+                {!week ? (
+                  <Pressable onPress={() => { tap(); setCheckOpen(false); navigation.navigate('Dekod') }} style={[styles.option, { backgroundColor: C.primarySoft, marginTop: SPACING.lg, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+                    <Ionicons name="scan-circle-outline" size={22} color={C.primary} />
+                    <Text style={[TYPE.bodyStrong, { color: C.primary, flex: 1 }]}>Scan with Dekod first</Text>
+                    <Ionicons name="chevron-forward" size={16} color={C.primary} />
+                  </Pressable>
+                ) : suggested ? (
+                  <Text style={[TYPE.caption, { color: C.primary, marginTop: SPACING.md }]}>Your latest Dekod suggests the highlighted answer.</Text>
+                ) : null}
+                <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
+                  {[['good', 'All good', 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
+                    <Pressable key={v} disabled={busy} onPress={async () => { tap(); await checkIn(v); setCheckOpen(false) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderColor: suggested === v ? C.primary : C.border, borderWidth: suggested === v ? 2 : 1, opacity: pressed ? 0.8 : 1 }]}>
+                      <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}{suggested === v ? ' · Dekod' : ''}</Text>
+                      <Text style={[TYPE.caption, { color: C.muted }]}>{h}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )
+          })()}
         </BottomSheetModal>
         <OwnProductPicker visible={!!own} userId={user?.id} onClose={() => setOwn(null)} onPick={chooseOwn} />
       </Shell>
@@ -365,7 +436,37 @@ export default function RekodScreen({ navigation }) {
       <Shell navigation={navigation} onBack={() => setStep('intro')}
         footer={<RButton title={picked.length ? `Continue · ${picked.length}/3` : 'Pick up to 3'} disabled={!picked.length} onPress={() => { tap(); confirmGoals() }} />}>
         <Text style={[styles.title, { color: C.text }]}>What do you want to change?</Text>
-        <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>Pick up to 3. The first one leads your programme.</Text>
+        <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>Pick up to 3. The first one leads your Rekod.</Text>
+        {/* Day 0: Dekod reads the skin, and suggests the goals */}
+        {(() => {
+          const day0 = recentScan(scans)
+          const ideas = day0 ? goalsFromDekod(day0.result?.points) : []
+          if (day0 && ideas.length) {
+            return (
+              <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="scan-circle-outline" size={20} color={C.primary} />
+                  <Text style={[TYPE.overline, { color: C.primary }]}>From your Dekod</Text>
+                </View>
+                <Text style={[TYPE.body, { color: C.text, lineHeight: 22 }]}>Your scan suggests: {ideas.map(id => goalOf(id).title).join(', ')}.</Text>
+                <RButton small outline title="Use these goals" onPress={() => { tap(); setPicked(ideas) }} />
+              </View>
+            )
+          }
+          if (!day0) {
+            return (
+              <Pressable onPress={() => { tap(); navigation.navigate('Dekod') }} style={({ pressed }) => [styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.85 : 1 }]}>
+                <Ionicons name="scan-circle-outline" size={26} color={C.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.bodyStrong, { color: C.text }]}>Start with a Dekod scan · Day 0</Text>
+                  <Text style={[TYPE.caption, { color: C.muted, marginTop: 2 }]}>It suggests your goals and lets you see your progress.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={C.muted} />
+              </Pressable>
+            )
+          }
+          return null
+        })()}
         <View style={styles.grid}>
           {GOALS.map(g => (
             <Pressable key={g.id} onPress={() => { tap(); toggleGoal(g.id) }} style={({ pressed }) => [styles.tile, {
