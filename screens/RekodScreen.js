@@ -36,7 +36,10 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
         <Pressable onPress={onBack || (() => navigation.goBack())} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={C.text} />
         </Pressable>
-        <Text style={[TYPE.overline, { color: C.primary }]}>Premium</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <Ionicons name="diamond-outline" size={14} color={C.primary} />
+          <Text style={[TYPE.overline, { color: C.primary }]}>Premium</Text>
+        </View>
         <View style={{ width: 26 }} />
       </View>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -270,7 +273,7 @@ export default function RekodScreen({ navigation }) {
       <Shell navigation={navigation}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
           <Text style={[TYPE.overline, { color: colors.primary }]}>Your skin programme</Text>
-          <View style={[styles.premium, { backgroundColor: colors.primary }]}><Text style={styles.premiumText}>PREMIUM</Text></View>
+          <View style={[styles.premium, { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', gap: 4 }]}><Ionicons name="diamond" size={10} color="#33202E" /><Text style={styles.premiumText}>PREMIUM</Text></View>
         </View>
         <Text style={[styles.hero, { color: colors.text }]}>The skin you{'\n'}always wanted.</Text>
         <Text style={[TYPE.bodyStrong, { color: colors.primary, marginTop: SPACING.md }]}>A premium skin programme, from 6 to 12 weeks.</Text>

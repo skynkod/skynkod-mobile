@@ -628,7 +628,7 @@ export default function HomeScreen({ navigation }) {
           {/* Rekod: the premium programme. Members see it in their routine; others get one invitation. */}
           {loaded && !rekod ? (
             <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { opacity: pressed ? 0.9 : 1 }]}>
-              <Ionicons name="sparkles-outline" size={28} color="#FFFFFF" />
+              <Ionicons name="diamond-outline" size={26} color="#FFFFFF" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.rekodKicker}>{t('PREMIUM · SKIN PROGRAMME')}</Text>
                 <Text style={styles.rekodTitle}>{t('Your skin programme, made for you')}</Text>
@@ -641,7 +641,7 @@ export default function HomeScreen({ navigation }) {
           {/* A member: a slim card back into her programme. */}
           {loaded && rekod ? (
             <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.rekodCard, { paddingVertical: SPACING.md, opacity: pressed ? 0.9 : 1 }]}>
-              <Ionicons name="sparkles-outline" size={22} color="#FFFFFF" />
+              <Ionicons name="diamond-outline" size={22} color="#FFFFFF" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.rekodKicker}>{t('MY PROGRAMME')}</Text>
                 <Text style={[styles.rekodTitle, { fontSize: 15 }]}>
