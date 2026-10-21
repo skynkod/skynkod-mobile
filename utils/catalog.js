@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL
-const FIELDS = 'id,name,brand,category,image_url,key_ingredients,ingredients,ingredients_text,barcode,source'
+const FIELDS = 'id,name,brand,category,photo_url,image_url,key_ingredients,ingredients,ingredients_text,barcode,source'
 
 // Body and hand care products are in the catalogue but hidden until Skynkod
 // adds body care next to skincare: set this to true to show them everywhere.
@@ -21,7 +21,7 @@ export const searchProducts = async (query) => {
   if (!words.length) return []
   let request = visible(supabase.from('products').select(FIELDS))
   for (const w of words) request = request.or(`name.ilike.%${w}%,brand.ilike.%${w}%`)
-  const { data, error } = await request.order('image_url', { ascending: true, nullsFirst: false }).limit(30)
+  const { data, error } = await request.order('photo_url', { ascending: true, nullsFirst: false }).limit(30)
   if (error) throw error
   return data || []
 }
