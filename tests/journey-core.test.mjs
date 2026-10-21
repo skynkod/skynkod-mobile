@@ -20,10 +20,10 @@ const apply = (events, fresh) => { const out = { ...events }; for (const e of fr
 
 test('levels: thresholds and progress', () => {
   assert.equal(levelFor(0).name, 'The Newcomer')
-  assert.equal(levelFor(59).level, 1)
-  assert.equal(levelFor(60).name, 'The Curious')
-  assert.equal(levelFor(299).toNext, 1)
-  assert.equal(levelFor(1050).tier.name, 'The Enthusiast')
+  assert.equal(levelFor(119).level, 1)
+  assert.equal(levelFor(120).name, 'The Curious')
+  assert.equal(levelFor(599).toNext, 1)
+  assert.equal(levelFor(2100).tier.name, 'The Enthusiast')
   assert.equal(LEVELS.length, 15)
   assert.equal(levelFor(LEVELS.at(-1).xp + 500).level, LEVELS.length)
   assert.equal(levelFor(LEVELS.at(-1).xp + 500).progress, 1)
@@ -47,13 +47,13 @@ test('badges: real thresholds, set-aside / coming soon / secret never earned, ke
   assert.ok(kept.includes('product-curator'))
 })
 
-test('badges that count badges: enthusiast at 5, insider needs every regular badge', () => {
+test('badges that count badges: enthusiast at 10, insider needs every regular badge', () => {
   const regular = VISIBLE_BADGES.filter(b => canEarn(b) && b.metric !== 'otherBadges' && !['stars', 'seasonal', 'secret'].includes(b.category)).map(b => b.id)
-  const five = Object.fromEntries(regular.slice(0, 5).map(id => [id, { at: 1 }]))
+  const five = Object.fromEntries(regular.slice(0, 10).map(id => [id, { at: 1 }]))
   assert.ok(reachedBadges(buildStats(empty()), five).includes('skincare-enthusiast'))
   assert.ok(!reachedBadges(buildStats(empty()), five).includes('skynkod-insider'))
   // Stars and seasons don't count.
-  const withStars = { ...Object.fromEntries(regular.slice(0, 4).map(id => [id, { at: 1 }])), 'star-welcome': { at: 1 }, 'spring-glow': { at: 1 } }
+  const withStars = { ...Object.fromEntries(regular.slice(0, 9).map(id => [id, { at: 1 }])), 'star-welcome': { at: 1 }, 'spring-glow': { at: 1 } }
   assert.ok(!reachedBadges(buildStats(empty()), withStars).includes('skincare-enthusiast'))
   const all = Object.fromEntries(regular.map(id => [id, { at: 1 }]))
   assert.ok(reachedBadges(buildStats(empty()), all).includes('skynkod-insider'))

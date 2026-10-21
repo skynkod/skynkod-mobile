@@ -7,19 +7,20 @@
 export const XP = {
   profile: 20,          // skin profile completed, once
   firstRoutine: 15,     // first routine saved, once
-  product: 5,           // a product added to the collection, once per product
-  productDailyCap: 3,   // products rewarded per day at most
+  product: 2,           // a product added to the collection, once per product
+  productDailyCap: 1,   // products rewarded per day at most
   ingredient: 2,        // an ingredient page read for the first time
   routineDay: 5,        // a day with a ticked routine, once per day
   challenge: 20,        // a weekly challenge completed
-  badge: { common: 10, rare: 25, epic: 50, legendary: 100 },
+  // Badges are their own reward: they give no XP.
+  badge: { common: 0, rare: 0, epic: 0, legendary: 0, secret: 0 },
 }
 
 // The Koda box: a week counts as active with at least this many days with a
 // ticked routine or a journal entry.
 export const ACTIVE_DAYS = 2
 
-// 15 levels in 5 tiers, spread over about two years of regular use.
+// 15 levels in 5 tiers, spread over about two years of very regular use.
 export const LEVEL_TIERS = [
   { id: 'curious', name: 'The Curious', levels: [1, 3], description: 'Discover Skynkod and understand your skin.' },
   { id: 'explorer', name: 'The Explorer', levels: [4, 6], description: 'Explore ingredients, products and features.' },
@@ -29,20 +30,20 @@ export const LEVEL_TIERS = [
 ]
 export const LEVELS = [
   { level: 1, name: 'The Newcomer', xp: 0, description: 'You take your first steps on Skynkod.' },
-  { level: 2, name: 'The Curious', xp: 60, description: 'You discover your skin.' },
-  { level: 3, name: 'The Starter', xp: 150, description: 'You lay the foundations.' },
-  { level: 4, name: 'The Explorer', xp: 300, description: 'You explore ingredients and products.' },
-  { level: 5, name: 'The Learner', xp: 500, description: 'You learn and ask questions.' },
-  { level: 6, name: 'The Builder', xp: 750, description: 'You build your routine.' },
-  { level: 7, name: 'The Committed', xp: 1050, description: 'You’re becoming consistent.' },
-  { level: 8, name: 'The Balanced', xp: 1400, description: 'You find your rhythm.' },
-  { level: 9, name: 'The Consistent', xp: 1800, description: 'Skynkod is part of your everyday life.' },
-  { level: 10, name: 'The Knowledgeable', xp: 2300, description: 'You deepen your skincare knowledge.' },
-  { level: 11, name: 'The Strategist', xp: 2900, description: 'You make wiser choices.' },
-  { level: 12, name: 'The Expert', xp: 3600, description: 'You master your routine and your products.' },
-  { level: 13, name: 'The Advisor', xp: 4400, description: 'You share your knowledge and help others.' },
-  { level: 14, name: 'The Ambassador', xp: 5400, description: 'You inspire the community.' },
-  { level: 15, name: 'The Skynkod Icon', xp: 6600, description: 'You’re a reference on Skynkod.' },
+  { level: 2, name: 'The Curious', xp: 120, description: 'You discover your skin.' },
+  { level: 3, name: 'The Starter', xp: 300, description: 'You lay the foundations.' },
+  { level: 4, name: 'The Explorer', xp: 600, description: 'You explore ingredients and products.' },
+  { level: 5, name: 'The Learner', xp: 1000, description: 'You learn and ask questions.' },
+  { level: 6, name: 'The Builder', xp: 1500, description: 'You build your routine.' },
+  { level: 7, name: 'The Committed', xp: 2100, description: 'You’re becoming consistent.' },
+  { level: 8, name: 'The Balanced', xp: 2800, description: 'You find your rhythm.' },
+  { level: 9, name: 'The Consistent', xp: 3600, description: 'Skynkod is part of your everyday life.' },
+  { level: 10, name: 'The Knowledgeable', xp: 4600, description: 'You deepen your skincare knowledge.' },
+  { level: 11, name: 'The Strategist', xp: 5800, description: 'You make wiser choices.' },
+  { level: 12, name: 'The Expert', xp: 7200, description: 'You master your routine and your products.' },
+  { level: 13, name: 'The Advisor', xp: 8800, description: 'You share your knowledge and help others.' },
+  { level: 14, name: 'The Ambassador', xp: 10800, description: 'You inspire the community.' },
+  { level: 15, name: 'The Skynkod Icon', xp: 13200, description: 'You’re a reference on Skynkod.' },
 ]
 export const levelTierOf = level => LEVEL_TIERS.find(t => level >= t.levels[0] && level <= t.levels[1]) || LEVEL_TIERS[0]
 
@@ -89,10 +90,10 @@ export const BADGES = [
   // First steps
   b('first-steps', 'First Steps', 'common', 'start', 'profileComplete', 1, 'Complete your skin profile.', 'Your skin profile is complete.', 'Now I know your skin. Let’s take care of it together.'),
   b('routine-rookie', 'Routine Rookie', 'rare', 'start', 'routineSaved', 1, 'Save your first routine.', 'Your first routine is saved.', 'Every glow starts with a first routine.'),
-  b('product-curator', 'Product Curator', 'epic', 'start', 'productsOwned', 5, 'Add 5 products to your collection.', '5 products in your collection.', 'A shelf that knows you. Nicely curated.'),
-  b('shelf-organized', 'Shelf Organized', 'epic', 'start', 'openedCount', 5, 'Add the opening date of 5 products.', 'Opening dates noted for 5 products.', 'Nothing expires behind your back anymore.'),
+  b('product-curator', 'Product Curator', 'epic', 'start', 'productsOwned', 10, 'Add 10 products to your collection.', '10 products in your collection.', 'A shelf that knows you. Nicely curated.'),
+  b('shelf-organized', 'Shelf Organized', 'epic', 'start', 'openedCount', 10, 'Add the opening date of 10 products.', 'Opening dates noted for 10 products.', 'Nothing expires behind your back anymore.'),
   b('profile-perfectionist', 'Profile Perfectionist', 'rare', 'start', 'profileFull', 1, 'Answer every question of your skin profile.', 'Your profile is 100% complete.', 'Every detail counts. Now I really know you.'),
-  b('skynkod-explorer', 'Skynkod Explorer', 'rare', 'start', 'sectionsUsed', 4, 'Use 4 parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', 'You used 4 parts of Skynkod.', 'You know your way around now.'),
+  b('skynkod-explorer', 'Skynkod Explorer', 'rare', 'start', 'sectionsUsed', 5, 'Use 5 parts of the app: routines, journal, products, ingredients, Dekod, Rekod or Koda.', 'You used 5 parts of Skynkod.', 'You know your way around now.'),
   // Routines & consistency
   b('consistency-club', 'Consistency Club', 'common', 'routines', 'routineDays', 7, 'Tick your routine on 7 different days.', 'Your routine followed on 7 days.', 'Seven days. This is how skin changes.'),
   b('one-month-strong', 'One Month Strong', 'rare', 'routines', 'routineDays', 30, 'Tick your routine on 30 different days.', 'Your routine followed on 30 days.', 'Thirty days. This isn’t a try anymore, it’s who you are.'),
@@ -128,7 +129,7 @@ export const BADGES = [
   b('skincare-genius', 'Skincare Genius', 'legendary', 'knowledge', 'basicsDone', 1, 'Read every Skincare 101 article in Skyncyclopedia.', 'Every basic of Skyncyclopedia read.', 'All the basics, mastered. Skincare genius.'),
   // Product collection
   b('minimalist', 'Minimalist', 'common', 'collection', 'minimalist', 1, 'Build a routine with fewer than 10 products in your collection.', 'A routine with fewer than 10 products.', 'Less, but better. Your skin likes simple.'),
-  b('collection-builder', 'Collection Builder', 'rare', 'collection', 'productsOwned', 20, 'Add 20 products to your collection.', '20 products in your collection.', 'Quite the collection. Let’s make every one count.'),
+  b('collection-builder', 'Collection Builder', 'rare', 'collection', 'productsOwned', 30, 'Add 30 products to your collection.', '30 products in your collection.', 'Quite the collection. Let’s make every one count.'),
   b('ingredient-matcher', 'Ingredient Matcher', 'epic', 'collection', 'productViews', 10, 'Scan or open the ingredients of 10 different products.', 'The ingredients of 10 products checked.', 'You check before you trust. Smart.'),
   b('no-waste-hero', 'No Waste Hero', 'rare', 'collection', 'finishedProducts', 1, 'Finish a product to the very end.', 'A product used to the very end.', 'Not a drop wasted. Good for your skin and the planet.'),
   b('curated-collection', 'Curated Collection', 'legendary', 'collection', 'curated', 1, 'Own a cleanser, a moisturizer, a sunscreen and a treatment, all with their opening date.', 'A complete, well-kept collection.', 'Everything you need, nothing you don’t. Perfect.'),
@@ -146,7 +147,7 @@ export const BADGES = [
   b('skincare-advocate', 'Skincare Advocate', 'epic', 'community', 'community', 1, 'Help the community discover an ingredient.', 'You helped others discover an ingredient.', 'Coming soon.', { soon: true }),
   b('skynkod-icon', 'Skynkod Icon', 'legendary', 'community', 'community', 1, 'Become a very active, inspiring member.', 'An inspiring member.', 'Coming soon.', { soon: true }),
   // Your collection
-  b('skincare-enthusiast', 'Skincare Enthusiast', 'common', 'meta', 'otherBadges', 5, 'Earn 5 badges.', '5 badges earned.', 'Five badges. This is becoming a real passion.'),
+  b('skincare-enthusiast', 'Skincare Enthusiast', 'common', 'meta', 'otherBadges', 10, 'Earn 10 badges.', '10 badges earned.', 'Ten badges. This is becoming a real passion.'),
   b('skynkod-insider', 'Skynkod Insider', 'legendary', 'meta', 'otherBadges', 0, 'Earn every other badge.', 'Every badge earned.', 'You’ve seen it all. You’re a true Skynkod insider.'),
   // Seniority stars
   b('star-welcome', 'Welcome Star', 'common', 'stars', 'stars', 4, '4 active weeks (about 1 month).', 'About a month with Skynkod.', 'One month together. Welcome, truly.'),

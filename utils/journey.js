@@ -27,16 +27,28 @@ import {
 //   comeback true once the Welcome Back badge was given
 
 const key = userId => `journey_${userId}`
+// Bump when the XP or badge rules change before launch: XP and badges are
+// then recalculated from her real activity, quietly (no unlock screens).
+const RULES_VERSION = 2
 const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shares: [], articles: {}, finished: {}, box: null, stars: [], comeback: false })
 
 export const loadJourney = async (userId) => {
   try {
-    const state = { ...fresh(), ...JSON.parse((await AsyncStorage.getItem(key(userId))) || '{}') }
+    const raw = await AsyncStorage.getItem(key(userId))
+    if (!raw) return { ...fresh(), rules: RULES_VERSION }
+    const state = { ...fresh(), ...JSON.parse(raw) }
     // Older saves kept one share timestamp.
     if (state.shared && !state.shares.length) state.shares = [state.shared]
     delete state.shared
+    if (state.rules !== RULES_VERSION) {
+      // What she did (pages read, stars, shares…) is kept; XP and badges are rebuilt.
+      state.events = {}
+      state.badges = {}
+      state.rules = RULES_VERSION
+      state.quiet = true
+    }
     return state
-  } catch { return fresh() }
+  } catch { return { ...fresh(), rules: RULES_VERSION } }
 }
 const save = (userId, state) => AsyncStorage.setItem(key(userId), JSON.stringify(state)).catch(() => {})
 
@@ -178,7 +190,10 @@ export const syncJourney = (userId) => serial(async () => {
 
   const xp = totalXp(state.events)
   const level = levelFor(xp)
-  if (newBadges.length || level.level > before.level) {
+  // A recalculation awards quietly; only what's new afterwards is celebrated.
+  const quiet = state.quiet
+  if (quiet) { state.quiet = false; await save(userId, state) }
+  if (!quiet && (newBadges.length || level.level > before.level)) {
     announce({ badges: newBadges.map(badgeOf).filter(Boolean), levelUp: level.level > before.level ? level : null })
   }
   return picture(state, stats, challenges)
