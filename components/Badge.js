@@ -79,15 +79,80 @@ export const BADGE_IMAGES = {
   'winter-rituals': require('../assets/badges/winter-rituals.webp'),
 }
 
-// Seniority stars not earned yet are shown greyed (their shape and facets),
-// rather than as a flat silhouette.
+// Locked art, made in advance (iOS can ignore an image tint and paint it in
+// its default blue): a mauve silhouette for each badge, and the stars greyed
+// with their shape and facets.
 const LOCKED_IMAGES = {
-  'star-welcome': require('../assets/badges/star-welcome-locked.webp'),
-  'star-explorer': require('../assets/badges/star-explorer-locked.webp'),
+  'active-ingredient-pro': require('../assets/badges/active-ingredient-pro-locked.webp'),
+  'barrier-expert': require('../assets/badges/barrier-expert-locked.webp'),
+  'barrier-healed': require('../assets/badges/barrier-healed-locked.webp'),
+  'bounce-back': require('../assets/badges/bounce-back-locked.webp'),
+  'brave-skin': require('../assets/badges/brave-skin-locked.webp'),
+  'calm-week': require('../assets/badges/calm-week-locked.webp'),
+  'collection-builder': require('../assets/badges/collection-builder-locked.webp'),
+  'comeback-queen': require('../assets/badges/comeback-queen-locked.webp'),
+  'community-star': require('../assets/badges/community-star-locked.webp'),
+  'consistency-club': require('../assets/badges/consistency-club-locked.webp'),
+  'curated-collection': require('../assets/badges/curated-collection-locked.webp'),
+  'deeper-insights': require('../assets/badges/deeper-insights-locked.webp'),
+  'first-entry': require('../assets/badges/first-entry-locked.webp'),
+  'first-light': require('../assets/badges/first-light-locked.webp'),
+  'first-question': require('../assets/badges/first-question-locked.webp'),
+  'first-steps': require('../assets/badges/first-steps-locked.webp'),
+  'gentle-comeback': require('../assets/badges/gentle-comeback-locked.webp'),
+  'glow-journey': require('../assets/badges/glow-journey-locked.webp'),
+  'glow-progress': require('../assets/badges/glow-progress-locked.webp'),
+  'habit-master': require('../assets/badges/habit-master-locked.webp'),
+  'halfway-glow': require('../assets/badges/halfway-glow-locked.webp'),
+  'helpful-friend': require('../assets/badges/helpful-friend-locked.webp'),
+  'ingredient-explorer': require('../assets/badges/ingredient-explorer-locked.webp'),
+  'ingredient-matcher': require('../assets/badges/ingredient-matcher-locked.webp'),
+  'journal-keeper': require('../assets/badges/journal-keeper-locked.webp'),
+  'kodas-companion': require('../assets/badges/kodas-companion-locked.webp'),
+  'mindful-beauty': require('../assets/badges/mindful-beauty-locked.webp'),
+  'minimalist': require('../assets/badges/minimalist-locked.webp'),
+  'morning-glow': require('../assets/badges/morning-glow-locked.webp'),
+  'new-chapter': require('../assets/badges/new-chapter-locked.webp'),
+  'night-ritual': require('../assets/badges/night-ritual-locked.webp'),
+  'no-waste-hero': require('../assets/badges/no-waste-hero-locked.webp'),
+  'one-month-strong': require('../assets/badges/one-month-strong-locked.webp'),
+  'perfect-balance': require('../assets/badges/perfect-balance-locked.webp'),
+  'product-curator': require('../assets/badges/product-curator-locked.webp'),
+  'product-detective': require('../assets/badges/product-detective-locked.webp'),
+  'profile-perfectionist': require('../assets/badges/profile-perfectionist-locked.webp'),
+  'progress-tracker': require('../assets/badges/progress-tracker-locked.webp'),
+  'real-results': require('../assets/badges/real-results-locked.webp'),
+  'rekod-master': require('../assets/badges/rekod-master-locked.webp'),
+  'routine-rookie': require('../assets/badges/routine-rookie-locked.webp'),
+  'secret-1': require('../assets/badges/secret-1-locked.webp'),
+  'secret-2': require('../assets/badges/secret-2-locked.webp'),
+  'secret-3': require('../assets/badges/secret-3-locked.webp'),
+  'self-care-fall': require('../assets/badges/self-care-fall-locked.webp'),
+  'self-care-queen': require('../assets/badges/self-care-queen-locked.webp'),
+  'shelf-organized': require('../assets/badges/shelf-organized-locked.webp'),
+  'skin-detective': require('../assets/badges/skin-detective-locked.webp'),
+  'skin-observer': require('../assets/badges/skin-observer-locked.webp'),
+  'skin-scholar': require('../assets/badges/skin-scholar-locked.webp'),
+  'skincare-advocate': require('../assets/badges/skincare-advocate-locked.webp'),
+  'skincare-enthusiast': require('../assets/badges/skincare-enthusiast-locked.webp'),
+  'skincare-expert': require('../assets/badges/skincare-expert-locked.webp'),
+  'skincare-genius': require('../assets/badges/skincare-genius-locked.webp'),
+  'skinfluencer': require('../assets/badges/skinfluencer-locked.webp'),
+  'skynkod-ambassador': require('../assets/badges/skynkod-ambassador-locked.webp'),
+  'skynkod-explorer': require('../assets/badges/skynkod-explorer-locked.webp'),
+  'skynkod-icon': require('../assets/badges/skynkod-icon-locked.webp'),
+  'skynkod-insider': require('../assets/badges/skynkod-insider-locked.webp'),
+  'spring-glow': require('../assets/badges/spring-glow-locked.webp'),
   'star-dedicated': require('../assets/badges/star-dedicated-locked.webp'),
-  'star-loyal': require('../assets/badges/star-loyal-locked.webp'),
   'star-expert': require('../assets/badges/star-expert-locked.webp'),
+  'star-explorer': require('../assets/badges/star-explorer-locked.webp'),
+  'star-loyal': require('../assets/badges/star-loyal-locked.webp'),
   'star-veteran': require('../assets/badges/star-veteran-locked.webp'),
+  'star-welcome': require('../assets/badges/star-welcome-locked.webp'),
+  'summer-care': require('../assets/badges/summer-care-locked.webp'),
+  'sun-guardian': require('../assets/badges/sun-guardian-locked.webp'),
+  'unstoppable': require('../assets/badges/unstoppable-locked.webp'),
+  'winter-rituals': require('../assets/badges/winter-rituals-locked.webp'),
 }
 
 // Rarity colours: the pill, and the detail card (light, or dark for legendary).
@@ -109,7 +174,8 @@ export function BadgeImage({ badge, size = 72, locked = false }) {
   if (locked && LOCKED_IMAGES[badge.id]) {
     return (
       <View style={{ width: size, height: h, alignItems: 'center', justifyContent: 'center' }}>
-        <Image source={LOCKED_IMAGES[badge.id]} style={{ width: size, height: h, opacity: 0.8 }} resizeMode="contain" />
+        <Image source={LOCKED_IMAGES[badge.id]} style={{ width: size, height: h, opacity: badge.category === 'stars' ? 0.8 : 0.5 }} resizeMode="contain" />
+        {badge.category === 'stars' ? null : <Text style={[styles.mark, { fontSize: size * 0.3 }]}>?</Text>}
       </View>
     )
   }
@@ -117,7 +183,7 @@ export function BadgeImage({ badge, size = 72, locked = false }) {
     return (
       <View style={{ width: size, height: h, alignItems: 'center', justifyContent: 'center' }}>
         {src ? (
-          <Image source={src} style={{ width: size, height: h, tintColor: SILHOUETTE, opacity: 0.5 }} resizeMode="contain" />
+          <Image source={src} style={{ width: size, height: h, opacity: 0.15 }} resizeMode="contain" />
         ) : (
           <Svg width={size * 0.86} height={size * 0.94} viewBox="0 0 100 110" style={{ opacity: 0.5 }}>
             <Path d="M50 3 L94 28 L94 82 L50 107 L6 82 L6 28 Z" fill={SILHOUETTE} />
@@ -149,6 +215,23 @@ export function BadgeImage({ badge, size = 72, locked = false }) {
 }
 
 // Level emblems, cut from Lita's levels mockup (assets/levels).
+const LEVEL_LOCKED = {
+  1: require('../assets/levels/level-01-locked.webp'),
+  2: require('../assets/levels/level-02-locked.webp'),
+  3: require('../assets/levels/level-03-locked.webp'),
+  4: require('../assets/levels/level-04-locked.webp'),
+  5: require('../assets/levels/level-05-locked.webp'),
+  6: require('../assets/levels/level-06-locked.webp'),
+  7: require('../assets/levels/level-07-locked.webp'),
+  8: require('../assets/levels/level-08-locked.webp'),
+  9: require('../assets/levels/level-09-locked.webp'),
+  10: require('../assets/levels/level-10-locked.webp'),
+  11: require('../assets/levels/level-11-locked.webp'),
+  12: require('../assets/levels/level-12-locked.webp'),
+  13: require('../assets/levels/level-13-locked.webp'),
+  14: require('../assets/levels/level-14-locked.webp'),
+  15: require('../assets/levels/level-15-locked.webp'),
+}
 export const LEVEL_IMAGES = {
   1: require('../assets/levels/level-01.webp'),
   2: require('../assets/levels/level-02.webp'),
@@ -172,7 +255,7 @@ export function LevelEmblem({ level, size = 64, locked = false }) {
   const src = LEVEL_IMAGES[level]
   return (
     <View style={{ width: size * 0.7, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Image source={src} style={{ width: size * 0.7, height: size, ...(locked ? { tintColor: SILHOUETTE, opacity: 0.5 } : null) }} resizeMode="contain" />
+      <Image source={locked ? LEVEL_LOCKED[level] : src} style={{ width: size * 0.7, height: size, opacity: locked ? 0.5 : 1 }} resizeMode="contain" />
       {locked ? <Text style={[styles.mark, { fontSize: size * 0.22 }]}>?</Text> : null}
     </View>
   )
