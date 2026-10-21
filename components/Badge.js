@@ -79,6 +79,17 @@ export const BADGE_IMAGES = {
   'winter-rituals': require('../assets/badges/winter-rituals.webp'),
 }
 
+// Seniority stars not earned yet are shown greyed (their shape and facets),
+// rather than as a flat silhouette.
+const LOCKED_IMAGES = {
+  'star-welcome': require('../assets/badges/star-welcome-locked.webp'),
+  'star-explorer': require('../assets/badges/star-explorer-locked.webp'),
+  'star-dedicated': require('../assets/badges/star-dedicated-locked.webp'),
+  'star-loyal': require('../assets/badges/star-loyal-locked.webp'),
+  'star-expert': require('../assets/badges/star-expert-locked.webp'),
+  'star-veteran': require('../assets/badges/star-veteran-locked.webp'),
+}
+
 // Rarity colours: the pill, and the detail card (light, or dark for legendary).
 export const TIER_STYLE = {
   common: { pill: '#A99DB8', card: '#F4F0F6', ink: '#3E3346', soft: '#7B6F86', bar: '#A99DB8' },
@@ -95,6 +106,13 @@ export const SILHOUETTE = '#B7A6C4'
 export function BadgeImage({ badge, size = 72, locked = false }) {
   const src = BADGE_IMAGES[badge.id]
   const h = size * 0.96
+  if (locked && LOCKED_IMAGES[badge.id]) {
+    return (
+      <View style={{ width: size, height: h, alignItems: 'center', justifyContent: 'center' }}>
+        <Image source={LOCKED_IMAGES[badge.id]} style={{ width: size, height: h, opacity: 0.8 }} resizeMode="contain" />
+      </View>
+    )
+  }
   if (locked) {
     return (
       <View style={{ width: size, height: h, alignItems: 'center', justifyContent: 'center' }}>

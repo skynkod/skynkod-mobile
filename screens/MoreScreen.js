@@ -8,7 +8,7 @@ import ProfileAvatar from '../components/ProfileAvatar'
 import { BadgeImage } from '../components/Badge'
 import { useJourney } from '../utils/useJourney'
 import { syncSoon } from '../utils/journey'
-import { VISIBLE_BADGES, canEarn } from '../utils/journey-core'
+import { VISIBLE_BADGES, BADGES, canEarn } from '../utils/journey-core'
 import { useLanguage } from '../utils/LanguageContext'
 import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
@@ -46,6 +46,9 @@ export const MORE_SCREENS = [
 ]
 
 // Routines left the tab bar (they live on Home now), so Profile links to them too.
+const STAR_BADGES = BADGES.filter(b => b.category === 'stars')
+const STAR_LABEL = { 4: '1 month', 13: '3 months', 26: '6 months', 52: '1 year', 104: '2 years', 156: '3 years' }
+
 const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning & evening', icon: 'water-outline', group: 'track' }
 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
@@ -127,6 +130,25 @@ export default function MoreScreen({ navigation }) {
       </ScrollView>
       {journey && !journey.earned.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xs }]}>{t('Your first badges are waiting for you.')}</Text> : null}
 
+      {/* My stars: the seniority milestones, greyed until reached */}
+      <SectionHeader title={t('My stars')} action={t('See all')} onAction={() => open('Journey')} style={{ marginTop: SPACING.xl }} />
+      <Card style={{ paddingVertical: SPACING.md }}>
+        <View style={styles.starsRow}>
+          {STAR_BADGES.map(b => {
+            const won = journey?.earned.some(e => e.id === b.id)
+            return (
+              <View key={b.id} style={styles.starItem}>
+                <BadgeImage badge={b} size={46} locked={!won} />
+                <Text style={[TYPE.caption, { color: won ? colors.text : colors.muted, fontSize: 10, textAlign: 'center', marginTop: 2 }]}>{t(STAR_LABEL[b.target])}</Text>
+              </View>
+            )
+          })}
+        </View>
+        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, textAlign: 'center' }]}>
+          {t('{n} active weeks · one star in your Koda box for each', { n: journey?.stars || 0 })}
+        </Text>
+      </Card>
+
       <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
         {tracking.map((item, idx, arr) => (
@@ -169,6 +191,8 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth },
   stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   badge: { width: 72, alignItems: 'center' },
+  starsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  starItem: { alignItems: 'center', width: '16%' },
   listCard: { paddingHorizontal: SPACING.lg },
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.xxl },
 })
