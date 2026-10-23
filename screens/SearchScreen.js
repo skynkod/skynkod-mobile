@@ -14,6 +14,8 @@ import { searchIngredients, ingredientFit, productMatch, badgeText, isUnsuitable
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
+// What each product is, in plain English, next to names that may be in French.
+const CATEGORY_LABEL = { cleanser: 'Cleanser', toner: 'Toner', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'Sunscreen', exfoliant: 'Exfoliant', mask: 'Mask', 'eye care': 'Eye care' }
 const POPULAR = ['Niacinamide', 'Retinol', 'Vitamin C', 'Hyaluronic acid', 'Centella', 'Salicylic acid']
 
 // One search box for products and ingredients; each result shows how well it
@@ -207,7 +209,7 @@ export default function SearchScreen({ navigation, route }) {
                   <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
                 ) : null}
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}{product.category ? ` · ${t(CATEGORY_LABEL[product.category] || product.category)}` : ''}</Text>
                   <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
                 </View>
                 <MatchBadge tone={match.tone} label={t(badgeText(match))} />

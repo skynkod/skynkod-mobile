@@ -344,7 +344,7 @@ export default function JournalScreen({ route, navigation }) {
                 <View style={[styles.face, on && { backgroundColor: colors.primarySoft }]}>
                   <MaterialCommunityIcons name={m.icon} size={34} color={on ? colors.primary : colors.textSecondary} />
                 </View>
-                <Text style={[TYPE.caption, { color: on ? colors.primary : colors.textSecondary, fontWeight: on ? '700' : '500' }]}>{t(m.label)}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[TYPE.caption, { color: on ? colors.primary : colors.textSecondary, fontWeight: on ? '700' : '500', textAlign: 'center' }]}>{t(m.label)}</Text>
               </Pressable>
             );
           })}
@@ -367,7 +367,7 @@ export default function JournalScreen({ route, navigation }) {
           </View>
         ) : null}
 
-        {/* Only when the skin isn't great: Okay, Bad or Terrible */}
+        {/* Only when the skin isn’t at its best: Okay, Not great or Tough day */}
         {['okay', 'bad', 'terrible'].includes(mood) ? (
           <>
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>

@@ -14,13 +14,15 @@ const visible = request => (HIDDEN_CATEGORIES.length
 
 // PostgREST filter values can't contain these.
 const safe = text => text.replace(/[,()*%{}"\\]/g, ' ').trim()
+const plain = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 // Products whose name or brand contains every word typed.
 export const searchProducts = async (query) => {
   const words = safe(query).split(/\s+/).filter(w => w.length > 1).slice(0, 4)
   if (!words.length) return []
   let request = visible(supabase.from('products').select(FIELDS))
-  for (const w of words) request = request.or(`name.ilike.%${w}%,brand.ilike.%${w}%`)
+  // search_text is brand + name without accents, so "creme" finds "Crème".
+  for (const w of words) request = request.ilike('search_text', `%${plain(w)}%`)
   const { data, error } = await request.order('photo_url', { ascending: true, nullsFirst: false }).limit(30)
   if (error) throw error
   return data || []

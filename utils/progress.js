@@ -137,4 +137,4 @@ export const getWeekRecap = async (userId) => {
 }
 
 // Kind words for a week's skin mood: a hard week is never called "terrible".
-export const moodLabel = score => (score === null ? null : score >= 4.5 ? 'Great' : score >= 3.5 ? 'Good' : score >= 2.5 ? 'Okay' : score >= 1.5 ? 'Not easy' : 'Tough')
+export const moodLabel = score => (score === null ? null : score >= 4.5 ? 'Glowing' : score >= 3.5 ? 'Good' : score >= 2.5 ? 'Okay' : score >= 1.5 ? 'Not great' : 'Tough')

@@ -6,11 +6,11 @@ import { supabase } from './supabase'
 // dermatologist card).
 
 export const MOODS = [
-  { value: 'great', label: 'Great', icon: 'emoticon-excited-outline', satisfaction: 9 },
+  { value: 'great', label: 'Glowing', icon: 'emoticon-excited-outline', satisfaction: 9 },
   { value: 'good', label: 'Good', icon: 'emoticon-happy-outline', satisfaction: 7 },
   { value: 'okay', label: 'Okay', icon: 'emoticon-neutral-outline', satisfaction: 5 },
-  { value: 'bad', label: 'Bad', icon: 'emoticon-sad-outline', satisfaction: 3 },
-  { value: 'terrible', label: 'Terrible', icon: 'emoticon-cry-outline', satisfaction: 1 },
+  { value: 'bad', label: 'Not great', icon: 'emoticon-sad-outline', satisfaction: 3 },
+  { value: 'terrible', label: 'Tough day', icon: 'emoticon-cry-outline', satisfaction: 1 },
 ]
 
 // A short message for each mood, on Home and in the journal.
