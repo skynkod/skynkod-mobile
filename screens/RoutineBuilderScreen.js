@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator, Alert, Modal } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView, Animated, Easing, ActivityIndicator, Alert, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import FeatureIcon from '../components/FeatureIcon'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

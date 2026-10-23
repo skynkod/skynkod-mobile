@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { syncSoon } from '../utils/journey';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { askKoda, generateKodaIntroduction, getKodaQuota } from '../utils/koda-ai';
 import { getSituation } from '../utils/emergency-plans';

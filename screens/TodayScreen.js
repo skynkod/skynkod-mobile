@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated, Dimensions, AppState, Alert } from 'react-native'
+import { View, Text, StyleSheet, Pressable, RefreshControl, Animated, Dimensions, AppState, Alert } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -20,7 +20,7 @@ import { getUserRoutines } from '../utils/routines-service'
 import { todaySteps } from '../utils/routine-checks'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
-import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
+import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
 import { readHealth, nextPeriod } from '../utils/apple-health'
@@ -534,20 +534,6 @@ function SunGlyph({ size = 24 }) {
       ))}
       <Circle cx={12} cy={12} r={5} fill="#C5A8BB" />
     </Svg>
-  )
-}
-
-function Ring({ progress, colors }) {
-  const size = 96, stroke = 10, r = (size - stroke) / 2, c = 2 * Math.PI * r
-  const p = Math.max(0, Math.min(1, progress))
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={colors.primarySoft} strokeWidth={stroke} fill="none" />
-        {p > 0 ? <Circle cx={size / 2} cy={size / 2} r={r} stroke={p >= 1 ? colors.success : colors.primary} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - p)} /> : null}
-      </Svg>
-      <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>{Math.round(p * 100)}%</Text>
-    </View>
   )
 }
 

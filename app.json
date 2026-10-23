@@ -8,7 +8,10 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.skynkod.app"
+      "bundleIdentifier": "com.skynkod.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "plugins": [
       [
@@ -43,7 +46,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Skynkod uses your approximate location only to know when the sun sets, so night mode starts at the right time."
+          "locationWhenInUsePermission": "Skynkod uses your approximate location for your local weather and skin forecast (UV, dry air, heat), and to start night mode at sunset."
         }
       ],
       "expo-sharing",

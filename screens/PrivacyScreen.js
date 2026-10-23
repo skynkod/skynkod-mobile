@@ -8,7 +8,7 @@ import { useT, useLanguage } from '../utils/LanguageContext'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { setAnalyticsOff } from '../utils/analytics'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, TYPE } from '../utils/theme'
 import { exportMyData, isDiscreet, setDiscreet, isLockOn, canLock, setLock } from '../utils/privacy'
 
 const OFFERS_ENABLED = false

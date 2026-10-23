@@ -152,12 +152,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   // Going back never replays the "Building your plan" bar.
   const back = () => goTo(STEPS[step - 1] === 'loader' ? step - 2 : step - 1)
 
-  // Single-choice questions move on by themselves after a short beat.
-  const pickAndContinue = (setter, value) => {
-    setter(value)
-    setTimeout(next, 260)
-  }
-
   const now = () => new Date().toISOString()
   const consentFields = () => ({
     consent_version: CONSENT_VERSION,
@@ -231,23 +225,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       </Pressable>
     )
   }
-
-  const Choice = ({ label, hint, selected, onPress }) => (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.choice,
-        {
-          backgroundColor: selected ? colors.primarySoft : colors.card,
-          borderColor: selected ? colors.primary : colors.border,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        },
-      ]}
-    >
-      <Text style={[styles.choiceLabel, { color: selected ? colors.primary : colors.text }]}>{label}</Text>
-      {hint ? <Text style={[TYPE.caption, { color: colors.muted }]}>{hint}</Text> : null}
-    </Pressable>
-  )
 
   // ---------- Under 18: a kind page with a few articles to read ----------
   if (minor) {

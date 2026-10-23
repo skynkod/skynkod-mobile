@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, TextInput, Pressable, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Button, useColors } from '../components/ui'
 import { usePremium, UnlockButton } from '../components/PremiumLock'
@@ -52,6 +52,8 @@ export default function SearchScreen({ navigation, route }) {
             Alert.alert(t('Error'), t("Couldn't save this barcode. Try again."))
             return
           }
+          // Checked by the team before it reaches everyone's scanner.
+          if (result.pending) Alert.alert(t('Thank you! 🌿'), t('We’ll check this barcode and add it for everyone. You’ll earn points towards the Official Contributor badge.'))
           navigation.navigate('Product', { id: product.id })
         },
       },

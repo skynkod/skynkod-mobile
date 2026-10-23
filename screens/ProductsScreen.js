@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { trackOpened, trackFinished } from '../utils/journey'
-import { View, Text, Pressable, StyleSheet, Image, Alert, RefreshControl, Modal } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, RefreshControl, Modal } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, LoadingView, SegmentedControl, BottomSheet, useColors } from '../components/ui'

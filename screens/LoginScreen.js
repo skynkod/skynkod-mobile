@@ -100,7 +100,7 @@ export default function LoginScreen({ onLogin }) {
   // Step 3: save the new password, then sign in again with it.
   const handleResetPassword = async () => {
     setError(null)
-    if (password.length < 6) return setError(t('Password must be at least 6 characters.'))
+    if (password.length < 8) return setError(t('Password must be at least 8 characters.'))
 
     setLoading(true)
     try {
@@ -157,7 +157,8 @@ export default function LoginScreen({ onLogin }) {
 
     if (!cleanEmail || !password) return setError(t('Please fill in your email and password.'))
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setError(t('Please enter a valid email.'))
-    if (password.length < 6) return setError(t('Password must be at least 6 characters.'))
+    // New passwords: 8 characters (audit 2026-10-23); older accounts still sign in.
+    if (isSignUp && password.length < 8) return setError(t('Password must be at least 8 characters.'))
 
     setLoading(true)
     try {
@@ -198,7 +199,7 @@ export default function LoginScreen({ onLogin }) {
         {resetStep === 'newPassword' ? (
           <Input
             label={t('New password')}
-            placeholder={t('At least 6 characters')}
+            placeholder={t('At least 8 characters')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -254,7 +255,7 @@ export default function LoginScreen({ onLogin }) {
         />
         <Input
           label={t('Password')}
-          placeholder={t('At least 6 characters')}
+          placeholder={isSignUp ? t('At least 8 characters') : t('Your password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry

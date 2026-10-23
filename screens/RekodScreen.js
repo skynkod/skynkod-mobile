@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Platform, Alert, Image, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -13,9 +13,9 @@ import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { searchProducts, getMyProducts } from '../utils/catalog'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, TYPE } from '../utils/theme'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
-import { isIntroHidden, hideIntro } from '../components/PremiumSpace'
+import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
 import { getActivePlan } from '../utils/emergency-state'
 import { syncSmartReminders } from '../utils/notifications'
@@ -27,7 +27,6 @@ import {
   conflictWith, planWeeks, planWhy, extendRekod, restorePreviousRoutine, regularityOf, endAdvice, optionsForStep,
 } from '../utils/rekod'
 
-const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' })
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const LEVEL_LABEL = { none: 'None', light: 'Light', visible: 'Visible' }
 const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']

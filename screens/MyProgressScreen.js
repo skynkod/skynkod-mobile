@@ -8,7 +8,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { getProgress, moodLabel } from '../utils/progress'
 import { logError } from '../utils/errorLogger'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, TYPE } from '../utils/theme'
 
 const TREND = {
   better: 'Your skin is doing better than last month 🌸',

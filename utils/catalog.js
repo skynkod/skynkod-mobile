@@ -74,7 +74,7 @@ export const lookupBarcode = async (barcode) => {
     if (!response.ok || !data.product) return { error: data.error || `HTTP ${response.status}` }
     // A hidden (body care) product is treated as not in the catalogue yet.
     if (isHiddenCategory(data.product.category)) return { notFound: true, brandHint: data.product.brand || null }
-    return { product: data.product }
+    return { pending: !!data.pending }
   } catch (error) {
     return { error: error.message }
   }

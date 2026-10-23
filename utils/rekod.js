@@ -185,7 +185,6 @@ const harsh = p => has(p, ['sls', 'scrub', 'alcohol', 'fragrance', 'essentialoil
 
 // What each step looks for, per goal. `want` = guide ingredient ids.
 const morningSerum = { clear: ['niacinamide'], antiaging: ['vitaminc', 'peptides'], spots: ['vitaminc', 'niacinamide', 'arbutin'], glow: ['vitaminc'], pores: ['niacinamide'], calm: ['niacinamide', 'centella', 'panthenol'], hydration: ['hyaluronic', 'polyglutamic'] }
-const exfoliantFor = (goal, sensitive) => (sensitive ? ['mandelic', 'pha', 'lactic'] : goal === 'clear' || goal === 'pores' ? ['salicylic'] : ['glycolic', 'lactic'])
 const repairFor = { antiaging: ['peptides'], spots: ['txa', 'arbutin', 'niacinamide'], calm: ['ceramides', 'panthenol', 'centella'], hydration: ['hyaluronic', 'ceramides'] }
 
 // A paid programme only proposes products that are 100% safe for this person:

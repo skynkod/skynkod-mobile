@@ -3,7 +3,7 @@ import { getUserRoutines } from './routines-service'
 import { getMyProducts } from './catalog'
 import { getEntriesBetween, getSkinPatterns } from './journal-day'
 import { getActivePlan } from './emergency-state'
-import { getRekodPlan, goalsTitle, weekOf, goalOf, tonightNight, NIGHTS, planWeeks } from './rekod'
+import { getRekodPlan, goalsTitle, weekOf, tonightNight, NIGHTS, planWeeks } from './rekod'
 import { getDekodResults } from './dekod'
 
 // What Koda should know about the user's week, sent with each question.
