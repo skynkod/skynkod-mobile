@@ -23,6 +23,7 @@ import BudgetScreen from './BudgetScreen-updated'
 import NotificationsScreen from './NotificationsScreen'
 import PremiumScreen from './PremiumScreen'
 import LifeModesScreen from './LifeModesScreen'
+import SkinReportScreen from './SkinReportScreen'
 import PregnancySafeScreen from './PregnancySafeScreen'
 import AboutScreen from './AboutScreen'
 import EmergencyScreen from './EmergencyScreen'
@@ -41,6 +42,7 @@ export const MORE_SCREENS = [
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
   { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and your Koda box', icon: 'ribbon-outline', group: 'track' },
+  { name: 'SkinReport', component: SkinReportScreen, label: 'My skin report', subtitle: 'One page for your dermatologist', icon: 'document-text-outline', group: 'track', premium: true },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },

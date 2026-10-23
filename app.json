@@ -46,7 +46,8 @@
         {
           "locationWhenInUsePermission": "Skynkod uses your approximate location only to know when the sun sets, so night mode starts at the right time."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "android": {
       "package": "com.skynkod.app",
