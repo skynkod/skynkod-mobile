@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import FeatureIcon from '../components/FeatureIcon'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
 import { syncSoon } from '../utils/journey'
@@ -287,7 +288,7 @@ export default function TodayScreen({ navigation }) {
             <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Add my products')}</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.emptyBtn, { backgroundColor: '#33202E', flexDirection: 'row', gap: 8 }]}>
-            <Ionicons name="diamond-outline" size={16} color="#FFFFFF" />
+            <FeatureIcon name="rekod" size={18} color="#FFFFFF" />
             <Text style={[TYPE.bodyStrong, { color: '#FFFFFF' }]}>{t('Get a routine made for me')}</Text>
           </Pressable>
         </View>
@@ -483,7 +484,7 @@ export default function TodayScreen({ navigation }) {
       {/* 5 · The programme */}
       <Text style={[styles.section, { color: colors.muted }]}>{plan ? t('My Rekod') : t('Go further')}</Text>
       <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.programme, { opacity: pressed ? 0.9 : 1 }]}>
-        <View style={styles.programmeIcon}><Ionicons name="diamond-outline" size={20} color="#FFFFFF" /></View>
+        <View style={styles.programmeIcon}><FeatureIcon name="rekod" size={22} color="#FFFFFF" /></View>
         <View style={{ flex: 1 }}>
           <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), planWeeks(plan)), total: planWeeks(plan) }) : t('PREMIUM · REKOD')}</Text>
           <Text style={styles.programmeTitle} numberOfLines={1}>{plan ? goalsTitle(plan) : t('Rekod: your skin programme, made for you')}</Text>

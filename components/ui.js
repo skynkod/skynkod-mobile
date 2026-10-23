@@ -13,6 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NavigationContext } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import FeatureIcon from './FeatureIcon'
 import { useTheme } from '../utils/ThemeContext'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -201,7 +202,7 @@ export function IconCircle({ name, size = 40, color, background, iconSize }) {
         justifyContent: 'center',
       }}
     >
-      <Ionicons name={name} size={iconSize || size * 0.5} color={color || colors.primary} />
+      <FeatureIcon name={name} size={iconSize || size * 0.5} color={color || colors.primary} focused={name === 'rekod'} />
     </View>
   )
 }
@@ -257,7 +258,7 @@ export function Button({ title, onPress, variant = 'primary', icon, loading, dis
         <ActivityIndicator color={v.fg} />
       ) : (
         <>
-          {icon ? <Ionicons name={icon} size={size === 'sm' ? 16 : 18} color={v.fg} /> : null}
+          {icon ? <FeatureIcon name={icon} size={size === 'sm' ? 16 : 18} color={v.fg} /> : null}
           <Text style={[size === 'sm' ? TYPE.caption : TYPE.bodyStrong, { color: v.fg, fontWeight: '700' }]}>{title}</Text>
         </>
       )}

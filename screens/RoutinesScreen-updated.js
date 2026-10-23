@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import FeatureIcon from '../components/FeatureIcon';
 import { getUserRoutines } from '../utils/routines-service';
 import { logStep } from '../utils/routine-log';
 import { skinDay } from '../utils/skin-day';
@@ -141,7 +142,7 @@ export default function RoutinesScreen({ route, navigation }) {
             <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '600' }}>{t('Add my products')}</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.buildButton, styles.programmeButton]}>
-            <Ionicons name="diamond-outline" size={16} color="#FFFFFF" />
+            <FeatureIcon name="rekod" size={18} color="#FFFFFF" />
             <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>{t('Get a routine made for me')}</Text>
           </Pressable>
         </Card>

@@ -8,7 +8,6 @@
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": true,
       "bundleIdentifier": "com.skynkod.app"
     },
     "plugins": [
@@ -61,7 +60,9 @@
           "NSHealthUpdateUsageDescription": false,
           "background": false
         }
-      ]
+      ],
+      "expo-font",
+      "expo-status-bar"
     ],
     "android": {
       "package": "com.skynkod.app",

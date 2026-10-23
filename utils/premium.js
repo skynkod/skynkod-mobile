@@ -61,16 +61,17 @@ export const PREMIUM_PLANS = [
 
 // What Premium adds on top of the free app.
 export const PREMIUM_BENEFITS = [
-  // icon: 'rekod' / 'koda' use the official logos, others are Ionicons as in the app.
+  // Icons: feature names from components/FeatureIcon.js (official logos for Rekod and Koda).
   { icon: 'rekod', title: 'Rekod', text: 'Your skin programme: 6 to 12 weeks built around your skin and your goals.' },
-  { icon: 'scan-circle', title: 'Dekod', text: 'Your skin scan: one selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
+  { icon: 'dekod', title: 'Dekod', text: 'Your skin scan: one selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
   { icon: 'koda', title: 'Koda every day', text: 'Up to 20 questions a day to your skin coach, instead of 3 a week.' },
-  { icon: 'medkit-outline', title: 'Emergency mode', text: 'Full 7-day SOS plans: when your skin reacts, a gentle plan day by day.' },
+  { icon: 'emergency', title: 'Emergency mode', text: 'Full 7-day SOS plans: when your skin reacts, a gentle plan day by day.' },
   { icon: 'flask-outline', title: 'Every ingredient explained', text: 'What each one does for your skin, and better alternatives when a product isn’t for you.' },
   { icon: 'search-outline', title: 'Search any product or ingredient', text: 'Without needing the bottle in your hands.' },
   { icon: 'analytics-outline', title: 'What your journal reveals', text: 'The patterns behind your good and bad skin days.' },
   { icon: 'library-outline', title: 'The whole Skyncyclopedia', text: 'Every ingredient of the guide, including the niche ones.' },
-  { icon: 'layers-outline', title: 'Your routine in the right order', text: 'How to layer your own products, morning and evening.' },
+  { icon: 'layering', title: 'Your routine in the right order', text: 'How to layer your own products, morning and evening.' },
+  { icon: 'report', title: 'My skin report', text: 'One page to show your dermatologist: your routine, your journal and your questions.' },
 ]
 
 // In-app purchases need the store accounts; until then the page explains it.

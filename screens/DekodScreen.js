@@ -309,7 +309,7 @@ export default function DekodScreen({ navigation }) {
         overline={`${t('Latest scan')} · ${new Date(latest.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}`}
         title={t('Your skin today')} subtitle={latest.result?.summary}
         footer={premium
-          ? <PButton title={t(scannedToday ? 'Next scan tomorrow' : 'New scan')} icon="scan-outline" disabled={scannedToday} onPress={begin} />
+          ? <PButton title={t(scannedToday ? 'Next scan tomorrow' : 'New scan')} icon="dekod" disabled={scannedToday} onPress={begin} />
           : (
             <>
               <PButton title={t('Follow my skin with Premium')} icon="diamond-outline" onPress={() => navigation.navigate('Premium')} />
@@ -364,7 +364,7 @@ export default function DekodScreen({ navigation }) {
   }
 
   const startButton = canScan
-    ? <PButton title={t(premium ? 'Start my Dekod' : 'Try my free scan')} icon="scan-outline" onPress={begin} />
+    ? <PButton title={t(premium ? 'Start my Dekod' : 'Try my free scan')} icon="dekod" onPress={begin} />
     : <PButton title={t('Unlock with Premium')} icon="diamond-outline" onPress={() => navigation.navigate('Premium')} />
 
   // ---------- Dekod: one clear screen, Premium said from the start ----------

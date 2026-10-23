@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useColors } from './ui'
+import FeatureIcon from './FeatureIcon'
 import { useT, useLanguage } from '../utils/LanguageContext'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -40,7 +41,7 @@ export default function SkinForecast({ forecast, signals = [], style }) {
         <View style={[styles.signals, { borderTopColor: colors.border }]}>
           {signals.map((s, i) => (
             <View key={i} style={styles.signal}>
-              <Ionicons name={s.icon} size={16} color={colors.primary} style={{ marginTop: 1 }} />
+              <FeatureIcon name={s.icon} size={16} color={colors.primary} style={{ marginTop: 1 }} />
               <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.text, Object.fromEntries(Object.entries(s.params || {}).map(([k, v]) => [k, typeof v === 'string' ? t(v) : v])))}</Text>
             </View>
           ))}

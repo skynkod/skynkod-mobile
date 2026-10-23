@@ -52,7 +52,7 @@ export default function ArticleScreen({ navigation, route }) {
 
       <Button
         title={t('Ask Koda about this')}
-        icon="chatbubble-ellipses-outline"
+        icon="koda"
         variant="secondary"
         style={{ marginTop: SPACING.xl }}
         onPress={() => navigation.navigate('Koda', {

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, Image, ScrollView, Animated, Easing, ActivityIndicator, Alert, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import FeatureIcon from '../components/FeatureIcon'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CommonActions } from '@react-navigation/native'
 import { useColors } from '../components/ui'
@@ -278,7 +279,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     >
       {loading ? <ActivityIndicator color={secondary ? colors.primary : colors.onPrimary} /> : (
         <>
-          {icon ? <Ionicons name={icon} size={18} color={secondary ? colors.primary : colors.onPrimary} /> : null}
+          {icon ? <FeatureIcon name={icon} size={18} color={secondary ? colors.primary : colors.onPrimary} /> : null}
           <Text style={[styles.pillText, { color: secondary ? colors.primary : colors.onPrimary }]}>{title}</Text>
         </>
       )}
@@ -328,7 +329,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
               ) : (
                 <View style={{ marginTop: SPACING.xxl, gap: SPACING.sm }}>
                   <Pill title={t('I have one')} icon="checkmark-circle-outline" onPress={() => pick(stepKey)} />
-                  <Pill title={t('Help me choose')} icon="sparkles-outline" secondary onPress={() => askKoda(stepKey)} />
+                  <Pill title={t('Help me choose')} icon="koda" secondary onPress={() => askKoda(stepKey)} />
                 </View>
               )}
             </>

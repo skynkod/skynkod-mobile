@@ -62,7 +62,7 @@ const TABS = [
 // the bottom bar.
 const QUICK_ACTIONS = [
   { icon: 'scan-outline', title: 'Scan a product', subtitle: 'Check ingredients and compatibility', to: 'Scanner' },
-  { icon: 'create-outline', title: 'Journal', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
+  { icon: 'book-outline', title: 'Journal', subtitle: 'Log how your skin feels today', to: 'Journal', params: () => ({ openNew: Date.now() }) },
   { icon: 'water-outline', title: 'My routines', subtitle: 'Morning and evening', to: 'Routines' },
   { icon: 'trending-up-outline', title: 'My progress', subtitle: 'How your skin is doing', to: 'Progress' },
   { icon: 'flask-outline', title: 'My products', subtitle: 'Your shelf and wishlist', to: 'Products' },

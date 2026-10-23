@@ -6,11 +6,9 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue } from '../utils/premium'
 import { Screen, Card, Button, IconCircle, useColors } from '../components/ui'
-import RekodIcon from '../components/RekodIcon'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const LOGO = require('../assets/images/logo-glow.png')
-const KODA_LOGO = require('../assets/images/koda-logo.png')
 const FREE = ['Unlimited product scans with your verdict', 'Your morning and evening routines', 'Your skin journal', 'Your badges and levels', 'Koda: 3 questions a week']
 
 // The Premium page: why it's worth it, "everything in Free, plus", the three
@@ -57,9 +55,9 @@ export default function PremiumScreen({ navigation, route }) {
           <Card>
             <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700', letterSpacing: 1 }]}>{t('THIS MONTH WITH PREMIUM')}</Text>
             {[
-              ['chatbubbles-outline', t('{n} questions to Koda', { n: month.koda })],
-              ['scan-circle', t('{n} Dekod scans', { n: month.dekod })],
-              month.rekod ? ['sparkles-outline', t('Your Rekod, adjusted to your skin every week')] : null,
+              ['koda', t('{n} questions to Koda', { n: month.koda })],
+              ['dekod', t('{n} Dekod scans', { n: month.dekod })],
+              month.rekod ? ['rekod', t('Your Rekod, adjusted to your skin every week')] : null,
             ].filter(Boolean).map(([icon, text]) => (
               <View key={text} style={[styles.benefit, { marginBottom: 0, marginTop: SPACING.md, alignItems: 'center' }]}>
                 <IconCircle name={icon} size={32} />
@@ -111,11 +109,7 @@ export default function PremiumScreen({ navigation, route }) {
         <Text style={[TYPE.bodyStrong, { color: colors.primary, marginTop: SPACING.lg, marginBottom: SPACING.md }]}>{t('Plus, with Premium:')}</Text>
         {PREMIUM_BENEFITS.map((b, i) => (
           <View key={b.title} style={[styles.benefit, i === PREMIUM_BENEFITS.length - 1 && { marginBottom: 0 }]}>
-            {b.icon === 'rekod' || b.icon === 'koda' ? (
-              <View style={[styles.logoCircle, { backgroundColor: colors.primarySoft }]}>
-                {b.icon === 'rekod' ? <RekodIcon size={22} color={colors.primary} focused /> : <Image source={KODA_LOGO} style={{ width: 22, height: 22, tintColor: colors.primary }} resizeMode="contain" />}
-              </View>
-            ) : <IconCircle name={b.icon} size={36} />}
+            <IconCircle name={b.icon} size={36} />
             <View style={{ flex: 1 }}>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(b.title)}</Text>
               <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 17 }]}>{t(b.text)}</Text>

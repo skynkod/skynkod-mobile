@@ -21,7 +21,7 @@ export const exportMyData = async (userId) => {
   MY_TABLES.forEach((table, i) => { data[table] = tables[i].error ? { error: 'Could not be read, ask us at privacy@skynkod.com' } : tables[i].data || [] })
   const file = new File(Paths.cache, `skynkod-my-data-${new Date().toISOString().slice(0, 10)}.json`)
   file.create({ overwrite: true })
-  file.write(JSON.stringify(data, null, 2))
+  await file.write(JSON.stringify(data, null, 2))
   if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'My Skynkod data' })
   return file.uri
 }

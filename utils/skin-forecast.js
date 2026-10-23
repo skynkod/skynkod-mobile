@@ -55,7 +55,7 @@ export const rekodSignals = (plan, { nightOf, nights, today = new Date() }) => {
   for (let i = 0; i < 3; i += 1) {
     const date = addDays(today, i)
     const id = nightOf(plan, date)
-    if (id === 'retinoid' || id === 'exfoliation') out.push({ icon: nights[id].icon, text: 'Rekod: {night} {when}.', params: { night: nights[id].label.toLowerCase() }, day: i })
+    if (id === 'retinoid' || id === 'exfoliation') out.push({ icon: 'rekod', text: 'Rekod: {night} {when}.', params: { night: nights[id].label.toLowerCase() }, day: i })
   }
   return out.slice(0, 2)
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import FeatureIcon from './FeatureIcon'
 import { useNavigation } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -60,7 +61,7 @@ export function PButton({ title, onPress, loading, disabled, outline, icon, styl
     ]}>
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
-          {icon ? <Ionicons name={icon} size={17} color={fg} /> : null}
+          {icon ? <FeatureIcon name={icon} size={17} color={fg} /> : null}
           <Text style={{ color: fg, fontWeight: '700', fontSize: 15 }}>{title}</Text>
         </>
       )}

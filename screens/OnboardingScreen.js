@@ -16,6 +16,7 @@ import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
 import QuizQuestion from '../components/QuizQuestion'
+import FeatureIcon from '../components/FeatureIcon'
 import { CHAPTERS, questionsFor, toColumns, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, PHOTOTYPE } from '../utils/skin-quiz'
 import { useT } from '../utils/LanguageContext'
 
@@ -27,12 +28,22 @@ const KODA = require('../assets/images/koda-logo.png')
 const LOGO_RATIO = 1306 / 333
 const BRAND_MAUVE = '#C5A8BB'
 
-// Same six features, wording and order as the left column of the mockup.
+// Every feature, each with its official icon (Lita, 2026-10-23: "if we say it, say it all").
 const FEATURES = [
-  { icon: 'sparkles-outline', title: 'Rekod, your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
-  { icon: 'koda', title: 'AI Skin Coach', text: 'Koda knows your skin and your routine, and answers like an expert.' },
-  { icon: 'scan-outline', title: 'Product Scan', text: 'Scan any product to see if it suits your skin.' },
-  { icon: 'book-outline', title: 'What your skin tells you', text: 'Your daily check-in learns what makes your skin react.' },
+  { icon: 'rekod', title: 'Rekod, your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
+  { icon: 'dekod', title: 'Dekod, your skin scan', text: 'One selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
+  { icon: 'koda', title: 'Koda, your AI skin coach', text: 'Knows your skin and your routine, and answers like an expert.' },
+  { icon: 'scan', title: 'Product scan', text: 'Scan any product: every ingredient is checked against your skin.' },
+  { icon: 'search', title: 'Search', text: 'Any product or ingredient, without the bottle in your hands.' },
+  { icon: 'forecast', title: 'Your skin forecast', text: 'The next 3 days: weather, your habits and your cycle, and what your skin will need.' },
+  { icon: 'journal', title: 'What your skin tells you', text: 'A daily check-in that learns what makes your skin react.' },
+  { icon: 'routines', title: 'Your routines', text: 'Morning and evening, with your own products, and a reminder when it’s time.' },
+  { icon: 'layering', title: 'How to apply', text: 'Your products in the right order, how much, and which evening for each active.' },
+  { icon: 'emergency', title: 'Emergency mode', text: 'A gentle 7-day plan when your skin reacts.' },
+  { icon: 'modes', title: 'Your skin right now', text: 'Pregnancy, breastfeeding, reacting skin or a new season: the whole app adapts.' },
+  { icon: 'skyncyclopedia', title: 'Skyncyclopedia', text: 'Ingredients and skin care explained simply, with their sources.' },
+  { icon: 'report', title: 'My skin report', text: 'One page to show your dermatologist.' },
+  { icon: 'journey', title: 'Your skin journey', text: 'Badges, levels and your Koda box as your habits grow.' },
 ]
 
 
@@ -313,13 +324,11 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     content = (
       <>
         <Text style={[styles.headline, { color: colors.text }]}>{t('Everything your skin needs, in one place.')}</Text>
-        <View style={{ marginTop: SPACING.xxl, gap: SPACING.xl }}>
+        <View style={{ marginTop: SPACING.xxl, gap: SPACING.lg }}>
           {FEATURES.map(f => (
             <View key={f.title} style={styles.feature}>
               <View style={[styles.featureIcon, { backgroundColor: colors.primarySoft }]}>
-                {f.icon === 'koda'
-                  ? <Image source={KODA} style={{ width: 24, height: 24 }} />
-                  : <Ionicons name={f.icon} size={22} color={BRAND_MAUVE} />}
+                <FeatureIcon name={f.icon} size={22} color={BRAND_MAUVE} focused={f.icon === 'rekod'} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.featureTitle, { color: colors.text }]}>{t(f.title).toUpperCase()}</Text>

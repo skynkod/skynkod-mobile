@@ -121,7 +121,7 @@ export default function KodaScreen({ route, navigation }) {
     const isUser = item.role === 'user';
     return (
       <View style={[styles.row, isUser ? styles.rowUser : styles.rowKoda]}>
-        {!isUser ? <IconCircle name="sparkles" size={30} /> : null}
+        {!isUser ? <IconCircle name="koda" size={30} /> : null}
         <View
           style={[
             styles.bubble,
@@ -168,7 +168,7 @@ export default function KodaScreen({ route, navigation }) {
           <>
             {loading ? (
               <View style={[styles.row, styles.rowKoda]}>
-                <IconCircle name="sparkles" size={30} />
+                <IconCircle name="koda" size={30} />
                 <View style={[styles.bubble, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
                   <ActivityIndicator size="small" color={colors.primary} />
                 </View>
