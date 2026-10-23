@@ -22,6 +22,8 @@ import SkinTypeQuizScreen from './SkinTypeQuizScreen'
 import BudgetScreen from './BudgetScreen-updated'
 import NotificationsScreen from './NotificationsScreen'
 import PremiumScreen from './PremiumScreen'
+import LifeModesScreen from './LifeModesScreen'
+import PregnancySafeScreen from './PregnancySafeScreen'
 import AboutScreen from './AboutScreen'
 import EmergencyScreen from './EmergencyScreen'
 import BarcodeScannerScreen from './BarcodeScannerScreen'
@@ -33,6 +35,8 @@ import { isAdmin } from '../utils/contributions'
 import { isPremiumUser, setPremium } from '../utils/premium'
 
 export const MORE_SCREENS = [
+  { name: 'LifeModes', component: LifeModesScreen, label: 'Your skin right now', subtitle: 'Pregnancy, reacting skin, season', icon: 'heart-outline', group: 'track' },
+  { name: 'PregnancySafe', component: PregnancySafeScreen, label: 'What’s safe for you now', icon: 'heart-outline', group: 'track' },
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
@@ -60,7 +64,7 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
 // V1: Budget comes back later as a new feature.
-const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget']
+const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget', 'PregnancySafe']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {

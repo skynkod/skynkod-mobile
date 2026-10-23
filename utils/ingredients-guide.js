@@ -184,11 +184,11 @@ const profileFacts = (profile) => {
 }
 
 // Why pregnancy rules exist, in plain words, and safer swaps (guide ids).
-const PREGNANCY_DETAIL = {
+export const PREGNANCY_DETAIL = {
   retinol: 'Vitamin A in high doses can affect a baby\'s development, so doctors advise stopping retinoids (retinol, retinal, adapalene, tretinoin) while pregnant or breastfeeding, even in skincare.',
   hydroquinone: 'A large share of hydroquinone is absorbed through the skin, so it isn\'t recommended while pregnant or breastfeeding.',
 }
-const PREGNANCY_ALTERNATIVES = {
+export const PREGNANCY_ALTERNATIVES = {
   retinol: ['azelaic', 'niacinamide', 'vitaminc', 'peptides'],
   hydroquinone: ['azelaic', 'vitaminc', 'niacinamide'],
 }

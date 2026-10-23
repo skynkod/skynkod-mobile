@@ -9,7 +9,7 @@ import { syncSoon } from '../utils/journey'
 import { useJourney } from '../utils/useJourney'
 import ProfileAvatar from '../components/ProfileAvatar'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
-import { supabase } from '../utils/supabase'
+import { supabase, getUserProfile } from '../utils/supabase'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage, useT } from '../utils/LanguageContext'
 import { useFirstName } from '../utils/useFirstName'
@@ -95,6 +95,9 @@ export default function TodayScreen({ navigation }) {
   const [forecastDays, setForecastDays] = useState(null)
   const [patterns, setPatterns] = useState(null)
   const premium = usePremium()
+  // Pregnancy mode, re-read on focus so a change in "Your skin right now" shows at once.
+  const [pregnancy, setPregnancy] = useState(null)
+  useFocusEffect(useCallback(() => { if (user?.id) getUserProfile(user.id).then(r => setPregnancy(r?.pregnancy || null)).catch(() => {}) }, [user?.id]))
   const [refreshing, setRefreshing] = useState(false)
   // A 7-day skin plan (Emergency) pauses strong products while it runs.
   const [sos, setSos] = useState({ plan: null, products: {}, newest: null })
@@ -369,6 +372,15 @@ export default function TodayScreen({ navigation }) {
           <View style={styles.glyph}>{afterSunrise && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
         </View>
       </View>
+      {/* The life mode that's on (pregnancy first, then reacting skin), like Flo's stage */}
+      {['pregnant', 'breastfeeding'].includes(pregnancy) || sos.plan ? (
+        <Pressable onPress={() => navigation.navigate('LifeModes')} style={[styles.modeChip, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name={sos.plan && !['pregnant', 'breastfeeding'].includes(pregnancy) ? 'flame-outline' : 'heart-outline'} size={14} color={colors.primary} />
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
+            {pregnancy === 'pregnant' ? t('Pregnancy mode') : pregnancy === 'breastfeeding' ? t('Breastfeeding mode') : t('My skin is reacting')}
+          </Text>
+        </Pressable>
+      ) : null}
       {forecast ? null : <View style={styles.tipLine}>
         <Ionicons name={tip.icon} size={14} color={colors.muted} />
         <Text style={{ color: colors.muted, flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '300', fontStyle: 'italic' }}>{t(tip.text)}</Text>
@@ -534,6 +546,7 @@ function Ring({ progress, colors }) {
 }
 
 const styles = StyleSheet.create({
+  modeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingVertical: 5, paddingHorizontal: SPACING.md, marginTop: SPACING.md },
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
