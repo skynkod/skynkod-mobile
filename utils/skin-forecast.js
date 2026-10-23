@@ -68,3 +68,16 @@ export const buildForecast = ({ days, profile }) => {
   const focus = tiles.reduce((best, d) => (d.tip.level > best.tip.level ? d : best), tiles[0])
   return { tiles, focus: focus.index }
 }
+
+// Apple Health: her next period, from her own past cycles. With a breakout
+// link already found in her journal, say so; otherwise a gentle general tip.
+export const periodSignal = (next, patterns) => {
+  if (!next || next.inDays > 3) return null
+  const linked = (patterns?.patterns || []).some(p => p.factor === 'period' && p.reaction === 'breakout')
+  const when = next.inDays === 0 ? 'today' : next.inDays === 1 ? 'tomorrow' : 'in about {n} days'
+  return {
+    icon: 'calendar-outline',
+    text: linked ? `Your period is expected ${when}. Your skin often breaks out around then: keep your routine steady and skip new products.` : `Your period is expected ${when}. Many people get a few spots around then: keep your routine steady.`,
+    params: { n: next.inDays },
+  }
+}

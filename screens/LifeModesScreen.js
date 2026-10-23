@@ -11,6 +11,7 @@ import { fromRow, toColumns } from '../utils/skin-quiz'
 import { getActivePlan } from '../utils/emergency-state'
 import { currentSeason, SEASONS } from '../utils/seasons'
 import { syncSoon } from '../utils/journey'
+import { healthAvailable, isHealthOn, connectHealth, disconnectHealth } from '../utils/apple-health'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -26,6 +27,19 @@ export default function LifeModesScreen({ navigation }) {
   const [row, setRow] = useState(null)
   const [sos, setSos] = useState(null)
   const [saving, setSaving] = useState(false)
+  // Apple Health: only in the real app (not in Expo Go), on iPhone.
+  const [health, setHealth] = useState({ available: false, on: false })
+  useFocusEffect(useCallback(() => {
+    Promise.all([healthAvailable(), isHealthOn()]).then(([available, on]) => setHealth({ available, on })).catch(() => {})
+  }, []))
+  const toggleHealth = async () => {
+    if (health.on) { await disconnectHealth(); return setHealth(h => ({ ...h, on: false })) }
+    try {
+      if (await connectHealth()) setHealth(h => ({ ...h, on: true }))
+    } catch (error) {
+      logError('LifeModes_health', error, {}, 'warn')
+    }
+  }
 
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
@@ -101,6 +115,15 @@ export default function LifeModesScreen({ navigation }) {
           ? (sos.phase === 'return' ? t('Gradual return · day {day} of {total}', { day: sos.returnDay, total: sos.returnDays }) : t('Day {day} of 7 · {title}', { day: sos.dayIndex + 1, title: t(sos.situation.title) }))
           : t('7 calm days: strong actives on pause, then back one by one.')}
         onPress={() => navigation.navigate('Emergency')} />
+
+      {health.available ? (
+        <Mode icon="fitness-outline" title={t('Apple Health')} on={health.on}
+          text={health.on ? t('Connected: your period dates and sleep feed your skin forecast and your journal links. Read only, never shared.') : t('Let Skynkod read your period dates and sleep, to warn you before breakouts. Read only, never shared.')}>
+          <Pressable onPress={toggleHealth} style={styles.link} hitSlop={6}>
+            <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{health.on ? t('Disconnect') : t('Connect Apple Health')}</Text>
+          </Pressable>
+        </Mode>
+      ) : null}
 
       <Mode icon={season.icon} title={t('Season: {season}', { season: t(season.label).toLowerCase() })} on={false}
         text={t('Automatic. Your tips follow the season, and a routine for it is offered when it starts.')}>

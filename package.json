@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.25",
     "@expo/vector-icons": "^15.0.2",
+    "@kingstinct/react-native-healthkit": "16.1.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.18.17",
     "@react-navigation/native": "^7.3.17",
@@ -38,6 +39,7 @@
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-iap": "^17.1.0",
+    "react-native-nitro-modules": "0.37.1",
     "react-native-reanimated": "^4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",

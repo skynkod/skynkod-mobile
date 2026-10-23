@@ -53,6 +53,14 @@
         {
           "faceIDPermission": "Skynkod uses Face ID to keep your skin journal private."
         }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Skynkod reads your period dates and sleep to warn you before breakouts. It never writes to Apple Health.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
       ]
     ],
     "android": {

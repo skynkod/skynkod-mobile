@@ -21,7 +21,8 @@ import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/rout
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow, getForecastWeather } from '../utils/skin-weather'
-import { buildForecast, personalSignals, rekodSignals } from '../utils/skin-forecast'
+import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
+import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
 import SkinForecast from '../components/SkinForecast'
 import { usePremium } from '../components/PremiumLock'
@@ -171,6 +172,9 @@ export default function TodayScreen({ navigation }) {
   useFocusEffect(useCallback(() => { load() }, [load]))
   // Her journal patterns, for the forecast's personal signals.
   useFocusEffect(useCallback(() => { if (user?.id) getSkinPatterns(user.id).then(setPatterns).catch(() => {}) }, [user?.id]))
+  // Apple Health (real app only): when her next period should start.
+  const [period, setPeriod] = useState(null)
+  useFocusEffect(useCallback(() => { readHealth().then(h => setPeriod(h ? nextPeriod(h.periodDays) : null)).catch(() => {}) }, []))
   // Coming back to the app (e.g. the next morning): reload, so yesterday's
   // skin check-in and ticks don't stay on screen.
   useEffect(() => {
@@ -265,9 +269,10 @@ export default function TodayScreen({ navigation }) {
   const whenNight = i => (i === 0 ? t('tonight') : i === 1 ? t('tomorrow night')
     : t('on {day}', { day: new Date(Date.now() + i * 86400000).toLocaleDateString(language, { weekday: 'long' }) }))
   const forecastSignals = [
+    periodSignal(period, patterns),
     ...personalSignals(patterns, { premium: !!premium }),
     ...rekodSignals(plan, { nightOf: tonightNight, nights: NIGHTS }).map(s => ({ ...s, params: { ...s.params, when: whenNight(s.day) } })),
-  ]
+  ].filter(Boolean)
 
   const Row = ({ period, icon, title, count }) => {
     const complete = count.total > 0 && count.done === count.total

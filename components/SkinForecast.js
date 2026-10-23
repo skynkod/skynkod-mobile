@@ -41,7 +41,7 @@ export default function SkinForecast({ forecast, signals = [], style }) {
           {signals.map((s, i) => (
             <View key={i} style={styles.signal}>
               <Ionicons name={s.icon} size={16} color={colors.primary} style={{ marginTop: 1 }} />
-              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.text, Object.fromEntries(Object.entries(s.params || {}).map(([k, v]) => [k, t(v)])))}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.text, Object.fromEntries(Object.entries(s.params || {}).map(([k, v]) => [k, typeof v === 'string' ? t(v) : v])))}</Text>
             </View>
           ))}
         </View>
