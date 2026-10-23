@@ -1,3 +1,4 @@
+import { viewHeaders } from './premium';
 import { supabase } from './supabase';
 import { buildKodaContext } from './koda-context';
 
@@ -31,6 +32,7 @@ export const askKoda = async (userMessage, conversationHistory = [], language = 
       headers: {
         'content-type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
+        ...(await viewHeaders(session.user?.id)),
       },
       body: JSON.stringify({ messages, language, profile, context }),
     });
@@ -84,7 +86,7 @@ export const getKodaQuota = async () => {
     if (!API_URL) return null;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return null;
-    const response = await fetch(`${API_URL.replace(/\/$/, '')}/koda/quota`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+    const response = await fetch(`${API_URL.replace(/\/$/, '')}/koda/quota`, { headers: { Authorization: `Bearer ${session.access_token}`, ...(await viewHeaders(session.user?.id)) } });
     return response.ok ? await response.json() : null;
   } catch {
     return null;

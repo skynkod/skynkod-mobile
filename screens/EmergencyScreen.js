@@ -14,8 +14,6 @@ import { syncSmartReminders } from '../utils/notifications'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const PLUM = '#33202E'
-// Lets the owner try Premium features before in-app purchase exists.
-const TESTERS = ['djedidilita@gmail.com']
 
 const PAUSE_LABELS = {
   retinoid: 'Retinol', acid: 'Acids', exfoliant: 'Exfoliants', vitaminC: 'Vitamin C',
@@ -37,8 +35,7 @@ export default function EmergencyScreen({ navigation, route }) {
   const [owned, setOwned] = useState(null)
   const [openDay, setOpenDay] = useState(0)
   const [premium, setPremium] = useState(undefined)
-  const [preview, setPreview] = useState(false) // tester trying it without Premium
-  useEffect(() => { if (user?.id) isPremiumUser(user.id).then(setPremium).catch(() => setPremium(false)) }, [user?.id])
+  useFocusEffect(useCallback(() => { if (user?.id) isPremiumUser(user.id).then(setPremium).catch(() => setPremium(false)) }, [user?.id]))
 
   const load = useCallback(async () => {
     if (!user?.id) return
@@ -68,8 +65,7 @@ export default function EmergencyScreen({ navigation, route }) {
   if (active === undefined || premium === undefined) return <LoadingView />
 
   // ---------- Locked: Emergency mode is part of Premium ----------
-  if (!premium && !active && !preview) {
-    const tester = TESTERS.includes(user?.email)
+  if (!premium && !active) {
     return (
       <Screen back title={t('Emergency Mode')}>
         <View style={[styles.lockCard, { backgroundColor: PLUM }]}>
@@ -88,16 +84,11 @@ export default function EmergencyScreen({ navigation, route }) {
             </View>
           ))}
         </View>
-        <Pressable onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Emergency mode very soon.'))}
+        <Pressable onPress={() => navigation.navigate('Premium')}
           style={({ pressed }) => [styles.primary, { backgroundColor: PLUM, opacity: pressed ? 0.85 : 1, flexDirection: 'row', gap: 8 }]}>
           <Ionicons name="lock-open-outline" size={17} color="#FFFFFF" />
           <Text style={styles.primaryText}>{t('Unlock with Premium')}</Text>
         </Pressable>
-        {tester ? (
-          <Pressable onPress={() => setPreview(true)} style={{ alignSelf: 'center', padding: SPACING.md }}>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('Try it as Premium (test)')}</Text>
-          </Pressable>
-        ) : null}
       </Screen>
     )
   }

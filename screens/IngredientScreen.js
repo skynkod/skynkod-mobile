@@ -13,6 +13,8 @@ import { HOWTO, PREGNANCY } from '../utils/encyclopedia/howto'
 import { ARTICLES } from '../utils/encyclopedia'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { usePremium, PremiumBlur } from '../components/PremiumLock'
+import { isPremiumIngredient } from '../utils/ingredients-guide'
 
 // An ingredient: whether it suits the user, what it does, and products with it.
 export default function IngredientScreen({ navigation, route }) {
@@ -21,6 +23,7 @@ export default function IngredientScreen({ navigation, route }) {
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
   const entry = getIngredient(route?.params?.id)
+  const premium = usePremium()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -57,6 +60,30 @@ export default function IngredientScreen({ navigation, route }) {
 
       <Text style={[styles.section, { color: colors.muted }]}>{t('WHAT IT DOES')}</Text>
       <Text style={[TYPE.body, { color: colors.text }]}>{t(entry.what)}</Text>
+
+      {/* A niche ingredient for a free user: the line above is the teaser; the
+          pregnancy note stays visible because it is safety. */}
+      {premium === false && isPremiumIngredient(entry.id) ? (
+        <>
+          {howto?.pregnancy ? (
+            <View style={{ marginTop: SPACING.md }}>
+              <MatchBadge tone={PREGNANCY[howto.pregnancy].tone} label={t(PREGNANCY[howto.pregnancy].label)} />
+            </View>
+          ) : null}
+          <PremiumBlur locked title="Discover this ingredient" text="How to use it, what it pairs with, and the products that contain it." style={{ marginTop: SPACING.xl }}>
+            <View style={{ padding: SPACING.lg }}>
+              <Text style={[styles.section, { color: colors.muted, marginTop: 0 }]}>{t('GOOD FOR')}</Text>
+              <View style={styles.chips}>
+                {(entry.goodFor.length ? entry.goodFor : ['Your skin']).slice(0, 4).map(g => (
+                  <View key={g} style={[styles.chip, { backgroundColor: colors.primarySoft }]}><Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600' }]}>{t(g)}</Text></View>
+                ))}
+              </View>
+              <Text style={[styles.section, { color: colors.muted }]}>{t('HOW TO USE')}</Text>
+              <Text style={[TYPE.body, { color: colors.text }]}>{t(howto?.how || 'When, how often and with what.')}</Text>
+            </View>
+          </PremiumBlur>
+        </>
+      ) : (<>
 
       {entry.goodFor.length ? (
         <>
@@ -148,6 +175,7 @@ export default function IngredientScreen({ navigation, route }) {
           </Pressable>
         )
       })}
+      </>)}
     </Screen>
   )
 }

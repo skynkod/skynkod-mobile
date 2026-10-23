@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { logError } from '../utils/errorLogger'
 import { Ionicons } from '@expo/vector-icons'
@@ -29,6 +29,7 @@ import SettingsScreen from './SettingsScreen'
 import SkinProfileScreen from './SkinProfileScreen'
 import ProposalsScreen from './ProposalsScreen'
 import { isAdmin } from '../utils/contributions'
+import { isPremiumUser, setPremium } from '../utils/premium'
 
 export const MORE_SCREENS = [
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
@@ -57,9 +58,8 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
-// Premium waits until in-app purchases work (stores refuse "coming soon" screens).
 // V1: Budget comes back later as a new feature.
-const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Premium', 'Budget']
+const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {
@@ -72,6 +72,10 @@ export default function MoreScreen({ navigation }) {
   useFocusEffect(useCallback(() => { syncSoon(user?.id, 200) }, [user?.id]))
   const [admin, setAdmin] = useState(false)
   useFocusEffect(useCallback(() => { isAdmin().then(setAdmin).catch(() => {}) }, []))
+  // The team sees the app as a free user by default, to feel the paywalls.
+  const [viewPremium, setViewPremium] = useState(false)
+  useFocusEffect(useCallback(() => { if (user?.id) isPremiumUser(user.id).then(setViewPremium) }, [user?.id]))
+  const toggleView = on => { setViewPremium(on); setPremium(user.id, on) }
   const open = name => navigation.navigate(name)
   const tracking = byGroup('track')
   const [loggingOut, setLoggingOut] = useState(false)
@@ -181,6 +185,8 @@ export default function MoreScreen({ navigation }) {
         <>
           <SectionHeader title="Skynkod team" style={{ marginTop: SPACING.xl }} />
           <Card padded={false} style={styles.listCard}>
+            <ListRow icon="diamond-outline" title="See the app as Premium" subtitle={viewPremium ? 'On: every Premium feature is open' : 'Off: you see the app as a free user'}
+              right={<Switch value={viewPremium} onValueChange={toggleView} trackColor={{ true: colors.primary }} />} />
             {byGroup('admin').map((item, idx, arr) => (
               <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
             ))}

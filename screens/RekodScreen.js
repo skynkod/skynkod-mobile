@@ -16,6 +16,7 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
 import { isIntroHidden, hideIntro } from '../components/PremiumSpace'
+import { usePremium, PremiumBlur } from '../components/PremiumLock'
 import { getActivePlan } from '../utils/emergency-state'
 import { syncSmartReminders } from '../utils/notifications'
 import {
@@ -92,6 +93,8 @@ const PROVEN = ['SPF 50', 'Retinol', 'Exfoliate', 'Azelaic acid']
 export default function RekodScreen({ navigation }) {
   const colors = C
   const { user } = useAuth()
+  // The explanation and the quiz are free; her personal routine and plan are Premium.
+  const premium = usePremium()
   const profile = useSkinProfile(user?.id)
   const [plan, setPlan] = useState(undefined)
   const [routine, setRoutine] = useState(null)
@@ -631,7 +634,9 @@ export default function RekodScreen({ navigation }) {
       <Shell
         navigation={navigation}
         onBack={() => setStep('goals')}
-        footer={<RButton title="Start my Rekod" onPress={() => { tap(); adopt() }} loading={busy} />}
+        footer={premium === false
+          ? <RButton title="Start my Rekod with Premium" onPress={() => { tap(); navigation.navigate('Premium') }} />
+          : <RButton title="Start my Rekod" onPress={() => { tap(); adopt() }} loading={busy} />}
       >
         <Text style={[TYPE.overline, { color: C.primary }]}>Your Rekod · {goalsTitle(answers)}</Text>
         <Text style={[styles.title, { color: C.text }]}>Your skin, decoded.</Text>
@@ -639,12 +644,16 @@ export default function RekodScreen({ navigation }) {
           <Ionicons name="calendar-outline" size={14} color={C.primary} />
           <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>{goal.weeks} weeks · {goal.results.toLowerCase()}</Text>
         </View>
-        <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ marginTop: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {premium === false ? null : <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ marginTop: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="calendar-outline" size={15} color={C.primary} />
           <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>See the {goal.weeks}-week plan</Text>
-        </Pressable>
+        </Pressable>}
         {draft ? <FullPlan visible={fullOpen} onClose={() => setFullOpen(false)} plan={draft} routine={preview} /> : null}
-        <RoutineTabs routine={preview} onOpen={(period, idx) => setSheet({ period, idx })} />
+        {premium === false ? (
+          <PremiumBlur locked title="Your personal Rekod is ready" text={`Your routine step by step, adjusted to your skin, and your ${goal.weeks}-week plan.`} style={{ marginTop: SPACING.lg }}>
+            <RoutineTabs routine={preview} onOpen={() => {}} />
+          </PremiumBlur>
+        ) : <RoutineTabs routine={preview} onOpen={(period, idx) => setSheet({ period, idx })} />}
         <StepSheet step={sheet && preview?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
           onKeep={() => decide(sheet.period, sheet.idx, 'keep')} onRemove={() => decide(sheet.period, sheet.idx, 'remove')}
           onOwn={() => { const s2 = sheet; setSheet(null); setOwn({ period: s2.period, index: s2.idx }) }} />

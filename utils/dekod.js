@@ -1,3 +1,4 @@
+import { viewHeaders } from './premium'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './supabase'
 
@@ -26,7 +27,7 @@ export const runDekod = async (base64, language = 'en') => {
     if (!session?.access_token) return { error: 'not_signed_in' }
     const response = await fetch(`${API_URL.replace(/\/$/, '')}/dekod`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${session.access_token}`, ...(await viewHeaders(session.user?.id)) },
       body: JSON.stringify({ image: base64, language }),
     })
     const data = await response.json().catch(() => ({}))

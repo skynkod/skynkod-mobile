@@ -116,6 +116,11 @@ export const INGREDIENTS = [
 const byId = Object.fromEntries(INGREDIENTS.map(i => [i.id, i]))
 export const getIngredient = id => byId[id]
 
+// Niche ingredients are Premium "to discover" (Lita, 2026-10-19): the name and
+// one line stay free. Well-known and caution ingredients are always free.
+export const PREMIUM_INGREDIENTS = new Set(['betaglucan', 'polyglutamic', 'ectoin', 'allantoin', 'oat', 'cholesterol', 'jojoba', 'rosehip', 'bisabolol', 'licorice', 'heartleaf', 'mugwort', 'propolis', 'ginseng', 'rice', 'zinc', 'zincpyrithione', 'sulfur', 'lactic', 'mandelic', 'pha', 'azelaic', 'bakuchiol', 'arbutin', 'txa', 'kojic', 'peptides', 'ferulic', 'hydrocolloid'])
+export const isPremiumIngredient = id => PREMIUM_INGREDIENTS.has(id)
+
 const productList = product => {
   const full = (product?.ingredients || []).map(s => String(s).toLowerCase())
   const key = (product?.key_ingredients || []).map(s => String(s).toLowerCase())

@@ -38,6 +38,7 @@ import PrivacyScreen from './screens/PrivacyScreen'
 import SuggestionsScreen from './screens/SuggestionsScreen'
 import RekodScreen from './screens/RekodScreen'
 import DekodScreen from './screens/DekodScreen'
+import LayeringScreen from './screens/LayeringScreen'
 
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -150,6 +151,7 @@ function AppTabs({ userId }) {
         { name: 'Privacy', component: PrivacyScreen },
         { name: 'Suggestions', component: SuggestionsScreen },
         { name: 'Journal', component: JournalScreen },
+        { name: 'Layering', component: LayeringScreen },
         { name: 'More', component: MoreScreen },
         ...MORE_SCREENS,
       ].map(screen => (

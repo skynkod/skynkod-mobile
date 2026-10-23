@@ -188,7 +188,7 @@ export default function KodaScreen({ route, navigation }) {
           <Text style={[TYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>
             {t('Koda will be back for you on Monday, with {n} new free questions.', { n: quota.limit || 3 })}{'\n'}{t('Want to keep chatting now? Premium gives you Koda every day.')}
           </Text>
-          <Pressable onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Koda every day very soon.'))}
+          <Pressable onPress={() => navigation.navigate('Premium')}
             style={({ pressed }) => [styles.unlock, { opacity: pressed ? 0.85 : 1 }]}>
             <Ionicons name="diamond" size={15} color="#E2C6DA" />
             <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t('Unlock Koda with Premium')}</Text>

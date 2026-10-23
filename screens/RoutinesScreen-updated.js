@@ -162,6 +162,20 @@ export default function RoutinesScreen({ route, navigation }) {
       </Card>
       ) : null}
 
+      {/* Premium: her products in the right order, how much and how */}
+      {saved ? (
+        <Card style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('Layering', { period: tab })}>
+          <View style={styles.quizRow}>
+            <Ionicons name="layers-outline" size={22} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('How to apply, in order')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Which product first, how much and how')}</Text>
+            </View>
+            <Ionicons name="diamond" size={14} color="#33202E" />
+          </View>
+        </Card>
+      ) : null}
+
       {!skinType && !saved ? (
         <Card tone="soft" style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('SkinProfile')}>
           <View style={styles.quizRow}>

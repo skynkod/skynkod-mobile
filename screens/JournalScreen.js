@@ -16,6 +16,7 @@ import { repauseAfterReaction } from '../utils/emergency-state';
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
+import { PremiumBlur } from '../components/PremiumLock';
 import { skinDay, skinDayKey } from '../utils/skin-day';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
@@ -101,7 +102,7 @@ export default function JournalScreen({ route, navigation }) {
   const [skinPatterns, setSkinPatterns] = useState(null);
   const dirty = useRef(false);
   const [premium, setPremiumState] = useState(false);
-  useEffect(() => { if (user?.id) isPremiumUser(user.id).then(p => setPremiumState(p || user.email === 'djedidilita@gmail.com')).catch(() => {}); }, [user?.id]);
+  useFocusEffect(useCallback(() => { if (user?.id) isPremiumUser(user.id).then(setPremiumState).catch(() => {}); }, [user?.id]));
 
   const weekStart = startOfWeek(selected);
   const days = [...Array(7)].map((_, i) => {
@@ -498,7 +499,9 @@ export default function JournalScreen({ route, navigation }) {
               </Text>
             </>
           ) : skinPatterns.patterns.length ? (
-            skinPatterns.patterns.map(p => (
+            // Free: the first thing her skin tells her. Premium: all of it.
+            (() => {
+              const row = p => (
               <View key={p.id} style={styles.patternRow}>
                 <View style={[styles.patternIcon, { backgroundColor: p.positive ? colors.successSoft : colors.primarySoft }]}>
                   <Ionicons name={p.icon} size={18} color={p.positive ? colors.success : colors.primary} />
@@ -508,7 +511,18 @@ export default function JournalScreen({ route, navigation }) {
                   <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Noticed {n} of {total} times', { n: p.times, total: p.total })}</Text>
                 </View>
               </View>
-            ))
+              );
+              const [first, ...rest] = skinPatterns.patterns;
+              if (premium || !rest.length) return skinPatterns.patterns.map(row);
+              return (
+                <>
+                  {row(first)}
+                  <PremiumBlur locked title={t('{n} more things your skin tells you', { n: rest.length })} text="The patterns behind your good and bad skin days." style={{ marginTop: SPACING.sm }}>
+                    {rest.slice(0, 3).map(row)}
+                  </PremiumBlur>
+                </>
+              );
+            })()
           ) : (
             <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
               {t('Nothing stands out yet. Keep checking in, it gets clearer over time.')}

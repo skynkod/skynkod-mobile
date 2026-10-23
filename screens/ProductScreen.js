@@ -4,6 +4,7 @@ import { View, Text, Image, Pressable, StyleSheet, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, LoadingView, EmptyState, useColors } from '../components/ui'
 import MatchBadge from '../components/MatchBadge'
+import { usePremium, PremiumBlur } from '../components/PremiumLock'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
@@ -23,6 +24,10 @@ export default function ProductScreen({ navigation, route }) {
   const t = useT()
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
+  // Free: the verdict and every safety warning. Premium: what each ingredient
+  // does, and the better alternatives.
+  const premium = usePremium()
+  const lockedDetail = premium === false
   const [product, setProduct] = useState(route?.params?.product || null)
   const [loading, setLoading] = useState(!product)
   const [showAll, setShowAll] = useState(false)
@@ -143,7 +148,17 @@ export default function ProductScreen({ navigation, route }) {
       </View>
 
       {/* Not 100% safe for her: the closest product that is */}
-      {alt && !alt.safe ? (
+      {alt && !alt.safe && alt.alternative && lockedDetail ? (
+        <PremiumBlur locked title="A better product for your skin" text="Premium shows the closest product that is 100% safe for you." style={{ marginTop: SPACING.lg, minHeight: 150 }}>
+          <View style={[styles.altCard, { backgroundColor: '#33202E', marginTop: 0 }]}>
+            <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{alt.alternative.brand} {alt.alternative.name}</Text>
+            </View>
+          </View>
+        </PremiumBlur>
+      ) : alt && !alt.safe ? (
         alt.alternative ? (
           <Pressable onPress={() => navigation.navigate('Product', { id: alt.alternative.id, product: undefined })} style={[styles.altCard, { backgroundColor: '#33202E' }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
@@ -172,7 +187,11 @@ export default function ProductScreen({ navigation, route }) {
             <View key={idx} style={{ marginTop: SPACING.sm }}>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(a.text)}</Text>
               {a.detail ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(a.detail)}</Text> : null}
-              {a.alternatives.length ? (
+              {a.alternatives.length && lockedDetail ? (
+                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700', marginTop: SPACING.md }]} onPress={() => navigation.navigate('Premium')}>
+                  {t('Safer alternatives')} · <Text style={{ color: '#33202E' }}>{t('with Premium')} ◆</Text>
+                </Text>
+              ) : a.alternatives.length ? (
                 <>
                   <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700', marginTop: SPACING.md }]}>{t('Safer alternatives')}</Text>
                   <View style={styles.altRow}>
@@ -219,7 +238,21 @@ export default function ProductScreen({ navigation, route }) {
         </>
       ) : null}
 
-      {match.found.length ? (
+      {match.found.length && lockedDetail ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('KEY INGREDIENTS')}</Text>
+          <PremiumBlur locked title="Every ingredient explained" text="What each ingredient of this product does for your skin.">
+            {match.found.slice(0, 3).map(entry => (
+              <View key={entry.id} style={[styles.ingredient, { borderBottomColor: colors.border }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
+                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(entry.what)}</Text>
+                </View>
+              </View>
+            ))}
+          </PremiumBlur>
+        </>
+      ) : match.found.length ? (
         <>
           <Text style={[styles.section, { color: colors.muted }]}>{t('KEY INGREDIENTS')}</Text>
           {match.found.map(entry => (

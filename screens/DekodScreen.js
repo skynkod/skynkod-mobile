@@ -14,8 +14,6 @@ import { syncSmartReminders } from '../utils/notifications'
 import { track } from '../utils/analytics'
 import { SPACING, TYPE } from '../utils/theme'
 
-// Lets the owner try Premium features before in-app purchase exists.
-const TESTERS = ['djedidilita@gmail.com']
 const LABEL = 'Dekod · Skin scan'
 
 const LEVEL = { none: 'None', light: 'Light', visible: 'Visible' }
@@ -76,9 +74,10 @@ export default function DekodScreen({ navigation }) {
   }, [user?.id])
   useFocusEffect(useCallback(() => { loadHistory() }, [loadHistory]))
 
+  // Re-read on each visit, so the team's Free / Premium switch applies at once.
+  useFocusEffect(useCallback(() => { if (user?.id) isPremiumUser(user.id).then(setPremium).catch(() => setPremium(false)) }, [user?.id]))
   useEffect(() => {
     if (!user?.id) return
-    isPremiumUser(user.id).then(p => setPremium(p || TESTERS.includes(user.email))).catch(() => setPremium(TESTERS.includes(user.email)))
     hasDekodConsent(user.id).then(setConsent)
     isIntroHidden('dekod', user.id).then(setIntroHidden)
   }, [user?.id])
@@ -363,7 +362,7 @@ export default function DekodScreen({ navigation }) {
 
   const startButton = premium
     ? <PButton title={t('Start my Dekod')} icon="scan-outline" onPress={begin} />
-    : <PButton title={t('Unlock with Premium')} icon="lock-open-outline" onPress={() => Alert.alert(t('Premium is coming soon'), t('You’ll be able to unlock Dekod very soon.'))} />
+    : <PButton title={t('Unlock with Premium')} icon="lock-open-outline" onPress={() => navigation.navigate('Premium')} />
 
   // ---------- Intro hidden: a short start screen ----------
   if (introHidden) {

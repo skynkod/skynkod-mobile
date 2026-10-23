@@ -7,7 +7,8 @@ import { useT } from '../utils/LanguageContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { SECTIONS, articlesIn, searchArticles, articlesForProfile } from '../utils/encyclopedia';
 import { HOWTO } from '../utils/encyclopedia/howto';
-import { INGREDIENTS, searchIngredients } from '../utils/ingredients-guide';
+import { INGREDIENTS, searchIngredients, isPremiumIngredient } from '../utils/ingredients-guide';
+import { usePremium } from '../components/PremiumLock';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
 // Skyncyclopedia: where people learn how to look after their skin.
@@ -18,6 +19,7 @@ export default function SkyncyclopediaScreen({ navigation }) {
   const profile = useSkinProfile(user?.id);
   const [query, setQuery] = useState('');
   const [section, setSection] = useState('basics');
+  const premium = usePremium();
 
   const searching = query.trim().length >= 2;
   const foundArticles = useMemo(() => (searching ? searchArticles(query) : []), [query]);
@@ -52,7 +54,7 @@ export default function SkyncyclopediaScreen({ navigation }) {
         <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(i.name)}</Text>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(i.what)}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      {premium === false && isPremiumIngredient(i.id) ? <Ionicons name="diamond" size={14} color="#33202E" /> : <Ionicons name="chevron-forward" size={16} color={colors.muted} />}
     </Pressable>
   );
 

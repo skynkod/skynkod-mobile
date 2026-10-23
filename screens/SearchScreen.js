@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, TextInput, Pressable, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen, useColors } from '../components/ui'
+import { Screen, Button, useColors } from '../components/ui'
+import { usePremium, UnlockButton } from '../components/PremiumLock'
 import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
@@ -22,6 +23,7 @@ export default function SearchScreen({ navigation, route }) {
   const t = useT()
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
+  const premium = usePremium()
   const [query, setQuery] = useState(route?.params?.query || '')
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(false)
@@ -83,6 +85,25 @@ export default function SearchScreen({ navigation, route }) {
   }, [query])
 
   const hasQuery = query.trim().length >= 2
+
+  // Searching without the product in hand is Premium, like Yuka; scanning stays
+  // free, and so does finding a product to teach the scanner an unknown barcode.
+  if (premium === false && !pendingBarcode) {
+    return (
+      <Screen back>
+        <View style={styles.locked}>
+          <View style={[styles.lockIcon, { backgroundColor: colors.primarySoft }]}><Ionicons name="search" size={28} color={colors.primary} /></View>
+          <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.lg }]}>{t('PREMIUM')}</Text>
+          <Text style={[TYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.xs }]}>{t('Search any product or ingredient')}</Text>
+          <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm, lineHeight: 22 }]}>
+            {t('Check a product before you buy it, or learn what an ingredient does, without needing the bottle in your hands.')}
+          </Text>
+          <UnlockButton style={{ marginTop: SPACING.xl, alignSelf: 'stretch' }} />
+          <Button title={t('Scan a product, it’s free')} icon="scan-outline" variant="secondary" onPress={() => navigation.navigate('Scanner')} style={{ marginTop: SPACING.sm, alignSelf: 'stretch' }} />
+        </View>
+      </Screen>
+    )
+  }
 
   return (
     <Screen back keyboard>
@@ -200,6 +221,8 @@ export default function SearchScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  locked: { alignItems: 'center', paddingTop: SPACING.xxl, paddingHorizontal: SPACING.md },
+  lockIcon: { width: 72, height: 72, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
   input: { flex: 1, fontSize: 16, height: '100%' },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
