@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, RefreshControl, Animated, Dimensions, AppState, Alert } from 'react-native'
+import { View, Text, StyleSheet, Pressable, RefreshControl, Animated, Dimensions, AppState, Alert, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -21,13 +21,14 @@ import { todaySteps } from '../utils/routine-checks'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
-import { getSkinWeather, pickSkinTips, getWeatherNow, getForecastWeather } from '../utils/skin-weather'
+import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
 import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
 import SkinForecast from '../components/SkinForecast'
 import { usePremium } from '../components/PremiumLock'
-import { seasonDailyTip, currentSeason } from '../utils/seasons'
+import { currentSeason, SEASONS } from '../utils/seasons'
+import * as Location from 'expo-location'
 import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
 import { currentRoutine, withPauses } from '../utils/current-routine'
 import { takeNewThanks } from '../utils/contributions'
@@ -93,7 +94,6 @@ export default function TodayScreen({ navigation }) {
   const [plan, setPlan] = useState(null)
   const [open, setOpen] = useState(null) // 'morning' | 'evening'
   const [weather, setWeather] = useState(null)
-  const [sky, setSky] = useState(null)
   const [forecastDays, setForecastDays] = useState(null)
   const [patterns, setPatterns] = useState(null)
   const premium = usePremium()
@@ -193,7 +193,6 @@ export default function TodayScreen({ navigation }) {
   useEffect(() => {
     if (!coords) return
     getWeatherNow(coords).then(setWeather).catch(() => {})
-    getSkinWeather(coords).then(setSky).catch(() => {})
     getForecastWeather(coords).then(setForecastDays).catch(() => {})
   }, [coords?.latitude, coords?.longitude])
 
@@ -259,14 +258,14 @@ export default function TodayScreen({ navigation }) {
   const swapAt = Math.max(40, topBottom - barHeight)
   const bigFade = scrollY.interpolate({ inputRange: [0, swapAt * 0.6], outputRange: [1, 0], extrapolate: 'clamp' })
   const smallFade = scrollY.interpolate({ inputRange: [swapAt * 0.5, swapAt], outputRange: [0, 1], extrapolate: 'clamp' })
-  const tips = sky ? pickSkinTips(sky.weather, profile, sky.city) : []
-  const seasonTip = seasonDailyTip(currentSeason(new Date(), coords?.latitude ?? null).id)
-  // Mornings: the day's weather tip (UV, heat…). Evenings: sleep, the skin's repair time.
-  const sleepTip = { icon: 'bed-outline', text: 'Aim for 7 to 9 hours of sleep tonight: your skin repairs itself while you sleep.' }
-  const dayTip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
-  const tip = (afterSunrise && hour < 15) ? dayTip : sleepTip
   const tonight = plan ? NIGHTS[tonightNight(plan)] : null
   const forecast = buildForecast({ days: forecastDays, profile })
+  // Local weather is off: ask again, or open the phone's settings if iOS won't ask.
+  const enableLocation = async () => {
+    const permission = await Location.getForegroundPermissionsAsync().catch(() => null)
+    if (permission && !permission.granted && !permission.canAskAgain) return Linking.openSettings()
+    updateLocation?.()
+  }
   const whenNight = i => (i === 0 ? t('tonight') : i === 1 ? t('tomorrow night')
     : t('on {day}', { day: new Date(Date.now() + i * 86400000).toLocaleDateString(language, { weekday: 'long' }) }))
   const forecastSignals = [
@@ -387,19 +386,12 @@ export default function TodayScreen({ navigation }) {
           </Text>
         </Pressable>
       ) : null}
-      {forecast ? null : <View style={styles.tipLine}>
-        <Ionicons name={tip.icon} size={14} color={colors.muted} />
-        <Text style={{ color: colors.muted, flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '300', fontStyle: 'italic' }}>{t(tip.text)}</Text>
-      </View>}
       </Animated.View>
 
       {/* Your skin forecast: the next 3 days, from the weather, her journal and her Rekod */}
-      {forecast ? (
-        <>
-          <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin forecast')}</Text>
-          <SkinForecast forecast={forecast} signals={forecastSignals} />
-        </>
-      ) : null}
+      <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin forecast')}</Text>
+      <SkinForecast forecast={forecast} now={weather} season={SEASONS[currentSeason(new Date(), coords?.latitude ?? null).id]}
+        signals={forecastSignals} onEnableLocation={enableLocation} />
 
       {/* The tip for the week, from last week: just the advice, kindly. Her
           numbers live in My progress, where she goes when she wants them. */}
@@ -552,7 +544,6 @@ const styles = StyleSheet.create({
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },
-  tipLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxxl, marginBottom: SPACING.md },
   bell: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   programmeIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },

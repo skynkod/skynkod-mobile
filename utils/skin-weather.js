@@ -78,7 +78,7 @@ export const getSkinWeather = async (coords) => {
 
 // ---------- The weather right now (refreshed every 30 minutes) ----------
 
-const NOW_KEY = 'skynkod_weather_now'
+const NOW_KEY = 'skynkod_weather_now_v2'
 
 // WMO weather codes → a short label and an icon (day / night).
 const SKY = [
@@ -116,6 +116,7 @@ export const getWeatherNow = async (coords) => {
     humidity: Math.round(c.relative_humidity_2m ?? 0),
     uv: Math.round(c.uv_index ?? 0),
     isDay: c.is_day !== 0,
+    code: c.weather_code ?? 3,
     ...sky,
   }
   AsyncStorage.setItem(NOW_KEY, JSON.stringify(fresh)).catch(() => {})
@@ -124,7 +125,7 @@ export const getWeatherNow = async (coords) => {
 
 // ---------- The 3-day skin forecast (today and the next two days) ----------
 
-const FORECAST_KEY = 'skynkod_skin_forecast'
+const FORECAST_KEY = 'skynkod_skin_forecast_v2'
 
 export const getForecastWeather = async (coords) => {
   if (!coords?.latitude) return null
@@ -136,7 +137,7 @@ export const getForecastWeather = async (coords) => {
   } catch {}
   const res = await fetch('https://api.open-meteo.com/v1/forecast'
     + `?latitude=${coords.latitude}&longitude=${coords.longitude}`
-    + '&daily=uv_index_max,temperature_2m_max,relative_humidity_2m_min,relative_humidity_2m_mean,wind_speed_10m_max'
+    + '&daily=weather_code,uv_index_max,temperature_2m_max,relative_humidity_2m_min,relative_humidity_2m_mean,wind_speed_10m_max'
     + '&hourly=uv_index&timezone=auto&forecast_days=3')
   if (!res.ok) throw new Error(`forecast ${res.status}`)
   const data = await res.json()
@@ -147,6 +148,7 @@ export const getForecastWeather = async (coords) => {
     const peak = hours.reduce((best, uv, h) => (uv > hours[best] ? h : best), 0)
     return {
       date,
+      code: d.weather_code?.[i] ?? 3,
       uvMax: d.uv_index_max?.[i] ?? 0,
       uvPeakHour: peak,
       tempMax: d.temperature_2m_max?.[i] ?? 20,

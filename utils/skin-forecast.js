@@ -22,7 +22,11 @@ export const forecastTip = (w, profile) => {
   if (w.tempMax <= 10) return { id: 'cold', level: 3, icon: 'snow-outline', short: '{t}°', head: '{when}: cold, {t}° at most', advice: 'A richer cream, and protect your cheeks and lips.', params: { t } }
   if (type === 'Oily' && humid && w.humidityMean >= 70) return { id: 'humid', level: 2, icon: 'water-outline', short: 'Humid', head: '{when}: humid air', advice: 'A light gel moisturizer is enough.' }
   if (uv >= 5) return { id: 'uvmid', level: 2, icon: 'partly-sunny-outline', short: 'UV {uv}', head: '{when}: sunny, UV {uv}', advice: 'SPF 30 or more in the morning.', params: { uv } }
-  return { id: 'calm', level: 0, icon: 'cloud-outline', short: 'Calm', head: '{when}: calm skin weather', advice: 'A good day to keep your two routines steady.' }
+  // Calm for the skin: say what the sky does, with the tip that goes with it.
+  const rain = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(w.code)
+  if (rain) return { id: 'rain', level: 1, icon: 'rainy-outline', short: 'Rain', head: '{when}: rain and {t}°', advice: 'Humid air is kind to your skin: a lighter cream is enough. Keep your sunscreen, UV goes through clouds.', params: { t } }
+  if (w.code === 3 || w.code === 45 || w.code === 48) return { id: 'cloudy', level: 0, icon: 'cloud-outline', short: '{t}°', head: '{when}: cloudy, {t}°', advice: 'UV goes through clouds: keep your sunscreen in the morning.', params: { t } }
+  return { id: 'calm', level: 0, icon: 'cloud-outline', short: '{t}°', head: '{when}: calm skin weather, {t}°', advice: 'A good day to keep your two routines steady.', params: { t } }
 }
 
 const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -63,7 +67,7 @@ export const rekodSignals = (plan, { nightOf, nights, today = new Date() }) => {
 // The whole card: 3 day tiles, the day that matters most first, and the signals.
 export const buildForecast = ({ days, profile }) => {
   if (!days?.length) return null
-  const tiles = days.slice(0, 3).map((w, i) => ({ index: i, date: w.date, tip: forecastTip(w, profile) }))
+  const tiles = days.slice(0, 3).map((w, i) => ({ index: i, date: w.date, code: w.code, temp: Math.round(w.tempMax), tip: forecastTip(w, profile) }))
   // The day to talk about: the most important one, the soonest when equal.
   const focus = tiles.reduce((best, d) => (d.tip.level > best.tip.level ? d : best), tiles[0])
   return { tiles, focus: focus.index }
