@@ -56,8 +56,9 @@ export const getProduct = async (id) => {
   return data
 }
 
-// Barcode → product, through the backend (which also checks Open Beauty Facts).
-// Returns { product } or { notFound: true } or { error }.
+// Barcode → product, through the backend. An unknown barcode comes back with
+// a hint from Open Beauty Facts (brand, name) for her proposal.
+// Returns { product } or { notFound: true, suggestion } or { error }.
 export const lookupBarcode = async (barcode) => {
   try {
     const { data: { session } } = await supabase.auth.getSession()
@@ -67,7 +68,7 @@ export const lookupBarcode = async (barcode) => {
       body: JSON.stringify({ barcode }),
     })
     const data = await response.json().catch(() => ({}))
-    if (response.status === 404) return { notFound: true, brandHint: data.brandHint || null }
+    if (response.status === 404) return { notFound: true, brandHint: data.brandHint || null, suggestion: data.suggestion || null }
     if (!response.ok || !data.product) return { error: data.error || `HTTP ${response.status}` }
     // A hidden (body care) product is treated as not in the catalogue yet.
     if (isHiddenCategory(data.product.category)) return { notFound: true, brandHint: data.product.brand || null }

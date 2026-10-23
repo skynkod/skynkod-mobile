@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { currentRoutine } from './current-routine'
+import { getAcceptedContributions } from './contributions'
 import { supabase } from './supabase'
 import { programmeFinished, weekOf, goalOf } from './rekod'
 import { getSosHistory } from './emergency-state'
@@ -108,9 +110,9 @@ const count = async (query) => { const { count: n, error } = await query; if (er
 const answered = v => (Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== '')
 
 const gather = async (userId, state) => {
-  const [profile, routines, products, ticks, journal, dekod, kodaQuestions, rekod, sos, paused] = await Promise.all([
+  const [profile, routines, products, ticks, journal, dekod, kodaQuestions, rekod, sos, paused, contributions] = await Promise.all([
     supabase.from('users').select('skin_type, skin_concerns, skin_goals, skin_profile, acne_types, skin_conditions, avoid_ingredients, pregnancy, consent_health_at, created_at').eq('id', userId).maybeSingle(),
-    supabase.from('routines').select('type, steps').eq('user_id', userId),
+    supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('user_products').select('id, product_id, category, created_at, opened_at, status').eq('user_id', userId).eq('status', 'owned'),
     supabase.from('routine_completions').select('date, routine_type').eq('user_id', userId),
     supabase.from('journal_entries').select('date, mood, skin_conditions').eq('user_id', userId),
@@ -119,13 +121,14 @@ const gather = async (userId, state) => {
     supabase.from('rekod_plans').select('plan').eq('user_id', userId).maybeSingle(),
     getSosHistory(userId),
     getPausedProducts(userId),
+    getAcceptedContributions(userId).catch(() => []),
   ])
   for (const r of [profile, routines, products, ticks, journal]) if (r.error) throw r.error
   const p = profile.data || {}
   const plan = rekod.data?.plan || null
   const rekodFinished = !!plan && (!!plan.maintenance || programmeFinished(plan))
   // Sun Guardian: a sunscreen among the morning routine's products.
-  const morningIds = (routines.data || []).filter(r => r.type === 'morning').flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean)
+  const morningIds = (currentRoutine(routines.data, 'morning')?.steps || []).map(s => s.product_id).filter(Boolean)
   let morningHasSpf = false
   if (morningIds.length) {
     const { data } = await supabase.from('products').select('category').in('id', morningIds)
@@ -156,6 +159,7 @@ const gather = async (userId, state) => {
     comeback: !!state.comeback,
     stars: state.stars,
     shares: state.shares.length,
+    contributions,
     ingredients: state.ingredients,
     productPages: state.productPages,
     opened: state.opened,

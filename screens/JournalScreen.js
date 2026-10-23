@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
+import { currentRoutine, todayStepsWithPauses } from '../utils/current-routine';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions } from '../utils/journal-day';
 import { getMyProducts } from '../utils/catalog';
@@ -15,7 +16,7 @@ import { repauseAfterReaction } from '../utils/emergency-state';
 import { logError } from '../utils/errorLogger';
 import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
-import { skinDayKey } from '../utils/skin-day';
+import { skinDay, skinDayKey } from '../utils/skin-day';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
 const planFor = tags => {
@@ -76,7 +77,8 @@ export default function JournalScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  const today = new Date();
+  // Today is the skin day (sunrise to sunrise), like on Home: at 1 am it is still yesterday.
+  const today = skinDay();
   const [selected, setSelected] = useState(today);
   const [weekEntries, setWeekEntries] = useState([]);
   const [entryId, setEntryId] = useState(null);
@@ -115,6 +117,8 @@ export default function JournalScreen({ route, navigation }) {
       const end = new Date(weekStart);
       end.setDate(end.getDate() + 7);
       const rows = await getEntriesBetween(user.id, weekStart, end);
+      // She moved to another day while this was loading: that day loads its own.
+      if (entryDay.current !== selected.toDateString()) return;
       setWeekEntries(rows);
       const entry = rows.find(r => sameDay(new Date(r.date), selected));
       setEntryId(prev => entry?.id || prev);
@@ -130,6 +134,12 @@ export default function JournalScreen({ route, navigation }) {
     }
   }, [user?.id, selected.toDateString()]);
 
+  // A new day starts without an entry until loadWeek finds one, so a save
+  // never updates the entry of the day shown before.
+  useEffect(() => {
+    setEntryId(null);
+  }, [selected.toDateString()]);
+
   // Routine progress for the selected day.
   const loadRoutines = useCallback(async () => {
     if (!user?.id) return;
@@ -137,16 +147,17 @@ export default function JournalScreen({ route, navigation }) {
       await syncTodayTicks(user.id);
       const [routines, progress, regularity] = await Promise.all([
         getUserRoutines(user.id),
-        getDayProgress(user.id, selected.toDateString() === new Date().toDateString() ? skinDayKey() : localDay(selected)),
+        getDayProgress(user.id, sameDay(selected, today) ? skinDayKey() : localDay(selected)),
         getRecentRegularity(user.id, 7),
       ]);
       const list = routines.success ? routines.data || [] : [];
-      const rows = ['morning', 'evening']
-        .map(type => {
-          const steps = todaySteps(list.find(r => r.type === type)?.steps || [], selected);
-          return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
-        })
-        .filter(Boolean);
+      // Today counts the steps exactly as Home shows them (paused products left out).
+      const isToday = sameDay(selected, skinDay());
+      const rows = (await Promise.all(['morning', 'evening'].map(async type => {
+        const routine = currentRoutine(list, type);
+        const steps = isToday ? await todayStepsWithPauses(user.id, routine) : todaySteps(routine?.steps || [], selected);
+        return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
+      }))).filter(Boolean);
       setRoutineLog({ rows, regularity });
     } catch (error) {
       await logError('Journal_loadRoutines', error, {}, 'warn');
@@ -163,7 +174,7 @@ export default function JournalScreen({ route, navigation }) {
 
   // Home's check-in shortcut lands on today.
   useEffect(() => {
-    if (route?.params?.openNew) setSelected(new Date());
+    if (route?.params?.openNew) setSelected(skinDay());
   }, [route?.params?.openNew]);
 
   // From a Dekod scan: what it saw is pre-ticked, ready to check and save.
@@ -186,6 +197,11 @@ export default function JournalScreen({ route, navigation }) {
   latest.current = { mood, tags, note, newProducts };
   const entryRef = useRef(entryId);
   entryRef.current = entryId;
+  const entryDay = useRef(selected.toDateString());
+  if (entryDay.current !== selected.toDateString()) {
+    entryDay.current = selected.toDateString();
+    entryRef.current = null;
+  }
   const noteTimer = useRef(null);
 
   // Saves run one after another, so quick taps never create two entries.
@@ -302,7 +318,7 @@ export default function JournalScreen({ route, navigation }) {
         })}
         <Pressable
           disabled={sameDay(weekStart, startOfWeek(today))}
-          onPress={() => leaveDay(() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x > today ? new Date() : x; }))}
+          onPress={() => leaveDay(() => setSelected(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x > today ? skinDay() : x; }))}
           hitSlop={8}
           accessibilityLabel={t('Next week')}
         >

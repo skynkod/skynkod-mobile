@@ -11,7 +11,7 @@ import * as Notifications from 'expo-notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
-import { signOut, updateUserProfile } from './utils/supabase'
+import { supabase, signOut, updateUserProfile } from './utils/supabase'
 import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder, syncSmartReminders } from './utils/notifications'
 import { logError } from './utils/errorLogger'
 import { setAnalyticsUser, track } from './utils/analytics'
@@ -264,7 +264,12 @@ function AppContent() {
     try {
       const saved = await AsyncStorage.getItem('skynkod_user')
 
-      if (saved) {
+      // Saved login without a Supabase session (signed out elsewhere, expired
+      // or removed): back to the login screen instead of empty pages.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (saved && !session?.user) {
+        await AsyncStorage.removeItem('skynkod_user')
+      } else if (saved) {
         const userData = JSON.parse(saved)
         setUser(userData)
         const onboarded = await AsyncStorage.getItem(`skynkod_onboarded_${userData.userId}`)
@@ -286,6 +291,14 @@ function AppContent() {
 
   useEffect(() => {
     check()
+  }, [])
+
+  // Supabase ended the session (refresh refused, password changed…): show login.
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(event => {
+      if (event === 'SIGNED_OUT') handleAccountGone()
+    })
+    return () => listener?.subscription?.unsubscribe?.()
   }, [])
 
   // Tapping a reminder opens its page: Home for routines, the journal for the check-in.

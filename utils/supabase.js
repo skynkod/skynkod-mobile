@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { AppState } from 'react-native'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = 'https://akshyahfnxmilhpimzme.supabase.co'
@@ -11,6 +12,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInApp: true,
   },
+})
+
+// React Native: refresh the sign-in only while the app is open, and right
+// away when it comes back, so the first request after a pause isn't refused.
+AppState.addEventListener('change', state => {
+  if (state === 'active') supabase.auth.startAutoRefresh()
+  else supabase.auth.stopAutoRefresh()
 })
 
 // ============ AUTH ============

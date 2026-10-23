@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { currentRoutine } from '../utils/current-routine';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -68,7 +69,7 @@ export default function RoutinesScreen({ route, navigation }) {
   }, [user?.id, tab]);
 
   // A routine counts only if it has at least one product in it.
-  const saved = savedRoutines.find(r => r.type === tab && Array.isArray(r.steps) && r.steps.some(s => s.product));
+  const saved = currentRoutine(savedRoutines, tab);
 
   // Full product records, to say whether each one suits the user's skin.
   const savedIds = (saved?.steps || []).map(s => s.product_id).filter(Boolean).join(',');

@@ -145,3 +145,15 @@ test('koda box: a star for an active week, tea and Welcome Back once otherwise',
   // Comeback Queen also comes from the box after a quiet week.
   assert.ok(reachedBadges(buildStats(empty({ comeback: true }))).includes('comeback-queen'))
 })
+
+test('contributions: points for each accepted product, badge at 3, never paid twice', () => {
+  const two = [{ id: 1, reviewed_at: '2026-10-20T10:00:00Z' }, { id: 2, reviewed_at: '2026-10-21T10:00:00Z' }]
+  const first = run(empty({ contributions: two }))
+  assert.equal(first.stats.contributions, 2)
+  assert.equal(first.badges.includes('official-contributor'), false)
+  assert.equal(first.fresh.filter(e => e.key.startsWith('contribution:')).reduce((n, e) => n + e.xp, 0), 2 * XP.contribution)
+  const events = apply({}, first.fresh)
+  const third = run(empty({ contributions: [...two, { id: 3, reviewed_at: '2026-10-21T11:00:00Z' }] }), events)
+  assert.equal(third.badges.includes('official-contributor'), true)
+  assert.deepEqual(third.fresh.filter(e => e.key.startsWith('contribution:')).map(e => e.key), ['contribution:3'])
+})

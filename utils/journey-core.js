@@ -12,6 +12,7 @@ export const XP = {
   ingredient: 2,        // an ingredient page read for the first time
   routineDay: 5,        // a day with a ticked routine, once per day
   challenge: 20,        // a weekly challenge completed
+  contribution: 30,     // a product she proposed, accepted into the catalogue
   // Badges are their own reward: they give no XP.
   badge: { common: 0, rare: 0, epic: 0, legendary: 0, secret: 0 },
 }
@@ -142,6 +143,7 @@ export const BADGES = [
   b('glow-journey', 'Glow Journey', 'legendary', 'tracking', 'accountDays', 365, 'Be on Skynkod for a year.', 'One year on Skynkod.', 'A whole year together. Thank you.'),
   // Community & sharing
   b('helpful-friend', 'Helpful Friend', 'common', 'community', 'shares', 1, 'Share Skynkod with a friend.', 'You shared Skynkod with a friend.', 'Good skin is better shared.'),
+  b('official-contributor', 'Official Contributor', 'epic', 'community', 'contributions', 3, 'Get 3 products you proposed from the scanner accepted into Skynkod.', '3 of your products joined Skynkod.', 'You help Skynkod grow for everyone. Thank you, official contributor.'),
   b('skynkod-ambassador', 'Skynkod Ambassador', 'rare', 'community', 'shares', 5, 'Share Skynkod 5 times.', 'You shared Skynkod 5 times.', 'You’re spreading the word. Thank you, ambassador.'),
   b('community-star', 'Community Star', 'rare', 'community', 'community', 10, 'Interact with 10 pieces of educational content.', 'Active in the community.', 'Coming soon.', { soon: true }),
   b('skincare-advocate', 'Skincare Advocate', 'epic', 'community', 'community', 1, 'Help the community discover an ingredient.', 'You helped others discover an ingredient.', 'Coming soon.', { soon: true }),
@@ -328,6 +330,7 @@ export const buildStats = (raw, now = new Date()) => {
     dekodScans: raw.dekodScans || 0,
     kodaQuestions: raw.kodaQuestions || 0,
     shares: raw.shares || 0,
+    contributions: (raw.contributions || []).length,
     comeback: raw.comeback || gaps.some(g => g >= 7) ? 1 : 0,
     longComeback: gaps.some(g => g >= 30) ? 1 : 0,
     rekodStarted: raw.rekodStarted ? 1 : 0,
@@ -431,6 +434,7 @@ export const newXpEvents = ({ raw, stats, badges, challenges, week }, events = {
   for (const [id, ts] of Object.entries(raw.ingredients || {})) add(`ingredient:${id}`, XP.ingredient, ts)
   for (const d of stats.routineDayList) add(`day:${d}`, XP.routineDay, fromKey(d).getTime())
   for (const c of challenges) if (c.done) add(`challenge:${week}:${c.id}`, XP.challenge)
+  for (const c of raw.contributions || []) add(`contribution:${c.id}`, XP.contribution, new Date(c.reviewed_at || now).getTime())
   for (const id of badges) add(`badge:${id}`, XP.badge[badgeOf(id)?.tier] || 0)
   return out
 }

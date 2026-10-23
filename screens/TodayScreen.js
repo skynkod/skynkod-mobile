@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated, Dimensions, AppState } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Animated, Dimensions, AppState, Alert } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -22,7 +22,9 @@ import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
-import { getActivePlan, adjustForPlan, RETURN_LABELS } from '../utils/emergency-state'
+import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
+import { currentRoutine, withPauses } from '../utils/current-routine'
+import { takeNewThanks } from '../utils/contributions'
 import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
@@ -102,6 +104,17 @@ export default function TodayScreen({ navigation }) {
       getWeekRecap(user.id).then(r => setRecap(r.empty ? null : { ...r, key })).catch(() => setRecap(null))
     }).catch(() => {})
   }, [user?.id]))
+  // A product she proposed from the scanner was accepted: thank her, once.
+  useFocusEffect(useCallback(() => {
+    if (!user?.id) return
+    takeNewThanks(user.id).then(fresh => {
+      if (!fresh.length) return
+      syncSoon(user.id, 500)
+      Alert.alert(t('Thank you! 🌿'), fresh.length > 1
+        ? t('{n} products you proposed are now in Skynkod. You earned points towards the Official Contributor badge.', { n: fresh.length })
+        : t('A product you proposed is now in Skynkod. You earned points towards the Official Contributor badge.'))
+    }).catch(() => {})
+  }, [user?.id]))
   const closeRecap = () => { AsyncStorage.setItem(recap.key, '1').catch(() => {}); setRecap(null) }
 
   const load = useCallback(async () => {
@@ -113,9 +126,8 @@ export default function TodayScreen({ navigation }) {
         AsyncStorage.getItem(doneKey(user.id, 'evening')).catch(() => null),
         getRekodPlan(user.id).catch(() => null),
       ])
-      const latest = type => (res.success ? (res.data || []).find(r => r.type === type && Array.isArray(r.steps) && r.steps.some(x => x.product)) : null)
-      const morning = latest('morning')
-      const evening = latest('evening')
+      const morning = res.success ? currentRoutine(res.data, 'morning') : null
+      const evening = res.success ? currentRoutine(res.data, 'evening') : null
       setRoutines({ morning, evening })
       // Ticks saved online count too (e.g. done on another phone).
       const online = await getDayProgress(user.id).catch(() => null)
@@ -169,15 +181,7 @@ export default function TodayScreen({ navigation }) {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
 
-  const adjustedOf = period => {
-    const base = adjustForPlan(todaySteps(routines[period]?.steps || []), sos.products, sos.plan, sos.newest)
-    const mine = new Set(pausedProducts.map(p => p.id))
-    if (!mine.size) return base
-    return {
-      steps: base.steps.filter(st => !mine.has(st.product_id)),
-      paused: [...base.paused, ...base.steps.filter(st => mine.has(st.product_id)).map(step => ({ step, reason: 'paused by you' }))],
-    }
-  }
+  const adjustedOf = period => withPauses(todaySteps(routines[period]?.steps || []), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
   const stepsOf = period => adjustedOf(period).steps
   const countOf = period => {
     const steps = stepsOf(period)

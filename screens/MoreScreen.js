@@ -27,6 +27,8 @@ import BarcodeScannerScreen from './BarcodeScannerScreen'
 import SkyncyclopediaScreen from './SkyncyclopediaScreen'
 import SettingsScreen from './SettingsScreen'
 import SkinProfileScreen from './SkinProfileScreen'
+import ProposalsScreen from './ProposalsScreen'
+import { isAdmin } from '../utils/contributions'
 
 export const MORE_SCREENS = [
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
@@ -43,6 +45,8 @@ export const MORE_SCREENS = [
   { name: 'Premium', component: PremiumScreen, label: 'Premium', subtitle: 'Unlock everything', icon: 'diamond-outline', group: 'account' },
   { name: 'Settings', component: SettingsScreen, label: 'Settings', subtitle: 'Theme, language, account', icon: 'settings-outline', group: 'account' },
   { name: 'About', component: AboutScreen, label: 'About', subtitle: 'Skynkod v1.0', icon: 'information-circle-outline', group: 'account' },
+  // Only shown to the Skynkod team.
+  { name: 'Proposals', component: ProposalsScreen, label: 'Product proposals', subtitle: 'Products sent from the scanner', icon: 'cube-outline', group: 'admin' },
 ]
 
 // Routines left the tab bar (they live on Home now), so Profile links to them too.
@@ -66,6 +70,8 @@ export default function MoreScreen({ navigation }) {
   const journey = useJourney(user?.id)
   // Keep the level and badges fresh when the profile opens.
   useFocusEffect(useCallback(() => { syncSoon(user?.id, 200) }, [user?.id]))
+  const [admin, setAdmin] = useState(false)
+  useFocusEffect(useCallback(() => { isAdmin().then(setAdmin).catch(() => {}) }, []))
   const open = name => navigation.navigate(name)
   const tracking = byGroup('track')
   const [loggingOut, setLoggingOut] = useState(false)
@@ -170,6 +176,17 @@ export default function MoreScreen({ navigation }) {
           <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
         ))}
       </Card>
+
+      {admin ? (
+        <>
+          <SectionHeader title="Skynkod team" style={{ marginTop: SPACING.xl }} />
+          <Card padded={false} style={styles.listCard}>
+            {byGroup('admin').map((item, idx, arr) => (
+              <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
+            ))}
+          </Card>
+        </>
+      ) : null}
 
       {/* Log out, at the very bottom */}
       <Pressable
