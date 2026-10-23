@@ -8,7 +8,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productsWithIngredient, photoOf } from '../utils/catalog'
 import { trackIngredient } from '../utils/journey'
-import { getIngredient, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
+import { getIngredient, ingredientFit, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { HOWTO, PREGNANCY } from '../utils/encyclopedia/howto'
 import { ARTICLES } from '../utils/encyclopedia'
 import { logError } from '../utils/errorLogger'
@@ -171,7 +171,7 @@ export default function IngredientScreen({ navigation, route }) {
               <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
             </View>
-            <MatchBadge tone={match.tone} label={t(badgeText(match))} />
+            <MatchBadge tone={badgeTone(match)} label={t(badgeText(match))} />
           </Pressable>
         )
       })}

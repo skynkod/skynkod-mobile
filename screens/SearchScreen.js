@@ -10,7 +10,7 @@ import { useSkinProfile } from '../utils/useSkinProfile'
 import { searchProducts, linkBarcode, photoOf } from '../utils/catalog'
 import { requestProduct } from '../utils/community-data'
 import { track } from '../utils/analytics'
-import { searchIngredients, ingredientFit, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
+import { searchIngredients, ingredientFit, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -212,7 +212,7 @@ export default function SearchScreen({ navigation, route }) {
                   <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}{product.category ? ` · ${t(CATEGORY_LABEL[product.category] || product.category)}` : ''}</Text>
                   <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
                 </View>
-                <MatchBadge tone={match.tone} label={t(badgeText(match))} />
+                <MatchBadge tone={badgeTone(match)} label={t(badgeText(match))} />
               </Pressable>
             )
           })}

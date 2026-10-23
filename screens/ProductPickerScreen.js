@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productsByCategory, searchProducts, photoOf } from '../utils/catalog'
-import { productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
+import { productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { STEP_TYPES } from '../utils/routine-steps'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -114,7 +114,7 @@ export default function ProductPickerScreen({ navigation, route }) {
             <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           </View>
-          <MatchBadge tone={match.tone} label={t(badgeText(match))} />
+          <MatchBadge tone={badgeTone(match)} label={t(badgeText(match))} />
         </Pressable>
       ))}
     </Screen>

@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productsWithIngredient, getMyProducts, photoOf } from '../utils/catalog'
-import { getIngredient, findIngredients, productMatch, badgeText, isUnsuitable } from '../utils/ingredients-guide'
+import { getIngredient, findIngredients, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { getSituation, NEEDS } from '../utils/emergency-plans'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -90,7 +90,7 @@ export default function SuggestionsScreen({ navigation, route }) {
       {owned ? (
         <Text style={[TYPE.caption, { color: colors.success, fontWeight: '700' }]}>{t('You have it')}</Text>
       ) : (
-        <MatchBadge tone={match.tone} label={t(badgeText(match))} />
+        <MatchBadge tone={badgeTone(match)} label={t(badgeText(match))} />
       )}
     </Pressable>
   )

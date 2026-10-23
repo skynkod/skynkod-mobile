@@ -110,6 +110,20 @@ export default function ProductScreen({ navigation, route }) {
         </View>
       </View>
 
+      {/* No full ingredient list: say it plainly instead of a score we can't stand behind */}
+      {match.partial && !['danger', 'warning'].includes(match.tone) ? (
+        <View style={[styles.matchCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.matchHead}>
+            <Ionicons name="help-circle" size={40} color={colors.muted} />
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Not checked yet')}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>
+                {t('We don’t have this product’s full ingredient list yet, so we can’t check it against your skin.')}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : (
       <View style={[styles.matchCard, { backgroundColor: { danger: colors.dangerSoft, warning: colors.warningSoft, watch: colors.cautionSoft, neutral: colors.surface }[match.tone] || colors.successSoft }]}>
         <View style={styles.matchHead}>
           {match.tone === 'success' ? (
@@ -142,10 +156,11 @@ export default function ProductScreen({ navigation, route }) {
         ))}
         {match.partial ? (
           <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
-            {t('Based on key ingredients. The full list is coming soon.')}
+            {t('Based on its key ingredients only: we don’t have the full list yet.')}
           </Text>
         ) : null}
       </View>
+      )}
 
       {/* Not 100% safe for her: the closest product that is */}
       {alt && !alt.safe && alt.alternative && lockedDetail ? (

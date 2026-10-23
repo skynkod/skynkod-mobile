@@ -437,7 +437,9 @@ export const matchReason = (match, profile) => {
 
 // Short badge for lists: the verdict when there's something to know, the
 // match percentage otherwise.
-export const badgeText = match => (['danger', 'warning', 'watch'].includes(match.tone) || match.unverified.length ? match.label : `${match.score}%`)
+// Without the full ingredient list we can't vouch for a product: no score.
+export const badgeTone = match => (match.partial && !['danger', 'warning'].includes(match.tone) ? 'neutral' : match.tone)
+export const badgeText = match => (match.partial && !['danger', 'warning'].includes(match.tone) ? 'Not checked yet' : ['danger', 'warning', 'watch'].includes(match.tone) || match.unverified.length ? match.label : `${match.score}%`)
 
 // Products that must never be suggested to this user.
 export const isUnsuitable = match => match.avoid.length > 0 || match.triggered.length > 0
