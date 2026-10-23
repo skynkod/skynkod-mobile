@@ -6,6 +6,7 @@ import { useLanguage } from '../utils/LanguageContext'
 import { useAuth } from '../utils/AuthContext'
 import { logError } from '../utils/errorLogger'
 import { deleteAccount } from '../utils/account'
+import { LEAVING_REASONS, sendLeavingReason } from '../utils/privacy'
 import { Screen, Card, SectionHeader, ListRow, SegmentedControl, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
 
@@ -23,7 +24,16 @@ export default function SettingsScreen({ route, navigation }) {
   const { user, logout, replayOnboarding } = useAuth()
   const [busy, setBusy] = useState(null)
 
+  // Optional and anonymous: one tap to say why, or skip (inspired by Flo, without
+  // any offer to make her stay).
   const handleDeleteAccount = () => {
+    Alert.alert('Before you go', 'Why are you leaving? It helps us improve. Optional and anonymous.', [
+      ...LEAVING_REASONS.map(r => ({ text: r.label, onPress: () => { sendLeavingReason(r.id); confirmDelete() } })),
+      { text: 'Skip', onPress: confirmDelete },
+      { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+  const confirmDelete = () => {
     Alert.alert(
       'Delete account',
       'This permanently deletes your account, journal, photos, routines and chats. This cannot be undone.',

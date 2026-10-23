@@ -9,7 +9,7 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { setAnalyticsOff } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
-import { requestMyData } from '../utils/account'
+import { exportMyData, isDiscreet, setDiscreet, isLockOn, canLock, setLock } from '../utils/privacy'
 
 const OFFERS_ENABLED = false
 
@@ -23,21 +23,57 @@ export default function PrivacyScreen({ navigation }) {
   const { language } = useLanguage()
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
+  const [discreet, setDiscreetOn] = useState(false)
+  const [lock, setLockOn] = useState(false)
+  const [lockable, setLockable] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (!user?.id) return
     getUserProfile(user.id).then(setProfile)
+    isDiscreet(user.id).then(setDiscreetOn)
+    isLockOn().then(setLockOn)
+    canLock().then(setLockable).catch(() => setLockable(false))
   }, [user?.id])
 
   if (!profile) return <LoadingView />
 
-  const askData = () => Alert.alert(t('Get a copy of my data'), t('We will email you a copy of all your Skynkod data, within 30 days.'), [
-    { text: t('Cancel'), style: 'cancel' },
-    { text: t('Send the request'), onPress: async () => {
-      const res = await requestMyData()
-      Alert.alert(res.success ? t('Request sent 🌸') : t('Something went wrong'), res.success ? t('You will receive your data by email.') : t('Please try again.'))
-    } },
-  ])
+  // A copy of all her data, right away, as a file she can keep or send.
+  const askData = async () => {
+    if (exporting) return
+    setExporting(true)
+    try {
+      await exportMyData(user.id)
+    } catch (error) {
+      await logError('PrivacyScreen_export', error)
+      Alert.alert(t('Something went wrong'), t('Please try again.'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const toggleDiscreet = (on) => {
+    const apply = async () => {
+      try {
+        await setDiscreet(user.id, on)
+        setDiscreetOn(on)
+        if (on) setProfile(p => ({ ...p, analytics_off: true, first_name: null, birth_date: null }))
+      } catch (error) {
+        await logError('PrivacyScreen_discreet', error)
+        Alert.alert(t('Error'), t("Couldn't save your choice. Try again."))
+      }
+    }
+    if (!on) return apply()
+    Alert.alert(t('Turn on discreet mode?'), t('Your first name and date of birth are erased, usage statistics are turned off, and your conversations with Koda are no longer kept (past ones are deleted). Your email stays, only so you can sign in.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Turn on'), onPress: apply },
+    ])
+  }
+
+  const toggleLock = async (on) => {
+    const ok = await setLock(on, on ? t('Lock Skynkod with Face ID') : t('Turn off the lock')).catch(() => false)
+    if (ok) setLockOn(on)
+  }
 
   const save = async (changes) => {
     const previous = profile
@@ -107,6 +143,25 @@ export default function PrivacyScreen({ navigation }) {
           onChange={setImprove}
           last={!OFFERS_ENABLED}
         />
+      </Card>
+
+      <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginTop: SPACING.xl }}>
+        <Row
+          title={t('Discreet mode')}
+          subtitle={t('No first name or date of birth, no statistics, Koda conversations not kept.')}
+          value={discreet}
+          onChange={toggleDiscreet}
+          last={!lockable}
+        />
+        {lockable ? (
+          <Row
+            title={t('Lock with Face ID')}
+            subtitle={t('Nobody else can open your skin journal on this phone.')}
+            value={lock}
+            onChange={toggleLock}
+            last
+          />
+        ) : null}
         {/* Brand offers come back once real offers exist. */}
         {OFFERS_ENABLED ? (
           <Row

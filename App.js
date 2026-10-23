@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, ActivityIndicator, Platform, Pressable, Modal, StyleSheet, Image } from 'react-native'
+import { View, ActivityIndicator, Platform, Pressable, Modal, StyleSheet, Image, AppState } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import JourneyToast from './components/JourneyToast'
 import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native'
@@ -21,6 +21,8 @@ import RekodIcon from './components/RekodIcon'
 import { BottomSheet, ListRow, Card } from './components/ui'
 import { SPACING } from './utils/theme'
 import LoginScreen from './screens/LoginScreen'
+import LockScreen from './components/LockScreen'
+import { isLockOn } from './utils/privacy'
 import OnboardingScreen from './screens/OnboardingScreen'
 // The previous Home (screens/HomeScreen-updated.js) is kept, not deleted.
 import HomeScreen from './screens/TodayScreen'
@@ -216,6 +218,15 @@ function AppContent() {
   const [loading, setLoading] = useState(true)
   const [showSplash, setShowSplash] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  // Face ID lock (Settings › Privacy): at launch and each time the app comes back.
+  const [locked, setLocked] = useState(false)
+  useEffect(() => {
+    isLockOn().then(on => on && setLocked(true))
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'background') isLockOn().then(on => on && setLocked(true))
+    })
+    return () => sub.remove()
+  }, [])
   const { colors, isDark, loading: themeLoading } = useTheme()
   const { loading: languageLoading } = useLanguage()
   const lastScreen = React.useRef(null)
@@ -426,6 +437,7 @@ function AppContent() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {statusBar}
       {content}
+      {locked && user && !booting ? <View style={StyleSheet.absoluteFill}><LockScreen onUnlock={() => setLocked(false)} /></View> : null}
       {showSplash ? <AnimatedSplash ready={!booting} onDone={() => setShowSplash(false)} /> : null}
     </View>
   )

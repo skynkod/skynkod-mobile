@@ -8,6 +8,7 @@ import { getSituation } from '../utils/emergency-plans';
 import { useLanguage } from '../utils/LanguageContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { saveChatMessage, getChatHistory } from '../utils/chat-service';
+import { isDiscreet } from '../utils/privacy';
 import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -83,7 +84,9 @@ export default function KodaScreen({ route, navigation }) {
     setMessages(prev => [...prev, userMessage]);
     setLoading(true);
     scrollToBottom();
-    if (user?.id) saveChatMessage(user.id, userMessage);
+    // Discreet mode: Koda conversations aren't kept.
+    const keep = user?.id && !(await isDiscreet(user.id));
+    if (keep) saveChatMessage(user.id, userMessage);
     track('koda_message'); // only that a message was sent, never its content
 
     let reply;
@@ -105,7 +108,7 @@ export default function KodaScreen({ route, navigation }) {
 
     setMessages(prev => [...prev, reply]);
     // Error bubbles stay local so they never get replayed to the API.
-    if (user?.id && !reply.error) { saveChatMessage(user.id, reply); syncSoon(user.id, 2000); }
+    if (user?.id && !reply.error) { if (keep) saveChatMessage(user.id, reply); syncSoon(user.id, 2000); }
     setLoading(false);
     scrollToBottom();
   };
