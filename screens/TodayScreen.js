@@ -20,7 +20,11 @@ import { todaySteps } from '../utils/routine-checks'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
-import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
+import { getSkinWeather, pickSkinTips, getWeatherNow, getForecastWeather } from '../utils/skin-weather'
+import { buildForecast, personalSignals, rekodSignals } from '../utils/skin-forecast'
+import { getSkinPatterns } from '../utils/journal-day'
+import SkinForecast from '../components/SkinForecast'
+import { usePremium } from '../components/PremiumLock'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
 import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
 import { currentRoutine, withPauses } from '../utils/current-routine'
@@ -88,6 +92,9 @@ export default function TodayScreen({ navigation }) {
   const [open, setOpen] = useState(null) // 'morning' | 'evening'
   const [weather, setWeather] = useState(null)
   const [sky, setSky] = useState(null)
+  const [forecastDays, setForecastDays] = useState(null)
+  const [patterns, setPatterns] = useState(null)
+  const premium = usePremium()
   const [refreshing, setRefreshing] = useState(false)
   // A 7-day skin plan (Emergency) pauses strong products while it runs.
   const [sos, setSos] = useState({ plan: null, products: {}, newest: null })
@@ -159,6 +166,8 @@ export default function TodayScreen({ navigation }) {
     }
   }, [user?.id, coords?.latitude, coords?.longitude])
   useFocusEffect(useCallback(() => { load() }, [load]))
+  // Her journal patterns, for the forecast's personal signals.
+  useFocusEffect(useCallback(() => { if (user?.id) getSkinPatterns(user.id).then(setPatterns).catch(() => {}) }, [user?.id]))
   // Coming back to the app (e.g. the next morning): reload, so yesterday's
   // skin check-in and ticks don't stay on screen.
   useEffect(() => {
@@ -177,6 +186,7 @@ export default function TodayScreen({ navigation }) {
     if (!coords) return
     getWeatherNow(coords).then(setWeather).catch(() => {})
     getSkinWeather(coords).then(setSky).catch(() => {})
+    getForecastWeather(coords).then(setForecastDays).catch(() => {})
   }, [coords?.latitude, coords?.longitude])
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
@@ -248,6 +258,13 @@ export default function TodayScreen({ navigation }) {
   const dayTip = tips[0] || (typeof seasonTip === 'string' ? { icon: 'leaf-outline', text: seasonTip } : seasonTip) || { icon: 'leaf-outline', text: 'Drink water and keep your sunscreen on.' }
   const tip = (afterSunrise && hour < 15) ? dayTip : sleepTip
   const tonight = plan ? NIGHTS[tonightNight(plan)] : null
+  const forecast = buildForecast({ days: forecastDays, profile })
+  const whenNight = i => (i === 0 ? t('tonight') : i === 1 ? t('tomorrow night')
+    : t('on {day}', { day: new Date(Date.now() + i * 86400000).toLocaleDateString(language, { weekday: 'long' }) }))
+  const forecastSignals = [
+    ...personalSignals(patterns, { premium: !!premium }),
+    ...rekodSignals(plan, { nightOf: tonightNight, nights: NIGHTS }).map(s => ({ ...s, params: { ...s.params, when: whenNight(s.day) } })),
+  ]
 
   const Row = ({ period, icon, title, count }) => {
     const complete = count.total > 0 && count.done === count.total
@@ -352,11 +369,19 @@ export default function TodayScreen({ navigation }) {
           <View style={styles.glyph}>{afterSunrise && hour < 18 ? <SunGlyph /> : <MoonGlyph />}</View>
         </View>
       </View>
-      <View style={styles.tipLine}>
+      {forecast ? null : <View style={styles.tipLine}>
         <Ionicons name={tip.icon} size={14} color={colors.muted} />
         <Text style={{ color: colors.muted, flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '300', fontStyle: 'italic' }}>{t(tip.text)}</Text>
-      </View>
+      </View>}
       </Animated.View>
+
+      {/* Your skin forecast: the next 3 days, from the weather, her journal and her Rekod */}
+      {forecast ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin forecast')}</Text>
+          <SkinForecast forecast={forecast} signals={forecastSignals} />
+        </>
+      ) : null}
 
       {/* The tip for the week, from last week: just the advice, kindly. Her
           numbers live in My progress, where she goes when she wants them. */}

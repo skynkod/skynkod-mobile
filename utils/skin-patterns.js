@@ -87,6 +87,10 @@ export const findPatterns = ({ entries = [], openedDates = [], routineDates = []
         found.push({
           id: `${factor.id}-${reaction.id}`,
           factor: factor.id,
+          reaction: reaction.id,
+          after: factor.after,
+          // The last day this happened: the skin forecast warns when it's recent.
+          lastSeen: events[events.length - 1],
           icon: factor.icon,
           text: `${reaction.label} often ${reaction.verb} within ${WINDOW_DAYS} days of ${factor.after}.`,
           times,

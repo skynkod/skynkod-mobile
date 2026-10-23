@@ -121,3 +121,40 @@ export const getWeatherNow = async (coords) => {
   AsyncStorage.setItem(NOW_KEY, JSON.stringify(fresh)).catch(() => {})
   return fresh
 }
+
+// ---------- The 3-day skin forecast (today and the next two days) ----------
+
+const FORECAST_KEY = 'skynkod_skin_forecast'
+
+export const getForecastWeather = async (coords) => {
+  if (!coords?.latitude) return null
+  const today = new Date().toDateString()
+  const where = `${coords.latitude},${coords.longitude}`
+  try {
+    const cached = JSON.parse((await AsyncStorage.getItem(FORECAST_KEY)) || 'null')
+    if (cached?.day === today && cached?.where === where) return cached.days
+  } catch {}
+  const res = await fetch('https://api.open-meteo.com/v1/forecast'
+    + `?latitude=${coords.latitude}&longitude=${coords.longitude}`
+    + '&daily=uv_index_max,temperature_2m_max,relative_humidity_2m_min,relative_humidity_2m_mean,wind_speed_10m_max'
+    + '&hourly=uv_index&timezone=auto&forecast_days=3')
+  if (!res.ok) throw new Error(`forecast ${res.status}`)
+  const data = await res.json()
+  const d = data.daily || {}
+  const uvHours = data.hourly?.uv_index || []
+  const days = (d.time || []).slice(0, 3).map((date, i) => {
+    const hours = uvHours.slice(i * 24, i * 24 + 24)
+    const peak = hours.reduce((best, uv, h) => (uv > hours[best] ? h : best), 0)
+    return {
+      date,
+      uvMax: d.uv_index_max?.[i] ?? 0,
+      uvPeakHour: peak,
+      tempMax: d.temperature_2m_max?.[i] ?? 20,
+      humidityMin: d.relative_humidity_2m_min?.[i] ?? 50,
+      humidityMean: d.relative_humidity_2m_mean?.[i] ?? 50,
+      windMax: d.wind_speed_10m_max?.[i] ?? 0,
+    }
+  })
+  AsyncStorage.setItem(FORECAST_KEY, JSON.stringify({ day: today, where, days })).catch(() => {})
+  return days
+}
