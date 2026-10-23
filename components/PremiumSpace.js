@@ -2,22 +2,25 @@ import React, { useState } from 'react'
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useNavigation } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SPACING, TYPE } from '../utils/theme'
 
-// The deep plum space shared by Skynkod's Premium features (same look as
-// Rekod): full plum screen, a small top label with a diamond, pill buttons.
+// The space shared by Skynkod's Premium features (same look as Rekod): light
+// and calm like the rest of the app, deep plum for what is Premium, a close
+// button on every screen (Lita, 2026-10-23).
 export const P = {
-  bg: '#33202E', card: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.12)',
-  text: '#FFFFFF', textSecondary: 'rgba(255,255,255,0.78)', muted: 'rgba(255,255,255,0.55)',
-  primary: '#E2C6DA', primarySoft: 'rgba(226,198,218,0.16)', onPrimary: '#33202E',
-  success: '#A8E2BC', warn: '#F2B37A',
+  bg: '#FBF8FA', card: '#FFFFFF', border: '#EDE5EA',
+  text: '#1E1A1D', textSecondary: '#5E565C', muted: '#857C83',
+  primary: '#8A6380', primarySoft: '#F1E8EE', onPrimary: '#FFFFFF',
+  success: '#3E9A6D', warn: '#C98422', plum: '#33202E',
 }
 
 export const tap = () => { Haptics.selectionAsync().catch(() => {}) }
 
 export function PremiumShell({ label, overline, title, subtitle, footer, children, onBack, scroll = true }) {
+  const navigation = useNavigation()
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: P.bg }}>
       <View style={styles.topBar}>
@@ -27,10 +30,13 @@ export function PremiumShell({ label, overline, title, subtitle, footer, childre
           </Pressable>
         ) : <View style={{ width: 26 }} />}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-          <Ionicons name="diamond-outline" size={14} color={P.primary} />
-          <Text style={[TYPE.overline, { color: P.primary }]}>{label}</Text>
+          <Ionicons name="diamond" size={12} color={P.plum} />
+          <Text style={[TYPE.overline, { color: P.plum }]}>{label}</Text>
         </View>
-        <View style={{ width: 26 }} />
+        {/* Always a way out, back to where she came from */}
+        <Pressable onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
+          <Ionicons name="close" size={24} color={P.text} />
+        </Pressable>
       </View>
       {scroll ? (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>

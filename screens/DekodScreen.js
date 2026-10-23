@@ -4,7 +4,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
-import { P, PremiumShell, PButton, PLoading, Carousel, tap, isIntroHidden, hideIntro } from '../components/PremiumSpace'
+import { P, PremiumShell, PButton, PLoading, tap } from '../components/PremiumSpace'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
@@ -14,7 +14,7 @@ import { syncSmartReminders } from '../utils/notifications'
 import { track } from '../utils/analytics'
 import { SPACING, TYPE } from '../utils/theme'
 
-const LABEL = 'Dekod · Skin scan'
+const LABEL = 'Dekod · Premium'
 
 const LEVEL = { none: 'None', light: 'Light', visible: 'Visible' }
 const RANK = { none: 0, light: 1, visible: 2 }
@@ -43,11 +43,6 @@ const cropToOval = async (photo, oval) => {
   return image.saveAsync({ format: SaveFormat.JPEG, compress: 0.75, base64: true })
 }
 
-const SLIDES = [
-  { icon: 'scan-circle-outline', title: 'Dekod: read your skin in seconds', text: 'Dekod is Skynkod’s skin scan. Take one selfie, and Dekod reads what is visible on your skin.' },
-  { icon: 'grid-outline', title: 'Five points, one tip each', text: 'Redness, shine, blemishes, dryness and tone, each with a simple tip, and your evolution scan after scan.' },
-  { icon: 'shield-checkmark-outline', title: 'Private by design', text: 'Your photo is analysed, then deleted. Only the result is kept in your account.' },
-]
 
 // Dekod, Skynkod's skin scan, in the same plum space as Rekod:
 // intro → consent (first time) → photo tips → camera → check → result,
@@ -66,7 +61,6 @@ export default function DekodScreen({ navigation }) {
   const [history, setHistory] = useState(null) // past scans, newest first
   const [shot, setShot] = useState(null) // { uri, checks, ok, retake } right after the photo
   const [viewing, setViewing] = useState(null) // a past scan opened from the history
-  const [introHidden, setIntroHidden] = useState(false) // she understood Dekod: no more slides
 
   const loadHistory = useCallback(() => {
     if (!user?.id) return
@@ -79,10 +73,12 @@ export default function DekodScreen({ navigation }) {
   useEffect(() => {
     if (!user?.id) return
     hasDekodConsent(user.id).then(setConsent)
-    isIntroHidden('dekod', user.id).then(setIntroHidden)
   }, [user?.id])
 
   if (premium === undefined || consent === undefined) return <PLoading />
+  // Free users get one Dekod to try, once (Lita, 2026-10-23); following the
+  // evolution and new scans are Premium.
+  const canScan = premium || (history !== null && history.length === 0)
 
   const toHome = () => { setStage('home'); setViewing(null); setShot(null) }
   const begin = () => { tap(); setStage(consent ? 'tips' : 'consent') }
@@ -190,7 +186,7 @@ export default function DekodScreen({ navigation }) {
   if (stage === 'analysing') {
     const c = shot?.checks
     const done = !!c
-    const color = !done ? 'rgba(255,255,255,0.85)' : shot.ok ? '#5BD08A' : P.warn
+    const color = !done ? P.border : shot.ok ? P.success : P.warn
     const lines = done ? [
       [c.light === 'ok', c.light === 'dark' ? 'A bit too dark: face a window' : c.light === 'bright' ? 'Too bright: avoid direct sun' : 'Light OK'],
       [c.position === 'ok', c.position === 'far' ? 'Come a little closer' : c.position === 'off' ? 'Face the camera, in the oval' : c.position === 'none' ? 'We can’t see your face' : 'Face well placed'],
@@ -303,7 +299,7 @@ export default function DekodScreen({ navigation }) {
   }
 
   // ---------- Dekod home: latest scan, evolution, history ----------
-  if (premium && history?.length) {
+  if (history?.length) {
     const latest = history[0]
     const scannedToday = sameDay(latest.created_at, new Date())
     const ordered = [...history].reverse().slice(-8) // oldest → newest, last 8
@@ -312,7 +308,14 @@ export default function DekodScreen({ navigation }) {
       <PremiumShell label={LABEL}
         overline={`${t('Latest scan')} · ${new Date(latest.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}`}
         title={t('Your skin today')} subtitle={latest.result?.summary}
-        footer={<PButton title={t(scannedToday ? 'Next scan tomorrow' : 'New scan')} icon="scan-outline" disabled={scannedToday} onPress={begin} />}>
+        footer={premium
+          ? <PButton title={t(scannedToday ? 'Next scan tomorrow' : 'New scan')} icon="scan-outline" disabled={scannedToday} onPress={begin} />
+          : (
+            <>
+              <PButton title={t('Follow my skin with Premium')} icon="diamond-outline" onPress={() => navigation.navigate('Premium')} />
+              <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your free scan is done. Premium: a scan a day and your evolution.')}</Text>
+            </>
+          )}>
         <Points points={latest.result?.points} />
 
         {history.length > 1 ? (
@@ -360,46 +363,42 @@ export default function DekodScreen({ navigation }) {
     )
   }
 
-  const startButton = premium
-    ? <PButton title={t('Start my Dekod')} icon="scan-outline" onPress={begin} />
-    : <PButton title={t('Unlock with Premium')} icon="lock-open-outline" onPress={() => navigation.navigate('Premium')} />
+  const startButton = canScan
+    ? <PButton title={t(premium ? 'Start my Dekod' : 'Try my free scan')} icon="scan-outline" onPress={begin} />
+    : <PButton title={t('Unlock with Premium')} icon="diamond-outline" onPress={() => navigation.navigate('Premium')} />
 
-  // ---------- Intro hidden: a short start screen ----------
-  if (introHidden) {
-    return (
-      <PremiumShell label={LABEL} title="Dekod" subtitle={t('Your skin scan: one selfie, five points, one tip each.')}
-        footer={(
-          <>
-            {startButton}
-            <Pressable onPress={() => { tap(); setIntroHidden(false) }} hitSlop={8} style={{ alignSelf: 'center', paddingTop: SPACING.sm }}>
-              <Text style={[TYPE.caption, { color: P.primary, fontWeight: '700' }]}>{t('What is Dekod?')}</Text>
-            </Pressable>
-          </>
-        )}>
-        <Line icon="sunny-outline" text="Daylight, no makeup, face the camera" />
-        <Line icon="shield-checkmark-outline" text="Your photo is analysed, then deleted" />
-      </PremiumShell>
-    )
-  }
-
-  // ---------- Intro: a swipeable presentation (locked without Premium) ----------
+  // ---------- Dekod: one clear screen, Premium said from the start ----------
   return (
-    <PremiumShell label={LABEL} scroll={false}
+    <PremiumShell label={LABEL}
       footer={(
         <>
           {startButton}
-          <Pressable onPress={() => { tap(); hideIntro('dekod', user.id); setIntroHidden(true) }} hitSlop={8} style={{ alignSelf: 'center', paddingTop: SPACING.sm }}>
-            <Text style={[TYPE.caption, { color: P.muted, fontWeight: '600' }]}>{t('Got it, don’t show this again')}</Text>
-          </Pressable>
+          <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>
+            {premium ? t('One scan a day with your Premium.') : t('Your first scan is free. Then a scan a day with Premium.')}
+          </Text>
         </>
       )}>
-      <Carousel slides={SLIDES.map(s => ({ ...s, title: t(s.title), text: t(s.text) }))} />
-      <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginBottom: SPACING.sm }]}>{t('One scan a day with Premium')}</Text>
+      <Text style={[styles.landingTitle, { color: P.text }]}>{t('See what your skin shows today')}</Text>
+      <Text style={[TYPE.body, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>{t('One selfie reads 5 points of your skin, with one tip for each.')}</Text>
+      <View style={{ gap: SPACING.lg, marginTop: SPACING.xxl }}>
+        {[
+          ['grid-outline', 'Redness, shine, blemishes, dryness and tone'],
+          ['trending-up-outline', 'Follow how they change, scan after scan'],
+          ['shield-checkmark-outline', 'Your photo is analysed, then deleted'],
+        ].map(([icon, text]) => (
+          <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+            <View style={styles.rowIcon}><Ionicons name={icon} size={18} color={P.primary} /></View>
+            <Text style={[TYPE.body, { color: P.text, flex: 1 }]}>{t(text)}</Text>
+          </View>
+        ))}
+      </View>
+      <Disclaimer />
     </PremiumShell>
   )
 }
 
 const styles = StyleSheet.create({
+  landingTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderColor: P.border, backgroundColor: P.card, borderRadius: 18, padding: SPACING.md },
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: P.primarySoft },
   chip: { fontSize: 11, fontWeight: '700', borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
@@ -411,7 +410,7 @@ const styles = StyleSheet.create({
   ovalWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingTop: 90 },
   oval: { width: 250, height: 340, borderRadius: 170, borderWidth: 3, borderColor: 'rgba(255,255,255,0.85)' },
   ovalHint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, fontWeight: '600' },
-  ovalPhoto: { width: 210, height: 286, borderRadius: 143, borderWidth: 5, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.08)' },
+  ovalPhoto: { width: 210, height: 286, borderRadius: 143, borderWidth: 5, overflow: 'hidden', backgroundColor: P.primarySoft },
   close: { position: 'absolute', top: 60, left: 20 },
   shutter: { position: 'absolute', bottom: 50, alignSelf: 'center', width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF' },
