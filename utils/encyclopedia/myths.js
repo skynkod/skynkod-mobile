@@ -33,7 +33,7 @@ export const MYTHS = [
     'dark-skin-spf', '"Dark skin doesn’t need sunscreen"',
     'Every skin tone needs sunscreen.',
     'Melanin gives some protection, but not enough. Darker skin tones are actually more prone to dark spots and melasma, which the sun makes worse and longer-lasting.',
-    ['zincoxide'], ['Dark spots', 'Melasma'], 'In Morocco, sunscreen every day, all year round.'
+    ['zincoxide'], ['Dark spots', 'Melasma'], 'Sunscreen every day, all year round, whatever your skin tone.'
   ),
   myth(
     'natural-safe', '"Natural means safe"',

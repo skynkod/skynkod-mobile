@@ -149,7 +149,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     track('onboarding_step', { step: STEPS[i] })
   }
   const next = () => goTo(step + 1)
-  const back = () => goTo(step - 1)
+  // Going back never replays the "Building your plan" bar.
+  const back = () => goTo(STEPS[step - 1] === 'loader' ? step - 2 : step - 1)
 
   // Single-choice questions move on by themselves after a short beat.
   const pickAndContinue = (setter, value) => {

@@ -17,9 +17,9 @@ export const pickSkinTips = (w, profile, city) => {
   const hour = h => `${h}:00`
   const tips = []
 
-  // Chergui: hot, dry, windy.
+  // Hot, dry, windy day.
   const chergui = w.tempMax >= 30 && w.humidityMin <= 25 && w.windMax >= 25
-  if (chergui) tips.push({ icon: 'flag-outline', text: 'Chergui today · Hot, dry wind: protect your skin barrier' })
+  if (chergui) tips.push({ icon: 'flag-outline', text: 'Hot, dry wind today · Protect your skin barrier' })
   if (w.uvMax >= 8) tips.push({ icon: 'sunny-outline', text: `UV up to ${Math.round(w.uvMax)} today${at} · Reapply sunscreen around ${hour(w.uvPeakHour)}` })
   if (!chergui && w.humidityMin <= dryThreshold) tips.push({ icon: 'leaf-outline', text: 'Very dry air today · Your skin will be thirsty, add a hydrating serum' })
   // Humid only when the air isn't also dry at some point of the day.

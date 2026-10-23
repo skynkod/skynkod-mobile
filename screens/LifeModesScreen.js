@@ -76,7 +76,7 @@ export default function LifeModesScreen({ navigation }) {
     write()
   }
 
-  const Mode = ({ icon, title, text, on, children, onPress }) => (
+  const Mode = ({ icon, title, text, on, children, onPress, premium }) => (
     <Card style={[styles.mode, on && { borderColor: colors.primary, backgroundColor: colors.primarySoft }]} onPress={onPress}>
       <View style={styles.head}>
         <View style={[styles.icon, { backgroundColor: on ? colors.primary : colors.primarySoft }]}>
@@ -86,6 +86,7 @@ export default function LifeModesScreen({ navigation }) {
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
           <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{text}</Text>
         </View>
+        {premium ? <Ionicons name="diamond" size={14} color="#33202E" /> : null}
         {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
       </View>
       {children}
@@ -114,7 +115,7 @@ export default function LifeModesScreen({ navigation }) {
         text={sos
           ? (sos.phase === 'return' ? t('Gradual return · day {day} of {total}', { day: sos.returnDay, total: sos.returnDays }) : t('Day {day} of 7 · {title}', { day: sos.dayIndex + 1, title: t(sos.situation.title) }))
           : t('7 calm days: strong actives on pause, then back one by one.')}
-        onPress={() => navigation.navigate('Emergency')} />
+        onPress={() => navigation.navigate('Emergency')} premium />
 
       {health.available ? (
         <Mode icon="fitness-outline" title={t('Apple Health')} on={health.on}
