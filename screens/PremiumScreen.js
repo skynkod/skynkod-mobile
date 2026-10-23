@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { logError } from '../utils/errorLogger'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
-import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases } from '../utils/premium'
+import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue } from '../utils/premium'
 import { Screen, Card, Button, IconCircle, useColors } from '../components/ui'
 import RekodIcon from '../components/RekodIcon'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -22,9 +22,11 @@ export default function PremiumScreen({ navigation }) {
   const [isPremium, setIsPremium] = useState(false)
   const [plan, setPlan] = useState('yearly')
   const [busy, setBusy] = useState(false)
+  const [month, setMonth] = useState(null)
 
   useEffect(() => {
-    if (user?.id) isPremiumUser(user.id).then(setIsPremium).catch(error => logError('Premium_status', error, {}, 'warn'))
+    if (!user?.id) return
+    isPremiumUser(user.id).then(p => { setIsPremium(p); if (p) getMonthValue(user.id).then(setMonth).catch(() => {}) }).catch(error => logError('Premium_status', error, {}, 'warn'))
   }, [user?.id])
 
   const chosen = PREMIUM_PLANS.find(p => p.id === plan)
@@ -51,6 +53,21 @@ export default function PremiumScreen({ navigation }) {
           <Text style={[TYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>{t('You’re Premium ✨')}</Text>
           <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your skin code is fully unlocked. Enjoy every feature.')}</Text>
         </View>
+        {month ? (
+          <Card>
+            <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700', letterSpacing: 1 }]}>{t('THIS MONTH WITH PREMIUM')}</Text>
+            {[
+              ['chatbubbles-outline', t('{n} questions to Koda', { n: month.koda })],
+              ['scan-circle', t('{n} Dekod scans', { n: month.dekod })],
+              month.rekod ? ['sparkles-outline', t('Your Rekod, adjusted to your skin every week')] : null,
+            ].filter(Boolean).map(([icon, text]) => (
+              <View key={text} style={[styles.benefit, { marginBottom: 0, marginTop: SPACING.md, alignItems: 'center' }]}>
+                <IconCircle name={icon} size={32} />
+                <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{text}</Text>
+              </View>
+            ))}
+          </Card>
+        ) : null}
       </Screen>
     )
   }

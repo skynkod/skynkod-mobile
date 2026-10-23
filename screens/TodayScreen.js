@@ -19,7 +19,7 @@ import { getUserRoutines } from '../utils/routines-service'
 import { todaySteps } from '../utils/routine-checks'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
-import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf } from '../utils/rekod'
+import { getRekodPlan, tonightNight, NIGHTS, goalOf, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
 import { getSkinWeather, pickSkinTips, getWeatherNow } from '../utils/skin-weather'
 import { seasonDailyTip, currentSeason } from '../utils/seasons'
 import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
@@ -443,7 +443,7 @@ export default function TodayScreen({ navigation }) {
       <Pressable onPress={() => navigation.navigate('Rekod')} style={({ pressed }) => [styles.programme, { opacity: pressed ? 0.9 : 1 }]}>
         <View style={styles.programmeIcon}><Ionicons name="diamond-outline" size={20} color="#FFFFFF" /></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), goalOf(plan.goal).weeks), total: goalOf(plan.goal).weeks }) : t('PREMIUM · REKOD')}</Text>
+          <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), planWeeks(plan)), total: planWeeks(plan) }) : t('PREMIUM · REKOD')}</Text>
           <Text style={styles.programmeTitle} numberOfLines={1}>{plan ? goalsTitle(plan) : t('Rekod: your skin programme, made for you')}</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { currentRoutine } from './current-routine'
 import { getAcceptedContributions } from './contributions'
 import { supabase } from './supabase'
-import { programmeFinished, weekOf, goalOf } from './rekod'
+import { programmeFinished, weekOf, goalOf, planWeeks } from './rekod'
 import { getSosHistory } from './emergency-state'
 import { getPausedProducts } from './paused-products'
 import { getDekodResults, compareScans } from './dekod'
@@ -150,7 +150,7 @@ const gather = async (userId, state) => {
     dekodBetter,
     kodaQuestions,
     rekodStarted: !!plan,
-    rekodHalf: !!plan && (rekodFinished || weekOf(plan) > goalOf(plan.goal).weeks / 2),
+    rekodHalf: !!plan && (rekodFinished || weekOf(plan) > planWeeks(plan) / 2),
     rekodFinished,
     sosPlanDone: !!sos.plan,
     sosReturnDone: !!sos.return,

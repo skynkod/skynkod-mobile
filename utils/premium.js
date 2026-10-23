@@ -1,3 +1,4 @@
+import { supabase } from './supabase'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export const isPremiumUser = async (userId) => {
@@ -75,3 +76,17 @@ export const PREMIUM_BENEFITS = [
 // In-app purchases need the store accounts; until then the page explains it.
 export const startPurchase = async () => ({ unavailable: true })
 export const restorePurchases = async () => ({ unavailable: true })
+
+// What Premium gave her this month, shown on the Premium page so she sees the
+// value she keeps (Lita, 2026-10-23).
+export const getMonthValue = async (userId) => {
+  const start = new Date(); start.setDate(1); start.setHours(0, 0, 0, 0)
+  const since = start.toISOString()
+  const count = async (q) => { const { count: n } = await q; return n || 0 }
+  const [koda, dekod, plan] = await Promise.all([
+    count(supabase.from('chat_history').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('role', 'user').gte('created_at', since)).catch(() => 0),
+    count(supabase.from('dekod_results').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', since)).catch(() => 0),
+    supabase.from('rekod_plans').select('plan').eq('user_id', userId).maybeSingle().then(r => r.data?.plan || null).catch(() => null),
+  ])
+  return { koda, dekod, rekod: !!plan }
+}
