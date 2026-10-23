@@ -115,14 +115,17 @@ export const getWeekRecap = async (userId) => {
   const counts = tagCounts(week)
   const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || null
 
-  // One simple tip, from what the week shows.
+  // One tip, from what the week shows. Both routines, every day, are what
+  // bring results: said kindly, never lowered to "at least one".
   const tip = routines < 7
-    ? 'Aim for at least one routine a day this week: consistency matters more than products.'
-    : top && ['New pimple', 'Oily'].includes(top[0]) ? 'Keep your hands off your face and change your pillowcase this week.'
-    : top && ['Dryness', 'Peeling / Flaking'].includes(top[0]) ? 'Moisturize on damp skin and skip hot water this week.'
-    : top && ['Redness', 'Itchiness / Sensitivity'].includes(top[0]) ? 'Keep your routine gentle this week: no new products, no strong actives.'
-    : top && ['Poor sleep', 'Stress'].includes(top[0]) ? 'Sleep and stress show on skin: try an earlier night or two this week.'
-    : 'Great week: keep the same routine, it works for you.'
+    ? 'Your skin changes when you care for it morning and evening, every day. This week, make your two routines a small daily ritual: a few minutes that add up to real results.'
+    : routines < 12
+    ? 'You’re building the habit. This week, aim for your morning and evening routines every day: that’s where results really show.'
+    : top && ['New pimple', 'Oily'].includes(top[0]) ? 'Keep your two routines steady, your hands off your face, and change your pillowcase this week.'
+    : top && ['Dryness', 'Peeling / Flaking'].includes(top[0]) ? 'Keep your two routines going, moisturize on damp skin and skip hot water this week.'
+    : top && ['Redness', 'Itchiness / Sensitivity'].includes(top[0]) ? 'Keep your two routines gentle this week: no new products, no strong actives.'
+    : top && ['Poor sleep', 'Stress'].includes(top[0]) ? 'Your routines are on track. Sleep and stress show on skin too: try an earlier night or two this week.'
+    : 'Morning and evening, every day: your skin feels it. Keep this rhythm, it’s your skin code.'
 
   return {
     from: start, routines, checkins: week.filter(e => e.mood).length, mood,
@@ -133,4 +136,5 @@ export const getWeekRecap = async (userId) => {
   }
 }
 
-export const moodLabel = score => (score === null ? null : score >= 4.5 ? 'Great' : score >= 3.5 ? 'Good' : score >= 2.5 ? 'Okay' : score >= 1.5 ? 'Bad' : 'Terrible')
+// Kind words for a week's skin mood: a hard week is never called "terrible".
+export const moodLabel = score => (score === null ? null : score >= 4.5 ? 'Great' : score >= 3.5 ? 'Good' : score >= 2.5 ? 'Okay' : score >= 1.5 ? 'Not easy' : 'Tough')
