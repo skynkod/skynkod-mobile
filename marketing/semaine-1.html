@@ -1,0 +1,361 @@
+<title>Skynkod Semaine 1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap">
+<style>
+/* Layout: one calm column, a week strip on top, one card per day like a content calendar */
+:root {
+  --bg: #FBF8FA; --surface: #FFFFFF; --ink: #1E1A1D; --soft: #5E565C; --muted: #857C83;
+  --line: #EDE5EA; --mauve: #C5A8BB; --plum: #8A6380; --plum-ink: #6E4C66; --tint: #F4EDF2; --ok: #4E8B5F;
+  --display: 'Fraunces', Georgia, serif; --body: 'DM Sans', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161215; --surface: #201A1F; --ink: #F3ECF1; --soft: #CFC3CB; --muted: #9D919A;
+  --line: #352C33; --mauve: #9C7F92; --plum: #C9A3BE; --plum-ink: #E2C6DA; --tint: #2A2128; --ok: #7CC08F; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #161215; --surface: #201A1F; --ink: #F3ECF1; --soft: #CFC3CB; --muted: #9D919A;
+  --line: #352C33; --mauve: #9C7F92; --plum: #C9A3BE; --plum-ink: #E2C6DA; --tint: #2A2128; --ok: #7CC08F; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 32px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font: 500 clamp(30px, 6vw, 42px)/1.1 var(--display); letter-spacing: -0.01em; }
+h2 { font: 500 24px/1.25 var(--display); }
+h3 { font: 600 17px/1.35 var(--body); }
+p { margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--plum); font-weight: 600; }
+.lead { color: var(--soft); max-width: 62ch; }
+.stack { display: grid; gap: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+ul.clean { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+ul.clean li::marker { color: var(--plum); }
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.why div { background: var(--tint); border-radius: 14px; padding: 14px; }
+.why b { display: block; font-size: 15px; margin-bottom: 2px; }
+.why span { font-size: 14px; color: var(--soft); }
+
+/* Week strip */
+.strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.strip a { text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; text-align: center; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+.strip a small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.strip a b { font-size: 18px; font-weight: 600; }
+.strip a i { font-style: normal; font-size: 10px; color: var(--plum); }
+.strip a.done { background: var(--tint); border-color: var(--mauve); }
+.strip a.done b { color: var(--ok); }
+
+/* Daily ritual table */
+.ritual { display: grid; gap: 10px; }
+.ritual div { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: start; }
+.ritual time { font-weight: 600; color: var(--plum); font-variant-numeric: tabular-nums; }
+
+/* Day cards */
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: grid; gap: 16px; scroll-margin-top: 16px; min-width: 0; }
+.day.is-done { border-color: var(--mauve); }
+.day-head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; justify-content: space-between; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--tint); color: var(--plum-ink); }
+.hook { font: 500 20px/1.35 var(--display); color: var(--plum-ink); border-left: 3px solid var(--mauve); padding-left: 14px; }
+.label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.script { display: grid; gap: 8px; }
+.beat { display: grid; grid-template-columns: 64px 1fr; gap: 12px; font-size: 15px; }
+.beat time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; padding-top: 2px; }
+.beat em { display: block; font-style: normal; color: var(--muted); font-size: 13px; }
+.caption { background: var(--tint); border-radius: 14px; padding: 14px; font-size: 15px; white-space: pre-line; position: relative; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+button { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+button:focus-visible, .strip a:focus-visible, input:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; }
+.done-toggle { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: 14px; cursor: pointer; }
+.done-toggle input { width: 18px; height: 18px; accent-color: var(--plum); }
+.tip { font-size: 14px; color: var(--soft); }
+.tip b { color: var(--ink); }
+.warn { font-size: 14px; background: var(--tint); border-radius: 12px; padding: 10px 12px; color: var(--plum-ink); }
+.slides { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; font-size: 15px; }
+footer { color: var(--muted); font-size: 13px; }
+@media (max-width: 480px) { .strip a b { font-size: 15px; } .beat, .ritual div { grid-template-columns: 52px 1fr; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<main class="wrap">
+  <header class="stack">
+    <p class="eyebrow">Plan de contenu · 20 → 26 octobre 2026</p>
+    <h1>Skynkod, semaine 1</h1>
+    <p class="lead">Sept jours pour faire connaître Skynkod sur Instagram et TikTok, sans budget. Chaque jour : une vidéo publiée sur les deux réseaux, et trois stories. Le but de la semaine : des abonnées et des inscriptions sur la liste d'attente (skynkod.com).</p>
+  </header>
+
+  <nav class="strip" aria-label="Jours de la semaine" data-strip>
+    <a href="#j1" data-day="j1"><small>Mar</small><b>20</b><i>Origine</i></a>
+    <a href="#j2" data-day="j2"><small>Mer</small><b>21</b><i>UV</i></a>
+    <a href="#j3" data-day="j3"><small>Jeu</small><b>22</b><i>Décodeur</i></a>
+    <a href="#j4" data-day="j4"><small>Ven</small><b>23</b><i>Carrousel</i></a>
+    <a href="#j5" data-day="j5"><small>Sam</small><b>24</b><i>Koda</i></a>
+    <a href="#j6" data-day="j6"><small>Dim</small><b>25</b><i>Vrai/faux</i></a>
+    <a href="#j7" data-day="j7"><small>Lun</small><b>26</b><i>Teaser</i></a>
+  </nav>
+
+  <section class="panel">
+    <h2>Pourquoi ce plan marche</h2>
+    <div class="why">
+      <div><b>On parle de la vraie vie</b><span>Ta ville, ton climat, les astuces de famille. Les gens partagent ce qui leur ressemble.</span></div>
+      <div><b>Utile tous les jours</b><span>La météo de ta peau donne une raison de revenir chaque matin.</span></div>
+      <div><b>La curiosité</b><span>Décoder une crème connue, c'est ce qu'on regarde jusqu'au bout.</span></div>
+      <div><b>On fait parler</b><span>Chaque vidéo finit par une question : ta ville, ta crème, ta question pour Koda.</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Les règles de chaque vidéo</h2>
+    <ul class="clean">
+      <li><b>L'accroche s'affiche à l'écran dès la première seconde.</b> Si elle ne donne pas envie, personne ne reste.</li>
+      <li><b>15 à 30 secondes</b>, sous-titres toujours (sous-titres automatiques de CapCut), musique tendance à volume bas sous ta voix.</li>
+      <li><b>Format vertical 9:16.</b> Exporte sans le logo TikTok avant de publier sur Instagram.</li>
+      <li><b>Sur Instagram, publie en « Reel d'essai »</b> (option au moment de publier) : il est montré d'abord à des gens qui ne te suivent pas. C'est parfait avec 48 abonnés.</li>
+      <li><b>Mets les mots que les gens cherchent dans la légende</b> : « routine peau grasse », « crème solaire », « peau sèche », « ingrédients ». Instagram et TikTok servent aussi de moteurs de recherche.</li>
+      <li><b>Pendant la première heure, réponds à chaque commentaire</b>, puis partage la vidéo en story.</li>
+      <li><b>Toi à l'écran ou pas :</b> chaque script marche face caméra, ou en voix off sur des images de tes mains, des produits et de l'appli filmée sur ton téléphone.</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>Avant mardi : préparer les comptes</h2>
+    <ul class="clean">
+      <li>Crée le compte TikTok <b>@skynkod</b> (le même nom que sur Instagram).</li>
+      <li>Passe Instagram en <b>compte professionnel</b> (Paramètres › Type de compte), pour voir les statistiques.</li>
+      <li>Nom affiché : <b>Skynkod · Ta peau décodée</b>. Ce champ est pris en compte dans la recherche.</li>
+      <li>Bio : <b>L'appli qui connaît ta peau, ta ville et ta météo. Bientôt disponible. Liste d'attente ↓</b>, avec le lien skynkod.com.</li>
+      <li>Photo de profil : le logo blanc sur fond mauve, comme l'icône de l'appli.</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>Le rituel de chaque jour</h2>
+    <div class="ritual">
+      <div><time>8 h</time><p><b>Story « Météo de ta peau ».</b> Une story par ville, pour les villes où vivent tes abonnées (tu les vois dans les statistiques Instagram). Exemple : « 24° · humidité 80 % · UV 5 → gel léger et SPF ». Les chiffres sont dans l'appli ou sur Google Météo.</p></div>
+      <div><time>13 h</time><p><b>Story sondage.</b> Une question à deux choix (idées plus bas). Les sondages font remonter ton compte chez les gens qui répondent.</p></div>
+      <div><time>20 h 30</time><p><b>La vidéo du jour</b> sur TikTok et en Reel Instagram. C'est un bon créneau pour commencer, quand les gens se posent le soir. On l'ajustera avec tes statistiques dans une semaine.</p></div>
+      <div><time>21 h</time><p><b>Story :</b> repartage la vidéo avec « Nouvelle vidéo » et un rappel du lien en bio.</p></div>
+    </div>
+    <p class="tip"><b>Idées de sondages :</b> Ta peau ce matin : grasse ou sèche ? · Crème solaire en hiver : oui ou non ? · Hammam : chaque semaine ou chaque mois ? · Tu lis les ingrédients : oui ou jamais ? · Routine du soir : 2 produits ou plus de 5 ? · Ta peau au Ramadan : mieux ou pire ?</p>
+  </section>
+
+  <!-- ===================== DAY 1 ===================== -->
+  <article class="day" id="j1" data-card="j1">
+    <div class="day-head">
+      <h2>Mardi 20 · L'origine</h2>
+      <div class="meta"><span class="chip">Reel + TikTok</span><span class="chip">20 à 25 s</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Accroche à l'écran</p>
+    <p class="hook">J'ai créé l'appli que j'aurais voulu avoir à 16 ans.</p>
+    <div class="script">
+      <p class="label">Script</p>
+      <div class="beat"><time>0–2 s</time><p>Toi face caméra, ou ta main qui ouvre l'appli sur l'écran d'accueil (le ciel mauve).<em>Texte à l'écran : l'accroche.</em></p></div>
+      <div class="beat"><time>2–8 s</time><p>« Pendant des années, j'ai acheté des crèmes au hasard en parapharmacie, sans rien comprendre aux ingrédients. »<em>Plan : une étagère pleine de crèmes.</em></p></div>
+      <div class="beat"><time>8–16 s</time><p>« Alors j'ai créé Skynkod. Elle connaît ta peau, ta ville, la météo du jour, et même le Ramadan. »<em>Plan : la météo à côté de la date, la lune le soir, l'écran de Koda.</em></p></div>
+      <div class="beat"><time>16–22 s</time><p>« Elle arrive bientôt. Les premières inscrites l'auront avant tout le monde. »<em>Plan : le logo. Texte : « Liste d'attente : lien en bio ».</em></p></div>
+    </div>
+    <p class="warn">Remplace la phrase des 2–8 s par ta vraie histoire, avec tes mots. Une vraie raison touche beaucoup plus qu'une phrase parfaite.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>J'ai créé Skynkod pour toutes celles qui achètent des crèmes sans savoir ce qu'il y a dedans.
+Ta peau, ta ville, ta météo : l'appli s'adapte à toi.
+Bientôt disponible. Liste d'attente : lien en bio.
+#skincare #routinesoin #skincaretips #peaugrasse #peauseche</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j1" data-done="j1"> Publié</label></div>
+  </article>
+
+  <!-- ===================== DAY 2 ===================== -->
+  <article class="day" id="j2" data-card="j2">
+    <div class="day-head">
+      <h2>Mercredi 21 · Le soleil d'octobre</h2>
+      <div class="meta"><span class="chip">Reel + TikTok</span><span class="chip">20 s</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Accroche à l'écran</p>
+    <p class="hook">Tu as rangé ta crème solaire ? Mauvaise idée.</p>
+    <div class="script">
+      <p class="label">Script</p>
+      <div class="beat"><time>0–2 s</time><p>Tu ranges un tube de crème solaire dans un tiroir, puis tu t'arrêtes.<em>Texte : l'accroche.</em></p></div>
+      <div class="beat"><time>2–9 s</time><p>« En octobre, l'indice UV dépasse encore 5 dans beaucoup de villes. Dès 3, ta peau a besoin d'être protégée. »<em>Texte : « UV 5 en octobre » puis « Protection dès 3 ».</em></p></div>
+      <div class="beat"><time>9–15 s</time><p>« En automne, il fait moins chaud, mais les UV qui font vieillir la peau et donnent des taches sont là toute l'année. »</p></div>
+      <div class="beat"><time>15–20 s</time><p>« Dans Skynkod, la météo de ta peau te le dit chaque matin. Dis-moi ta ville en commentaire, je te donne l'UV de demain. »<em>Plan : la météo de l'appli à côté de la date.</em></p></div>
+    </div>
+    <p class="tip"><b>Le secret :</b> réponds à chaque ville en commentaire avec son vrai UV du lendemain. Chaque réponse fait remonter la vidéo. L'UV de chaque ville est dans l'appli ou sur Google Météo.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>Octobre : l'UV dépasse encore 5 dans beaucoup de villes. La crème solaire reste dans ta routine du matin.
+Commente ta ville, je te donne l'UV de demain.
+#cremesolaire #spf #skincare #skincaretips #uv</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j2" data-done="j2"> Publié</label></div>
+  </article>
+
+  <!-- ===================== DAY 3 ===================== -->
+  <article class="day" id="j3" data-card="j3">
+    <div class="day-head">
+      <h2>Jeudi 22 · Le décodeur</h2>
+      <div class="meta"><span class="chip">Reel + TikTok</span><span class="chip">25 à 30 s</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Accroche à l'écran</p>
+    <p class="hook">J'ai décodé la boîte bleue que tout le monde a à la maison.</p>
+    <div class="script">
+      <p class="label">Script</p>
+      <div class="beat"><time>0–2 s</time><p>Gros plan sur une boîte de Nivea Creme qu'on ouvre.<em>Texte : l'accroche.</em></p></div>
+      <div class="beat"><time>2–10 s</time><p>« Juste après l'eau : de l'huile minérale. Avec la cire et la paraffine, elle forme un film qui garde l'eau dans la peau. Parfait pour les mains, les coudes et la peau très sèche en hiver. »<em>Texte : « Huile minérale + cire = film protecteur ».</em></p></div>
+      <div class="beat"><time>10–16 s</time><p>« Il y a aussi de la glycérine et du panthénol : ils hydratent et apaisent. »</p></div>
+      <div class="beat"><time>16–23 s</time><p>« Par contre, elle contient du parfum et de l'alcool de lanoline, qui peuvent gêner les peaux très sensibles. Et sa texture riche ne plaît pas à toutes les peaux grasses. »</p></div>
+      <div class="beat"><time>23–30 s</time><p>« Ce n'est pas une mauvaise crème, elle ne convient juste pas à toutes les peaux. Skynkod te le dit en un scan. Quelle crème je décode ensuite ? »<em>Plan : le scanner de l'appli.</em></p></div>
+    </div>
+    <p class="warn">Règle d'or du décodeur : on reste juste et factuel, on ne dit jamais qu'un produit est « dangereux ». C'est ce qui rend Skynkod crédible.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>La Nivea Creme décodée, ingrédient par ingrédient. Bonne crème pour la peau très sèche, moins adaptée aux peaux sensibles ou grasses.
+Quelle crème tu veux que je décode ensuite ? Écris-la en commentaire.
+#ingredients #nivea #skincare #peauseche #routinesoin</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j3" data-done="j3"> Publié</label></div>
+  </article>
+
+  <!-- ===================== DAY 4 ===================== -->
+  <article class="day" id="j4" data-card="j4">
+    <div class="day-head">
+      <h2>Vendredi 23 · Les 5 erreurs d'automne</h2>
+      <div class="meta"><span class="chip">Carrousel Instagram + TikTok photo</span><span class="chip">7 images</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Image 1</p>
+    <p class="hook">5 erreurs que ta peau ne te pardonne pas en automne.</p>
+    <ul class="slides">
+      <li><b>Image 2 · Ranger la crème solaire.</b> Cette semaine, l'UV est encore à 5 ou 6 dans beaucoup de villes.</li>
+      <li><b>Image 3 · Faire le kessa sur le visage.</b> Le gant du hammam est fait pour le corps. Sur le visage, il abîme la barrière de la peau, surtout quand l'air devient plus sec.</li>
+      <li><b>Image 4 · Les douches brûlantes.</b> L'eau très chaude enlève le gras protecteur de la peau. Préfère une eau tiède.</li>
+      <li><b>Image 5 · Changer toute sa routine d'un coup.</b> Un nouveau produit à la fois, et deux semaines pour voir s'il te convient.</li>
+      <li><b>Image 6 · Oublier l'eau calcaire.</b> Dans beaucoup de villes, l'eau du robinet est calcaire et peut tirer la peau. Un nettoyant doux ou une eau micellaire aide.</li>
+      <li><b>Image 7 :</b> « Skynkod t'envoie ta routine d'automne au bon moment. Enregistre ce post pour plus tard. »</li>
+    </ul>
+    <p class="tip"><b>Pourquoi un carrousel :</b> ce format est beaucoup enregistré, et les enregistrements comptent énormément pour Instagram. Utilise les couleurs mauve et blanc de Skynkod, avec un titre par image.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>L'automne arrive, ta peau change. Évite ces 5 erreurs (la 2 surprend tout le monde).
+Enregistre ce post, et envoie-le à ta copine qui fait le kessa sur le visage.
+#hammam #skincare #routineautomne #skincaretips #conseilspeau</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j4" data-done="j4"> Publié</label></div>
+  </article>
+
+  <!-- ===================== DAY 5 ===================== -->
+  <article class="day" id="j5" data-card="j5">
+    <div class="day-head">
+      <h2>Samedi 24 · Demande à Koda</h2>
+      <div class="meta"><span class="chip">Reel + TikTok</span><span class="chip">20 s</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Accroche à l'écran</p>
+    <p class="hook">Pose ta question de peau. Koda te répond.</p>
+    <div class="script">
+      <p class="label">Script</p>
+      <div class="beat"><time>0–3 s</time><p>L'écran de Koda dans l'appli, on tape une question : « Pourquoi j'ai des boutons sur le menton ? »<em>Texte : l'accroche.</em></p></div>
+      <div class="beat"><time>3–11 s</time><p>« Voici Koda, la coach peau de Skynkod. C'est une IA qui connaît ta peau, ta routine et ta météo, et qui te répond comme une experte. »<em>Plan : la réponse de Koda qui s'affiche.</em></p></div>
+      <div class="beat"><time>11–20 s</time><p>« Cette semaine, Koda répond à vos questions. Écris la tienne en commentaire : les meilleures auront leur réponse en vidéo. »</p></div>
+    </div>
+    <p class="warn">À faire avant de filmer : ajouter les crédits Anthropic. Sans eux, Koda ne répond pas dans l'appli.</p>
+    <p class="tip"><b>Le coup de génie :</b> chaque question posée en commentaire devient une vidéo de la semaine 2 (réponse « Koda répond à… »). Tu n'auras plus jamais à chercher d'idées.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>Koda, la coach peau de Skynkod, répond à vos questions.
+Écris ta question en commentaire : les meilleures auront leur réponse en vidéo cette semaine.
+#skincare #boutons #peaugrasse #skincaretips #ia</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j5" data-done="j5"> Publié</label></div>
+  </article>
+
+  <!-- ===================== DAY 6 ===================== -->
+  <article class="day" id="j6" data-card="j6">
+    <div class="day-head">
+      <h2>Dimanche 25 · Vrai ou faux, les astuces de nos mères</h2>
+      <div class="meta"><span class="chip">Reel + TikTok</span><span class="chip">25 s</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Accroche à l'écran</p>
+    <p class="hook">3 astuces de nos mères : vrai ou faux ? La 2e va te surprendre.</p>
+    <div class="script">
+      <p class="label">Script</p>
+      <div class="beat"><time>0–2 s</time><p>Un citron, un flacon d'huile d'argan, un pot de savon noir posés sur une table.<em>Texte : l'accroche.</em></p></div>
+      <div class="beat"><time>2–9 s</time><p>« Le citron sur les boutons ? Faux. Il est trop acide, il irrite, et au soleil il peut laisser des taches. »<em>Texte « VRAI ou FAUX ? » pendant une seconde avant la réponse : les gens restent pour savoir.</em></p></div>
+      <div class="beat"><time>9–16 s</time><p>« L'huile d'argan bouche les pores ? Plutôt faux. C'est une huile légère, souvent bien tolérée, même par les peaux mixtes. »</p></div>
+      <div class="beat"><time>16–25 s</time><p>« Le savon noir sur le visage tous les jours ? À éviter. Il est fait pour le corps au hammam : sur le visage, il peut dessécher. Et toi, quelle astuce ta mère te donnait ? »</p></div>
+    </div>
+    <p class="tip"><b>Pourquoi ça marche :</b> tout le monde a reçu ces astuces de sa mère ou de sa grand-mère, chacune a un avis, et ça donne envie de partager. La question finale remplit les commentaires.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>Citron, argan, savon noir : on démêle le vrai du faux.
+Quelle astuce ta mère te donnait pour la peau ? Raconte en commentaire.
+#arganoil #savonnoir #skincare #astucebeaute #skincaretips</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j6" data-done="j6"> Publié</label></div>
+  </article>
+
+  <!-- ===================== DAY 7 ===================== -->
+  <article class="day" id="j7" data-card="j7">
+    <div class="day-head">
+      <h2>Lundi 26 · Skynkod en 15 secondes</h2>
+      <div class="meta"><span class="chip">Reel + TikTok</span><span class="chip">15 s</span><span class="chip">20 h 30</span></div>
+    </div>
+    <p class="label">Accroche à l'écran</p>
+    <p class="hook">L'appli qui connaît ta peau et ton ciel.</p>
+    <div class="script">
+      <p class="label">Script (montage rapide, sans voix, sur un son tendance)</p>
+      <div class="beat"><time>0–3 s</time><p>L'accueil avec le ciel du matin.<em>Texte : l'accroche.</em></p></div>
+      <div class="beat"><time>3–6 s</time><p>La météo de ta peau à côté de la date.<em>Texte : « Ta météo de peau ».</em></p></div>
+      <div class="beat"><time>6–9 s</time><p>Le ciel du soir avec la vraie lune.<em>Texte : « Ta routine du soir ».</em></p></div>
+      <div class="beat"><time>9–12 s</time><p>Le scan d'un produit, puis Koda qui répond.<em>Texte : « Tes produits décodés ».</em></p></div>
+      <div class="beat"><time>12–15 s</time><p>Le logo.<em>Texte : « Bientôt disponible · Liste d'attente : lien en bio ».</em></p></div>
+    </div>
+    <p class="tip"><b>Ce soir-là, on fait le bilan.</b> Regarde quelles vidéos ont eu le plus de vues, d'enregistrements et de partages, et combien d'inscrites tu as sur skynkod.com/stats. On garde ce qui marche pour la semaine 2.</p>
+    <div class="stack">
+      <p class="label">Légende</p>
+      <div class="caption" data-copy>Ta peau, ta ville, ta météo, ta routine. Skynkod arrive bientôt.
+Inscris-toi sur la liste d'attente : lien en bio.
+#skincare #appli #routinesoin #skincaretips #skynkod</div>
+    </div>
+    <div class="row"><button type="button" data-copy-btn>Copier la légende</button><label class="done-toggle"><input type="checkbox" id="done-j7" data-done="j7"> Publié</label></div>
+  </article>
+
+  <section class="panel">
+    <h2>Ce qu'on regarde à la fin de la semaine</h2>
+    <ul class="clean">
+      <li><b>Les vues et le temps de visionnage</b> : est-ce que l'accroche retient les gens ?</li>
+      <li><b>Les enregistrements et les partages</b> : ce sont les signaux qui comptent le plus pour l'algorithme.</li>
+      <li><b>Les nouvelles abonnées</b> sur chaque réseau.</li>
+      <li><b>Les inscriptions à la liste d'attente</b>, sur skynkod.com/stats et dans l'email du lundi.</li>
+    </ul>
+  </section>
+
+  <footer>Conseils cosmétiques uniquement, sans remplacer l'avis d'un dermatologue.</footer>
+</main>
+
+<script>
+(() => {
+  const KEY = 'skynkod-week1-done'
+  let done = {}
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') } catch (e) { done = {} }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(done)) } catch (e) {} }
+  const paint = () => {
+    document.querySelectorAll('[data-day]').forEach(a => a.classList.toggle('done', !!done[a.dataset.day]))
+    document.querySelectorAll('[data-card]').forEach(c => c.classList.toggle('is-done', !!done[c.dataset.card]))
+  }
+  document.querySelectorAll('[data-done]').forEach(box => {
+    box.checked = !!done[box.dataset.done]
+    box.addEventListener('change', () => { done[box.dataset.done] = box.checked; save(); paint() })
+  })
+  document.querySelectorAll('[data-copy-btn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.closest('.day').querySelector('[data-copy]').innerText.trim()
+      const ok = () => { btn.textContent = 'Copié'; setTimeout(() => { btn.textContent = 'Copier la légende' }, 1600) }
+      const fallback = () => {
+        const el = btn.closest('.day').querySelector('[data-copy]')
+        const range = document.createRange(); range.selectNodeContents(el)
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range)
+        btn.textContent = 'Texte sélectionné'
+      }
+      try { navigator.clipboard.writeText(text).then(ok, fallback) } catch (e) { fallback() }
+    })
+  })
+  paint()
+})()
+</script>

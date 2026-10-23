@@ -26,3 +26,9 @@ build/
 
 expo-env.d.ts
 # @end expo-cli
+# Native folders: Expo makes them from app.json (npx expo prebuild / EAS), so they aren't kept.
+/android
+/ios
+# Supabase CLI and Claude's local helpers, only useful on this Mac.
+supabase/.temp/
+.claude/launch.json
