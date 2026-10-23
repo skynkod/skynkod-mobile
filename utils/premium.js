@@ -62,7 +62,7 @@ export const PREMIUM_PLANS = [
 // What Premium adds on top of the free app.
 export const PREMIUM_BENEFITS = [
   // Icons: feature names from components/FeatureIcon.js (official logos for Rekod and Koda).
-  { icon: 'rekod', title: 'Rekod', text: 'Your skin programme: 6 to 12 weeks built around your skin and your goals.' },
+  { icon: 'rekod', title: 'Rekod', text: 'Your skin programme: 4 to 12 weeks built around your skin and your goals.' },
   { icon: 'dekod', title: 'Dekod', text: 'Your skin scan: one selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
   { icon: 'koda', title: 'Koda every day', text: 'Up to 20 questions a day to your skin coach, instead of 3 a week.' },
   { icon: 'emergency', title: 'Emergency mode', text: 'Full 7-day SOS plans: when your skin reacts, a gentle plan day by day.' },

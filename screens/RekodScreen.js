@@ -632,7 +632,7 @@ export default function RekodScreen({ navigation }) {
         <Text style={[TYPE.body, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>Answer a few quick questions and see your plan before you decide.</Text>
         <View style={{ gap: SPACING.lg, marginTop: SPACING.xxl }}>
           {[
-            ['calendar-outline', '6 to 12 weeks, one goal'],
+            ['calendar-outline', '4 to 12 weeks, up to 3 goals'],
             ['flask-outline', 'Your own products first'],
             ['heart-outline', 'Slows down if your skin reacts'],
           ].map(([icon, text]) => (
