@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen, LoadingView, BottomSheet, useColors } from '../components/ui';
 import { useAuth } from '../utils/AuthContext';
 import { useT, useLanguage } from '../utils/LanguageContext';
-import { getMyProducts, addToMyProducts, searchProducts, photoOf } from '../utils/catalog';
+import { getMyProducts, addToMyProducts, searchProducts } from '../utils/catalog';
+import ProductThumb from '../components/ProductThumb';
 import {
   getPurchasesBetween, getSixMonths, getYearTotal, addPurchase, updatePurchase, deletePurchase,
   getMonthlyBudget, setMonthlyBudget, budgetInsights, formatMAD, costPerUse,
@@ -283,9 +284,7 @@ export default function BudgetScreen({ navigation }) {
         </View>
         <View style={styles.thumbs}>
           {owned.slice(0, 6).map(p => (
-            photoOf(p)
-              ? <Image key={p.id} source={{ uri: photoOf(p) }} style={styles.thumb} resizeMode="contain" />
-              : <View key={p.id} style={[styles.thumb, styles.noThumb, { backgroundColor: colors.surface }]}><Ionicons name="water-outline" size={16} color={colors.muted} /></View>
+            <ProductThumb key={p.id} product={p} style={styles.thumb} />
           ))}
           {owned.length > 6 ? (
             <View style={[styles.more, { backgroundColor: colors.primarySoft }]}>
@@ -372,7 +371,7 @@ export default function BudgetScreen({ navigation }) {
                     const on = pick?.id === p.id;
                     return (
                       <Pressable key={p.id} onPress={() => { setPick(p); setOtherName(''); }} style={[styles.resultRow, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                        {photoOf(p) ? <Image source={{ uri: photoOf(p) }} style={styles.resultImage} resizeMode="contain" /> : <View style={[styles.resultImage, styles.noThumb]}><Ionicons name="water-outline" size={16} color={colors.muted} /></View>}
+                        <ProductThumb product={p} style={styles.resultImage} />
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>{p.brand}</Text>
                           <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]} numberOfLines={2}>{p.name}</Text>
@@ -397,7 +396,7 @@ export default function BudgetScreen({ navigation }) {
                       const on = pick?.id === p.id;
                       return (
                         <Pressable key={p.id} onPress={() => { setPick(on ? null : p); setOtherName(''); }} style={[styles.pickItem, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                          {photoOf(p) ? <Image source={{ uri: photoOf(p) }} style={styles.pickImage} resizeMode="contain" /> : <Ionicons name="water-outline" size={22} color={colors.muted} />}
+                          <ProductThumb product={p} style={styles.pickImage} />
                           <Text style={{ fontSize: 11, color: colors.text, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{p.name}</Text>
                         </Pressable>
                       );
@@ -481,7 +480,6 @@ const styles = StyleSheet.create({
   catFill: { height: 8, borderRadius: 4 },
   thumbs: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, flexWrap: 'wrap' },
   thumb: { width: 40, height: 40, borderRadius: 8, backgroundColor: '#FFFFFF' },
-  noThumb: { alignItems: 'center', justifyContent: 'center' },
   more: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   insight: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
   insightIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

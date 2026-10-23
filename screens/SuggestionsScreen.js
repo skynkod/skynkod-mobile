@@ -6,7 +6,8 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { productsWithIngredient, getMyProducts, photoOf } from '../utils/catalog'
+import { productsWithIngredient, getMyProducts } from '../utils/catalog'
+import ProductThumb from '../components/ProductThumb'
 import { getIngredient, findIngredients, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { getSituation, NEEDS } from '../utils/emergency-plans'
 import { logError } from '../utils/errorLogger'
@@ -80,9 +81,7 @@ export default function SuggestionsScreen({ navigation, route }) {
       onPress={() => navigation.navigate('Product', { id: product.id })}
       style={[styles.row, { backgroundColor: colors.card, borderColor: owned ? colors.success : colors.border }]}
     >
-      {photoOf(product) ? (
-        <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
-      ) : null}
+      <ProductThumb product={product} style={styles.photo} />
       <View style={{ flex: 1 }}>
         <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
         <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>

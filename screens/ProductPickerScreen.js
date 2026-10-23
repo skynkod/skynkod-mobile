@@ -6,7 +6,8 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { productsByCategory, searchProducts, photoOf } from '../utils/catalog'
+import { productsByCategory, searchProducts } from '../utils/catalog'
+import ProductThumb from '../components/ProductThumb'
 import { productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { STEP_TYPES } from '../utils/routine-steps'
 import { logError } from '../utils/errorLogger'
@@ -107,9 +108,7 @@ export default function ProductPickerScreen({ navigation, route }) {
           onPress={() => choose(product)}
           style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
-          {photoOf(product) ? (
-            <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
-          ) : null}
+          <ProductThumb product={product} style={styles.photo} />
           <View style={{ flex: 1 }}>
             <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>

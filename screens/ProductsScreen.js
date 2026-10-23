@@ -9,7 +9,8 @@ import { useAuth } from '../utils/AuthContext'
 import { useT, useLanguage } from '../utils/LanguageContext'
 import { shelfLife, setOpened, setExpiry, setPao } from '../utils/shelf-life'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, photoOf, BODY_CARE_ENABLED } from '../utils/catalog'
+import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, BODY_CARE_ENABLED } from '../utils/catalog'
+import ProductThumb from '../components/ProductThumb'
 import { getUserRoutines } from '../utils/routines-service'
 import { SHOP_LINKS_ENABLED } from '../utils/shop'
 import { logError } from '../utils/errorLogger'
@@ -244,9 +245,7 @@ export default function ProductsScreen({ navigation }) {
             onLongPress={() => openActions(row)}
             style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            {photoOf(product) ? (
-              <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
-            ) : null}
+            <ProductThumb product={product} style={styles.photo} />
             <View style={{ flex: 1 }}>
               <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product?.brand || row.brand}</Text>
               <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product?.name || row.product_name}</Text>

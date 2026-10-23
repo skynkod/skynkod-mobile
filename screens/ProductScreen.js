@@ -8,7 +8,8 @@ import { usePremium, PremiumBlur } from '../components/PremiumLock'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { getProduct, addToMyProducts, myProductStatus, photoOf } from '../utils/catalog'
+import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
+import ProductThumb from '../components/ProductThumb'
 import { retailersFor, openRetailer, SHOP_LINKS_ENABLED } from '../utils/shop'
 import { getPriceStats } from '../utils/community-data'
 import { formatMAD } from '../utils/skynbudget'
@@ -94,9 +95,7 @@ export default function ProductScreen({ navigation, route }) {
   return (
     <Screen back>
       <View style={styles.hero}>
-        {photoOf(product) ? (
-          <Image source={{ uri: photoOf(product) }} style={styles.image} resizeMode="contain" />
-        ) : null}
+        <ProductThumb product={product} style={styles.image} />
         <View style={{ flex: 1 }}>
           <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{product.brand}</Text>
           <Text style={[styles.name, { color: colors.text }]}>{product.name}</Text>

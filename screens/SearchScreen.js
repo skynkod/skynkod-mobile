@@ -7,7 +7,8 @@ import MatchBadge from '../components/MatchBadge'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
-import { searchProducts, linkBarcode, photoOf } from '../utils/catalog'
+import { searchProducts, linkBarcode } from '../utils/catalog'
+import ProductThumb from '../components/ProductThumb'
 import { requestProduct } from '../utils/community-data'
 import { track } from '../utils/analytics'
 import { searchIngredients, ingredientFit, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
@@ -205,9 +206,7 @@ export default function SearchScreen({ navigation, route }) {
                 onPress={() => openProduct(product)}
                 style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
-                {photoOf(product) ? (
-                  <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
-                ) : null}
+                <ProductThumb product={product} style={styles.photo} />
                 <View style={{ flex: 1 }}>
                   <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}{product.category ? ` · ${t(CATEGORY_LABEL[product.category] || product.category)}` : ''}</Text>
                   <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>

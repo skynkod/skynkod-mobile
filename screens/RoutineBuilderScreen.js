@@ -9,7 +9,8 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productMatch } from '../utils/ingredients-guide'
-import { addToMyProducts, getProductsByIds, photoOf } from '../utils/catalog'
+import { addToMyProducts, getProductsByIds } from '../utils/catalog'
+import ProductThumb from '../components/ProductThumb'
 import { saveRoutine } from '../utils/routines-service'
 import { STEP_TYPES, STEP_ORDER, ESSENTIALS } from '../utils/routine-steps'
 import { checkRoutine, suggestedDays, describeDays, EVERY_DAY, DAY_LABELS } from '../utils/routine-checks'
@@ -244,9 +245,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const ProductCard = ({ product, onChange, onRemove }) => {
     return (
       <View style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        {photoOf(product) ? (
-          <Image source={{ uri: photoOf(product) }} style={styles.photo} resizeMode="contain" />
-        ) : null}
+        <ProductThumb product={product} style={styles.photo} />
         <View style={{ flex: 1 }}>
           <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
