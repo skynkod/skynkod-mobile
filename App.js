@@ -236,7 +236,9 @@ function AppContent() {
 
   const initializeNotifications = async (userId) => {
     try {
-      const granted = await requestNotificationPermissions()
+      // "Not now" at onboarding: don't ask again at every launch (Settings can).
+      const later = await AsyncStorage.getItem(`skynkod_notif_later_${userId}`)
+      const granted = await requestNotificationPermissions(!later)
       // Counted only when it changes, not at every launch.
       const notifKey = `skynkod_notif_counted_${userId}`
       if ((await AsyncStorage.getItem(notifKey)) !== String(granted)) {
@@ -281,7 +283,8 @@ function AppContent() {
         }
 
         setAnalyticsUser(userData.userId).then(() => track('app_open')).catch(() => {})
-        initializeNotifications(userData.userId)
+        // Reminders are offered inside onboarding, with a preview first.
+        if (onboarded) initializeNotifications(userData.userId)
         markSeen(userData.userId)
       }
     } catch (error) {
@@ -325,7 +328,7 @@ function AppContent() {
     }
     setUser(data)
     setAnalyticsUser(userId).then(() => { track('sign_in'); track('app_open') }).catch(() => {})
-    initializeNotifications(userId)
+    if (onboarded) initializeNotifications(userId)
     markSeen(userId)
   }
 
@@ -359,11 +362,20 @@ function AppContent() {
     setUser(null)
   }
 
-  const handleOnboardingComplete = async () => {
+  const handleOnboardingComplete = async (options) => {
     // Per account, so a new account on the same phone still gets onboarding.
     await AsyncStorage.setItem(`skynkod_onboarded_${user.userId}`, 'true')
     track('onboarding_done')
     setShowOnboarding(false)
+    initializeNotifications(user.userId)
+    // The Premium offer comes right after her plan is built, like Flo.
+    if (options?.offerPremium) {
+      const open = (tries = 0) => {
+        if (navigationRef.isReady()) navigationRef.navigate('Premium', { fromOnboarding: true })
+        else if (tries < 20) setTimeout(() => open(tries + 1), 150)
+      }
+      setTimeout(open, 300)
+    }
   }
 
   const statusBar = <StatusBar style={isDark ? 'light' : 'dark'} />

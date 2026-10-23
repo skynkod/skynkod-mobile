@@ -4,6 +4,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as WebBrowser from 'expo-web-browser'
+import * as Haptics from 'expo-haptics'
+import { supabase } from '../utils/supabase'
+import { requestNotificationPermissions } from '../utils/notifications'
+import { WHY_AFTER, whyAfter } from '../utils/onboarding-why'
 import { updateUserProfile } from '../utils/supabase'
 import { deleteAccount } from '../utils/account'
 import { articlesIn } from '../utils/encyclopedia'
@@ -75,11 +79,29 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   const [answers, setAnswers] = useState({}) // the skin quiz (utils/skin-quiz.js)
   const setAnswer = (id, value) => setAnswers(prev => ({ ...prev, [id]: value }))
   const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(0) // "Building your plan", 0 to 100
+  const [productCount, setProductCount] = useState(null)
+  const [committed, setCommitted] = useState(false)
+  const hold = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    supabase.from('products').select('id', { count: 'exact', head: true }).then(({ count }) => setProductCount(count || null)).catch(() => {})
+  }, [])
 
   // Quiz questions follow the answers (acne details only with acne, health
   // questions only with the health consent, pregnancy not for men…).
   const quiz = questionsFor(answers, health)
-  const STEPS = [...INTRO_STEPS, ...quiz.map(q => `q:${q.id}`), 'summary']
+  // Inspired by Flo (Lita, 2026-10-23): the goal first, a screen after some
+  // chapters saying what the answers change, a trust page, "building your
+  // plan", then her profile, a small promise, reminders and the Premium offer.
+  const quizSteps = []
+  for (const c of CHAPTERS) {
+    const qs = quiz.filter(q => q.chapter === c.id)
+    if (!qs.length) continue
+    qs.forEach(q => quizSteps.push(`q:${q.id}`))
+    if (WHY_AFTER.includes(c.id)) quizSteps.push(`why:${c.id}`)
+    if (c.id === 'bothers') quizSteps.push('trust')
+  }
+  const STEPS = [...INTRO_STEPS, ...quizSteps, 'loader', 'summary', 'commit', 'notify']
   const QUESTION_STEPS = STEPS.slice(STEPS.indexOf('name'))
   const name = STEPS[step]
   const enter = useRef(new Animated.Value(0)).current
@@ -96,6 +118,18 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start()
+  }, [step])
+
+  // "Building your plan": the bar fills, then her profile appears by itself.
+  useEffect(() => {
+    if (STEPS[step] !== 'loader') return
+    setLoaded(0)
+    const bar = new Animated.Value(0)
+    const id = bar.addListener(({ value }) => setLoaded(Math.round(value * 100)))
+    Animated.timing(bar, { toValue: 1, duration: 5200, easing: Easing.inOut(Easing.quad), useNativeDriver: false }).start(({ finished }) => {
+      if (finished) setTimeout(() => goTo(STEPS.indexOf('summary')), 450)
+    })
+    return () => { bar.stopAnimation(); bar.removeListener(id) }
   }, [step])
 
   const goTo = (i) => {
@@ -132,7 +166,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
 
   // Answers are saved to the profile so routines and Koda can use them; a
   // failed save never blocks the user from getting into the app.
-  const finish = async (save) => {
+  const finish = async (save, options) => {
     setSaving(true)
     try {
       if (save) {
@@ -151,7 +185,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
           if (!saved) await logError('OnboardingScreen_saveProfile', new Error('Profile not saved'), { userId }, 'warn')
         }
       }
-      await onComplete()
+      if (userId && committed) await AsyncStorage.setItem(`skynkod_commitment_${userId}`, new Date().toISOString()).catch(() => {})
+      await onComplete(options)
     } catch (error) {
       await logError('OnboardingScreen_finish', error, { step }, 'warn')
       await onComplete().catch(() => {})
@@ -407,6 +442,94 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} disabled={!terms} />
+  } else if (name.startsWith('why:')) {
+    const why = whyAfter(name.slice(4), answers)
+    content = (
+      <>
+        <View style={[styles.bigIcon, { backgroundColor: colors.primarySoft }]}><Ionicons name={why.icon} size={30} color={colors.primary} /></View>
+        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.xl }]}>{t(why.title, why.params)}</Text>
+        <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t(why.text)}</Text>
+      </>
+    )
+    footer = <Pill title={t('Continue')} onPress={next} />
+  } else if (name === 'trust') {
+    content = (
+      <>
+        <View style={[styles.bigIcon, { backgroundColor: colors.primarySoft }]}><Ionicons name="shield-checkmark-outline" size={30} color={colors.primary} /></View>
+        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.xl }]}>{t('No brand pays us')}</Text>
+        <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t('No verdict is for sale. Every rule in Skynkod comes from recognised dermatology sources, and each one shows where it comes from.')}</Text>
+        <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t('Safety alerts stay free for everyone.')}</Text>
+        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xl }]}>{t('American Academy of Dermatology · Cleveland Clinic · published studies')}</Text>
+      </>
+    )
+    footer = <Pill title={t('Continue')} onPress={next} />
+  } else if (name === 'loader') {
+    const message = loaded < 25 ? t('Reading your skin test…')
+      : loaded < 50 ? t('Matching ingredients to your goals…')
+      : loaded < 80 ? (productCount ? t('Checking {n} products for your skin…', { n: productCount.toLocaleString() }) : t('Checking our products for your skin…'))
+      : loaded < 100 ? t('Setting up your skin forecast…') : t('Your plan is ready')
+    content = (
+      <View style={{ alignItems: 'center', paddingTop: SPACING.xxxl }}>
+        <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Building your plan')}</Text>
+        <Text style={[styles.percent, { color: colors.primary }]}>{loaded} %</Text>
+        <View style={[styles.loaderTrack, { backgroundColor: colors.border }]}>
+          <View style={[styles.loaderFill, { backgroundColor: colors.primary, width: `${loaded}%` }]} />
+        </View>
+        <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.lg, textAlign: 'center' }]}>{message}</Text>
+      </View>
+    )
+  } else if (name === 'commit') {
+    const press = () => {
+      if (committed) return
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+      Animated.timing(hold, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true }).start(({ finished }) => {
+        if (!finished) return
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+        setCommitted(true)
+        setTimeout(next, 800)
+      })
+    }
+    const release = () => { if (!committed) Animated.timing(hold, { toValue: 0, duration: 250, useNativeDriver: true }).start() }
+    content = (
+      <View style={{ alignItems: 'center' }}>
+        <Text style={[styles.headline, { color: colors.text, textAlign: 'center' }]}>{t('One promise to yourself')}</Text>
+        <Text style={[styles.promise, { color: colors.text }]}>{t('“I care for my skin, morning and evening.”')}</Text>
+        <Pressable onPressIn={press} onPressOut={release} accessibilityLabel={t('Hold to commit')}
+          style={[styles.holdRing, { borderColor: colors.primary }]}>
+          <Animated.View style={[styles.holdFill, { backgroundColor: colors.primary, transform: [{ scale: hold }] }]} />
+          <Ionicons name={committed ? 'checkmark' : 'finger-print-outline'} size={40} color={committed ? colors.onPrimary : colors.primary} />
+        </Pressable>
+        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{committed ? t('Promise made 🌸') : t('Hold to commit')}</Text>
+      </View>
+    )
+  } else if (name === 'notify') {
+    const turnOn = async () => {
+      await requestNotificationPermissions()
+      finish(true, { offerPremium: true })
+    }
+    const later = async () => {
+      if (userId) await AsyncStorage.setItem(`skynkod_notif_later_${userId}`, '1').catch(() => {})
+      finish(true, { offerPremium: true })
+    }
+    content = (
+      <>
+        <View style={[styles.fakeNotif, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Image source={LOGO} resizeMode="contain" style={{ width: 54, height: 54 / LOGO_RATIO }} />
+          <View style={{ flex: 1 }}>
+            <Text style={[TYPE.caption, { color: colors.muted }]}>{t('now')}</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Time for your evening routine 🌙')}</Text>
+          </View>
+        </View>
+        <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.xxl }]}>{t('A gentle reminder, morning and evening?')}</Text>
+        <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t('For your two routines and your daily skin check-in. You can change them anytime in your settings.')}</Text>
+      </>
+    )
+    footer = (
+      <View style={{ gap: SPACING.sm }}>
+        <Pill title={t('Turn on reminders')} onPress={turnOn} loading={saving} />
+        <Pill title={t('Not now')} variant="ghost" onPress={later} />
+      </View>
+    )
   } else if (name.startsWith('q:')) {
     const q = quiz.find(x => `q:${x.id}` === name)
     const firstOfChapter = quiz.findIndex(x => x.chapter === q.chapter) === quiz.indexOf(q)
@@ -451,7 +574,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
         </Text>
       </>
     )
-    footer = <Pill title={t('Get started')} onPress={() => finish(true)} loading={saving} />
+    footer = <Pill title={t('Continue')} onPress={next} />
   }
 
   return (
@@ -461,7 +584,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
         <Pressable onPress={back} hitSlop={12} accessibilityLabel={t('Back')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        {name !== 'summary' && name !== 'consent' && name !== 'birthday' ? (
+        {!['summary', 'consent', 'birthday', 'loader', 'notify'].includes(name) ? (
           <Pressable onPress={skip} hitSlop={12}>
             <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip')}</Text>
           </Pressable>
@@ -530,4 +653,13 @@ const styles = StyleSheet.create({
   summaryLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
   summaryValue: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', letterSpacing: -0.3, marginTop: 4, marginBottom: SPACING.lg },
   suspicion: { borderRadius: 20, borderWidth: 1, padding: SPACING.lg, marginTop: SPACING.md },
+
+  bigIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  percent: { fontSize: 56, fontWeight: '700', letterSpacing: -1, marginTop: SPACING.lg },
+  loaderTrack: { height: 6, borderRadius: 3, overflow: 'hidden', alignSelf: 'stretch', marginTop: SPACING.lg },
+  loaderFill: { height: 6, borderRadius: 3 },
+  promise: { fontSize: 22, fontWeight: '600', lineHeight: 30, textAlign: 'center', marginTop: SPACING.xl, fontStyle: 'italic' },
+  holdRing: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginTop: SPACING.xxxl },
+  holdFill: { position: 'absolute', width: 120, height: 120, borderRadius: 60 },
+  fakeNotif: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md, marginTop: SPACING.lg },
 })

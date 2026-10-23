@@ -15,7 +15,7 @@ const FREE = ['Unlimited product scans with your verdict', 'Your morning and eve
 
 // The Premium page: why it's worth it, "everything in Free, plus", the three
 // plans (yearly highlighted, 7 days free), and what the stores require.
-export default function PremiumScreen({ navigation }) {
+export default function PremiumScreen({ navigation, route }) {
   const colors = useColors()
   const t = useT()
   const { user } = useAuth()
@@ -85,6 +85,9 @@ export default function PremiumScreen({ navigation }) {
               ? t('Free for {n} days, then {price} a {per}. Cancel anytime.', { n: chosen.trialDays, price: chosen.fallbackPrice, per: t(chosen.per) })
               : t('{price} a {per}. Cancel anytime.', { price: chosen.fallbackPrice, per: t(chosen.per) })}
           </Text>
+          {route?.params?.fromOnboarding ? (
+            <Text onPress={() => navigation.goBack()} style={[TYPE.bodyStrong, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.md }]}>{t('Not now')}</Text>
+          ) : null}
         </View>
       }
     >

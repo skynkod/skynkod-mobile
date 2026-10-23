@@ -13,11 +13,12 @@ Notifications.setNotificationHandler({
   }),
 })
 
-export const requestNotificationPermissions = async () => {
+// ask = false only checks: used after she said "Not now" at onboarding.
+export const requestNotificationPermissions = async (ask = true) => {
   try {
     const { status: existing } = await Notifications.getPermissionsAsync()
     let status = existing
-    if (existing !== 'granted') {
+    if (existing !== 'granted' && ask) {
       const response = await Notifications.requestPermissionsAsync()
       status = response.status
     }

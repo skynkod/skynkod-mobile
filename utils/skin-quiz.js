@@ -7,6 +7,7 @@
 // skin_goals). Health questions are only asked with the health consent.
 
 export const CHAPTERS = [
+  { id: 'goal', label: 'Your goal', cheer: 'Everything that follows is shaped around this.' },
   { id: 'you', label: 'About you', cheer: 'Let’s get to know each other.' },
   { id: 'test', label: 'Your skin test', cheer: 'No mirror needed, just think of an ordinary day.' },
   { id: 'bothers', label: 'What bothers you', cheer: 'Your skin is starting to talk to us…' },
@@ -19,6 +20,9 @@ export const CHAPTERS = [
 const o = (value, label, hint) => ({ value, label, hint })
 
 export const QUESTIONS = [
+  // The goal comes first (inspired by Flo, Lita 2026-10-23): everything after is shaped around it.
+  { id: 'goals', chapter: 'goal', type: 'multi', max: 3, title: 'What would you like to change first?', subtitle: 'Pick up to 3.',
+    options: [o('clear', 'Clearer skin'), o('hydration', 'Deep hydration'), o('even_tone', 'An even skin tone'), o('anti_aging', 'Smoother, firmer skin'), o('simple', 'A routine I actually stick to')] },
   { id: 'sex', chapter: 'you', type: 'single', title: 'You are…', subtitle: 'Skin differs a little between men and women (oil, shaving, hormones).',
     options: [o('woman', 'A woman'), o('man', 'A man'), o('other', 'Non-binary'), o('unsaid', 'I’d rather not say')] },
 
@@ -76,8 +80,6 @@ export const QUESTIONS = [
   { id: 'stress', chapter: 'habits', type: 'single', title: 'Your stress lately',
     options: [o('low', 'Low'), o('mid', 'Medium'), o('high', 'High')] },
 
-  { id: 'goals', chapter: 'prefs', type: 'multi', max: 3, title: 'And your goals?', subtitle: 'Pick up to 3.',
-    options: [o('clear', 'Clearer skin'), o('hydration', 'Deep hydration'), o('even_tone', 'An even skin tone'), o('anti_aging', 'Smoother, firmer skin'), o('simple', 'A routine I actually stick to')] },
   { id: 'time', chapter: 'prefs', type: 'single', title: 'Time you want to spend on your routine',
     options: [o('2', 'About 2 minutes'), o('5', 'About 5 minutes'), o('10', '10 minutes or more')] },
   { id: 'budget', chapter: 'prefs', type: 'single', title: 'Your budget per product',

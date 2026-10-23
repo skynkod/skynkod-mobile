@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch, DevSettings } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from '@react-navigation/native'
 import { logError } from '../utils/errorLogger'
 import { Ionicons } from '@expo/vector-icons'
@@ -187,6 +188,12 @@ export default function MoreScreen({ navigation }) {
           <Card padded={false} style={styles.listCard}>
             <ListRow icon="diamond-outline" title="See the app as Premium" subtitle={viewPremium ? 'On: every Premium feature is open' : 'Off: you see the app as a free user'}
               right={<Switch value={viewPremium} onValueChange={toggleView} trackColor={{ true: colors.primary }} />} />
+            {/* To test the welcome screens again; her answers are saved again at the end. */}
+            <ListRow icon="refresh-outline" title="Replay the welcome screens" subtitle="Your answers will replace your skin profile"
+              onPress={() => Alert.alert('Replay the welcome screens?', 'The app restarts on the first welcome screen. Your new answers will replace your skin profile.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Replay', onPress: async () => { await AsyncStorage.removeItem(`skynkod_onboarded_${user.id}`); DevSettings.reload() } },
+              ])} />
             {byGroup('admin').map((item, idx, arr) => (
               <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
             ))}
