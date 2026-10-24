@@ -3,4 +3,25 @@
 // docs/illustration-prompts.md. Add each one here as it arrives:
 //   'fungal-acne': require('../../assets/conditions/fungal-acne.webp'),
 // A sheet without an image simply shows no picture.
-export const CONDITION_IMAGES = {}
+export const CONDITION_IMAGES = {
+  'comedonal-acne': require('../../assets/conditions/comedonal-acne.jpg'),
+  'inflammatory-acne': require('../../assets/conditions/inflammatory-acne.jpg'),
+  'cystic-acne': require('../../assets/conditions/cystic-acne.jpg'),
+  'hormonal-acne': require('../../assets/conditions/hormonal-acne.jpg'),
+  'fungal-acne': require('../../assets/conditions/fungal-acne.jpg'),
+  'oily-skin': require('../../assets/conditions/oily-skin.jpg'),
+  'enlarged-pores': require('../../assets/conditions/enlarged-pores.jpg'),
+  'sebaceous-filaments': require('../../assets/conditions/sebaceous-filaments.jpg'),
+  'milia': require('../../assets/conditions/milia.jpg'),
+  'sebaceous-hyperplasia': require('../../assets/conditions/sebaceous-hyperplasia.jpg'),
+  'rosacea': require('../../assets/conditions/rosacea.jpg'),
+  'visible-vessels': require('../../assets/conditions/visible-vessels.jpg'),
+  'sensitive-skin': require('../../assets/conditions/sensitive-skin.jpg'),
+  'perioral-dermatitis': require('../../assets/conditions/perioral-dermatitis.jpg'),
+  'seborrheic-dermatitis': require('../../assets/conditions/seborrheic-dermatitis.jpg'),
+  'eczema': require('../../assets/conditions/eczema.jpg'),
+  'facial-psoriasis': require('../../assets/conditions/facial-psoriasis.jpg'),
+  'contact-dermatitis': require('../../assets/conditions/contact-dermatitis.jpg'),
+  'post-acne-redness': require('../../assets/conditions/post-acne-redness.jpg'),
+  'melasma': require('../../assets/conditions/melasma.jpg'),
+}
