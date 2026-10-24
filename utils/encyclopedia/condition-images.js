@@ -41,4 +41,5 @@ export const CONDITION_IMAGES = {
   'acne-scars': require('../../assets/conditions/acne-scars.jpg'),
   'raised-scars': require('../../assets/conditions/raised-scars.jpg'),
   'sun-damage': require('../../assets/conditions/sun-damage.jpg'),
+  'sunburn': require('../../assets/conditions/sunburn.jpg'),
 }
