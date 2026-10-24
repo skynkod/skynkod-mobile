@@ -12,7 +12,9 @@ export const CHECKIN_EVERY_DAYS = 14
 export const TRACKED = [
   { key: 'breakouts', label: 'Breakouts', tags: ['New pimple'], states: ['breakout'], color: 'warning' },
   { key: 'redness', label: 'Redness', tags: ['Redness', 'Itchiness / Sensitivity'], states: ['red', 'irritated'], color: 'danger' },
-  { key: 'dryness', label: 'Dryness', tags: ['Dryness', 'Peeling / Flaking'], states: ['dehydrated'], color: 'primary' },
+  // Dry skin lacks oil, dehydrated skin lacks water: two different things.
+  { key: 'dryness', label: 'Dryness', tags: ['Dryness', 'Peeling / Flaking'], states: [], color: 'caution' },
+  { key: 'dehydration', label: 'Dehydration', tags: [], states: ['dehydrated'], color: 'primary' },
   { key: 'oiliness', label: 'Oiliness', tags: ['Oily'], states: [], color: 'success' },
 ]
 export const CHECKIN_CONCERNS = ['Breakouts', 'Redness', 'Dryness', 'Oiliness', 'Texture', 'Dark spots']

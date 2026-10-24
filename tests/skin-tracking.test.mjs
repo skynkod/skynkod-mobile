@@ -65,3 +65,10 @@ test('Home chips count too: "Breaking out" days without any Journal tag', () => 
   const b = progressChanges({ entries, now: NOW }).find(x => x.key === 'breakouts')
   assert.ok(b && b.change < 0, `got ${b?.change}`)
 })
+
+test('dehydrated and dry are tracked apart', () => {
+  const entries = [...days(55, 28, []).map(e => ({ ...e, skin_state: ['dehydrated'] })), ...days(27, 0, []).map((e, i) => ({ ...e, skin_state: i % 4 ? [] : ['dehydrated'] }))]
+  const c = progressChanges({ entries, now: NOW })
+  assert.ok(c.find(x => x.key === 'dehydration'))
+  assert.equal(c.find(x => x.key === 'dryness'), undefined)
+})
