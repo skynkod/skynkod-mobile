@@ -28,22 +28,23 @@ const KODA = require('../assets/images/koda-logo.png')
 const LOGO_RATIO = 1306 / 333
 const BRAND_MAUVE = '#C5A8BB'
 
-// Every feature, each with its official icon (Lita, 2026-10-23: "if we say it, say it all").
+// Every feature, each with its official icon (Lita, 2026-10-23: "if we say it,
+// say it all"), grouped after the audit (2026-10-24) so it stays short.
 const FEATURES = [
   { icon: 'rekod', title: 'Rekod, your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
   { icon: 'dekod', title: 'Dekod, your skin scan', text: 'One selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
-  { icon: 'koda', title: 'Koda, your AI skin coach', text: 'Knows your skin and your routine, and answers like an expert.' },
-  { icon: 'scan', title: 'Product scan', text: 'Scan any product: every ingredient is checked against your skin.' },
-  { icon: 'search', title: 'Search', text: 'Any product or ingredient, without the bottle in your hands.' },
-  { icon: 'forecast', title: 'Your skin forecast', text: 'The next 3 days: weather, your habits and your cycle, and what your skin will need.' },
-  { icon: 'journal', title: 'What your skin tells you', text: 'A daily check-in that learns what makes your skin react.' },
-  { icon: 'routines', title: 'Your routines', text: 'Morning and evening, with your own products, and a reminder when it’s time.' },
-  { icon: 'layering', title: 'How to apply', text: 'Your products in the right order, how much, and which evening for each active.' },
-  { icon: 'emergency', title: 'Emergency mode', text: 'A gentle 7-day plan when your skin reacts.' },
-  { icon: 'modes', title: 'Your skin right now', text: 'Pregnancy, breastfeeding, reacting skin or a new season: the whole app adapts.' },
-  { icon: 'skyncyclopedia', title: 'Skyncyclopedia', text: 'Ingredients and skin care explained simply, with their sources.' },
+  { icon: 'koda', title: 'Koda, your AI skin coach', text: 'Knows your skin, your routine and your history, and answers about your situation.' },
+  { icon: 'scan', title: 'Check any product', text: 'Scan it or search it: every ingredient is checked against your skin.' },
+  { icon: 'bag-check-outline', title: 'Should I buy this?', text: 'Before you buy: does it suit your skin, and do you already own something that does the same job?' },
+  { icon: 'remove-circle-outline', title: 'Fewer products, better skin', text: 'What to stop, what your shelf really needs, and your next best buy. Skynkod never pushes you to buy.' },
+  { icon: 'progress', title: 'See what really works', text: 'A skin review every 2 weeks, your progress in numbers, when it’s too early to judge, and your skin timeline.' },
+  { icon: 'forecast', title: 'Your skin forecast', text: 'The next 3 days: weather, your habits, your cycle and your travels, and what your skin will need.' },
+  { icon: 'journal', title: 'What your skin tells you', text: 'A 10-second check-in and your glasses of water: it learns what makes your skin react.' },
+  { icon: 'routines', title: 'Your routines, in the right order', text: 'Morning and evening, with your own products, how much, and which evening for each active.' },
+  { icon: 'emergency', title: 'When your skin reacts', text: 'Space your actives or follow a gentle 7-day plan. Pregnancy and seasons adapt the whole app too.' },
+  { icon: 'skyncyclopedia', title: 'Skyncyclopedia', text: '38 skin issues and every ingredient explained simply, with their sources.' },
   { icon: 'report', title: 'My skin report', text: 'One page to show your dermatologist.' },
-  { icon: 'journey', title: 'Your skin journey', text: 'Badges, levels and your Koda box as your habits grow.' },
+  { icon: 'journey', title: 'Your skin journey', text: 'Badges and levels for good habits, never for buying more.' },
 ]
 
 

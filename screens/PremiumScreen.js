@@ -9,7 +9,7 @@ import { Screen, Card, Button, IconCircle, useColors } from '../components/ui'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 const LOGO = require('../assets/images/logo-glow.png')
-const FREE = ['Unlimited product scans with your verdict', 'Your skin forecast, every day', 'Your morning and evening routines', 'Your skin journal', 'Your badges and levels', 'Koda: 3 questions a week']
+const FREE = ['Unlimited product scans with your verdict', 'Should I buy this? (the answer)', 'Safety alerts: allergies, pregnancy, reactions', 'Your skin forecast, every day', 'Your morning and evening routines', 'When to judge each product', 'Your skin review every 2 weeks', 'Your skin journal and water', 'Your skin timeline', 'Your badges and levels', 'Koda: 3 questions a week']
 
 // The Premium page: why it's worth it, "everything in Free, plus", the three
 // plans (yearly highlighted, 7 days free), and what the stores require.
