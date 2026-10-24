@@ -9,6 +9,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT, useLanguage } from '../utils/LanguageContext'
 import { shelfLife, setOpened, setExpiry, setPao } from '../utils/shelf-life'
 import { useSkinProfile } from '../utils/useSkinProfile'
+import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
 import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, BODY_CARE_ENABLED } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
 import { getUserRoutines } from '../utils/routines-service'
@@ -40,6 +41,7 @@ export default function ProductsScreen({ navigation }) {
   const t = useT()
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
+  const stopAdvice = useStopAdvice(user?.id, profile)
   const [rows, setRows] = useState([])
   const [inRoutine, setInRoutine] = useState(new Set())
   const [tab, setTab] = useState('owned')
@@ -274,6 +276,11 @@ export default function ProductsScreen({ navigation }) {
                 )
               })() : null}
               {product ? <ProductVerdict product={product} profile={profile} /> : null}
+              {product && row.status === 'owned' ? (() => {
+                const advice = stopAdvice.adviceFor(product, { life: shelfLife(row) })
+                return <StopAdvice advice={advice} product={product} inRoutine={stopAdvice.inRoutine(product.id)} premium={stopAdvice.premium}
+                  onStop={() => stopAdvice.stop(product)} onKeep={() => stopAdvice.keep(product, advice?.kind)} />
+              })() : null}
             </View>
             {SHOP_LINKS_ENABLED && row.status === 'to_buy' && product ? (
               <Pressable

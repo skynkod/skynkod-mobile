@@ -15,6 +15,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
+import StopAdvice, { useStopAdvice } from '../components/StopAdvice';
 import { getProductsByIds, photoOf } from '../utils/catalog';
 import YourWeek from '../components/YourWeek';
 import { weekAudit } from '../utils/week-audit';
@@ -36,6 +37,7 @@ export default function RoutinesScreen({ route, navigation }) {
   const [done, setDone] = useState({});
   const [loading, setLoading] = useState(true);
   const profile = useSkinProfile(user?.id);
+  const stopAdvice = useStopAdvice(user?.id, profile);
   const [productsById, setProductsById] = useState({});
 
   useEffect(() => {
@@ -244,6 +246,12 @@ export default function RoutinesScreen({ route, navigation }) {
                   </Pressable>
                 ) : null}
                 {productsById[step.product_id] ? <ProductVerdict product={productsById[step.product_id]} profile={profile} /> : null}
+                {productsById[step.product_id] ? (() => {
+                  const product = productsById[step.product_id];
+                  const advice = stopAdvice.adviceFor(product);
+                  return <StopAdvice advice={advice} product={product} inRoutine premium={stopAdvice.premium}
+                    onStop={async () => { await stopAdvice.stop(product); const r = await getUserRoutines(user.id); if (r.success) setSavedRoutines(r.data || []); }} onKeep={() => stopAdvice.keep(product, advice?.kind)} />;
+                })() : null}
                 {step.tip ? (
                   <View style={styles.tipRow}>
                     <Ionicons name="bulb-outline" size={14} color={colors.primary} />

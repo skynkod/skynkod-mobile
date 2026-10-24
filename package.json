@@ -60,6 +60,7 @@
     "lint": "expo lint",
     "test:journey": "node --test --no-warnings tests/journey-core.test.mjs",
     "test:tracking": "node --test --no-warnings tests/skin-tracking.test.mjs",
+    "test:stop": "node --import ./tests/extensionless.mjs --test --no-warnings tests/stop-advice.test.mjs",
     "test:layering": "node --import ./tests/extensionless.mjs --test --no-warnings tests/layering.test.mjs"
   },
   "private": true

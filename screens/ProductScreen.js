@@ -7,6 +7,7 @@ import { usePremium, PremiumBlur } from '../components/PremiumLock'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
+import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
 import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
 import { CONCERN_CONDITIONS } from '../utils/encyclopedia/conditions'
@@ -25,6 +26,7 @@ export default function ProductScreen({ navigation, route }) {
   const t = useT()
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
+  const stopAdvice = useStopAdvice(user?.id, profile)
   // Free: the verdict and every safety warning. Premium: what each ingredient
   // does, and the better alternatives.
   const premium = usePremium()
@@ -123,6 +125,12 @@ export default function ProductScreen({ navigation, route }) {
             <Text style={{ fontWeight: '700' }}>{t('Why?')} </Text>{t(match.notNow.detail)}
           </Text>
         </View>
+      ) : null}
+
+      {/* In her routine but worth stopping: the one most important reason */}
+      {product && stopAdvice.inRoutine(product.id) ? (
+        <StopAdvice advice={stopAdvice.adviceFor(product)} product={product} inRoutine premium={stopAdvice.premium}
+          onStop={() => stopAdvice.stop(product)} onKeep={() => stopAdvice.keep(product, stopAdvice.adviceFor(product)?.kind)} style={{ marginTop: 0, marginBottom: SPACING.md }} />
       ) : null}
 
       {/* Her main concern: what skincare can and can't do for it, and the treatments */}
