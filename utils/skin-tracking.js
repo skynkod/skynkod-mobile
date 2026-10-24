@@ -31,7 +31,7 @@ export const getCheckInStatus = async (userId) => {
 export const getSkinTracking = async (userId) => {
   const since = new Date(Date.now() - 180 * DAY).toISOString()
   const [entries, first, checkins, scans, products] = await Promise.all([
-    supabase.from('journal_entries').select('date, skin_conditions').eq('user_id', userId).gte('date', since),
+    supabase.from('journal_entries').select('date, skin_conditions, skin_state').eq('user_id', userId).gte('date', since),
     supabase.from('journal_entries').select('date').eq('user_id', userId).order('date', { ascending: true }).limit(1),
     getCheckins(userId),
     getDekodResults(userId, 30).catch(() => []),

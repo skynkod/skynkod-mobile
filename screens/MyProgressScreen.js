@@ -120,7 +120,7 @@ export default function MyProgressScreen({ navigation }) {
               }) : (
                 <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Fill in your journal at least 5 days in each of two 4-week periods: your numbers will show here.')}</Text>
               )}
-              {track.changes.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Days with each concern in your journal, last 4 weeks against the 4 before.')}</Text> : null}
+              {track.changes.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Days with each concern in your check-ins and journal, last 4 weeks against the 4 before.')}</Text> : null}
 
               <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t('What may have helped')}</Text>
               {[...track.changed.helped.map(h => ({ icon: 'trending-down', color: colors.success, text: t('Your skin improved after you started {name} ({date}): {n}% fewer days with a concern.', { name: h.name, date: fmt(h.date), n: Math.abs(h.change) }) })),

@@ -6,12 +6,14 @@
 const DAY = 86400000
 export const CHECKIN_EVERY_DAYS = 14
 
-// Journal tags grouped into the concerns the progress card follows.
+// The concerns the progress card follows: the Journal's problems (tags) and
+// Home's "Your skin feels" chips (states) both count, so the 10 seconds on
+// Home are enough.
 export const TRACKED = [
-  { key: 'breakouts', label: 'Breakouts', tags: ['New pimple'], color: 'warning' },
-  { key: 'redness', label: 'Redness', tags: ['Redness', 'Itchiness / Sensitivity'], color: 'danger' },
-  { key: 'dryness', label: 'Dryness', tags: ['Dryness', 'Peeling / Flaking'], color: 'primary' },
-  { key: 'oiliness', label: 'Oiliness', tags: ['Oily'], color: 'success' },
+  { key: 'breakouts', label: 'Breakouts', tags: ['New pimple'], states: ['breakout'], color: 'warning' },
+  { key: 'redness', label: 'Redness', tags: ['Redness', 'Itchiness / Sensitivity'], states: ['red', 'irritated'], color: 'danger' },
+  { key: 'dryness', label: 'Dryness', tags: ['Dryness', 'Peeling / Flaking'], states: ['dehydrated'], color: 'primary' },
+  { key: 'oiliness', label: 'Oiliness', tags: ['Oily'], states: [], color: 'success' },
 ]
 export const CHECKIN_CONCERNS = ['Breakouts', 'Redness', 'Dryness', 'Oiliness', 'Texture', 'Dark spots']
 export const OVERALL = [
@@ -21,11 +23,11 @@ export const OVERALL = [
 ]
 
 const time = d => new Date(d).getTime()
-const ALL_TAGS = TRACKED.flatMap(t => t.tags)
-// Share of journal days with one of these tags (0 to 1), or null without enough days.
-const rate = (entries, tags, min) => {
+const ALL = { tags: TRACKED.flatMap(t => t.tags), states: TRACKED.flatMap(t => t.states) }
+// Share of journal days with one of these problems (0 to 1), or null without enough days.
+const rate = (entries, { tags, states }, min) => {
   if (entries.length < min) return null
-  return entries.filter(e => (e.skin_conditions || []).some(tag => tags.includes(tag))).length / entries.length
+  return entries.filter(e => (e.skin_conditions || []).some(x => tags.includes(x)) || (e.skin_state || []).some(x => states.includes(x))).length / entries.length
 }
 const between = (entries, from, to) => entries.filter(e => time(e.date) >= from && time(e.date) < to)
 
@@ -57,8 +59,8 @@ export const progressChanges = ({ entries = [], now = new Date(), minDays = 5 })
   const recent = between(entries, cut, end)
   const before = between(entries, cut - 28 * DAY, cut)
   return TRACKED.map(t => {
-    const b = rate(before, t.tags, minDays)
-    const a = rate(recent, t.tags, minDays)
+    const b = rate(before, t, minDays)
+    const a = rate(recent, t, minDays)
     if (a === null || b === null || (!a && !b)) return null
     return { key: t.key, label: t.label, color: t.color, before: b, after: a, change: b ? Math.round(((a - b) / b) * 100) : null }
   }).filter(Boolean)
@@ -83,11 +85,11 @@ export const whatChanged = ({ entries = [], started = [], now = new Date(), minD
     const start = time(g[0].date)
     const before = between(entries, start - 21 * DAY, start)
     const after = between(entries, start + 7 * DAY, time(g[g.length - 1].date) + 28 * DAY)
-    const b = rate(before, ALL_TAGS, minDays)
-    const a = rate(after, ALL_TAGS, minDays)
+    const b = rate(before, ALL, minDays)
+    const a = rate(after, ALL, minDays)
     if (a === null || b === null) continue
-    const redB = rate(before, TRACKED[1].tags, minDays)
-    const redA = rate(after, TRACKED[1].tags, minDays)
+    const redB = rate(before, TRACKED[1], minDays)
+    const redA = rate(after, TRACKED[1], minDays)
     const better = b >= 0.2 && a <= b * 0.7
     const irritated = redA - redB >= 0.2
     if (!better && !irritated) continue
