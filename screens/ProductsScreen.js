@@ -10,6 +10,7 @@ import { useT, useLanguage } from '../utils/LanguageContext'
 import { shelfLife, setOpened, setExpiry, setPao } from '../utils/shelf-life'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
+import ShelfReview from '../components/ShelfReview'
 import { getMyProducts, setMyProductStatus, removeMyProduct, getProductsByIds, addToMyProducts, BODY_CARE_ENABLED } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
 import { getUserRoutines } from '../utils/routines-service'
@@ -197,6 +198,8 @@ export default function ProductsScreen({ navigation }) {
           { value: 'to_buy', label: `${t('To buy')} · ${counts.to_buy}` },
         ]}
       />
+
+      {tab === 'owned' ? <ShelfReview rows={rows} profile={profile} stop={stopAdvice} style={{ marginTop: SPACING.lg }} /> : null}
 
       {inTab.length ? (
         <View style={styles.filters}>

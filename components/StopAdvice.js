@@ -61,7 +61,7 @@ export const useStopAdvice = (userId, profile) => {
     setCtx(c => ({ ...c, kept }))
     AsyncStorage.setItem(keptKey(userId), JSON.stringify(kept)).catch(() => {})
   }
-  return { premium, adviceFor, inRoutine, stop, keep, reload: load }
+  return { premium, adviceFor, inRoutine, stop, keep, reload: load, routines: ctx.routines, routineProducts: ctx.products, reactions: ctx.reactions }
 }
 
 const ICON = { reaction: 'alert-circle', unsuitable: 'close-circle', expired: 'time-outline', duplicate: 'copy-outline', notNeeded: 'remove-circle-outline' }
