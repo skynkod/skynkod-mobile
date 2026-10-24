@@ -16,6 +16,7 @@ import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice';
+import ExpectationLine, { useExpectations } from '../components/ExpectationLine';
 import { getProductsByIds, photoOf } from '../utils/catalog';
 import YourWeek from '../components/YourWeek';
 import { weekAudit } from '../utils/week-audit';
@@ -39,6 +40,7 @@ export default function RoutinesScreen({ route, navigation }) {
   const profile = useSkinProfile(user?.id);
   const stopAdvice = useStopAdvice(user?.id, profile);
   const [productsById, setProductsById] = useState({});
+  const expectations = useExpectations(user?.id, Object.keys(productsById));
 
   useEffect(() => {
     if (route?.params?.tab) setTab(route.params.tab);
@@ -246,6 +248,10 @@ export default function RoutinesScreen({ route, navigation }) {
                   </Pressable>
                 ) : null}
                 {productsById[step.product_id] ? <ProductVerdict product={productsById[step.product_id]} profile={profile} /> : null}
+                {productsById[step.product_id] ? (
+                  <ExpectationLine product={productsById[step.product_id]} startedAt={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]}
+                    onAnswer={async value => { await expectations.answer(step.product_id, value); stopAdvice.reload(); }} />
+                ) : null}
                 {productsById[step.product_id] ? (() => {
                   const product = productsById[step.product_id];
                   const advice = stopAdvice.adviceFor(product);

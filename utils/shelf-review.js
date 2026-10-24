@@ -22,15 +22,16 @@ const TREATS = ['serum', 'toner', 'exfoliant', 'mask']
 
 // owned: [{ product, life }], reactions: { [productId]: { tag, count } },
 // routineProducts: products in her routines, tooManyExfoliations: from "Your week".
-export const shelfReview = ({ owned = [], profile = null, reactions = {}, routineProducts = [], tooManyExfoliations = false }) => {
+export const shelfReview = ({ owned = [], profile = null, reactions = {}, routineProducts = [], tooManyExfoliations = false, verdicts = {} }) => {
   const groups = { keep: [], lessOften: [], pause: [], notNeeded: [], missing: [] }
   const others = [...routineProducts, ...owned.map(o => o.product)].filter((p, i, all) => p && all.findIndex(x => x?.id === p.id) === i)
   for (const { product, life } of owned) {
     if (!product) continue
-    const advice = stopReason({ product, profile, reaction: reactions[product.id], life, others })
+    const advice = stopReason({ product, profile, reaction: reactions[product.id], life, others, verdict: verdicts[product.id]?.value })
     const match = profile ? productMatch(product, profile) : null
-    if (advice?.kind === 'reaction' || match?.notNow) {
-      groups.pause.push({ product, why: advice?.kind === 'reaction' ? { text: advice.text, params: advice.params } : { text: match.notNow.title } })
+    const reacted = ['reaction', 'notHelping'].includes(advice?.kind)
+    if (reacted || match?.notNow) {
+      groups.pause.push({ product, why: reacted ? { text: advice.text, params: advice.params } : { text: match.notNow.title } })
     } else if (advice) {
       groups.notNeeded.push({ product, why: { text: advice.title } })
     } else if (tooManyExfoliations && activesOf(product).exfoliant) {

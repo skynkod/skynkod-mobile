@@ -22,7 +22,7 @@ export default function ShelfReview({ rows = [], profile, stop, style }) {
   const byId = Object.fromEntries((stop.routineProducts || []).map(p => [p.id, p]))
   const routine = type => (stop.routines || []).find(r => r.type === type)?.steps || []
   const audit = weekAudit({ morning: routine('morning'), evening: routine('evening'), productsById: byId, profile })
-  const { groups, total } = shelfReview({ owned, profile, reactions: stop.reactions, routineProducts: stop.routineProducts, tooManyExfoliations: audit.exfoliations > 3 })
+  const { groups, total } = shelfReview({ owned, profile, reactions: stop.reactions, routineProducts: stop.routineProducts, tooManyExfoliations: audit.exfoliations > 3, verdicts: stop.verdicts })
   const missing = groups.missing.length
   const verdict = missing === 0
     ? t('You have everything you need. No need to buy more.')

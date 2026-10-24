@@ -15,9 +15,14 @@ const keyActives = product => findIngredients(product).filter(f => f.pos <= 8 &&
 
 // product: the catalogue product. reaction: { tag, count } from the journal.
 // life: shelfLife() of her row. others: the other products in her routines.
+// verdict: her answer when it was time to judge it ('better' | 'same' | 'worse').
 // { kind, level: 'danger' | 'warning' | 'muted', free, title, text, params } | null
-export const stopReason = ({ product, profile = null, reaction = null, life = null, others = [] }) => {
+export const stopReason = ({ product, profile = null, reaction = null, life = null, others = [], verdict = null }) => {
   if (!product) return null
+  // She said so herself, at the "time to look" of Your expectations.
+  if (verdict === 'worse') {
+    return { kind: 'notHelping', level: 'danger', free: true, title: 'Your skin got worse', text: 'You said your skin got worse since you started it.' }
+  }
   if (reaction) {
     return { kind: 'reaction', level: 'danger', free: true, title: 'Your skin reacts to it', text: '{tag} on {n} days after you used it.', params: { tag: reaction.tag.toLowerCase(), n: reaction.count } }
   }

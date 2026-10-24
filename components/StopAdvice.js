@@ -10,6 +10,7 @@ import { getUserRoutines, saveRoutine } from '../utils/routines-service'
 import { getProductsByIds } from '../utils/catalog'
 import { getProductReactions } from '../utils/journal-day'
 import { stopReason } from '../utils/stop-advice'
+import { getVerdicts } from './ExpectationLine'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -20,19 +21,20 @@ const keptKey = userId => `stop_kept_${userId}`
 
 export const useStopAdvice = (userId, profile) => {
   const premium = usePremium()
-  const [ctx, setCtx] = useState({ routines: [], products: [], reactions: {}, kept: {} })
+  const [ctx, setCtx] = useState({ routines: [], products: [], reactions: {}, kept: {}, verdicts: {} })
   const load = useCallback(async () => {
     if (!userId) return
     try {
-      const [res, reactions, kept] = await Promise.all([
+      const [res, reactions, kept, verdicts] = await Promise.all([
         getUserRoutines(userId),
         getProductReactions(userId).catch(() => []),
         AsyncStorage.getItem(keptKey(userId)).then(v => JSON.parse(v || '{}')).catch(() => ({})),
+        getVerdicts(userId).catch(() => ({})),
       ])
       const routines = res.success ? res.data || [] : []
       const ids = [...new Set(routines.flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean))]
       const products = ids.length ? await getProductsByIds(ids) : []
-      setCtx({ routines, products, reactions: Object.fromEntries(reactions.map(r => [r.product.id, r])), kept })
+      setCtx({ routines, products, reactions: Object.fromEntries(reactions.map(r => [r.product.id, r])), kept, verdicts })
     } catch (error) {
       logError('StopAdvice_load', error, {}, 'warn')
     }
@@ -43,7 +45,7 @@ export const useStopAdvice = (userId, profile) => {
   const adviceFor = (product, row = null) => {
     if (!product) return null
     const life = row?.life || null
-    const a = stopReason({ product, profile, reaction: ctx.reactions[product.id], life, others: ctx.products })
+    const a = stopReason({ product, profile, reaction: ctx.reactions[product.id], life, others: ctx.products, verdict: ctx.verdicts[product.id]?.value })
     return a && ctx.kept[`${product.id}:${a.kind}`] ? null : a
   }
   // Takes it out of every routine she has.
@@ -61,10 +63,10 @@ export const useStopAdvice = (userId, profile) => {
     setCtx(c => ({ ...c, kept }))
     AsyncStorage.setItem(keptKey(userId), JSON.stringify(kept)).catch(() => {})
   }
-  return { premium, adviceFor, inRoutine, stop, keep, reload: load, routines: ctx.routines, routineProducts: ctx.products, reactions: ctx.reactions }
+  return { premium, adviceFor, inRoutine, stop, keep, reload: load, routines: ctx.routines, routineProducts: ctx.products, reactions: ctx.reactions, verdicts: ctx.verdicts }
 }
 
-const ICON = { reaction: 'alert-circle', unsuitable: 'close-circle', expired: 'time-outline', duplicate: 'copy-outline', notNeeded: 'remove-circle-outline' }
+const ICON = { notHelping: 'trending-down', reaction: 'alert-circle', unsuitable: 'close-circle', expired: 'time-outline', duplicate: 'copy-outline', notNeeded: 'remove-circle-outline' }
 
 export default function StopAdvice({ advice, product, inRoutine, premium, onStop, onKeep, style }) {
   const colors = useColors()

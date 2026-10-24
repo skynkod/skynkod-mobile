@@ -62,6 +62,7 @@
     "test:tracking": "node --test --no-warnings tests/skin-tracking.test.mjs",
     "test:stop": "node --import ./tests/extensionless.mjs --test --no-warnings tests/stop-advice.test.mjs",
     "test:shelf": "node --import ./tests/extensionless.mjs --test --no-warnings tests/shelf-review.test.mjs",
+    "test:expect": "node --import ./tests/extensionless.mjs --test --no-warnings tests/expectations.test.mjs",
     "test:layering": "node --import ./tests/extensionless.mjs --test --no-warnings tests/layering.test.mjs"
   },
   "private": true
