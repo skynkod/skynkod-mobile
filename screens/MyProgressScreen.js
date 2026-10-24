@@ -76,7 +76,7 @@ export default function MyProgressScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Started on {date}', { date: fmt(track.baseline) })}</Text>
                 <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>
-                  {track.status.due ? t('Your check-in is ready: 10 seconds to see how your skin is doing.') : t('Next check-in on {date}', { date: fmt(track.status.next) })}
+                  {track.status.due ? t('Your skin review is ready: 10 seconds to see how your skin is doing.') : t('Next skin review on {date}', { date: fmt(track.status.next) })}
                 </Text>
               </View>
             </View>

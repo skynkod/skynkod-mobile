@@ -13,7 +13,7 @@ export const XP = {
   ingredient: 2,        // an ingredient page read for the first time
   routineDay: 5,        // a day with a ticked routine, once per day
   challenge: 20,        // a weekly challenge completed
-  checkin: 10,          // a 2-week skin check-in
+  checkin: 10,          // a 2-week skin review
   verdict: 5,           // a product judged at the right time (Better / Same / Worse)
   lessIsMore: 10,       // a product removed when Skynkod suggested stopping it
   contribution: 30,     // a product she proposed, accepted into the catalogue
@@ -147,8 +147,8 @@ export const BADGES = [
   b('skin-observer', 'Skin Observer', 'rare', 'tracking', 'photos', 10, 'Add 10 progress photos.', '10 progress photos.', 'A picture is worth a thousand words.', { soon: true }),
   b('progress-tracker', 'Progress Tracker', 'epic', 'tracking', 'journalWeeks', 12, 'Fill in your journal during 12 different weeks.', 'Three months of tracking.', 'Three months of watching your skin. Now you really know it.'),
   b('real-results', 'Real Results', 'epic', 'tracking', 'realResults', 1, 'See a real improvement: a better month in your journal, or a better Dekod scan.', 'A real improvement.', 'This is what all your care was for.'),
-  b('first-check-in', 'First Check-in', 'common', 'tracking', 'checkins', 1, 'Do your first 2-week skin check-in.', 'Your first skin check-in.', 'Ten seconds to look at your skin. That’s how progress starts.'),
-  b('steady-tracker', 'Steady Tracker', 'rare', 'tracking', 'checkins', 6, 'Do 6 skin check-ins (about 3 months).', '6 skin check-ins.', 'Three months of looking closely. You really know your skin now.'),
+  b('first-check-in', 'First Skin Review', 'common', 'tracking', 'checkins', 1, 'Do your first 2-week skin review.', 'Your first skin review.', 'Ten seconds to look at your skin. That’s how progress starts.'),
+  b('steady-tracker', 'Steady Tracker', 'rare', 'tracking', 'checkins', 6, 'Do 6 skin reviews (about 3 months).', '6 skin reviews.', 'Three months of looking closely. You really know your skin now.'),
   b('patient-skin', 'Patient Skin', 'rare', 'tracking', 'verdicts', 1, 'Judge a product at the right time: when Skynkod says it’s time to look.', 'A product judged at the right time.', 'You waited long enough to really know. That’s rare.'),
   b('glow-journey', 'Glow Journey', 'legendary', 'tracking', 'accountDays', 365, 'Be on Skynkod for a year.', 'One year on Skynkod.', 'A whole year together. Thank you.'),
   // Community & sharing

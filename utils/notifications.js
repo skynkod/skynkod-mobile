@@ -111,7 +111,7 @@ const NIGHT_TEXT = {
   reset: { en: 'Tonight: reset night, just cleanse and moisturize 🍃', fr: 'Ce soir : soirée repos, nettoyer et hydrater 🍃' },
 }
 const SMART_TEXT = {
-  checkin: { en: 'Your Rekod weekly check-in is ready 📈', fr: 'Ton bilan Rekod de la semaine est prêt 📈' },
+  checkin: { en: 'Your weekly Rekod review is ready 📈', fr: 'Ton Rekod review de la semaine est prêt 📈' },
   dekod: { en: 'Time for this week’s Dekod: see how your skin changed 🔍', fr: 'C’est l’heure du Dekod de la semaine : vois comment ta peau évolue 🔍' },
   sos: { en: (day, title) => `Day ${day} of 7 · ${title}`, fr: (day, title) => `Jour ${day} sur 7 · ${title}` },
   recap: { en: 'Your Koda box has arrived 📦 Open it to see what your week brought you.', fr: 'Ta box de Koda est arrivée 📦 Ouvre-la pour voir ce que ta semaine t’a apporté.' },

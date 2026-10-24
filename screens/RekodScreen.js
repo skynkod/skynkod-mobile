@@ -456,7 +456,7 @@ export default function RekodScreen({ navigation }) {
                 )
               })}
             </View>
-            <Text style={[TYPE.caption, { color: C.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>Whatever you choose, a short check-in comes back every 4 weeks, and you can change your mind anytime.</Text>
+            <Text style={[TYPE.caption, { color: C.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>Whatever you choose, a short Rekod review comes back every 4 weeks, and you can change your mind anytime.</Text>
           </>
         )}
       </Shell>
@@ -548,7 +548,7 @@ export default function RekodScreen({ navigation }) {
         ) : due ? (
           <Pressable onPress={() => { tap(); setCheckOpen(true) }} style={({ pressed }) => [styles.banner, { opacity: pressed ? 0.85 : 1 }]}>
             <Ionicons name="pulse-outline" size={20} color={C.onPrimary} />
-            <Text style={[TYPE.bodyStrong, { color: C.onPrimary, flex: 1 }]}>{plan.maintenance ? 'Your 4-week check-in is ready' : 'Your weekly check-in is ready'}</Text>
+            <Text style={[TYPE.bodyStrong, { color: C.onPrimary, flex: 1 }]}>{plan.maintenance ? 'Your 4-week Rekod review is ready' : 'Your weekly Rekod review is ready'}</Text>
             <Ionicons name="chevron-forward" size={18} color={C.onPrimary} />
           </Pressable>
         ) : null}
@@ -945,7 +945,7 @@ function FullPlan({ visible, onClose, plan, routine }) {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={[styles.title, { color: C.text }]}>{goalsTitle(plan)}</Text>
           <Text style={[TYPE.caption, { color: C.muted, marginTop: 4, lineHeight: 18 }]}>
-            Each week is revealed as you go, adjusted to your weekly check-in: if your skin reacts, your plan slows down.
+            Each week is revealed as you go, adjusted to your weekly Rekod review: if your skin reacts, your plan slows down.
           </Text>
 
           <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>

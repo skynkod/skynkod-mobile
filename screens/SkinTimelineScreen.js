@@ -83,7 +83,7 @@ export default function SkinTimelineScreen() {
       <Text style={[styles.section, { color: colors.muted }]}>{t('TIMELINE')}</Text>
       {!data.timeline.length ? (
         <Card>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Your timeline fills itself as you use Skynkod: products you start, check-ins, scans and how your skin changes.')}</Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Your timeline fills itself as you use Skynkod: products you start, skin reviews, scans and how your skin changes.')}</Text>
         </Card>
       ) : (
         <View>

@@ -461,7 +461,7 @@ export default function TodayScreen({ navigation }) {
         <Pressable onPress={() => navigation.navigate('SkinCheckIn', { week: checkIn.week })} style={[styles.recap, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Ionicons name="pulse-outline" size={16} color={colors.primary} />
-            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('WEEK {n} CHECK-IN', { n: checkIn.week })}</Text>
+            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('WEEK {n} · SKIN REVIEW', { n: checkIn.week })}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </View>
           <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t('How is your skin doing?')}</Text>

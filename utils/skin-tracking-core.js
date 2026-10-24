@@ -123,7 +123,7 @@ export const buildTimeline = ({ baseline = null, started = [], stopped = [], che
   for (const s of stopped) ev.push({ date: s.date, kind: 'stopped', text: 'Stopped {name}', params: { name: s.name } })
   for (const c of checkins) {
     const o = OVERALL.find(x => x.key === c.overall)
-    ev.push({ date: c.created_at, kind: 'checkin', text: 'Check-in: {overall}', params: { overall: o?.label || '' }, emoji: o?.emoji })
+    ev.push({ date: c.created_at, kind: 'checkin', text: 'Skin review: {overall}', params: { overall: o?.label || '' }, emoji: o?.emoji })
   }
   for (const s of scans) ev.push({ date: s.created_at, kind: 'scan', text: 'Dekod scan' })
   for (const v of verdicts) ev.push({ date: v.date, kind: `verdict-${v.value}`, text: v.value === 'better' ? '{name} helps your skin' : v.value === 'worse' ? 'Your skin got worse with {name}' : 'No change with {name}', params: { name: v.name } })

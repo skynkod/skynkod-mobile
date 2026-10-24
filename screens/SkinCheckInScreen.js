@@ -40,8 +40,8 @@ export default function SkinCheckInScreen({ route, navigation }) {
   }
 
   return (
-    <Screen back overline={week ? t('WEEK {n} CHECK-IN', { n: week }) : t('CHECK-IN')} title={t('How is your skin doing?')}
-      footer={<Button title={t('Save my check-in')} onPress={save} disabled={!overall || saving} loading={saving} />}>
+    <Screen back overline={week ? t('WEEK {n} · SKIN REVIEW', { n: week }) : t('SKIN REVIEW')} title={t('How is your skin doing?')}
+      footer={<Button title={t('Save my skin review')} onPress={save} disabled={!overall || saving} loading={saving} />}>
       <Text style={[styles.q, { color: colors.text }]}>{t('Compared with when you started')}</Text>
       <View style={styles.row}>
         {OVERALL.map(o => {
