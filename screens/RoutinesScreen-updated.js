@@ -16,6 +16,8 @@ import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { getProductsByIds, photoOf } from '../utils/catalog';
+import YourWeek from '../components/YourWeek';
+import { weekAudit } from '../utils/week-audit';
 import ProductVerdict from '../components/ProductVerdict';
 import { todaySteps } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
@@ -73,7 +75,10 @@ export default function RoutinesScreen({ route, navigation }) {
   const saved = currentRoutine(savedRoutines, tab);
 
   // Full product records, to say whether each one suits the user's skin.
-  const savedIds = (saved?.steps || []).map(s => s.product_id).filter(Boolean).join(',');
+  // Both routines' products: the week is looked at as a whole.
+  const amRoutine = currentRoutine(savedRoutines, 'morning');
+  const pmRoutine = currentRoutine(savedRoutines, 'evening');
+  const savedIds = [...(amRoutine?.steps || []), ...(pmRoutine?.steps || [])].map(s => s.product_id).filter(Boolean).join(',');
   useEffect(() => {
     if (!savedIds) return;
     getProductsByIds(savedIds.split(',').map(Number))
@@ -161,6 +166,11 @@ export default function RoutinesScreen({ route, navigation }) {
         </View>
         <ProgressBar value={progress} style={{ marginTop: SPACING.md }} />
       </Card>
+      ) : null}
+
+      {/* Your week: each evening, and what adds up too much (Lita, 2026-10-24) */}
+      {amRoutine || pmRoutine ? (
+        <YourWeek style={{ marginTop: SPACING.md }} audit={weekAudit({ morning: amRoutine?.steps || [], evening: pmRoutine?.steps || [], productsById, profile })} />
       ) : null}
 
       {/* Premium: her products in the right order, how much and how */}

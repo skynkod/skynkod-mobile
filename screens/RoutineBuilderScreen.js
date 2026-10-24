@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, ScrollView, Animated, Easing, ActivityIndicator, Alert, Modal } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import FeatureIcon from '../components/FeatureIcon'
+import YourWeek from '../components/YourWeek'
+import { weekAudit } from '../utils/week-audit'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CommonActions } from '@react-navigation/native'
 import { useColors } from '../components/ui'
@@ -362,6 +364,13 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                 ))}
               </View>
 
+              {/* The whole week, with this routine as it is being built */}
+              <YourWeek style={{ marginTop: SPACING.md }} audit={weekAudit({
+                morning: period === 'morning' ? chosenSlots.map(slot => ({ product_id: slot.product.id, days: slot.days })) : other.steps,
+                evening: period === 'evening' ? chosenSlots.map(slot => ({ product_id: slot.product.id, days: slot.days })) : other.steps,
+                productsById: { ...other.productsById, ...Object.fromEntries(chosenSlots.map(slot => [slot.product.id, slot.product])) },
+                profile,
+              })} />
               {issues.length ? (
                 <View style={{ marginTop: SPACING.xl, gap: SPACING.sm }}>
                   {issues.map((issue, idx) => (
