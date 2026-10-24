@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, Linking, Pressable } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, SegmentedControl, LoadingView, EmptyState, useColors } from '../components/ui'
@@ -9,7 +9,7 @@ import { useT } from '../utils/LanguageContext'
 import { getUserRoutines } from '../utils/routines-service'
 import { currentRoutine } from '../utils/current-routine'
 import { getProductsByIds } from '../utils/catalog'
-import { layerRoutine, SOURCES } from '../utils/layering'
+import { layerRoutine } from '../utils/layering'
 import { DAY_LABELS } from '../utils/routine-checks'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -115,20 +115,7 @@ export default function LayeringScreen({ route }) {
       ) : body}
 
       {premium && guide?.rules.length ? (
-        <>
-          <Text style={[styles.section, { color: colors.muted }]}>{t('WHERE THIS COMES FROM')}</Text>
-          {guide.rules.map(r => (
-            <View key={r.id} style={{ marginBottom: SPACING.md }}>
-              <Text style={[TYPE.caption, { color: colors.text, lineHeight: 18 }]}>{t(r.text)}</Text>
-              {r.sources.map(s => (
-                <Pressable key={s} onPress={() => Linking.openURL(SOURCES[s].url)} hitSlop={6}>
-                  <Text style={[TYPE.caption, { color: colors.primary, marginTop: 2 }]}>{SOURCES[s].label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ))}
-          <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 17 }]}>{t('General guidance from dermatology sources, not a medical prescription. If you use a prescribed treatment, follow your doctor’s instructions.')}</Text>
-        </>
+        <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.lg }]}>{t('If you use a prescribed treatment, follow your doctor’s instructions.')}</Text>
       ) : null}
     </Screen>
   )

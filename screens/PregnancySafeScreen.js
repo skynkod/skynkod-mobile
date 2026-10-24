@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, Pressable, Linking } from 'react-native'
+import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
@@ -7,11 +7,7 @@ import { INGREDIENTS, PREGNANCY_DETAIL, PREGNANCY_ALTERNATIVES } from '../utils/
 import { SPACING, TYPE } from '../utils/theme'
 
 // "What's safe for you now", for the pregnancy and breastfeeding mode. The
-// same rules the product verdicts use (utils/ingredients-guide.js), with sources.
-const SOURCES = [
-  { label: 'American Academy of Dermatology, "Is any acne treatment safe to use during pregnancy?"', url: 'https://www.aad.org/public/diseases/acne/derm-treat/pregnancy' },
-  { label: 'American Family Physician, "Common Skin Conditions During Pregnancy" (2023)', url: 'https://www.aafp.org/pubs/afp/issues/2023/0200/skin-conditions-during-pregnancy/' },
-]
+// same rules the product verdicts use (utils/ingredients-guide.js).
 
 export default function PregnancySafeScreen({ navigation }) {
   const colors = useColors()
@@ -51,13 +47,7 @@ export default function PregnancySafeScreen({ navigation }) {
       <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.lg, lineHeight: 18 }]}>
         {t('Every product you scan is checked against these rules for you. Wear a broad-spectrum sunscreen every day: pregnancy can make dark patches (melasma) appear.')}
       </Text>
-      <Text style={[styles.section, { color: colors.muted }]}>{t('WHERE THIS COMES FROM')}</Text>
-      {SOURCES.map(s => (
-        <Pressable key={s.url} onPress={() => Linking.openURL(s.url)} hitSlop={6}>
-          <Text style={[TYPE.caption, { color: colors.primary, marginBottom: SPACING.sm }]}>{s.label}</Text>
-        </Pressable>
-      ))}
-      <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.sm }]}>{t('General guidance, not a medical prescription. Check with your doctor or midwife, especially for prescribed treatments.')}</Text>
+      <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.sm }]}>{t('Check with your doctor or midwife, especially for prescribed treatments.')}</Text>
     </Screen>
   )
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Linking, Image, useWindowDimensions } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Image, useWindowDimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, useColors } from '../components/ui'
 import ProductThumb from '../components/ProductThumb'
@@ -157,12 +157,6 @@ export default function ConditionScreen({ route, navigation }) {
         </Pressable>
       </View>
 
-      <Text style={[styles.section, { color: colors.muted, marginTop: SPACING.xl }]}>{t('SOURCES')}</Text>
-      {c.sources.map(s => (
-        <Pressable key={s.url} onPress={() => Linking.openURL(s.url)} hitSlop={6}>
-          <Text style={[TYPE.caption, { color: colors.primary, marginBottom: 6 }]}>{s.label}</Text>
-        </Pressable>
-      ))}
     </Screen>
   )
 }

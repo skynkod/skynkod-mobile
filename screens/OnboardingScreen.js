@@ -42,7 +42,7 @@ const FEATURES = [
   { icon: 'journal', title: 'What your skin tells you', text: 'A 10-second check-in that learns what makes your skin react.' },
   { icon: 'routines', title: 'Your routines, in the right order', text: 'Morning and evening, with your own products, how much, and which evening for each active.' },
   { icon: 'emergency', title: 'When your skin reacts', text: 'Space your actives or follow a gentle 7-day plan. Pregnancy and seasons adapt the whole app too.' },
-  { icon: 'skyncyclopedia', title: 'Skyncyclopedia', text: '38 skin issues and every ingredient explained simply, with their sources.' },
+  { icon: 'skyncyclopedia', title: 'Skyncyclopedia', text: '38 skin issues and every ingredient explained simply.' },
   { icon: 'report', title: 'My skin report', text: 'One page to show your dermatologist.' },
   { icon: 'journey', title: 'Your skin journey', text: 'Badges and levels for good habits, never for buying more.' },
 ]
@@ -445,9 +445,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       <>
         <View style={[styles.bigIcon, { backgroundColor: colors.primarySoft }]}><Ionicons name="shield-checkmark-outline" size={30} color={colors.primary} /></View>
         <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.xl }]}>{t('No brand pays us')}</Text>
-        <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t('No verdict is for sale. Every rule in Skynkod comes from recognised dermatology sources, and each one shows where it comes from.')}</Text>
+        <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t('No verdict is for sale. Skynkod’s rules follow dermatology guidelines.')}</Text>
         <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>{t('Safety alerts stay free for everyone.')}</Text>
-        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xl }]}>{t('American Academy of Dermatology · Cleveland Clinic · published studies')}</Text>
       </>
     )
     footer = <Pill title={t('Continue')} onPress={next} />
