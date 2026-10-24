@@ -9,6 +9,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
 import BuyAdvice from '../components/BuyAdvice'
+import AskKodaLink from '../components/AskKodaLink'
 import { buyVerdict } from '../utils/buy-advice'
 import { getProduct, addToMyProducts, myProductStatus, getMyProducts } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
@@ -141,6 +142,11 @@ export default function ProductScreen({ navigation, route }) {
       {product && stopAdvice.inRoutine(product.id) ? (
         <StopAdvice advice={stopAdvice.adviceFor(product)} product={product} inRoutine premium={stopAdvice.premium}
           onStop={() => stopAdvice.stop(product)} onKeep={() => stopAdvice.keep(product, stopAdvice.adviceFor(product)?.kind)} style={{ marginTop: 0, marginBottom: SPACING.md }} />
+      ) : null}
+
+      {product ? (
+        <AskKodaLink label="Ask Koda about this product" returnTo="Product" style={{ marginBottom: SPACING.md }}
+          prefill={t('Should I use {product} with my routine? How and when?', { product: product.name })} />
       ) : null}
 
       {/* Her main concern: what skincare can and can't do for it, and the treatments */}

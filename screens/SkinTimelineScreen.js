@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, useColors } from '../components/ui'
 import { PremiumBlur, usePremium } from '../components/PremiumLock'
+import AskKodaLink from '../components/AskKodaLink'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { getSkinTimeline } from '../utils/skin-timeline'
@@ -73,6 +74,11 @@ export default function SkinTimelineScreen() {
           </PremiumBlur>
         </>
       ) : null}
+
+      <AskKodaLink pill label="Ask Koda what worked for my skin" returnTo="SkinTimeline"
+        prefill={s && (s.worked.length || s.didnt.length)
+          ? t('What worked for my skin: {worked}. What didn’t: {didnt}. What should I keep and change?', { worked: s.worked.join(', ') || t('nothing yet'), didnt: s.didnt.join(', ') || t('nothing yet') })
+          : t('Looking at my skin history, what has worked for my skin and what should I change?')} />
 
       <Text style={[styles.section, { color: colors.muted }]}>{t('TIMELINE')}</Text>
       {!data.timeline.length ? (

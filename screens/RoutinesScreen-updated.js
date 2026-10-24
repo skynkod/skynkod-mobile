@@ -17,11 +17,12 @@ import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice';
 import ExpectationLine, { useExpectations } from '../components/ExpectationLine';
+import AskKodaLink from '../components/AskKodaLink';
 import { getProductsByIds, photoOf } from '../utils/catalog';
 import YourWeek from '../components/YourWeek';
 import { weekAudit } from '../utils/week-audit';
 import ProductVerdict from '../components/ProductVerdict';
-import { todaySteps } from '../utils/routine-checks';
+import { todaySteps, describeDays } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -251,6 +252,12 @@ export default function RoutinesScreen({ route, navigation }) {
                 {productsById[step.product_id] ? (
                   <ExpectationLine product={productsById[step.product_id]} startedAt={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]}
                     onAnswer={async value => { await expectations.answer(step.product_id, value); stopAdvice.reload(); }} />
+                ) : null}
+                {productsById[step.product_id] ? (
+                  <AskKodaLink label="Ask Koda" returnTo="Routines" style={{ marginTop: SPACING.sm }}
+                    prefill={Array.isArray(step.days) && step.days.length && step.days.length < 7
+                      ? t('Why do I use {product} only on these days ({days})?', { product: productsById[step.product_id].name, days: t(describeDays(step.days)) })
+                      : t('How do I get the most out of {product} in my {period} routine?', { product: productsById[step.product_id].name, period: t(tab === 'morning' ? 'morning' : 'evening') })} />
                 ) : null}
                 {productsById[step.product_id] ? (() => {
                   const product = productsById[step.product_id];

@@ -10,6 +10,7 @@ import { getProgress, moodLabel } from '../utils/progress'
 import { getSkinTracking } from '../utils/skin-tracking'
 import { OVERALL } from '../utils/skin-tracking-core'
 import { PremiumBlur, usePremium } from '../components/PremiumLock'
+import AskKodaLink from '../components/AskKodaLink'
 import { logError } from '../utils/errorLogger'
 import { SPACING, TYPE } from '../utils/theme'
 
@@ -147,6 +148,12 @@ export default function MyProgressScreen({ navigation }) {
         <Text style={[TYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>{t('See your skin timeline')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </Pressable>
+
+      {/* Koda reads the numbers with her: they go in the question */}
+      <AskKodaLink pill label="Ask Koda about my progress" returnTo="Progress"
+        prefill={track?.changes?.length
+          ? t('Over the last 4 weeks: {changes}. What does my progress mean, and what should I do next?', { changes: track.changes.map(c => `${t(c.label).toLowerCase()} ${c.change === null ? t('new') : `${c.after < c.before ? '−' : '+'}${Math.abs(c.change)}%`}`).join(', ') })
+          : t('What does my progress mean, and what should I do next?')} />
 
       {/* 1 · Skin mood */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR SKIN MOOD')}</Text>
