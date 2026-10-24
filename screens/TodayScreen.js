@@ -24,6 +24,7 @@ import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/rout
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
 import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
+import { getEnvironment } from '../utils/environment'
 import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
 import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
@@ -99,6 +100,9 @@ export default function TodayScreen({ navigation }) {
   const [open, setOpen] = useState(null) // 'morning' | 'evening'
   const [weather, setWeather] = useState(null)
   const [forecastDays, setForecastDays] = useState(null)
+  // Far from home in another climate (or just back): the routine adapts.
+  const [environment, setEnvironment] = useState(null)
+  const [envClosed, setEnvClosed] = useState(false)
   const [patterns, setPatterns] = useState(null)
   const premium = usePremium()
   // Her skin today (check-in or journal), and the products of her routines, so
@@ -232,7 +236,7 @@ export default function TodayScreen({ navigation }) {
   useEffect(() => {
     if (!coords) return
     getWeatherNow(coords).then(setWeather).catch(() => {})
-    getForecastWeather(coords).then(setForecastDays).catch(() => {})
+    getForecastWeather(coords).then(days => { setForecastDays(days); return getEnvironment(coords, days?.[0]) }).then(setEnvironment).catch(() => {})
   }, [coords?.latitude, coords?.longitude])
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
@@ -462,6 +466,31 @@ export default function TodayScreen({ navigation }) {
           <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t('How is your skin doing?')}</Text>
           <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('10 seconds to see your progress.')}</Text>
         </Pressable>
+      ) : null}
+
+      {environment && !envClosed ? (
+        <View style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Ionicons name={environment.kind === 'back' ? 'home-outline' : 'airplane-outline'} size={16} color={colors.primary} />
+            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR ENVIRONMENT CHANGED')}</Text>
+            <Pressable onPress={() => setEnvClosed(true)} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
+          </View>
+          {environment.kind === 'back' ? (
+            <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('You’re back home: your usual routine fits again.')}</Text>
+          ) : (
+            <>
+              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+                {t('You’re somewhere {what} than home.', { what: environment.labels.map(l => t(l)).join(t(' and ')) })}
+              </Text>
+              {[['Morning', environment.morning], ['Evening', environment.evening]].map(([label, list]) => list.length ? (
+                <View key={label} style={{ marginTop: SPACING.sm }}>
+                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(label).toUpperCase()}</Text>
+                  {list.map(a => <Text key={a} style={[TYPE.caption, { color: colors.text, lineHeight: 19 }]}>→ {t(a)}</Text>)}
+                </View>
+              ) : null)}
+            </>
+          )}
+        </View>
       ) : null}
 
       {/* The tip for the week, from last week: just the advice, kindly. Her
