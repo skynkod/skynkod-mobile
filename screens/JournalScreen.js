@@ -10,6 +10,7 @@ import { todaySteps } from '../utils/routine-checks';
 import { currentRoutine, todayStepsWithPauses } from '../utils/current-routine';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions } from '../utils/journal-day';
+import SkinStateChips from '../components/SkinStateChips';
 import { getMyProducts } from '../utils/catalog';
 import { getPausedProducts, setProductPaused } from '../utils/paused-products';
 import { repauseAfterReaction } from '../utils/emergency-state';
@@ -85,6 +86,7 @@ export default function JournalScreen({ route, navigation }) {
   const [entryId, setEntryId] = useState(null);
   const [mood, setMood] = useState(null);
   const [tags, setTags] = useState([]);
+  const [states, setStates] = useState([]);
   // "Used new product": which one(s), to spot reactions over the next days.
   const [newProducts, setNewProducts] = useState([]);
   const [owned, setOwned] = useState([]);
@@ -127,6 +129,7 @@ export default function JournalScreen({ route, navigation }) {
       if (dirty.current) return;
       setMood(MOODS.some(m => m.value === entry?.mood) ? entry.mood : null);
       setTags(entry?.skin_conditions || []);
+      setStates(entry?.skin_state || []);
       setNewProducts(Array.isArray(entry?.products_used) ? entry.products_used : []);
       setNote(entry?.notes || '');
       setStatus('idle');
@@ -194,8 +197,8 @@ export default function JournalScreen({ route, navigation }) {
 
   // Nothing saves by itself: she taps Save, so she knows it's kept. Leaving
   // with unsaved changes asks whether to save them.
-  const latest = useRef({ mood, tags, note, newProducts });
-  latest.current = { mood, tags, note, newProducts };
+  const latest = useRef({ mood, tags, note, newProducts, states });
+  latest.current = { mood, tags, note, newProducts, states };
   const entryRef = useRef(entryId);
   entryRef.current = entryId;
   const entryDay = useRef(selected.toDateString());
@@ -280,6 +283,12 @@ export default function JournalScreen({ route, navigation }) {
     setTags(next);
     markDirty();
   };
+  const setStatesNow = (next) => {
+    dirty.current = true;
+    latest.current = { ...latest.current, states: next };
+    setStates(next);
+    markDirty();
+  };
   const setNoteLater = value => {
     setNote(value);
     markDirty();
@@ -349,6 +358,9 @@ export default function JournalScreen({ route, navigation }) {
             );
           })}
         </View>
+
+        {/* Her skin state today, under the mood */}
+        <SkinStateChips value={states} onChange={setStatesNow} style={{ marginTop: SPACING.lg }} />
 
         {/* Dekod, the skin scan (Premium) */}
         <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.planCard, { backgroundColor: '#33202E' }]}>

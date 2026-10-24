@@ -18,6 +18,7 @@ import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromD
 import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
 import { getActivePlan } from '../utils/emergency-state'
+import { isReactiveState, stateLabel, REACTIVE as REACTIVE_STATES } from '../utils/skin-state'
 import { syncSmartReminders } from '../utils/notifications'
 import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
@@ -498,6 +499,15 @@ export default function RekodScreen({ navigation }) {
             )
           })}
         </View>
+        {/* Her skin today (check-in): a strong night waits while it is irritated */}
+        {isReactiveState(profile?.skinState?.states) && (tonight === 'retinoid' || tonight === 'exfoliation') ? (
+          <View style={[styles.card, { backgroundColor: C.primarySoft, borderColor: C.border, flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' }]}>
+            <Ionicons name="time-outline" size={18} color={C.primary} style={{ marginTop: 1 }} />
+            <Text style={[TYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>
+              Not right for you tonight: your skin is {stateLabel(profile.skinState.states.find(x => REACTIVE_STATES.includes(x))).toLowerCase()}. Skip the {NIGHTS[tonight].short.toLowerCase()} and make it a repair night. Your plan stays the same.
+            </Text>
+          </View>
+        ) : null}
 
         {pausedNights.size ? (
           <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center' }]}>

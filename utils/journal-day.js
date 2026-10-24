@@ -51,7 +51,7 @@ const dayBounds = (day) => {
 export const getEntriesBetween = async (userId, start, end) => {
   const { data, error } = await supabase
     .from('journal_entries')
-    .select('id, date, mood, skin_conditions, notes, products_used')
+    .select('id, date, mood, skin_conditions, skin_state, notes, products_used')
     .eq('user_id', userId)
     .gte('date', start.toISOString())
     .lt('date', end.toISOString())
@@ -61,7 +61,7 @@ export const getEntriesBetween = async (userId, start, end) => {
 }
 
 // Creates or updates the entry of one day.
-export const saveDay = async (userId, day, { mood, tags, notes, newProducts }, existingId) => {
+export const saveDay = async (userId, day, { mood, tags, notes, newProducts, states }, existingId) => {
   const { start } = dayBounds(day)
   const noon = new Date(start)
   noon.setHours(12)
@@ -71,6 +71,8 @@ export const saveDay = async (userId, day, { mood, tags, notes, newProducts }, e
     notes: notes || '',
     ...levelsFrom(mood, tags),
     // Which new product(s) she started that day, to spot reactions later.
+    // Her skin state today (utils/skin-state.js), when she picked one.
+    ...(states !== undefined ? { skin_state: states } : {}),
     ...(newProducts !== undefined ? { products_used: (tags || []).includes('Used new product') ? newProducts : [] } : {}),
   }
   if (existingId) {

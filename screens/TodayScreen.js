@@ -17,7 +17,9 @@ import { useFirstName } from '../utils/useFirstName'
 import { useTheme } from '../utils/ThemeContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getUserRoutines } from '../utils/routines-service'
-import { todaySteps } from '../utils/routine-checks'
+import { todaySteps, activesOf, daysOf } from '../utils/routine-checks'
+import { currentSkinState, isReactiveState, stateLabel } from '../utils/skin-state'
+import SkinStateChips from '../components/SkinStateChips'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
@@ -98,6 +100,16 @@ export default function TodayScreen({ navigation }) {
   const [forecastDays, setForecastDays] = useState(null)
   const [patterns, setPatterns] = useState(null)
   const premium = usePremium()
+  // Her skin today (check-in or journal), and the products of her routines, so
+  // strong actives wait while the skin is irritated (Lita, 2026-10-24).
+  const [skinState, setSkinState] = useState(null)
+  const [routineProducts, setRoutineProducts] = useState({})
+  const strongFace = p => p && !['eye care', 'lip care'].includes(p.category) && (activesOf(p).retinoid || activesOf(p).exfoliant || activesOf(p).benzoyl)
+  const refreshSkinState = useCallback(async (eveningSteps, products) => {
+    if (!user?.id) return
+    const nights = new Set((eveningSteps || []).filter(st => strongFace(products[st.product_id])).flatMap(st => daysOf(st)))
+    setSkinState(await currentSkinState(user.id, { strongNights: nights.size }).catch(() => null))
+  }, [user?.id])
   // Reactions this week with actives in the routine: offer to space them.
   const [spacing, setSpacing] = useState(null)
   useFocusEffect(useCallback(() => { if (user?.id) spacingState(user.id).then(setSpacing).catch(() => setSpacing(null)) }, [user?.id]))
@@ -162,6 +174,11 @@ export default function TodayScreen({ navigation }) {
       const withOnline = (local, set) => ({ ...Object.fromEntries([...(set || [])].map(i => [i, true])), ...local })
       setDone({ morning: withOnline(JSON.parse(m || '{}'), online?.morning), evening: withOnline(JSON.parse(e || '{}'), online?.evening) })
       setPlan(p)
+      const ids = [...(morning?.steps || []), ...(evening?.steps || [])].map(x => x.product_id).filter(Boolean)
+      const rows = ids.length ? await getProductsByIds(ids).catch(() => []) : []
+      const byId = Object.fromEntries(rows.map(x => [x.id, x]))
+      setRoutineProducts(byId)
+      refreshSkinState(evening?.steps || [], byId)
       syncTodayTicks(user.id, { morning: morning?.id, evening: evening?.id })
       const active = await getActivePlan(user.id)
       if (active) {
@@ -177,7 +194,7 @@ export default function TodayScreen({ navigation }) {
       const since = new Date(Date.now() - 60 * 86400000)
       const [{ data: ticks }, { data: entries }] = await Promise.all([
         supabase.from('routine_completions').select('date').eq('user_id', user.id).gte('date', localDay(since)),
-        supabase.from('journal_entries').select('id, date, mood, skin_conditions, notes, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
+        supabase.from('journal_entries').select('id, date, mood, skin_conditions, skin_state, notes, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
       ])
       const today = (entries || []).find(x => sameSkinDay(x.date, coords))
       setEntry(today || null)
@@ -214,7 +231,25 @@ export default function TodayScreen({ navigation }) {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
 
-  const adjustedOf = period => withPauses(todaySteps(routines[period]?.steps || []), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+  const reactive = isReactiveState(skinState?.states)
+  const adjustedOf = period => {
+    const base = withPauses(todaySteps(routines[period]?.steps || []), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    if (!reactive) return base
+    // Irritated, red, damaged barrier or over-exfoliated: strong actives wait.
+    const waiting = base.steps.filter(st => strongFace(routineProducts[st.product_id]))
+    return { steps: base.steps.filter(st => !waiting.includes(st)), paused: [...base.paused, ...waiting.map(step => ({ step, reason: 'skin state' }))] }
+  }
+  const saveStates = async (next) => {
+    try {
+      const current = sameSkinDay(entry?.date, coords) ? entry : null
+      const day = skinDay(new Date(), coords)
+      const id = await saveDay(user.id, day, { mood: current?.mood || null, tags: current?.skin_conditions || [], notes: current?.notes || '', states: next }, current?.id)
+      setEntry({ ...(current || {}), id, skin_state: next, date: current?.date || day.toISOString() })
+      refreshSkinState(routines.evening?.steps || [], routineProducts)
+    } catch (error) {
+      logError('Today_states', error)
+    }
+  }
   const stepsOf = period => adjustedOf(period).steps
   const countOf = period => {
     const steps = stepsOf(period)
@@ -504,6 +539,12 @@ export default function TodayScreen({ navigation }) {
             )
           })}
         </View>
+        <SkinStateChips value={sameSkinDay(entry?.date, coords) ? entry?.skin_state || [] : []} onChange={saveStates} style={{ marginTop: SPACING.md }} />
+        {reactive ? (
+          <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>
+            {t('Your skin is {state} at the moment: strong actives wait today, and products that could irritate it say “Not right now”.', { state: t(stateLabel(skinState.states.find(x => ['irritated', 'red', 'barrier', 'overexfoliated'].includes(x)))).toLowerCase() })}
+          </Text>
+        ) : null}
         {todayMood && MOOD_MESSAGES[todayMood] ? (
           <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>{t(HOME_MOOD_MESSAGES[todayMood] || MOOD_MESSAGES[todayMood])}</Text>
         ) : null}

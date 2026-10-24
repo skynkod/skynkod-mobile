@@ -108,6 +108,22 @@ export default function ProductScreen({ navigation, route }) {
         </View>
       </View>
 
+      {/* Her skin today can make a good product wait: "not right for you right now", with the why */}
+      {match.notNow && match.tone !== 'danger' ? (
+        <View style={[styles.matchCard, { backgroundColor: colors.warningSoft, marginBottom: SPACING.md }]}>
+          <View style={styles.matchHead}>
+            <Ionicons name="time-outline" size={36} color={colors.warning} />
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.notNow.title)}</Text>
+              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(match.notNow.text)}.</Text>
+            </View>
+          </View>
+          <Text style={[TYPE.caption, { color: colors.text, lineHeight: 18, marginTop: SPACING.sm }]}>
+            <Text style={{ fontWeight: '700' }}>{t('Why?')} </Text>{t(match.notNow.detail)}
+          </Text>
+        </View>
+      ) : null}
+
       {/* No full ingredient list: say it plainly instead of a score we can't stand behind */}
       {match.partial && !['danger', 'warning'].includes(match.tone) ? (
         <View style={[styles.matchCard, { backgroundColor: colors.surface }]}>

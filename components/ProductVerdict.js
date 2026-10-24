@@ -13,11 +13,13 @@ export default function ProductVerdict({ product, profile }) {
   const colors = useColors()
   const t = useT()
   const match = productMatch(product, profile)
-  const icon = { danger: 'close-circle', warning: 'flask', watch: 'eye-outline', success: 'checkmark-circle' }[match.tone] || 'help-circle-outline'
-  const tint = { danger: colors.danger, warning: colors.warning, watch: colors.caution, success: colors.success }[match.tone] || colors.muted
+  // Her current skin state can say "not right now" for a product that suits her.
+  const tone = match.notNow && match.tone !== 'danger' ? 'warning' : match.tone
+  const icon = match.notNow && match.tone !== 'danger' ? 'time-outline' : { danger: 'close-circle', warning: 'flask', watch: 'eye-outline', success: 'checkmark-circle' }[tone] || 'help-circle-outline'
+  const tint = { danger: colors.danger, warning: colors.warning, watch: colors.caution, success: colors.success }[tone] || colors.muted
   return (
     <View style={styles.wrap}>
-      <MatchBadge tone={match.tone} label={match.tone === 'success' ? `${match.score}% · ${t(match.label)}` : t(match.label)} />
+      <MatchBadge tone={tone} label={match.notNow && match.tone !== 'danger' ? t('Not right now') : match.tone === 'success' ? `${match.score}% · ${t(match.label)}` : t(match.label)} />
       <View style={styles.reason}>
         <Ionicons name={icon} size={13} color={tint} style={{ marginTop: 1 }} />
         <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={2}>{t(matchReason(match, profile))}</Text>

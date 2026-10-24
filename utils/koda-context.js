@@ -47,7 +47,7 @@ export const buildKodaContext = async (userId) => {
   return {
     today: new Date().toISOString().slice(0, 10),
     journal: healthOk
-      ? (entries || []).filter(e => e.mood).map(e => ({ date: String(e.date).slice(0, 10), mood: e.mood, tags: e.skin_conditions || [] }))
+      ? (entries || []).filter(e => e.mood || (e.skin_state || []).length).map(e => ({ date: String(e.date).slice(0, 10), mood: e.mood, tags: e.skin_conditions || [], skinState: e.skin_state || [] }))
       : null,
     patterns: healthOk && patterns?.ready ? patterns.patterns.map(p => p.text) : null,
     routine,

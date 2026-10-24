@@ -428,11 +428,50 @@ export const productMatch = (product, profile) => {
     unverified,
     found: found.map(f => f.entry),
     partial,
+    // Good or not for her skin, maybe not today: from her current skin state.
+    notNow: notRightNow(product, found, profile?.skinState),
   }
+}
+
+// ---------- "Not right for you right now" (Lita, 2026-10-24) ----------
+// The current skin state (utils/skin-state.js) can make a product a bad idea
+// for a while, without changing the verdict for her skin: an exfoliating acid
+// can be great for her pigmentation and still wait while her skin is irritated.
+const STATE_WORDS = { irritated: 'irritated', red: 'red', barrier: 'showing a damaged barrier', overexfoliated: 'over-exfoliated', dehydrated: 'dehydrated', breakout: 'breaking out' }
+const STRONG_FOR_STATE = ['retinol', 'glycolic', 'salicylic', 'lactic', 'mandelic', 'benzoyl', 'scrub']
+const DRYING = ['alcohol', 'sls']
+export const notRightNow = (product, found, skinState) => {
+  const states = skinState?.states || []
+  if (!states.length || product?.category === 'lip care') return null
+  const near = (ids, maxPos = 12) => (found || []).filter(f => ids.includes(f.entry.id) && f.pos <= maxPos).map(f => f.entry)
+  const reactive = states.filter(st => ['irritated', 'red', 'barrier', 'overexfoliated'].includes(st))
+  if (reactive.length) {
+    const strong = near(STRONG_FOR_STATE)
+    if (strong.length || /\bpeel|exfoli|aha|bha\b/i.test(product?.name || '')) {
+      const what = strong[0]?.name || 'exfoliating actives'
+      return {
+        title: 'Not right for you right now',
+        text: `Your skin is ${STATE_WORDS[reactive[0]]} at the moment`,
+        detail: `This product contains ${what.toLowerCase()}, which can help your skin goals, but adding it now could irritate your skin more and work against them. Keep it for when your skin feels calm again.`,
+        states: reactive,
+      }
+    }
+  }
+  if (states.includes('dehydrated')) {
+    const drying = near(DRYING, 8)
+    if (drying.length) return {
+      title: 'Not right for you right now',
+      text: 'Your skin is dehydrated at the moment',
+      detail: `This product contains ${drying[0].name.toLowerCase()}, which can dry the skin further. Choose something more comforting until your skin feels hydrated again.`,
+      states: ['dehydrated'],
+    }
+  }
+  return null
 }
 
 // One sentence explaining a product match, the most important reason first.
 export const matchReason = (match, profile) => {
+  if (match.notNow) return `${match.notNow.text}: better later`
   if (!profileFacts(profile).hasProfile) return 'Add your skin type for a personal match'
   if (match.care.length) return match.care[0].text
   if (match.good.length) return match.good[0].text
@@ -442,8 +481,8 @@ export const matchReason = (match, profile) => {
 // Short badge for lists: the verdict when there's something to know, the
 // match percentage otherwise.
 // Without the full ingredient list we can't vouch for a product: no score.
-export const badgeTone = match => (match.partial && !['danger', 'warning'].includes(match.tone) ? 'neutral' : match.tone)
-export const badgeText = match => (match.partial && !['danger', 'warning'].includes(match.tone) ? 'Not checked yet' : ['danger', 'warning', 'watch'].includes(match.tone) || match.unverified.length ? match.label : `${match.score}%`)
+export const badgeTone = match => (match.notNow && !['danger'].includes(match.tone) ? 'warning' : match.partial && !['danger', 'warning'].includes(match.tone) ? 'neutral' : match.tone)
+export const badgeText = match => (match.notNow && !['danger'].includes(match.tone) ? 'Not right now' : match.partial && !['danger', 'warning'].includes(match.tone) ? 'Not checked yet' : ['danger', 'warning', 'watch'].includes(match.tone) || match.unverified.length ? match.label : `${match.score}%`)
 
 // Products that must never be suggested to this user.
 export const isUnsuitable = match => match.avoid.length > 0 || match.triggered.length > 0
