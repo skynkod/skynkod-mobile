@@ -113,3 +113,41 @@ export const recentNewActive = ({ candidate, started = [], now = new Date(), wai
     .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
   return recent ? { ...recent, until: new Date(new Date(recent.date).getTime() + wait * DAY) } : null
 }
+
+// ---------- Skin Timeline (Lita, 2026-10-24) ----------
+// Every step of her skin story, newest first. Events: { date, kind, text, params }.
+export const buildTimeline = ({ baseline = null, started = [], stopped = [], checkins = [], scans = [], verdicts = [], seasons = [], rekodStart = null, entries = [], now = new Date() }) => {
+  const ev = []
+  if (baseline) ev.push({ date: baseline, kind: 'baseline', text: 'Your skin baseline' })
+  for (const s of started) ev.push({ date: s.date, kind: 'started', text: 'Started {name}', params: { name: s.name } })
+  for (const s of stopped) ev.push({ date: s.date, kind: 'stopped', text: 'Stopped {name}', params: { name: s.name } })
+  for (const c of checkins) {
+    const o = OVERALL.find(x => x.key === c.overall)
+    ev.push({ date: c.created_at, kind: 'checkin', text: 'Check-in: {overall}', params: { overall: o?.label || '' }, emoji: o?.emoji })
+  }
+  for (const s of scans) ev.push({ date: s.created_at, kind: 'scan', text: 'Dekod scan' })
+  for (const v of verdicts) ev.push({ date: v.date, kind: `verdict-${v.value}`, text: v.value === 'better' ? '{name} helps your skin' : v.value === 'worse' ? 'Your skin got worse with {name}' : 'No change with {name}', params: { name: v.name } })
+  for (const s of seasons) ev.push({ date: s.date, kind: 'season', text: 'New routine for the season' })
+  if (rekodStart) ev.push({ date: rekodStart, kind: 'rekod', text: 'Started a Rekod programme' })
+  // Big changes, 4 weeks against the 4 before, every 4 weeks back to 6 months.
+  for (let k = 0; k < 6; k += 1) {
+    const end = new Date(time(now) - k * 28 * DAY)
+    for (const c of progressChanges({ entries, now: end })) {
+      if (c.change === null || Math.abs(c.change) < 20) continue
+      ev.push({ date: end.toISOString(), kind: c.change < 0 ? 'better' : 'worse', text: '{concern} {arrow} {n}%', params: { concern: c.label, arrow: c.change < 0 ? '↓' : '↑', n: Math.abs(c.change) }, concern: c.key })
+    }
+  }
+  return ev.filter(e => e.date).sort((a, b) => time(b.date) - time(a.date))
+}
+
+// The summary at the top: what worked, what didn't, what she stopped, how much changed.
+export const journeySummary = ({ verdicts = [], changed = { helped: [], worse: [] }, reactions = [], stopped = [], started = [], now = new Date() }) => {
+  const uniq = list => [...new Set(list.filter(Boolean))]
+  const recent = list => list.filter(x => time(now) - time(x.date) <= 90 * DAY)
+  return {
+    worked: uniq([...verdicts.filter(v => v.value === 'better').map(v => v.name), ...changed.helped.map(h => h.name)]),
+    didnt: uniq([...verdicts.filter(v => v.value === 'worse').map(v => v.name), ...changed.worse.map(w => w.name), ...reactions.map(r => r.name)]),
+    stopped: uniq(stopped.map(s => s.name)),
+    changes: recent(started).length + recent(stopped).length,
+  }
+}

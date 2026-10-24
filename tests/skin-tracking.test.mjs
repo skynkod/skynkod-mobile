@@ -81,3 +81,19 @@ test('one new active at a time: another started 5 days ago means wait 9 more day
   assert.equal(recentNewActive({ candidate: { id: 'b' }, started: [{ id: 'a', name: 'x', date: ago(20) }], now: NOW }), null)
   assert.equal(recentNewActive({ candidate: { id: 'a' }, started: [{ id: 'a', name: 'x', date: ago(2) }], now: NOW }), null)
 })
+
+import { buildTimeline, journeySummary } from '../utils/skin-tracking-core.js'
+test('timeline: newest first, with starts, stops, check-ins and big changes', () => {
+  const entries = [...days(55, 28, ['New pimple'], n => n % 2 === 0), ...days(27, 0, ['New pimple'], n => n % 7 === 0)]
+  const tl = buildTimeline({ baseline: new Date(ago(55)), started: [{ name: 'Azelaic', date: ago(30) }], stopped: [{ name: 'Toner', date: ago(10) }], checkins: [{ created_at: ago(5), overall: 'better' }], entries, now: NOW })
+  assert.equal(tl[0].kind, 'better')
+  assert.ok(tl.some(e => e.kind === 'stopped' && e.params.name === 'Toner'))
+  assert.equal(tl[tl.length - 1].kind, 'baseline')
+})
+test('journey summary: what worked, what didn\'t, what you stopped', () => {
+  const s = journeySummary({ verdicts: [{ name: 'A', value: 'better' }, { name: 'B', value: 'worse' }], changed: { helped: [{ name: 'C' }], worse: [] }, reactions: [{ name: 'B' }], stopped: [{ name: 'D', date: ago(3) }], started: [{ name: 'A', date: ago(20) }], now: NOW })
+  assert.deepEqual(s.worked, ['A', 'C'])
+  assert.deepEqual(s.didnt, ['B'])
+  assert.deepEqual(s.stopped, ['D'])
+  assert.equal(s.changes, 2)
+})

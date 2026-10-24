@@ -142,6 +142,12 @@ export default function MyProgressScreen({ navigation }) {
         </>
       ) : null}
 
+      <Pressable onPress={() => navigation.navigate('SkinTimeline')} style={[styles.timelineBtn, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Ionicons name="git-commit-outline" size={18} color={colors.primary} />
+        <Text style={[TYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>{t('See your skin timeline')}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      </Pressable>
+
       {/* 1 · Skin mood */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR SKIN MOOD')}</Text>
       <Card>
@@ -231,6 +237,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.md },
   dot: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, overflow: 'hidden' },
   half: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '50%' },
+  timelineBtn: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 48, marginTop: SPACING.xl },
   weekBadge: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   cta: { marginTop: SPACING.md, borderRadius: 999, height: 44, alignItems: 'center', justifyContent: 'center' },
   history: { marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth, gap: 4 },

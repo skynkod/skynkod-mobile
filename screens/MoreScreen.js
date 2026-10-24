@@ -14,6 +14,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import MyProgressScreen from './MyProgressScreen'
+import SkinTimelineScreen from './SkinTimelineScreen'
 import MySkinJourneyScreen from './MySkinJourneyScreen'
 import ProductsScreen from './ProductsScreen'
 import PhotosScreen from './PhotosScreen'
@@ -40,6 +41,7 @@ export const MORE_SCREENS = [
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
+  { name: 'SkinTimeline', component: SkinTimelineScreen, label: 'Skin timeline', subtitle: 'Your skin story, step by step', icon: 'git-commit-outline', group: 'track' },
   { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and your Koda box', icon: 'ribbon-outline', group: 'track' },
   { name: 'SkinReport', component: SkinReportScreen, label: 'My skin report', subtitle: 'One page for your dermatologist', icon: 'document-text-outline', group: 'track', premium: true },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your shelf', icon: 'flask-outline', group: 'track' },

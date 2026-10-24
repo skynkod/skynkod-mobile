@@ -11,6 +11,7 @@ import { getProductsByIds } from '../utils/catalog'
 import { getProductReactions } from '../utils/journal-day'
 import { stopReason } from '../utils/stop-advice'
 import { getVerdicts } from './ExpectationLine'
+import { logStopped } from '../utils/skin-events'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -56,6 +57,7 @@ export const useStopAdvice = (userId, profile) => {
       const saved = await saveRoutine(userId, r.type, steps.filter(s => s.product_id !== product.id))
       if (!saved.success) throw new Error(saved.error)
     }
+    logStopped(userId, [product])
     await load()
   }
   const keep = async (product, kind) => {

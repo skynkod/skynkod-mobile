@@ -20,6 +20,7 @@ import { checkRoutine, suggestedDays, describeDays, EVERY_DAY, DAY_LABELS } from
 import { getUserRoutines } from '../utils/routines-service'
 import { BottomSheet } from '../components/ui'
 import { logError } from '../utils/errorLogger'
+import { logStopped } from '../utils/skin-events'
 import { isActiveProduct, recentNewActive, recentStartedActives, alreadyStarted } from '../utils/new-actives'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -42,6 +43,8 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const [slots, setSlots] = useState(() => startSlots(period))
   const [saving, setSaving] = useState(false)
   const enter = useRef(new Animated.Value(1)).current
+  // The products the routine had when opened: those missing on save were stopped.
+  const savedProducts = useRef([])
 
   // Fresh start each time the builder is opened; "Edit" reopens the saved
   // routine straight on the summary.
@@ -56,6 +59,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     getProductsByIds(saved.map(s => s.product_id).filter(Boolean))
       .then(products => {
         const byId = Object.fromEntries(products.map(p => [p.id, p]))
+        savedProducts.current = saved.map(s => byId[s.product_id]).filter(Boolean)
         setSlots(saved.map((s, i) => ({ uid: `${s.key || 'step'}-saved-${i}`, key: STEP_TYPES[s.key] ? s.key : 'serum', product: byId[s.product_id] || null, days: s.days || null, acks: s.acks || [] })))
       })
       .catch(error => logError('RoutineBuilder_loadSaved', error, { period }, 'warn'))
@@ -259,6 +263,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       }))
       const result = await saveRoutine(user.id, period, routineSteps)
       if (!result.success) throw new Error(result.error)
+      logStopped(user.id, savedProducts.current.filter(p => !chosen.some(c => c.product.id === p.id)))
       await Promise.all(chosen.map(({ product }) =>
         addToMyProducts(user.id, product, 'owned').catch(error => logError('RoutineBuilder_addProduct', error, { id: product.id }, 'warn'))
       ))
