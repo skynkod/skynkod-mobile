@@ -9,9 +9,10 @@ import { getMyProducts, addToMyProducts, searchProducts } from '../utils/catalog
 import ProductThumb from '../components/ProductThumb';
 import {
   getPurchasesBetween, getSixMonths, getYearTotal, addPurchase, updatePurchase, deletePurchase,
-  getMonthlyBudget, setMonthlyBudget, budgetInsights, formatMAD, costPerUse,
+  getMonthlyBudget, setMonthlyBudget, budgetInsights, formatMAD, formatMoney, costPerUse,
 } from '../utils/skynbudget';
 import { recordPrice, requestProduct, getPriceStats, STORES } from '../utils/community-data';
+import { currencySymbol } from '../utils/currency';
 import { logError } from '../utils/errorLogger';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 
@@ -21,7 +22,7 @@ const CATEGORY_LABELS = {
   cleanser: 'Cleansers', toner: 'Toners', serum: 'Serums', moisturizer: 'Moisturizers', sunscreen: 'SPF',
   exfoliant: 'Exfoliants', mask: 'Masks', 'eye care': 'Eye care', 'lip care': 'Lip care', body: 'Body', 'hand care': 'Hand care', other: 'Other',
 };
-const perUse = (price, category) => `${(Math.round(costPerUse(price, category) * 10) / 10).toLocaleString('fr-MA')} MAD`;
+const perUse = (price, category) => formatMoney(costPerUse(price, category), undefined, 2);
 
 // Skynbudget: spending per month against a budget, history, where the money
 // goes, smart insights, and purchases checked against real Moroccan prices.
@@ -130,11 +131,11 @@ export default function BudgetScreen({ navigation }) {
     return x > new Date() ? new Date() : x;
   });
 
-  // Paid vs the usual price in Morocco.
+  // Paid vs the usual price people pay (same currency).
   const priceVerdict = (paid, stats) => {
     if (!stats?.typical) return null;
     const diff = (paid - stats.typical) / stats.typical;
-    if (diff <= -0.1) return { good: true, text: t('Good deal! {n}% under the usual price in Morocco (~{usual}).', { n: Math.round(-diff * 100), usual: formatMAD(stats.typical) }) };
+    if (diff <= -0.1) return { good: true, text: t('Good deal! {n}% under the usual price (~{usual}).', { n: Math.round(-diff * 100), usual: formatMAD(stats.typical) }) };
     if (diff >= 0.1) {
       return {
         good: false,
@@ -149,7 +150,7 @@ export default function BudgetScreen({ navigation }) {
     const value = Number(String(price).replace(',', '.'));
     const editing = sheet?.editing;
     if (!editing && !pick && !otherName.trim()) return Alert.alert(t('Choose a product'), t('Search for it or type a name.'));
-    if (!value || value <= 0) return Alert.alert(t('Enter the price'), t('How much did you pay, in MAD?'));
+    if (!value || value <= 0) return Alert.alert(t('Enter the price'), t('How much did you pay, in {currency}?', { currency: currencySymbol() }));
     try {
       if (editing) {
         await updatePurchase(editing.id, { price: value, store, date });
@@ -345,7 +346,7 @@ export default function BudgetScreen({ navigation }) {
           <Text style={[TYPE.body, { color: colors.textSecondary }]}>{t('How much do you want to spend on skincare each month?')}</Text>
           <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput value={budgetInput} onChangeText={setBudgetInput} keyboardType="decimal-pad" placeholder="500" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text }]} autoFocus />
-            <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>MAD</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{currencySymbol()}</Text>
           </View>
           <Pressable onPress={saveBudget} style={[styles.save, { backgroundColor: colors.primary }]}>
             <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{t('Save')}</Text>
@@ -407,15 +408,15 @@ export default function BudgetScreen({ navigation }) {
             </>
           )}
 
-          {/* Price, with the usual price in Morocco when we know it */}
+          {/* Price, with the usual price people pay when we know it */}
           <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={t('Price')} placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text }]} />
-            <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>MAD</Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{currencySymbol()}</Text>
           </View>
           {liveVerdict ? (
             <Text style={[TYPE.caption, { color: liveVerdict.good ? colors.success : colors.warning, marginTop: 6, lineHeight: 17 }]}>{liveVerdict.text}</Text>
           ) : pickStats ? (
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>{t('Usually ~{usual} in Morocco.', { usual: formatMAD(pickStats.typical) })}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>{t('Usually ~{usual}.', { usual: formatMAD(pickStats.typical) })}</Text>
           ) : null}
           {typedPrice > 0 && sheetCategory ? (
             <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4 }]}>{t('About {cost} per use', { cost: perUse(typedPrice, sheetCategory) })}</Text>

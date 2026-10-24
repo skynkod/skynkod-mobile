@@ -113,7 +113,7 @@ export default function ProductScreen({ navigation, route }) {
           {prices ? (
             <Text style={[TYPE.caption, { color: colors.text, marginTop: 6 }]}>
               <Text style={{ fontWeight: '700' }}>~{formatMAD(prices.typical)}</Text>
-              <Text style={{ color: colors.textSecondary }}> {t('in Morocco')} · {t('{n} purchases', { n: prices.purchases })}{prices.top_store ? ` · ${t('often at {store}', { store: t(prices.top_store) })}` : ''}</Text>
+              <Text style={{ color: colors.textSecondary }}> {t('usual price')} · {t('{n} purchases', { n: prices.purchases })}{prices.top_store ? ` · ${t('often at {store}', { store: t(prices.top_store) })}` : ''}</Text>
             </Text>
           ) : null}
         </View>

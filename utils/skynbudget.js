@@ -1,11 +1,15 @@
 import { supabase, getUserProfile, updateUserProfile } from './supabase'
+import { userCurrency, formatMoney } from './currency'
 import { activesOf } from './routine-checks'
 import { findIngredients } from './ingredients-guide'
 
-// Skynbudget: what the user spends on skincare (in MAD), against a monthly
+// Skynbudget: what the user spends on skincare (in her own currency), against a monthly
 // budget, plus smart insights from their collection.
 
-export const formatMAD = (amount) => `${Math.round(Number(amount) || 0).toLocaleString('fr-MA')} MAD`
+// Amounts show in her phone's currency; purchases keep the currency they were
+// entered in, and totals only add up the current one.
+export { formatMoney } from './currency'
+export const formatMAD = (amount) => formatMoney(amount)
 
 const monthStart = (date = new Date()) => new Date(date.getFullYear(), date.getMonth(), 1)
 
@@ -13,7 +17,7 @@ const monthStart = (date = new Date()) => new Date(date.getFullYear(), date.getM
 export const getPurchasesBetween = async (userId, start, end) => {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, name, product_name, brand, category, price, date, product_id, store')
+    .select('id, name, product_name, brand, category, price, date, product_id, store').eq('currency', userCurrency())
     .eq('user_id', userId)
     .gte('date', start.toISOString())
     .lt('date', end.toISOString())
@@ -46,7 +50,7 @@ export const getMonthPurchases = async (userId, date = new Date()) => {
   const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, name, product_name, brand, category, price, date, product_id, store')
+    .select('id, name, product_name, brand, category, price, date, product_id, store').eq('currency', userCurrency())
     .eq('user_id', userId)
     .gte('date', start.toISOString())
     .lt('date', end.toISOString())
@@ -65,7 +69,7 @@ export const addPurchase = async (userId, { product, name, brand, category, pric
     category: product?.category || category || 'other',
     price: Number(price),
     amount: Number(price),
-    currency: 'MAD',
+    currency: userCurrency(),
     store: store || null,
     date: (date || new Date()).toISOString(),
   })
