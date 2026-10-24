@@ -126,7 +126,7 @@ export default function MyProgressScreen({ navigation }) {
               {track.changes.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Days with each concern in your check-ins and journal, last 4 weeks against the 4 before.')}</Text> : null}
 
               <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t('What may have helped')}</Text>
-              {[...track.changed.helped.map(h => ({ icon: 'trending-down', color: colors.success, text: t('Your skin improved after you started {name} ({date}): {n}% fewer days with a concern.', { name: h.name, date: fmt(h.date), n: Math.abs(h.change) }) })),
+              {[...track.changed.helped.map(h => ({ icon: 'trending-down', color: colors.success, text: t('Concerns were noted less often after you started {name} ({date}): {n}% fewer days.', { name: h.name, date: fmt(h.date), n: Math.abs(h.change) }) })),
                 ...track.changed.worse.map(w => ({ icon: 'alert-circle-outline', color: colors.warning, text: t('Redness rose after you added {name} ({date}).', { name: w.name, date: fmt(w.date) }) })),
                 ...track.changed.together.map(g => ({ icon: 'git-merge-outline', color: colors.primary, text: t('You started {n} products around {date} ({names}). Your skin changed, but we can’t tell which one made the difference. Next time, introduce one at a time.', { n: g.names.length, date: fmt(g.date), names: g.names.join(', ') }) })),
               ].map((x, i) => (
@@ -138,7 +138,7 @@ export default function MyProgressScreen({ navigation }) {
               {!track.changed.helped.length && !track.changed.worse.length && !track.changed.together.length ? (
                 <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t('Nothing clear yet. A new product needs about 4 weeks, and a few journal days before and after, before we can see a link.')}</Text>
               ) : (
-                <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Links seen in your own journal, not medical proof.')}</Text>
+                <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Observed in your own journal. Not medical evidence.')}</Text>
               )}
             </Card>
           </PremiumBlur>
