@@ -1,64 +1,59 @@
 import React, { useState, useEffect } from 'react'
 import { Text, Switch, Alert } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as Notifications from 'expo-notifications'
 import { logError } from '../utils/errorLogger'
-import { requestNotificationPermissions, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder, scheduleWaterReminders, cancelWaterReminders } from '../utils/notifications'
+import { requestNotificationPermissions, getReminderPrefs, syncSmartReminders } from '../utils/notifications'
 import { Screen, Card, ListRow, useColors } from '../components/ui'
+import { useT } from '../utils/LanguageContext'
 import { SPACING, TYPE } from '../utils/theme'
 
-// Times match what utils/notifications.js actually schedules.
+// 3 a day at most by default (Lita's audit, 2026-10-24). Times match
+// utils/notifications.js; Rekod, Dekod and the 7-day plan join these reminders
+// instead of adding new ones.
 const REMINDERS = [
-  { key: 'journalReminder', id: 'journal', title: 'Morning check-in', time: '7:45', icon: 'happy-outline', schedule: scheduleJournalReminder },
-  { key: 'morningReminder', id: 'morning', title: 'Morning routine', time: '8:00', icon: 'sunny-outline', schedule: scheduleMorningReminder },
-  { key: 'eveningReminder', id: 'evening', title: 'Evening routine', time: '21:00', icon: 'moon-outline', schedule: scheduleEveningReminder },
-  { key: 'waterReminder', id: 'water', title: 'Drink water', subtitle: 'At 11:00, 15:00 and 18:00', icon: 'water-outline', schedule: scheduleWaterReminders, cancel: cancelWaterReminders },
+  { key: 'morningReminder', title: 'Morning', subtitle: '8:00 · your check-in, then your routine', icon: 'sunny-outline' },
+  { key: 'waterReminder', title: 'Drink water', subtitle: '15:00', icon: 'water-outline' },
+  { key: 'waterExtra', title: 'More water reminders', subtitle: '11:00 and 18:00 too', icon: 'water' },
+  { key: 'eveningReminder', title: 'Evening', subtitle: '21:00 · your routine (or tonight’s Rekod night)', icon: 'moon-outline' },
 ]
 
 export default function NotificationsScreen({ route }) {
   const { userId } = route.params
   const colors = useColors()
-  const [settings, setSettings] = useState({ morningReminder: true, eveningReminder: true, journalReminder: true, waterReminder: true })
+  const t = useT()
+  const [settings, setSettings] = useState(null)
 
   useEffect(() => {
-    AsyncStorage.getItem(`notifications_${userId}`)
-      .then(saved => saved && setSettings(prev => ({ ...prev, ...JSON.parse(saved) })))
-      .catch(error => logError('NotificationsScreen_load', error, { userId }))
+    getReminderPrefs(userId).then(setSettings).catch(error => { logError('NotificationsScreen_load', error, { userId }); setSettings({}) })
   }, [userId])
 
-  // Toggling used to only save the preference; it now actually (un)schedules the reminder.
   const toggle = async (reminder) => {
     const enabled = !settings[reminder.key]
     const next = { ...settings, [reminder.key]: enabled }
     setSettings(next)
     try {
       await AsyncStorage.setItem(`notifications_${userId}`, JSON.stringify(next))
-      if (enabled) {
-        const granted = await requestNotificationPermissions()
-        if (!granted) {
-          Alert.alert('Notifications are off', 'Allow notifications for Skynkod in your phone settings.')
-          return
-        }
-        await reminder.schedule(userId)
-      } else {
-        if (reminder.cancel) await reminder.cancel(userId)
-        else await Notifications.cancelScheduledNotificationAsync(`${reminder.id}-${userId}`)
+      if (enabled && !(await requestNotificationPermissions())) {
+        Alert.alert(t('Notifications are off'), t('Allow notifications for Skynkod in your phone settings.'))
+        return
       }
+      await syncSmartReminders(userId)
     } catch (error) {
       await logError('NotificationsScreen_toggle', error, { userId, key: reminder.key })
     }
   }
 
+  if (!settings) return <Screen back title={t('Notifications')} />
   return (
-    <Screen back title="Notifications" subtitle="Gentle nudges to stay consistent">
+    <Screen back title={t('Notifications')} subtitle={t('Gentle nudges, 3 a day at most')}>
       <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
-        {REMINDERS.map((r, idx) => (
+        {REMINDERS.filter(r => r.key !== 'waterExtra' || settings.waterReminder).map((r, idx, list) => (
           <ListRow
             key={r.key}
             icon={r.icon}
-            title={r.title}
-            subtitle={r.subtitle || `Every day at ${r.time}`}
-            last={idx === REMINDERS.length - 1}
+            title={t(r.title)}
+            subtitle={t(r.subtitle)}
+            last={idx === list.length - 1}
             right={
               <Switch
                 value={!!settings[r.key]}
@@ -71,8 +66,8 @@ export default function NotificationsScreen({ route }) {
           />
         ))}
       </Card>
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.lg }]}>
-        Consistency beats intensity: most skin changes take 4–6 weeks to show.
+      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
+        {t('Your Rekod review, Dekod day and Koda box come with the morning reminder, never as an extra one.')}
       </Text>
     </Screen>
   )

@@ -87,12 +87,13 @@ export const scheduleMorningReminder = async (userId) =>
 export const scheduleEveningReminder = async (userId) =>
   scheduleDaily(`evening-${userId}`, 'Skynkod', (ramadanDay() ? TEXT.eveningRamadan : TEXT.evening)[await lang()], 21, 0, 'Home')
 
-// Water: 3 gentle reminders at most (11:00, 15:00, 18:00), switchable in Notifications.
-export const WATER_TIMES = [[11, 0], [15, 0], [18, 0]]
-export const scheduleWaterReminders = async (userId) => {
+// Water: one gentle reminder at 15:00; 11:00 and 18:00 only if she asks (Notifications).
+export const WATER_TIMES = [[15, 0], [11, 0], [18, 0]]
+export const scheduleWaterReminders = async (userId, extra = false) => {
   const l = await lang()
-  for (let i = 0; i < WATER_TIMES.length; i += 1) {
-    await scheduleDaily(`water-${i}-${userId}`, 'Skynkod', TEXT.water[i][l], WATER_TIMES[i][0], WATER_TIMES[i][1], 'Home')
+  const order = [1, 0, 2] // texts: morning, mid-day, evening
+  for (let i = 0; i < (extra ? 3 : 1); i += 1) {
+    await scheduleDaily(`water-${i}-${userId}`, 'Skynkod', TEXT.water[order[i]][l], WATER_TIMES[i][0], WATER_TIMES[i][1], 'Home')
   }
 }
 export const cancelWaterReminders = async (userId) => {
@@ -127,12 +128,31 @@ const scheduleWeekly = (id, body, weekday, hour, minute, screen) =>
     trigger: { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday, hour, minute },
   }).catch(error => console.warn(`Schedule ${id} error:`, error))
 
+// ---------- All the reminders, at most 3 a day (Lita's audit, 2026-10-24) ----------
+// 8:00 morning (check-in + routine, with the week's extras the same morning),
+// 15:00 one water reminder (11:00 and 18:00 only if she asks), 21:00 evening
+// (or the Rekod night). Rekod, Dekod, the Koda box and the 7-day plan replace
+// the day's reminder instead of adding one. Re-synced at each app start and
+// whenever a programme, a plan or a setting changes.
+const MORNING = { en: 'Good morning! How’s your skin? Then your morning routine ☀️', fr: 'Bonjour ! Comment va ta peau ? Puis ta routine du matin ☀️' }
+const EXTRA = {
+  recap: { en: 'Your Koda box has arrived 📦', fr: 'Ta box de Koda est arrivée 📦' },
+  dekod: { en: 'It’s Dekod day 🔍', fr: 'C’est le jour du Dekod 🔍' },
+  rekod: { en: 'Your weekly Rekod review is ready 📈', fr: 'Ton Rekod review de la semaine est prêt 📈' },
+}
+const CALM_EVENING = { en: 'Your calm evening routine 🌙', fr: 'Ta routine douce du soir 🌙' }
+export const getReminderPrefs = async (userId) => ({
+  morningReminder: true, eveningReminder: true, waterReminder: true, waterExtra: false,
+  ...JSON.parse((await AsyncStorage.getItem(`notifications_${userId}`).catch(() => null)) || '{}'),
+})
+
 export const syncSmartReminders = async (userId) => {
   if (!userId) return
   try {
     const { status } = await Notifications.getPermissionsAsync()
     if (status !== 'granted') return
     const l = await lang()
+    const prefs = await getReminderPrefs(userId)
     const { getRekodPlan, weekPattern } = await import('./rekod')
     const { getActivePlan } = await import('./emergency-state')
     const { getDekodResults } = await import('./dekod')
@@ -142,64 +162,68 @@ export const syncSmartReminders = async (userId) => {
       getDekodResults(userId, 1).catch(() => []),
     ])
 
-    // Rekod: each evening says which night it is (instead of the generic one), plus the weekly check-in.
-    for (let i = 0; i < 7; i += 1) await cancel(`rekod-night-${i}-${userId}`)
-    await cancel(`rekod-checkin-${userId}`)
-    if (rekod) {
-      await cancel(`evening-${userId}`)
-      const week = weekPattern(rekod)
-      for (let i = 0; i < 7; i += 1) {
-        await scheduleWeekly(`rekod-night-${i}-${userId}`, NIGHT_TEXT[week[i]][l], EXPO_WEEKDAY[i], 21, 0, 'Rekod')
+    // Clear everything this function owns, old ids included.
+    const ids = [`morning-${userId}`, `journal-${userId}`, `evening-${userId}`, `recap-weekly-${userId}`, `dekod-weekly-${userId}`, `rekod-checkin-${userId}`]
+    for (let i = 0; i < 7; i += 1) ids.push(`morning-${i}-${userId}`, `rekod-night-${i}-${userId}`)
+    for (let d = 0; d < 21; d += 1) ids.push(`sos-day-${d}-${userId}`, `sos-evening-${d}-${userId}`)
+    for (const id of ['mask', 'fragrance', 'vitaminC', 'scrub', 'exfoliant', 'acid', 'retinoid']) ids.push(`sos-back-${id}-${userId}`)
+    for (const id of ids) await cancel(id)
+    await cancelWaterReminders(userId)
+
+    // The extras of each weekday (Monday-first index).
+    const extras = Array.from({ length: 7 }, () => [])
+    extras[0].push(EXTRA.recap[l])
+    if (scans?.length) extras[6].push(EXTRA.dekod[l])
+    if (rekod) extras[(new Date(rekod.startedAt).getDay() + 6) % 7].push(EXTRA.rekod[l])
+    const at = (date, h, m) => { const d = new Date(date); d.setHours(h, m, 0, 0); return d }
+    const once = (id, body, date, screen) => (date > new Date() ? Notifications.scheduleNotificationAsync({
+      identifier: id, content: { title: 'Skynkod', body, sound: true, data: { screen } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
+    }).catch(() => {}) : Promise.resolve())
+
+    // 8:00. During the 7 calm days, the plan's day is the morning reminder.
+    const calm = sos && sos.phase !== 'return'
+    if (calm) {
+      for (let d = 0; d < 7; d += 1) {
+        const date = at(new Date(new Date(sos.startedAt).getTime() + d * 86400000), 8, 0)
+        await once(`sos-day-${d}-${userId}`, `${SMART_TEXT.sos[l](d + 1, sos.situation.title)} ☀️`, date, 'Emergency')
       }
-      const startDay = new Date(rekod.startedAt).getDay() + 1
-      await scheduleWeekly(`rekod-checkin-${userId}`, SMART_TEXT.checkin[l], startDay, 10, 0, 'Rekod')
+    } else if (prefs.morningReminder) {
+      for (let i = 0; i < 7; i += 1) {
+        await scheduleWeekly(`morning-${i}-${userId}`, [MORNING[l], ...extras[i]].join(' '), EXPO_WEEKDAY[i], 8, 0, extras[i].length ? 'Home' : 'Home')
+      }
     } else {
-      // Back to the generic evening reminder, unless she switched it off.
-      const prefs = JSON.parse((await AsyncStorage.getItem(`notifications_${userId}`).catch(() => null)) || '{}')
-      if (prefs.eveningReminder !== false) await scheduleEveningReminder(userId)
+      // Morning off: the week's extras still come, once, mid-morning.
+      for (let i = 0; i < 7; i += 1) if (extras[i].length) await scheduleWeekly(`morning-${i}-${userId}`, extras[i].join(' '), EXPO_WEEKDAY[i], 10, 0, 'Home')
     }
 
-    // The Koda box (and the weekly recap on Home), every Monday morning.
-    await cancel(`recap-weekly-${userId}`)
-    await scheduleWeekly(`recap-weekly-${userId}`, SMART_TEXT.recap[l], 2, 9, 30, 'Journey')
+    // Water: one at 15:00, the other two only if she asked for them.
+    if (prefs.waterReminder) await scheduleWaterReminders(userId, prefs.waterExtra)
 
-    // Dekod: once she has scanned, a weekly nudge on Sunday morning.
-    await cancel(`dekod-weekly-${userId}`)
-    if (scans?.length) await scheduleWeekly(`dekod-weekly-${userId}`, SMART_TEXT.dekod[l], 1, 10, 30, 'Dekod')
-
-    // 7-day plan: one reminder each remaining morning, with the day number.
-    for (let d = 1; d <= 7; d += 1) await cancel(`sos-day-${d}-${userId}`)
-    for (const id of ['mask', 'fragrance', 'vitaminC', 'scrub', 'exfoliant', 'acid', 'retinoid']) await cancel(`sos-back-${id}-${userId}`)
-    // Gradual return: the evening a product comes back, say so.
-    const BACK = {
-      en: { mask: 'masks', fragrance: 'fragranced products', vitaminC: 'vitamin C', scrub: 'scrubs', exfoliant: 'exfoliants', acid: 'acids', retinoid: 'retinol (one night out of two)' },
-      fr: { mask: 'les masques', fragrance: 'les produits parfumés', vitaminC: 'la vitamine C', scrub: 'les gommages', exfoliant: 'les exfoliants', acid: 'les acides', retinoid: 'le rétinol (un soir sur deux)' },
-    }
-    for (const r of sos?.schedule || []) {
-      if (r.again || r.day <= sos.dayIndex) continue
-      const date = new Date(sos.startedAt)
-      date.setDate(date.getDate() + r.day)
-      date.setHours(20, 30, 0, 0)
-      await Notifications.scheduleNotificationAsync({
-        identifier: `sos-back-${r.id}-${userId}`,
-        content: { title: 'Skynkod', body: l === 'fr' ? `Ce soir, on réintroduit ${BACK.fr[r.id]} dans ta routine 🌿` : `Tonight, we bring back ${BACK.en[r.id]} into your routine 🌿`, sound: true, data: { screen: 'Home' } },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
-      }).catch(() => {})
-    }
-    if (sos && sos.phase !== 'return') {
-      for (let d = sos.dayIndex + 2; d <= 7; d += 1) {
-        const date = new Date(sos.startedAt)
-        date.setDate(date.getDate() + d - 1)
-        date.setHours(9, 0, 0, 0)
-        if (date <= new Date()) continue
-        await Notifications.scheduleNotificationAsync({
-          identifier: `sos-day-${d}-${userId}`,
-          content: { title: 'Skynkod', body: SMART_TEXT.sos[l](d, sos.situation.title), sound: true, data: { screen: 'Emergency' } },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
-        }).catch(() => {})
+    // 21:00. While a plan runs (calm days and the gradual return), each evening
+    // says what to do, and the night a product comes back says so.
+    if (sos) {
+      const back = {}
+      for (const r of sos.schedule || []) if (!r.again) back[r.day] = r.id
+      const BACK = {
+        en: { mask: 'masks', fragrance: 'fragranced products', vitaminC: 'vitamin C', scrub: 'scrubs', exfoliant: 'exfoliants', acid: 'acids', retinoid: 'retinol (one night out of two)' },
+        fr: { mask: 'les masques', fragrance: 'les produits parfumés', vitaminC: 'la vitamine C', scrub: 'les gommages', exfoliant: 'les exfoliants', acid: 'les acides', retinoid: 'le rétinol (un soir sur deux)' },
+      }
+      const last = Math.max(7, ...Object.keys(back).map(Number))
+      for (let d = 0; d <= last && d < 21; d += 1) {
+        const date = at(new Date(new Date(sos.startedAt).getTime() + d * 86400000), 21, 0)
+        const body = back[d] ? (l === 'fr' ? `Ce soir, on réintroduit ${BACK.fr[back[d]]} dans ta routine 🌿` : `Tonight, we bring back ${BACK.en[back[d]]} into your routine 🌿`) : CALM_EVENING[l]
+        await once(`sos-evening-${d}-${userId}`, body, date, 'Home')
+      }
+    } else if (prefs.eveningReminder) {
+      if (rekod) {
+        const week = weekPattern(rekod)
+        for (let i = 0; i < 7; i += 1) await scheduleWeekly(`rekod-night-${i}-${userId}`, NIGHT_TEXT[week[i]][l], EXPO_WEEKDAY[i], 21, 0, 'Rekod')
+      } else {
+        await scheduleEveningReminder(userId)
       }
     }
   } catch (error) {
-    console.warn('Smart reminders error:', error)
+    console.warn('Reminders error:', error)
   }
 }
