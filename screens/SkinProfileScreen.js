@@ -10,6 +10,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { currentSkinState, stateLabel } from '../utils/skin-state'
+import { getCondition, CONCERN_CONDITIONS, SUSPICION_CONDITION } from '../utils/encyclopedia/conditions'
 import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, resolveQuestion, prioritiesOf } from '../utils/skin-quiz'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -81,12 +82,26 @@ export default function SkinProfileScreen({ navigation }) {
             </View>
           </Pressable>
         ))}
+        {prioritiesOf(answers).main && CONCERN_CONDITIONS[prioritiesOf(answers).main] ? (
+          <View style={styles.issueChips}>
+            {CONCERN_CONDITIONS[prioritiesOf(answers).main].map(id => (
+              <Pressable key={id} onPress={() => navigation.navigate('Condition', { id })} style={[styles.issueChip, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(getCondition(id).title)} ›</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
 
       {suspected.map(id => (
         <View key={id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(SUSPICIONS[id].title)}</Text>
           <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(DOCTOR_NOTE)}</Text>
+          {SUSPICION_CONDITION[id] ? (
+            <Pressable onPress={() => navigation.navigate('Condition', { id: SUSPICION_CONDITION[id] })} hitSlop={6}>
+              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', marginTop: 6 }]}>{t('What it is, what helps and the treatments')} ›</Text>
+            </Pressable>
+          ) : null}
           <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4, lineHeight: 18 }]}>{t('Seen a doctor? Update your answers below: diagnosed conditions, or remove the sign if it was something else.')}</Text>
         </View>
       ))}
@@ -138,6 +153,8 @@ export default function SkinProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  issueChips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
+  issueChip: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
   priorityRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.sm },
   priorityNum: { fontSize: 18, fontWeight: '700', width: 18, textAlign: 'center' },
   summary: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.sm },

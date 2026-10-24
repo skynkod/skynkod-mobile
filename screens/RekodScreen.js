@@ -30,6 +30,8 @@ import {
 } from '../utils/rekod'
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+// Each goal's issue sheet (utils/encyclopedia/conditions.js).
+const GOAL_CONDITION = { clear: 'inflammatory-acne', spots: 'pih', antiaging: 'fine-lines', glow: 'dullness', pores: 'enlarged-pores', calm: 'sensitive-skin', hydration: 'dehydrated-skin' }
 const LEVEL_LABEL = { none: 'None', light: 'Light', visible: 'Visible' }
 const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']
 
@@ -784,6 +786,10 @@ export default function RekodScreen({ navigation }) {
             </View>
           </View>
         ))}
+        {/* Honest limits, and the treatments worth asking about, for each goal (Lita, 2026-10-24) */}
+        <Pressable onPress={() => navigation.navigate('Condition', { id: GOAL_CONDITION[longest] || 'fine-lines' })} hitSlop={6} style={{ marginBottom: SPACING.md }}>
+          <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>What skincare can and can’t do, and the treatments to ask about ›</Text>
+        </Pressable>
 
         <Text style={[styles.section, { color: C.muted }]}>YOUR PRODUCTS</Text>
         <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border }]}>

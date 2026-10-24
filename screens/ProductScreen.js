@@ -9,6 +9,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
+import { CONCERN_CONDITIONS } from '../utils/encyclopedia/conditions'
 import { retailersFor, openRetailer, SHOP_LINKS_ENABLED } from '../utils/shop'
 import { getPriceStats } from '../utils/community-data'
 import { formatMAD } from '../utils/skynbudget'
@@ -122,6 +123,13 @@ export default function ProductScreen({ navigation, route }) {
             <Text style={{ fontWeight: '700' }}>{t('Why?')} </Text>{t(match.notNow.detail)}
           </Text>
         </View>
+      ) : null}
+
+      {/* Her main concern: what skincare can and can't do for it, and the treatments */}
+      {profile?.priority && CONCERN_CONDITIONS[profile.priority] ? (
+        <Pressable onPress={() => navigation.navigate('Condition', { id: CONCERN_CONDITIONS[profile.priority][0] })} style={{ marginBottom: SPACING.md }} hitSlop={4}>
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('What skincare can and can’t do for your {concern}', { concern: t(profile.priority).toLowerCase() })} ›</Text>
+        </Pressable>
       ) : null}
 
       {/* No full ingredient list: say it plainly instead of a score we can't stand behind */}

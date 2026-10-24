@@ -38,6 +38,7 @@ import RoutineBuilderScreen from './screens/RoutineBuilderScreen'
 import ProductPickerScreen from './screens/ProductPickerScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
 import SuggestionsScreen from './screens/SuggestionsScreen'
+import ConditionScreen from './screens/ConditionScreen'
 import RekodScreen from './screens/RekodScreen'
 import DekodScreen from './screens/DekodScreen'
 import LayeringScreen from './screens/LayeringScreen'
@@ -152,6 +153,7 @@ function AppTabs({ userId }) {
         { name: 'ProductPicker', component: ProductPickerScreen },
         { name: 'Privacy', component: PrivacyScreen },
         { name: 'Suggestions', component: SuggestionsScreen },
+        { name: 'Condition', component: ConditionScreen },
         { name: 'Journal', component: JournalScreen },
         { name: 'Layering', component: LayeringScreen },
         { name: 'More', component: MoreScreen },

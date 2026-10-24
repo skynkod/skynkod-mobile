@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen, EmptyState, Button, useColors } from '../components/ui';
+import { getCondition } from '../utils/encyclopedia/conditions';
 import ArticleBody from '../components/ArticleBody';
 import { useT } from '../utils/LanguageContext';
 import { useAuth } from '../utils/AuthContext';
@@ -33,6 +34,13 @@ export default function ArticleScreen({ navigation, route }) {
         <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.xs }]}>{t(article.subtitle)}</Text>
       ) : null}
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('{n} min read', { n: article.minutes })}</Text>
+
+      {/* A skin issue: its full guide (illustrations, what skincare can and can't do, treatments) */}
+      {getCondition(article.id) ? (
+        <Pressable onPress={() => navigation.navigate('Condition', { id: article.id })} style={[styles.guideCard, { backgroundColor: colors.primarySoft }]}>
+          <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('What skincare can do, the treatments, and when to see a dermatologist')} ›</Text>
+        </Pressable>
+      ) : null}
 
       <ArticleBody article={article} />
 
@@ -82,6 +90,7 @@ export default function ArticleScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  guideCard: { borderRadius: 16, padding: SPACING.lg, marginTop: SPACING.lg },
   label: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },

@@ -6,6 +6,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
 import { SECTIONS, articlesIn, searchArticles, articlesForProfile } from '../utils/encyclopedia';
+import { CONDITIONS, CONDITION_GROUPS } from '../utils/encyclopedia/conditions';
 import { HOWTO } from '../utils/encyclopedia/howto';
 import { INGREDIENTS, searchIngredients, isPremiumIngredient } from '../utils/ingredients-guide';
 import { usePremium } from '../components/PremiumLock';
@@ -128,6 +129,22 @@ export default function SkyncyclopediaScreen({ navigation }) {
                 <View key={g.title}>
                   <Text style={[styles.label, { color: colors.muted }]}>{t(g.title).toUpperCase()}</Text>
                   {g.list.map(i => <IngredientRow key={i.id} i={i} />)}
+                </View>
+              ))
+            : section === 'issues'
+            // Every skin issue (Lita, 2026-10-24), grouped, each with its full guide.
+            ? CONDITION_GROUPS.map(g => (
+                <View key={g.id}>
+                  <Text style={[styles.label, { color: colors.muted }]}>{t(g.label).toUpperCase()}</Text>
+                  {CONDITIONS.filter(c => c.group === g.id).map(c => (
+                    <Pressable key={c.id} onPress={() => navigation.navigate('Condition', { id: c.id })} style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{t(c.title)}</Text>
+                        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(c.notice[0])}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+                    </Pressable>
+                  ))}
                 </View>
               ))
             : articlesIn(section).map(a => <ArticleRow key={a.id} a={a} />)}

@@ -11,6 +11,9 @@ import { currentRoutine, todayStepsWithPauses } from '../utils/current-routine';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions } from '../utils/journal-day';
 import SkinStateChips from '../components/SkinStateChips';
+import { getCondition } from '../utils/encyclopedia/conditions';
+// A ticked sign → the issue sheet it may point to.
+const TAG_CONDITION = { 'New pimple': 'inflammatory-acne', Redness: 'rosacea', 'Itchiness / Sensitivity': 'sensitive-skin', 'Peeling / Flaking': 'dry-skin', Dryness: 'dehydrated-skin', Oily: 'oily-skin' };
 import { getMyProducts } from '../utils/catalog';
 import { getPausedProducts, setProductPaused } from '../utils/paused-products';
 import { repauseAfterReaction } from '../utils/emergency-state';
@@ -398,6 +401,16 @@ export default function JournalScreen({ route, navigation }) {
             );
           })}
         </View>
+        {/* What these signs may point to: the issue sheet, as guidance (Lita, 2026-10-24) */}
+        {tags.some(tag => TAG_CONDITION[tag]) ? (
+          <View style={styles.tags}>
+            {[...new Set(tags.map(tag => TAG_CONDITION[tag]).filter(Boolean))].map(id => (
+              <Pressable key={id} onPress={() => navigation.navigate('Condition', { id })} hitSlop={4}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Learn about {issue}', { issue: t(getCondition(id).title).toLowerCase() })} ›</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         {/* Which new product: the app can then spot reactions that follow it */}
         {tags.includes('Used new product') ? (
