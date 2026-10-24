@@ -52,6 +52,8 @@ export const spaceActives = async (userId) => {
   if (!evening) return false
   const products = await getProductsByIds(evening.steps.map(s => s.product_id).filter(Boolean))
   const byId = Object.fromEntries(products.map(p => [p.id, p]))
+  // Nothing strong in the evening: nothing to space.
+  if (!evening.steps.some(s => faceActive(byId[s.product_id]))) return false
   const original = evening.steps.map(s => s.days || null)
   const steps = evening.steps.map(s => {
     const kind = faceActive(byId[s.product_id])

@@ -115,7 +115,8 @@ export default function LifeModesScreen({ navigation }) {
         text={sos
           ? (sos.phase === 'return' ? t('Gradual return · day {day} of {total}', { day: sos.returnDay, total: sos.returnDays }) : t('Day {day} of 7 · {title}', { day: sos.dayIndex + 1, title: t(sos.situation.title) }))
           : t('7 calm days: strong actives on pause, then back one by one.')}
-        onPress={() => navigation.navigate('Emergency')} premium />
+        // Not in a plan yet: the same "Your skin is reacting" card as Home, with its two choices.
+        onPress={() => (sos ? navigation.navigate('Emergency') : navigation.navigate('Home', { reacting: Date.now() }))} premium />
 
       {health.available ? (
         <Mode icon="fitness-outline" title={t('Apple Health')} on={health.on}
