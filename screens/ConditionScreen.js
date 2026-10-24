@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Linking, Image } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Linking, Image, useWindowDimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, useColors } from '../components/ui'
 import ProductThumb from '../components/ProductThumb'
@@ -10,6 +10,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getCondition, GUIDE_NOTE } from '../utils/encyclopedia/conditions'
 import { CONDITION_IMAGES } from '../utils/encyclopedia/condition-images'
+import { CONDITION_EXPLAIN } from '../utils/encyclopedia/condition-explain'
 import { getArticle } from '../utils/encyclopedia'
 import { getIngredient, productMatch, isUnsuitable } from '../utils/ingredients-guide'
 import { productsWithIngredient } from '../utils/catalog'
@@ -25,6 +26,8 @@ const DERM_TONE = { check: 'primary', soon: 'warning', urgent: 'danger' }
 export default function ConditionScreen({ route, navigation }) {
   const colors = useColors()
   const t = useT()
+  // The whole square picture, edge to edge inside the page margins.
+  const side = useWindowDimensions().width - SPACING.xl * 2
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
   const c = getCondition(route?.params?.id)
@@ -52,6 +55,7 @@ export default function ConditionScreen({ route, navigation }) {
 
   if (!c) return <Screen back title={t('Not found')} />
   const article = getArticle(c.id)
+  const explain = CONDITION_EXPLAIN[c.id]
   const tone = c.derm ? colors[DERM_TONE[c.derm.level]] : colors.primary
 
   const List = ({ icon, color, title, items }) => (items?.length ? (
@@ -87,9 +91,28 @@ export default function ConditionScreen({ route, navigation }) {
 
   return (
     <Screen back title={t(c.title)}>
-      {CONDITION_IMAGES[c.id] ? <Image source={CONDITION_IMAGES[c.id]} style={styles.hero} resizeMode="cover" /> : null}
+      {CONDITION_IMAGES[c.id] ? <Image source={CONDITION_IMAGES[c.id]} style={[styles.hero, { width: side, height: side }]} resizeMode="contain" /> : null}
+
+      {/* What it is and why it happens, before what it looks like */}
+      {explain ? (
+        <View style={{ marginTop: SPACING.lg }}>
+          <Text style={[styles.section, { color: colors.primary }]}>{t('WHAT IS IT?')}</Text>
+          <Text style={[TYPE.body, { color: colors.text, lineHeight: 22 }]}>{t(explain.what)}</Text>
+        </View>
+      ) : null}
+      <List icon="help-circle-outline" color={colors.primary} title="WHY IT HAPPENS" items={explain?.why} />
 
       <List icon="eye-outline" color={colors.primary} title="WHAT YOU MAY NOTICE" items={c.notice} />
+
+      {explain?.course ? (
+        <View style={[styles.course, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="time-outline" size={18} color={colors.primary} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Does it go away? How long does it last?')}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(explain.course)}</Text>
+          </View>
+        </View>
+      ) : null}
 
       <List icon="checkmark-circle" color={colors.success} title="WHAT SKINCARE CAN DO" items={c.can} />
       <List icon="close-circle" color={colors.danger} title="WHAT SKINCARE CAN’T DO" items={c.cant} />
@@ -145,10 +168,11 @@ export default function ConditionScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  hero: { width: '100%', aspectRatio: 1, borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
+  hero: { borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginBottom: SPACING.sm },
   item: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start', marginBottom: 6 },
   treat: { flexDirection: 'row', gap: SPACING.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm },
+  course: { flexDirection: 'row', gap: SPACING.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg },
   derm: { flexDirection: 'row', gap: SPACING.md, borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.xl, alignItems: 'flex-start' },
   product: { flexDirection: 'row', gap: SPACING.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm },
   thumb: { width: 52, height: 52, borderRadius: 10 },
