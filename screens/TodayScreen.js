@@ -39,6 +39,7 @@ import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { getWeekRecap, recapWeekKey } from '../utils/progress'
+import { getCheckInStatus } from '../utils/skin-tracking'
 import { getPausedProducts } from '../utils/paused-products'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
@@ -154,6 +155,11 @@ export default function TodayScreen({ navigation }) {
         ? t('{n} products you proposed are now in Skynkod. You earned points towards the Official Contributor badge.', { n: fresh.length })
         : t('A product you proposed is now in Skynkod. You earned points towards the Official Contributor badge.'))
     }).catch(() => {})
+  }, [user?.id]))
+  // The check-in every 2 weeks: a small card on Home when it's due.
+  const [checkIn, setCheckIn] = useState(null)
+  useFocusEffect(useCallback(() => {
+    if (user?.id) getCheckInStatus(user.id).then(st => setCheckIn(st.due ? st : null)).catch(() => setCheckIn(null))
   }, [user?.id]))
   const closeRecap = () => { AsyncStorage.setItem(recap.key, '1').catch(() => {}); setRecap(null) }
 
@@ -445,6 +451,18 @@ export default function TodayScreen({ navigation }) {
       <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin forecast')}</Text>
       <SkinForecast forecast={forecast} now={weather} season={SEASONS[currentSeason(new Date(), coords?.latitude ?? null).id]}
         signals={forecastSignals} onEnableLocation={enableLocation} />
+
+      {checkIn ? (
+        <Pressable onPress={() => navigation.navigate('SkinCheckIn', { week: checkIn.week })} style={[styles.recap, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Ionicons name="pulse-outline" size={16} color={colors.primary} />
+            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('WEEK {n} CHECK-IN', { n: checkIn.week })}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </View>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t('How is your skin doing?')}</Text>
+          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('10 seconds to see your progress.')}</Text>
+        </Pressable>
+      ) : null}
 
       {/* The tip for the week, from last week: just the advice, kindly. Her
           numbers live in My progress, where she goes when she wants them. */}

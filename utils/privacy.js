@@ -10,7 +10,7 @@ import { clearChatHistory } from './chat-service'
 // away, a discreet mode, a Face ID lock, and an optional "why are you leaving?".
 
 // ---------- A copy of my data, right now ----------
-const MY_TABLES = ['journal_entries', 'routines', 'routine_completions', 'routine_archive', 'user_products', 'rekod_plans', 'dekod_results', 'photos', 'chat_history', 'expenses', 'product_submissions', 'user_skin_conditions', 'app_events']
+const MY_TABLES = ['journal_entries', 'skin_checkins', 'routines', 'routine_completions', 'routine_archive', 'user_products', 'rekod_plans', 'dekod_results', 'photos', 'chat_history', 'expenses', 'product_submissions', 'user_skin_conditions', 'app_events']
 
 export const exportMyData = async (userId) => {
   const [{ data: account }, ...tables] = await Promise.all([

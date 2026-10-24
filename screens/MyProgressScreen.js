@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path, Circle, Line } from 'react-native-svg'
@@ -7,6 +7,9 @@ import { Screen, Card, useColors } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { getProgress, moodLabel } from '../utils/progress'
+import { getSkinTracking } from '../utils/skin-tracking'
+import { OVERALL } from '../utils/skin-tracking-core'
+import { PremiumBlur, usePremium } from '../components/PremiumLock'
 import { logError } from '../utils/errorLogger'
 import { SPACING, TYPE } from '../utils/theme'
 
@@ -25,12 +28,16 @@ export default function MyProgressScreen({ navigation }) {
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const [data, setData] = useState(null)
+  const [track, setTrack] = useState(null)
+  const premium = usePremium()
 
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
+    getSkinTracking(user.id).then(setTrack).catch(error => { logError('Tracking_load', error, {}, 'warn'); setTrack(null) })
     getProgress(user.id).then(setData).catch(error => { logError('Progress_load', error, {}, 'warn'); setData({ hasData: false, weeks: [], calendar: [], concerns: [] }) })
   }, [user?.id]))
 
+  const fmt = d => new Date(d).toLocaleDateString(language, { day: 'numeric', month: 'short' })
   if (!data) return <Screen back title={t('My progress')}><ActivityIndicator color={colors.primary} style={{ marginTop: SPACING.xxl }} /></Screen>
 
   // Mood curve: 4 weekly points, 1 (terrible) to 5 (great).
@@ -45,7 +52,7 @@ export default function MyProgressScreen({ navigation }) {
   }).join(' ')
 
   return (
-    <Screen back title={t('My progress')} subtitle={t('Your last 4 weeks')}>
+    <Screen back title={t('My progress')} subtitle={t('Your skin over time')}>
       {!data.hasData ? (
         <Card style={{ marginTop: SPACING.md }}>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Your progress starts here')}</Text>
@@ -53,6 +60,86 @@ export default function MyProgressScreen({ navigation }) {
             {t('Tick your routines and tell your journal how your skin feels: your progress will show here after a few days.')}
           </Text>
         </Card>
+      ) : null}
+
+      {/* 0 · Her start, the check-in every 2 weeks, and how her skin changed */}
+      {track?.status?.started ? (
+        <>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR SKIN BASELINE')}</Text>
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+              <View style={[styles.weekBadge, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('WEEK')}</Text>
+                <Text style={{ color: colors.primary, fontSize: 22, fontWeight: '800' }}>{track.status.week}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Started on {date}', { date: fmt(track.baseline) })}</Text>
+                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>
+                  {track.status.due ? t('Your check-in is ready: 10 seconds to see how your skin is doing.') : t('Next check-in on {date}', { date: fmt(track.status.next) })}
+                </Text>
+              </View>
+            </View>
+            {track.status.due ? (
+              <Pressable onPress={() => navigation.navigate('SkinCheckIn', { week: track.status.week })} style={[styles.cta, { backgroundColor: colors.primary }]}>
+                <Text style={{ color: colors.onPrimary, fontWeight: '700' }}>{t('How is your skin doing?')}</Text>
+              </Pressable>
+            ) : null}
+            {!track.firstScan ? (
+              <Pressable onPress={() => navigation.navigate('Dekod')} hitSlop={6} style={{ marginTop: SPACING.md }}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600' }]}>{t('Take a Dekod scan as your starting photo ›')}</Text>
+              </Pressable>
+            ) : null}
+            {track.checkins.length ? (
+              <View style={[styles.history, { borderTopColor: colors.border }]}>
+                {track.checkins.slice(0, 4).map(c => {
+                  const o = OVERALL.find(x => x.key === c.overall)
+                  return (
+                    <Text key={c.id} style={[TYPE.caption, { color: colors.textSecondary }]}>
+                      {fmt(c.created_at)} · {o ? `${o.emoji} ${t(o.label)}` : ''}{c.concerns?.length ? ` · ${c.concerns.map(x => t(x)).join(', ')}` : ''}
+                    </Text>
+                  )
+                })}
+              </View>
+            ) : null}
+          </Card>
+
+          <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR PROGRESS')}</Text>
+          <PremiumBlur locked={premium === false} title="See how each concern changed" text="Your breakouts, redness, dryness and shine, in numbers, and what may have helped.">
+            <Card>
+              {track.changes.length ? track.changes.map(c => {
+                const down = c.after < c.before
+                const good = down
+                const value = c.change === null ? t('New') : `${down ? '↓' : '↑'} ${Math.abs(c.change)}%`
+                return (
+                  <View key={c.key} style={styles.change}>
+                    <View style={[styles.swatch, { backgroundColor: colors[c.color] }]} />
+                    <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(c.label)}</Text>
+                    <Text style={{ fontWeight: '800', fontSize: 15, color: c.after === c.before ? colors.muted : good ? colors.success : colors.warning }}>{c.after === c.before ? '=' : value}</Text>
+                  </View>
+                )
+              }) : (
+                <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Fill in your journal at least 5 days in each of two 4-week periods: your numbers will show here.')}</Text>
+              )}
+              {track.changes.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Days with each concern in your journal, last 4 weeks against the 4 before.')}</Text> : null}
+
+              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t('What may have helped')}</Text>
+              {[...track.changed.helped.map(h => ({ icon: 'trending-down', color: colors.success, text: t('Your skin improved after you started {name} ({date}): {n}% fewer days with a concern.', { name: h.name, date: fmt(h.date), n: Math.abs(h.change) }) })),
+                ...track.changed.worse.map(w => ({ icon: 'alert-circle-outline', color: colors.warning, text: t('Redness rose after you added {name} ({date}).', { name: w.name, date: fmt(w.date) }) })),
+                ...track.changed.together.map(g => ({ icon: 'git-merge-outline', color: colors.primary, text: t('You started {n} products around {date} ({names}). Your skin changed, but we can’t tell which one made the difference. Next time, introduce one at a time.', { n: g.names.length, date: fmt(g.date), names: g.names.join(', ') }) })),
+              ].map((x, i) => (
+                <View key={i} style={styles.insight}>
+                  <Ionicons name={x.icon} size={16} color={x.color} style={{ marginTop: 2 }} />
+                  <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{x.text}</Text>
+                </View>
+              ))}
+              {!track.changed.helped.length && !track.changed.worse.length && !track.changed.together.length ? (
+                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t('Nothing clear yet. A new product needs about 4 weeks, and a few journal days before and after, before we can see a link.')}</Text>
+              ) : (
+                <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>{t('Links seen in your own journal, not medical proof.')}</Text>
+              )}
+            </Card>
+          </PremiumBlur>
+        </>
       ) : null}
 
       {/* 1 · Skin mood */}
@@ -144,5 +231,11 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.md },
   dot: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, overflow: 'hidden' },
   half: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '50%' },
+  weekBadge: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  cta: { marginTop: SPACING.md, borderRadius: 999, height: 44, alignItems: 'center', justifyContent: 'center' },
+  history: { marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: StyleSheet.hairlineWidth, gap: 4 },
+  change: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: 6 },
+  swatch: { width: 10, height: 10, borderRadius: 5 },
+  insight: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start', marginTop: SPACING.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.md },
 })
