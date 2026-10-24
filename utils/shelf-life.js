@@ -10,7 +10,7 @@ export const defaultPaoMonths = (product) => {
   const ids = new Set(findIngredients(product || {}).map(f => f.entry.id))
   if (ids.has('vitaminc') && product?.category === 'serum') return 3 // oxidises fast
   if (ids.has('retinol')) return 6
-  return { serum: 6, 'eye care': 6, sunscreen: 12, moisturizer: 12, cleanser: 12, toner: 12, exfoliant: 12, mask: 12 }[product?.category] || 12
+  return { serum: 6, 'eye care': 6, 'lip care': 12, sunscreen: 12, moisturizer: 12, cleanser: 12, toner: 12, exfoliant: 12, mask: 12 }[product?.category] || 12
 }
 
 const addMonths = (date, months) => {

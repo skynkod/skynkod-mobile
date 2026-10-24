@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Linking } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, EmptyState, useColors } from '../components/ui'
 import MatchBadge from '../components/MatchBadge'
@@ -61,6 +61,11 @@ export default function IngredientScreen({ navigation, route }) {
 
       <Text style={[styles.section, { color: colors.muted }]}>{t('WHAT IT DOES')}</Text>
       <Text style={[TYPE.body, { color: colors.text }]}>{t(entry.what)}</Text>
+      {entry.source ? (
+        <Pressable onPress={() => Linking.openURL(entry.source.url)} hitSlop={6} style={{ marginTop: SPACING.sm }}>
+          <Text style={[TYPE.caption, { color: colors.primary, lineHeight: 17 }]}>{t('Study')}: {entry.source.label}</Text>
+        </Pressable>
+      ) : null}
 
       {/* A niche ingredient for a free user: the line above is the teaser; the
           pregnancy note stays visible because it is safety. */}

@@ -75,6 +75,10 @@ export const INGREDIENTS = [
   I('kojic', 'Kojic acid', ['kojic acid'], 'Brightens and fades dark spots.', ['Dark spots', 'Melasma'], { irritancy: 2 }),
   I('hydroquinone', 'Hydroquinone', ['hydroquinone'], 'Strong skin lightener, usually on prescription.', ['Melasma', 'Dark spots'], { irritancy: 3, tags: ['pregnancy-avoid'] }),
   I('peptides', 'Peptides', ['peptide', 'palmitoyl', 'acetyl hexapeptide', 'matrixyl', 'copper tripeptide'], 'Help skin look firmer and smoother.', ['Fine lines', 'Normal', 'Dry']),
+  // The three peptides of the eye-care step (Lita, 2026-10-24), each with its study.
+  I('argireline', 'Argireline', ['acetyl hexapeptide-8', 'acetyl hexapeptide-3', 'argireline', 'acetyl octapeptide-3'], 'Softens the look of expression lines, like crow’s feet, by calming the small muscle contractions that crease the skin.', ['Fine lines', 'Normal', 'Dry', 'Combination'], { source: { label: 'Blanes-Mira C et al. A synthetic hexapeptide (Argireline) with antiwrinkle activity. Int J Cosmet Sci 2002', url: 'https://pubmed.ncbi.nlm.nih.gov/18498523/' } }),
+  I('matrixyl', 'Matrixyl', ['palmitoyl pentapeptide-4', 'palmitoyl tripeptide-1', 'palmitoyl tetrapeptide-7', 'matrixyl', 'palmitoyl oligopeptide'], 'Signals the skin to make more collagen, for skin that looks firmer and smoother over time.', ['Fine lines', 'Normal', 'Dry', 'Combination', 'Sensitive'], { source: { label: 'Robinson LR et al. Topical palmitoyl pentapeptide provides improvement in photoaged human facial skin. Int J Cosmet Sci 2005', url: 'https://pubmed.ncbi.nlm.nih.gov/18492182/' } }),
+  I('copperpeptides', 'Copper peptides', ['copper tripeptide-1', 'ghk-cu', 'copper peptide'], 'Help firm thin skin and support its repair. Use them at a different time from pure vitamin C and strong acids.', ['Fine lines', 'Normal', 'Dry', 'Sensitive'], { source: { label: 'Pickart L et al. GHK peptide as a natural modulator of multiple cellular pathways in skin regeneration. Biomed Res Int 2015', url: 'https://pubmed.ncbi.nlm.nih.gov/26236730/' } }),
   I('ferulic', 'Ferulic acid', ['ferulic acid'], 'Antioxidant that boosts vitamins C and E.', ['Fine lines', 'Dullness']),
   I('vitamine', 'Vitamin E', ['tocopherol', 'tocopheryl'], 'Antioxidant that protects and softens.', ['Dry', 'Fine lines']),
 
@@ -118,7 +122,7 @@ export const getIngredient = id => byId[id]
 
 // Niche ingredients are Premium "to discover" (Lita, 2026-10-19): the name and
 // one line stay free. Well-known and caution ingredients are always free.
-export const PREMIUM_INGREDIENTS = new Set(['betaglucan', 'polyglutamic', 'ectoin', 'allantoin', 'oat', 'cholesterol', 'jojoba', 'rosehip', 'bisabolol', 'licorice', 'heartleaf', 'mugwort', 'propolis', 'ginseng', 'rice', 'zinc', 'zincpyrithione', 'sulfur', 'lactic', 'mandelic', 'pha', 'azelaic', 'bakuchiol', 'arbutin', 'txa', 'kojic', 'peptides', 'ferulic', 'hydrocolloid'])
+export const PREMIUM_INGREDIENTS = new Set(['betaglucan', 'polyglutamic', 'ectoin', 'allantoin', 'oat', 'cholesterol', 'jojoba', 'rosehip', 'bisabolol', 'licorice', 'heartleaf', 'mugwort', 'propolis', 'ginseng', 'rice', 'zinc', 'zincpyrithione', 'sulfur', 'lactic', 'mandelic', 'pha', 'azelaic', 'bakuchiol', 'arbutin', 'txa', 'kojic', 'peptides', 'argireline', 'matrixyl', 'copperpeptides', 'ferulic', 'hydrocolloid'])
 export const isPremiumIngredient = id => PREMIUM_INGREDIENTS.has(id)
 
 const productList = product => {

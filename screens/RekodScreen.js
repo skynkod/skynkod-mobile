@@ -847,7 +847,7 @@ const NIGHT_WORDS = {
 }
 const GOAL_END = { clear: 'Clearer skin, fewer breakouts', antiaging: 'Smoother skin, softer fine lines', spots: 'Visibly faded spots, a more even tone', glow: 'Brighter, smoother skin', pores: 'Less visible pores, less shine', calm: 'Calmer, more comfortable skin', hydration: 'Comfortable, hydrated skin' }
 const GOAL_ICONS = { clear: 'water-outline', antiaging: 'hourglass-outline', spots: 'contrast-outline', glow: 'sunny-outline', pores: 'grid-outline', calm: 'leaf-outline', hydration: 'rainy-outline' }
-const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'sparkles-outline', treatment: 'moon-outline' }
+const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'sparkles-outline', treatment: 'moon-outline', eye: 'eye-outline', lips: 'happy-outline', lipscrub: 'sparkles-outline', lipmask: 'moon-outline' }
 
 function Ring({ progress, label, sub }) {
   const size = 104, stroke = 9, r = (size - stroke) / 2, c = 2 * Math.PI * r

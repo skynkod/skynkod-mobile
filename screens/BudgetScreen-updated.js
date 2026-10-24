@@ -19,7 +19,7 @@ const firstOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
 const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 const CATEGORY_LABELS = {
   cleanser: 'Cleansers', toner: 'Toners', serum: 'Serums', moisturizer: 'Moisturizers', sunscreen: 'SPF',
-  exfoliant: 'Exfoliants', mask: 'Masks', 'eye care': 'Eye care', body: 'Body', 'hand care': 'Hand care', other: 'Other',
+  exfoliant: 'Exfoliants', mask: 'Masks', 'eye care': 'Eye care', 'lip care': 'Lip care', body: 'Body', 'hand care': 'Hand care', other: 'Other',
 };
 const perUse = (price, category) => `${(Math.round(costPerUse(price, category) * 10) / 10).toLocaleString('fr-MA')} MAD`;
 

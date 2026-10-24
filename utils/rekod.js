@@ -335,12 +335,19 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant })
   const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50 } : { ...gentle, prefer: spf50 })
   const amSerum = plan.maintenance && plan.maintenanceMode === 'simple' ? null : await pick(['serum', 'toner'], { ...gentle, want: amWant, wantRequired: true, unique: true })
+  // Eyes (essential, Lita 2026-10-24): peptides every day; lips: an SPF balm by day.
+  const PEPTIDES = ['argireline', 'matrixyl', 'copperpeptides', 'peptides']
+  const eyePeptide = await pick(['eye care'], { ...gentle, want: PEPTIDES, wantRequired: true, unique: true })
+    || await pick(['eye care'], { ...gentle, unique: true })
+  const lipSpf = await pick(['lip care'], { want: ['zincoxide', 'titanium', 'chemicalspf'], wantRequired: true, unique: true })
 
   const morning = [
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     amSerum && stepFrom('serum', 'Serum', amSerum, { cats: ['serum', 'toner'] }, amWant),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'] }, PEPTIDES),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
     stepFrom('sunscreen', 'SPF 50', sunscreen, { cats: ['sunscreen'] }, ['zincoxide', 'titanium', 'chemicalspf']),
+    lipSpf && stepFrom('lips', 'Lips · SPF', lipSpf, { cats: ['lip care'] }, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
   const week = weekPattern(plan)
@@ -355,13 +362,31 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const strength = plan.experience === 'used' && !plan.sensitive ? null : plan.experience === 'some' && !plan.sensitive ? midStrength : gentleStrength
   const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, wantRequired: true, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
   const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, wantRequired: true, unique: true })
+  // Eyes at night: a retinoid eye cream on the retinoid nights (never in pregnancy,
+  // calm phase or reactive start), peptides on the other nights.
+  const eyeRetinoid = retinoidWant[0] === 'retinol' && !plan.sensitive
+    ? await pick(['eye care'], { want: ['retinol'], wantRequired: true, unique: true, prefer: strength })
+    : null
+  const retinoidNights = daysFor('retinoid')
+  const peptideNights = eyeRetinoid && retinoidNights.length ? JS_DAY.filter(d => !retinoidNights.includes(d)) : null
+  // Lips: a nourishing balm every night; a lip scrub and a lip mask once or twice a week.
+  const lipBalm = await pick(['lip care'], { ...gentle, unique: true, prefer: p => !/scrub|exfoli|gommage|mask|masque|sleeping/i.test(p.name || '') })
+  const lipScrub = await pick(['lip care'], { unique: true, prefer: p => /scrub|exfoli|gommage/i.test(p.name || ''), strictOnly: false })
+  const lipMask = await pick(['lip care'], { ...gentle, unique: true, prefer: p => /mask|masque|sleeping|overnight/i.test(p.name || '') })
+  const isScrub = c => c && /scrub|exfoli|gommage/i.test(c.product.name || '')
+  const isMask = c => c && /mask|masque|sleeping|overnight/i.test(c.product.name || '')
 
   const evening = [
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exWant),
     daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
+    eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'] }, ['retinol']),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'] }, PEPTIDES),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
+    isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'] }),
+    lipBalm && stepFrom('lips', 'Lips', lipBalm, { cats: ['lip care'] }),
+    isMask(lipMask) && stepFrom('lipmask', 'Lip mask', lipMask, { days: [0, 4], night: 'lip-mask', cats: ['lip care'] }),
   ].filter(Boolean)
 
   // Her own decisions about flagged steps: removed ones stay out, accepted ones

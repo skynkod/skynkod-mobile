@@ -108,10 +108,10 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     }
     setSlots(prev => {
       if (prev.some(slot => slot.uid === picked.uid)) {
-        return prev.map(slot => (slot.uid === picked.uid ? { ...slot, product: picked.product, days: suggestedDays(picked.product, period) } : slot))
+        return prev.map(slot => (slot.uid === picked.uid ? { ...slot, product: picked.product, days: suggestedDays(picked.product, period, picked.stepKey, prev) } : slot))
       }
       // New slot goes after the others of its kind, in routine order.
-      const next = [...prev, { uid: picked.uid, key: picked.stepKey, product: picked.product, days: suggestedDays(picked.product, period) }]
+      const next = [...prev, { uid: picked.uid, key: picked.stepKey, product: picked.product, days: suggestedDays(picked.product, period, picked.stepKey, prev) }]
       return next
         .map((slot, i) => ({ slot, i }))
         .sort((a, b) => STEP_ORDER.indexOf(a.slot.key) - STEP_ORDER.indexOf(b.slot.key) || a.i - b.i)

@@ -25,6 +25,8 @@ const SHAPES = {
   // Small tube with an eye
   'eye care': c => (<><Path d="M11 3h10l-1 19h-8z" stroke={c} /><Rect x="13" y="22" width="6" height="6" rx="1" stroke={c} /><Path d="M13 12q3-3 6 0q-3 3-6 0z" stroke={c} /><Circle cx="16" cy="12" r="0.9" fill={c} /></>),
 }
+// Lip balm stick
+SHAPES['lip care'] = c => (<><Rect x="11" y="13" width="10" height="16" rx="2" stroke={c} /><Path d="M12 13V8l8-3v8" stroke={c} /><Path d="M11 18h10" stroke={c} /></>)
 SHAPES.body = SHAPES.cleanser
 SHAPES['hand care'] = c => (<><Path d="M9 3h14l-2 21H11z" stroke={c} /><Rect x="12" y="24" width="8" height="5" rx="1" stroke={c} /></>)
 

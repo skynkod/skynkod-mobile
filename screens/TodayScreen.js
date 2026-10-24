@@ -27,6 +27,7 @@ import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
 import SkinForecast from '../components/SkinForecast'
 import { usePremium } from '../components/PremiumLock'
+import { spacingState, spaceActives, restoreActives, dismissSpacing } from '../utils/active-spacing'
 import { currentSeason, SEASONS } from '../utils/seasons'
 import * as Location from 'expo-location'
 import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
@@ -97,6 +98,21 @@ export default function TodayScreen({ navigation }) {
   const [forecastDays, setForecastDays] = useState(null)
   const [patterns, setPatterns] = useState(null)
   const premium = usePremium()
+  // Reactions this week with actives in the routine: offer to space them.
+  const [spacing, setSpacing] = useState(null)
+  useFocusEffect(useCallback(() => { if (user?.id) spacingState(user.id).then(setSpacing).catch(() => setSpacing(null)) }, [user?.id]))
+  const onSpacing = async (action) => {
+    try {
+      if (action === 'space') await spaceActives(user.id)
+      else if (action === 'restore') await restoreActives(user.id)
+      else await dismissSpacing(user.id)
+      setSpacing(null)
+      if (action !== 'dismiss') load()
+    } catch (error) {
+      logError('Today_spacing', error)
+      Alert.alert(t('Error'), t("Couldn't save your routine. Try again."))
+    }
+  }
   // Pregnancy mode, re-read on focus so a change in "Your skin right now" shows at once.
   const [pregnancy, setPregnancy] = useState(null)
   useFocusEffect(useCallback(() => { if (user?.id) getUserProfile(user.id).then(r => setPregnancy(r?.pregnancy || null)).catch(() => {}) }, [user?.id]))
@@ -314,6 +330,8 @@ export default function TodayScreen({ navigation }) {
         </Pressable>
         {isOpen ? (
           <View style={{ marginTop: SPACING.sm }}>
+            {/* The neck too (Lita, 2026-10-24) */}
+            <Text style={[TYPE.caption, { color: colors.muted, marginBottom: SPACING.xs }]}>{t('On your face and neck, then your eyes and lips.')}</Text>
             {stepsOf(period).map((s, i) => (
               <View key={`${s.key}-${i}`} style={[styles.stepRow, { borderTopColor: colors.border }]}>
                 <Pressable onPress={() => toggle(period, i)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: !!done[period][i] }}
@@ -419,6 +437,29 @@ export default function TodayScreen({ navigation }) {
           <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
         </Pressable>
       </View>
+
+      {/* Her skin reacted: space the actives for 2 weeks, then bring them back */}
+      {spacing ? (
+        <View style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Ionicons name={spacing.kind === 'offer' ? 'pulse-outline' : 'leaf-outline'} size={16} color={colors.primary} />
+            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{spacing.kind === 'offer' ? t('YOUR SKIN REACTED') : t('TWO CALMER WEEKS')}</Text>
+          </View>
+          <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+            {spacing.kind === 'offer'
+              ? t('Redness, itching or peeling on {n} days this week. Let’s space your actives for 2 weeks: retinol on Monday and Thursday, acids on Saturday.', { n: spacing.days })
+              : t('Your actives have been spaced for 2 weeks. Bring your usual schedule back?')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
+            <Pressable onPress={() => onSpacing(spacing.kind === 'offer' ? 'space' : 'restore')} style={[styles.emptyBtn, { flex: 1, backgroundColor: colors.primary }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{spacing.kind === 'offer' ? t('Space them') : t('Bring them back')}</Text>
+            </Pressable>
+            <Pressable onPress={() => onSpacing('dismiss')} style={[styles.emptyBtn, { flex: 1, borderWidth: 1, borderColor: colors.border }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{spacing.kind === 'offer' ? t('Not now') : t('Keep spaced')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {/* 2 · The routine due now */}
       <Text style={[styles.section, { color: colors.muted }]}>{now === 'morning' ? t('This morning') : t('Tonight')}</Text>

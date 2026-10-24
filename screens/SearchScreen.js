@@ -16,7 +16,7 @@ import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // What each product is, in plain English, next to names that may be in French.
-const CATEGORY_LABEL = { cleanser: 'Cleanser', toner: 'Toner', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'Sunscreen', exfoliant: 'Exfoliant', mask: 'Mask', 'eye care': 'Eye care' }
+const CATEGORY_LABEL = { cleanser: 'Cleanser', toner: 'Toner', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'Sunscreen', exfoliant: 'Exfoliant', mask: 'Mask', 'eye care': 'Eye care', 'lip care': 'Lip care' }
 const POPULAR = ['Niacinamide', 'Retinol', 'Vitamin C', 'Hyaluronic acid', 'Centella', 'Salicylic acid']
 
 // One search box for products and ingredients; each result shows how well it

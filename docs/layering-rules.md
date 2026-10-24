@@ -33,6 +33,10 @@ Document destiné au ou à la dermatologue (ou pharmacien·ne) qui relit le guid
 | 10 | Ne pas utiliser la vitamine C en même temps que des acides exfoliants (AHA) : à des moments différents. | Cleveland Clinic |
 | 11 | Traitements localisés (acide salicylique, peroxyde de benzoyle) sur les boutons juste après le nettoyage ; porter un écran solaire, car ils peuvent augmenter la sensibilité au soleil. | Cleveland Clinic |
 | 12 | Trop de produits anti-âge à la fois peuvent irriter : un seul actif fort par soir suffit. | AAD |
+| 13 | Le cou vieillit comme le visage : y appliquer nettoyant, sérums, crème et écran solaire. Avec le rétinol, commencer sur le cou une fois que le visage le tolère bien. | AAD |
+| 14 | Les lèvres brûlent aussi : au soleil, un baume à lèvres avec SPF, à renouveler souvent. | AAD, How to apply sunscreen |
+| 15 | Contour des yeux (ajouté le 24/10/2026) : peptides chaque jour (Argireline, Matrixyl, peptides de cuivre) ; rétinol ou rétinal pour les yeux le soir uniquement, 2 à 3 soirs par semaine, sur l'os orbital et pas sur la paupière ; les autres soirs, la crème aux peptides. | Études citées dans le guide des ingrédients ; règles 7 et 8 |
+| 16 | Lèvres : gommage doux 1 à 2 fois par semaine, masque à lèvres épais la nuit 1 à 2 fois par semaine. | À valider par la relectrice |
 
 ## 2. Comment l'app range les produits
 
@@ -49,6 +53,9 @@ Les produits sont classés par « couche », du plus fluide au plus épais. À r
 9. Crème hydratante
 10. Masque de nuit (dernière étape du soir)
 11. Écran solaire (dernière étape du matin)
+12. Lèvres : gommage (1 à 2 fois par semaine), puis baume (SPF le matin), puis masque à lèvres la nuit (1 à 2 fois par semaine)
+
+Les produits pour les yeux et les lèvres ne comptent pas comme « actif fort » du visage dans le tableau des soirs.
 
 Les masques à rincer : « après le nettoyage, selon l'étiquette, puis rincer et continuer la routine ».
 

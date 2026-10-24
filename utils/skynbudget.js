@@ -81,7 +81,7 @@ export const updatePurchase = async (id, { price, store, date }) => {
 }
 
 // Roughly how many uses a typical pack lasts, by category (estimate).
-const USES = { serum: 120, moisturizer: 100, cleanser: 150, sunscreen: 60, toner: 150, 'eye care': 150, exfoliant: 40, mask: 25, body: 60, 'hand care': 100, other: 80 }
+const USES = { serum: 120, moisturizer: 100, cleanser: 150, sunscreen: 60, toner: 150, 'eye care': 150, 'lip care': 120, exfoliant: 40, mask: 25, body: 60, 'hand care': 100, other: 80 }
 export const costPerUse = (price, category) => {
   const uses = USES[category] || USES.other
   return Number(price) / uses
@@ -101,7 +101,7 @@ export const setMonthlyBudget = (userId, amount) => updateUserProfile(userId, { 
 
 const CATEGORY_NAMES = {
   cleanser: 'cleansers', toner: 'toners', serum: 'serums', moisturizer: 'moisturizers', sunscreen: 'sunscreens',
-  exfoliant: 'exfoliants', mask: 'masks', 'eye care': 'eye creams', body: 'body products', 'hand care': 'hand creams', other: 'other products',
+  exfoliant: 'exfoliants', mask: 'masks', 'eye care': 'eye creams', 'lip care': 'lip balms', body: 'body products', 'hand care': 'hand creams', other: 'other products',
 }
 
 // Insights, most useful first: [{ icon, text }].

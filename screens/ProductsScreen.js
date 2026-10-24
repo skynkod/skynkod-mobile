@@ -23,6 +23,7 @@ const FILTERS = [
   { value: 'toner', label: 'Toners' },
   { value: 'serum', label: 'Serums' },
   { value: 'eye care', label: 'Eye care' },
+  { value: 'lip care', label: 'Lip care' },
   { value: 'moisturizer', label: 'Moisturizers' },
   { value: 'sunscreen', label: 'SPF' },
   { value: 'exfoliant', label: 'Exfoliants' },

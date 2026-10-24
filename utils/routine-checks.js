@@ -33,13 +33,30 @@ export const activesOf = (product) => {
 }
 
 // A sensible starting schedule for strong products.
-export const suggestedDays = (product, period) => {
+// `stepKey` and `others` (the routine's other slots) let the eye and lip steps
+// rotate: eye retinoid 2–3 nights a week with peptides on the other nights,
+// lip scrub and lip mask once or twice a week (Lita, 2026-10-24).
+export const suggestedDays = (product, period, stepKey = null, others = []) => {
   const a = activesOf(product)
+  if (stepKey === 'lipscrub') return [3]
+  if (stepKey === 'lipmask') return [0, 4]
+  if (stepKey === 'eye' && period === 'evening') {
+    const otherEye = others.filter(o => o.key === 'eye' && o.product && o.product.id !== product?.id)
+    const retinoidNights = [1, 3, 5]
+    if (a.retinoid) return retinoidNights
+    // Peptides on the nights without the eye retinoid.
+    if (otherEye.some(o => activesOf(o.product).retinoid)) return EVERY_DAY.filter(d => !retinoidNights.includes(d))
+    return EVERY_DAY
+  }
   if (product?.category === 'mask') return [0]
   if (a.retinoid) return period === 'evening' ? [1, 3, 5] : EVERY_DAY
   if (a.exfoliant) return [2, 6]
   return EVERY_DAY
 }
+
+// Eye and lip products sit on their own small area: they don't count as the
+// face's strong actives in the clash checks.
+const faceOnly = product => !['eye care', 'lip care'].includes(product?.category)
 
 const overlap = (x, y) => daysOf(x).filter(d => daysOf(y).includes(d))
 
@@ -53,13 +70,15 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
     .filter(i => i.product)
     .map(i => ({ ...i, a: activesOf(i.product) }))
 
-  const retinoids = items.filter(i => i.a.retinoid)
-  const acids = items.filter(i => i.a.acid && !i.a.retinoid)
-  const exfoliants = items.filter(i => i.a.exfoliant)
+  const face = items.filter(i => faceOnly(i.product))
+  const retinoids = face.filter(i => i.a.retinoid)
+  const acids = face.filter(i => i.a.acid && !i.a.retinoid)
+  const exfoliants = face.filter(i => i.a.exfoliant)
 
   // Retinol in the morning: sunlight breaks it down and skin gets more sensitive.
   if (period === 'morning') {
-    for (const r of retinoids) {
+    // Eye creams with retinol too: sunlight breaks retinol down wherever it is.
+    for (const r of items.filter(i => i.a.retinoid)) {
       issues.push({
         key: 'retinol-morning',
         stepIndex: r.index,
