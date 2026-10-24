@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { currentRoutine } from './current-routine'
 import { getAcceptedContributions } from './contributions'
 import { supabase } from './supabase'
@@ -10,6 +9,7 @@ import { questionsFor, fromRow } from './skin-quiz'
 import { BASICS } from './encyclopedia/basics'
 import { logError } from './errorLogger'
 import { getVerdicts } from './expectation-verdicts'
+import { loadState, saveState } from './cloud-state'
 import {
   VISIBLE_BADGES, canEarn, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
   levelFor, streakFrom, weekStart, dayKey, addDays, activeDaysIn, boxContents,
@@ -19,7 +19,7 @@ import {
 // plus the pages she read (kept on the phone), then awards XP, badges and
 // challenges once each. Nothing is ever taken back.
 //
-// Stored on the phone (key journey_<userId>):
+// Stored on the phone and in her account (user_state 'journey'):
 //   events   { key: { xp, at } }       every XP ever given, one per unique key
 //   badges   { id: { at } }            earned badges
 //   ingredients / productPages / opened  { id: firstTimestamp }
@@ -30,7 +30,6 @@ import {
 //   stars    [{ week, at }]            seniority stars, one per active week
 //   comeback true once the Welcome Back badge was given
 
-const key = userId => `journey_${userId}`
 // Bump when the XP or badge rules change before launch: XP and badges are
 // then recalculated from her real activity, quietly (no unlock screens).
 const RULES_VERSION = 2
@@ -38,9 +37,10 @@ const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}
 
 export const loadJourney = async (userId) => {
   try {
-    const raw = await AsyncStorage.getItem(key(userId))
+    // On the phone and in her account: a new phone gets her badges and XP back.
+    const raw = await loadState(userId, 'journey', null)
     if (!raw) return { ...fresh(), rules: RULES_VERSION }
-    const state = { ...fresh(), ...JSON.parse(raw) }
+    const state = { ...fresh(), ...raw }
     // Older saves kept one share timestamp.
     if (state.shared && !state.shares.length) state.shares = [state.shared]
     delete state.shared
@@ -54,7 +54,7 @@ export const loadJourney = async (userId) => {
     return state
   } catch { return { ...fresh(), rules: RULES_VERSION } }
 }
-const save = (userId, state) => AsyncStorage.setItem(key(userId), JSON.stringify(state)).catch(() => {})
+const save = (userId, state) => saveState(userId, 'journey', state)
 
 // One update at a time, so two quick syncs can't award the same thing twice.
 let queue = Promise.resolve()

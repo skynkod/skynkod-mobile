@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react'
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { loadState, saveState } from '../utils/cloud-state'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { useColors } from './ui'
@@ -19,8 +19,6 @@ import { SPACING, RADIUS, TYPE } from '../utils/theme'
 // "Consider stopping" (Lita, 2026-10-24): the data each screen needs (her
 // routines, the journal's reactions, what she chose to keep), and the card.
 
-const keptKey = userId => `stop_kept_${userId}`
-
 export const useStopAdvice = (userId, profile) => {
   const premium = usePremium()
   const [ctx, setCtx] = useState({ routines: [], products: [], reactions: {}, kept: {}, verdicts: {} })
@@ -30,7 +28,7 @@ export const useStopAdvice = (userId, profile) => {
       const [res, reactions, kept, verdicts] = await Promise.all([
         getUserRoutines(userId),
         getProductReactions(userId).catch(() => []),
-        AsyncStorage.getItem(keptKey(userId)).then(v => JSON.parse(v || '{}')).catch(() => ({})),
+        loadState(userId, 'stop_kept', {}),
         getVerdicts(userId).catch(() => ({})),
       ])
       const routines = res.success ? res.data || [] : []
@@ -65,7 +63,7 @@ export const useStopAdvice = (userId, profile) => {
   const keep = async (product, kind) => {
     const kept = { ...ctx.kept, [`${product.id}:${kind}`]: Date.now() }
     setCtx(c => ({ ...c, kept }))
-    AsyncStorage.setItem(keptKey(userId), JSON.stringify(kept)).catch(() => {})
+    saveState(userId, 'stop_kept', kept)
   }
   return { premium, adviceFor, inRoutine, stop, keep, reload: load, routines: ctx.routines, routineProducts: ctx.products, reactions: ctx.reactions, verdicts: ctx.verdicts }
 }

@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { useColors } from './ui'
@@ -12,7 +11,7 @@ import { SPACING, TYPE } from '../utils/theme'
 // "Your expectations" under each product in her routines (Lita, 2026-10-24):
 // how long she has used it, and when it's fair to judge it. Free.
 
-import { verdictKey, getVerdicts } from '../utils/expectation-verdicts'
+import { verdictKey, getVerdicts, saveVerdicts } from '../utils/expectation-verdicts'
 import { trackVerdict } from '../utils/journey'
 import { markAsked, canAskAgain } from '../utils/ask-pace'
 
@@ -39,7 +38,7 @@ export const useExpectations = (userId, productIds = []) => {
   const answer = async (productId, value) => {
     const verdicts = { ...state.verdicts, [productId]: { value, at: Date.now() } }
     setState(s => ({ ...s, verdicts }))
-    await AsyncStorage.setItem(verdictKey(userId), JSON.stringify(verdicts)).catch(() => {})
+    await saveVerdicts(userId, verdicts)
     trackVerdict(userId)
     markAsked(userId)
     setState(s => ({ ...s, canAsk: false }))

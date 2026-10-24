@@ -256,7 +256,7 @@ export default function TodayScreen({ navigation, route }) {
   useEffect(() => {
     if (!coords) return
     getWeatherNow(coords).then(setWeather).catch(() => {})
-    getForecastWeather(coords).then(days => { setForecastDays(days); return getEnvironment(coords, days?.[0]) }).then(setEnvironment).catch(() => {})
+    getForecastWeather(coords).then(days => { setForecastDays(days); return getEnvironment(user?.id, coords, days?.[0]) }).then(setEnvironment).catch(() => {})
   }, [coords?.latitude, coords?.longitude])
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false) }
