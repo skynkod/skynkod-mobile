@@ -536,7 +536,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   } else {
     content = (
       <>
-        <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Your skin profile')}</Text>
+        <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Your Skyn Profile')}</Text>
         <Text style={[styles.headline, { color: colors.text, marginTop: SPACING.sm }]}>
           {firstName.trim() ? t('Nice to meet you, {name}.', { name: firstName.trim() }) : t('Nice to meet your skin.')}
         </Text>

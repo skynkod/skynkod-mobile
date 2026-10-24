@@ -9,7 +9,7 @@ import { SPACING } from '../utils/theme'
 // follow her skin instead of three pages in the profile.
 const TABS = [
   { value: 'Progress', label: 'Progress' },
-  { value: 'SkinTimeline', label: 'Timeline' },
+  { value: 'SkinTimeline', label: 'Skyn Timeline' },
   { value: 'SkinReport', label: 'Report' },
 ]
 

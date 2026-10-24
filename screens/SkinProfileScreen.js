@@ -54,7 +54,7 @@ export default function SkinProfileScreen({ navigation }) {
   const suspected = health ? suspicionsFrom(answers) : []
 
   return (
-    <Screen back title={t('My skin profile')} subtitle={t('Change any answer, anytime.')}>
+    <Screen back title={t('My Skyn Profile')} subtitle={t('Change any answer, anytime.')}>
       <View style={[styles.summary, { backgroundColor: colors.primarySoft }]}>
         <Text style={[TYPE.overline, { color: colors.primary }]}>{t('Your skin type')}</Text>
         <Text style={[TYPE.heading, { color: colors.text, marginTop: 2 }]}>

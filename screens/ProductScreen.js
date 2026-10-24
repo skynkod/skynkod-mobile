@@ -179,7 +179,7 @@ export default function ProductScreen({ navigation, route }) {
           <View style={{ flex: 1 }}>
             <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.label)}</Text>
             <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>
-              {profile?.skin_type ? t('Compared with your skin profile') : t('Add your skin type for a personal match')}
+              {profile?.skin_type ? t('Compared with your Skyn Profile') : t('Add your skin type for a personal match')}
             </Text>
           </View>
         </View>

@@ -102,7 +102,7 @@ const fr = {
   'An even skin tone': 'Un teint unifié',
   'Smoother, firmer skin': 'Une peau plus lisse et ferme',
   'A routine I actually stick to': 'Une routine que je tiens vraiment',
-  'Your skin profile': 'Ton profil de peau',
+  'Your Skyn Profile': 'Ton Skyn Profile',
   'Nice to meet your skin.': 'Ta peau n’a plus de secrets.',
   'Skin type': 'Type de peau',
   'To discover': 'À découvrir',

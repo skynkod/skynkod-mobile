@@ -35,7 +35,7 @@ export default function ShelfReview({ rows = [], profile, stop, style }) {
 
   return (
     <Card style={style}>
-      <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR SHELF')} · {t('{n} products', { n: total })}</Text>
+      <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR SKYN SHELF')} · {t('{n} products', { n: total })}</Text>
       <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{verdict}</Text>
       <View style={{ marginTop: SPACING.md }}>
         {SHELF_GROUPS.map(g => {
