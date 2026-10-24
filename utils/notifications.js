@@ -54,9 +54,9 @@ const TEXT = {
   eveningRamadan: { en: 'Your evening routine 🌙 And drink enough water before bed 💧', fr: "Ta routine du soir 🌙 Et pense à bien t'hydrater avant de dormir 💧" },
   journal: { en: 'How is your skin this morning? 🌸', fr: 'Comment va ta peau ce matin ? 🌸' },
   water: [
-    { en: 'A glass of water? 💧 Tap the glass on Home.', fr: 'Un verre d’eau ? 💧 Touche le verre sur l’accueil.' },
-    { en: 'Halfway through the day: how many glasses so far? 💧', fr: 'Mi-journée : combien de verres jusqu’ici ? 💧' },
-    { en: 'One more glass before dinner? 💧', fr: 'Un dernier verre avant le dîner ? 💧' },
+    { en: 'A glass of water? Your skin will thank you 💧', fr: 'Un verre d’eau ? Ta peau te dit merci 💧' },
+    { en: 'Time for a glass of water 💧', fr: 'C’est le moment d’un verre d’eau 💧' },
+    { en: 'One more glass of water before dinner? 💧', fr: 'Un dernier verre d’eau avant le dîner ? 💧' },
   ],
 }
 
