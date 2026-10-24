@@ -19,6 +19,7 @@ import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
 import { getActivePlan } from '../utils/emergency-state'
 import { isReactiveState, stateLabel, REACTIVE as REACTIVE_STATES } from '../utils/skin-state'
+import { prioritiesOf } from '../utils/skin-quiz'
 import { syncSmartReminders } from '../utils/notifications'
 import {
   GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
@@ -246,7 +247,11 @@ export default function RekodScreen({ navigation }) {
       const sp = row?.skin_profile || {}
       setKnown({ reactivity: sp.reactivity, actives: sp.actives })
       const fromSignup = { clear: 'clear', hydration: 'hydration', even_tone: 'spots', anti_aging: 'antiaging' }
-      setPicked(prev => (prev.length ? prev : (row?.skin_goals || []).map(g => fromSignup[g]).filter(Boolean).reduce((list, g) => (list.length < 3 && !conflictWith(list, g) && !list.includes(g) ? [...list, g] : list), [])))
+      // Her main then secondary concern lead the goal list (Lita, 2026-10-24).
+      const fromConcern = { Acne: 'clear', 'Dark spots': 'spots', 'Fine lines': 'antiaging', Redness: 'calm', Sensitivity: 'calm', Dryness: 'hydration', Dullness: 'glow', 'Large pores': 'pores' }
+      const { main, second } = prioritiesOf({ concerns: sp.concerns || row?.skin_concerns || [], priority: sp.priority, secondary: sp.secondary })
+      const first = [main, second].map(c => fromConcern[c]).filter(Boolean)
+      setPicked(prev => (prev.length ? prev : [...first, ...(row?.skin_goals || []).map(g => fromSignup[g])].filter(Boolean).reduce((list, g) => (list.length < 3 && !conflictWith(list, g) && !list.includes(g) ? [...list, g] : list), [])))
     }).catch(() => {})
   }, [user?.id])
   const confirmGoals = (list = picked) => {

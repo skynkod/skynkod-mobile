@@ -1,4 +1,4 @@
-import { computeSkinType } from './skin-quiz'
+import { computeSkinType, prioritiesOf } from './skin-quiz'
 
 // Onboarding: after some chapters, one screen that says what her answers
 // change (inspired by Flo, Lita 2026-10-23). Only what the app really does.
@@ -37,7 +37,9 @@ export const whyAfter = (chapter, a = {}) => {
     }
   }
   if (chapter === 'bothers') {
-    const concerns = (a.concerns || []).filter(c => HELPS[c]).slice(0, 2)
+    // Her main and secondary concern first, when she chose them.
+    const { main, second } = prioritiesOf(a)
+    const concerns = [...new Set([main, second, ...(a.concerns || [])])].filter(c => HELPS[c]).slice(0, 2)
     if (!concerns.length) return { icon: 'flask-outline', title: 'Healthy skin, kept that way', text: 'We’ll look for gentle products that keep your skin balanced.' }
     const ingredients = [...new Set(concerns.flatMap(c => HELPS[c]))].slice(0, 4)
     return { icon: 'flask-outline', title: 'What we’ll look for', text: `For ${list(concerns.map(c => c.toLowerCase()))}, we’ll look for products with ${list(ingredients)}.` }

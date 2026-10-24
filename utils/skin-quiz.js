@@ -18,6 +18,22 @@ export const CHAPTERS = [
 ]
 
 const o = (value, label, hint) => ({ value, label, hint })
+const CONCERN_OPTIONS = ['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity'].map(c => o(c, c))
+
+// A question whose options come from another answer (the priorities choose
+// among her concerns; the second one never repeats the first).
+export const resolveQuestion = (q, a = {}) => (q?.pickFrom
+  ? { ...q, options: q.options.filter(x => (a[q.pickFrom] || []).includes(x.value) && !(q.id === 'secondary' && x.value === a.priority)) }
+  : q)
+
+// Main and secondary concern, with sensible defaults when there was no choice.
+export const prioritiesOf = (a = {}) => {
+  const concerns = a.concerns || []
+  const main = concerns.includes(a.priority) ? a.priority : concerns[0] || null
+  const rest = concerns.filter(c => c !== main)
+  const second = rest.includes(a.secondary) ? a.secondary : rest.length === 1 ? rest[0] : (rest[0] || null)
+  return { main, second }
+}
 
 export const QUESTIONS = [
   // The goal comes first (inspired by Flo, Lita 2026-10-23): everything after is shaped around it.
@@ -38,7 +54,13 @@ export const QUESTIONS = [
     options: [o('burn', 'Always burn, never tan'), o('burntan', 'Burn, then tan a little'), o('tan', 'Tan easily, rarely burn'), o('never', 'Never burn')] },
 
   { id: 'concerns', chapter: 'bothers', type: 'multi', title: 'What would you like to work on?', subtitle: 'Pick as many as you like.',
-    options: ['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity'].map(c => o(c, c)) },
+    options: CONCERN_OPTIONS },
+  // Priorities (Lita, 2026-10-24): not everything at once. Asked only when
+  // there's a choice; options are the concerns she picked (resolveQuestion).
+  { id: 'priority', chapter: 'bothers', type: 'single', pickFrom: 'concerns', title: 'Which one matters most to you right now?', subtitle: 'Your main concern guides every recommendation. You can change it anytime.', showIf: a => (a.concerns || []).length >= 2,
+    options: CONCERN_OPTIONS },
+  { id: 'secondary', chapter: 'bothers', type: 'single', pickFrom: 'concerns', title: 'And second?', subtitle: 'We’ll take care of it too, without doing everything at once.', showIf: a => (a.concerns || []).length >= 3 && !!a.priority,
+    options: CONCERN_OPTIONS },
   { id: 'acneWhere', chapter: 'bothers', type: 'multi', title: 'Where do you get breakouts?', showIf: a => (a.concerns || []).includes('Acne'),
     options: [o('forehead', 'Forehead'), o('cheeks', 'Cheeks'), o('jaw', 'Jawline and chin'), o('mouth', 'Around the mouth'), o('body', 'Chest or back')] },
   { id: 'acneTypes', chapter: 'bothers', type: 'multi', sensitive: true, title: 'What kind of breakouts?', subtitle: 'It changes which ingredients help.', showIf: a => (a.concerns || []).includes('Acne'),
@@ -89,7 +111,7 @@ export const QUESTIONS = [
 ]
 
 export const questionsFor = (answers, health) =>
-  QUESTIONS.filter(q => (health || !q.sensitive) && (!q.showIf || q.showIf(answers)))
+  QUESTIONS.filter(q => (health || !q.sensitive) && (!q.showIf || q.showIf(answers))).map(q => resolveQuestion(q, answers))
 
 // ---------- Results ----------
 
@@ -173,6 +195,8 @@ export const engineProfile = (row) => {
     sex: sp.sex || null,
     meds,
     fragile,
+    // Her main and secondary concern (they lead the product verdicts and Rekod).
+    ...(() => { const p = prioritiesOf({ concerns: sp.concerns || row?.skin_concerns || [], priority: sp.priority, secondary: sp.secondary }); return { priority: p.main, secondary: p.second } })(),
   }
 }
 

@@ -9,7 +9,8 @@ import QuizQuestion from '../components/QuizQuestion'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
-import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE } from '../utils/skin-quiz'
+import { currentSkinState, stateLabel } from '../utils/skin-state'
+import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, resolveQuestion, prioritiesOf } from '../utils/skin-quiz'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -25,6 +26,8 @@ export default function SkinProfileScreen({ navigation }) {
   const [editing, setEditing] = useState(null) // question id
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [skinState, setSkinState] = useState(null)
+  useFocusEffect(useCallback(() => { if (user?.id) currentSkinState(user.id).then(setSkinState).catch(() => {}) }, [user?.id]))
 
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
@@ -58,6 +61,26 @@ export default function SkinProfileScreen({ navigation }) {
           {answers.reactivity === 'often' ? ` · ${t('Sensitive')}` : ''}
         </Text>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Calculated from your skin test.')}</Text>
+      </View>
+
+      {/* 🎯 Your skin priorities (Lita, 2026-10-24): what to work on first, and how the skin is today */}
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR SKIN PRIORITIES')}</Text>
+        {[
+          ['1', t('Main concern'), prioritiesOf(answers).main ? t(prioritiesOf(answers).main) : t('Not chosen yet'), 'priority'],
+          ['2', t('Secondary concern'), prioritiesOf(answers).second ? t(prioritiesOf(answers).second) : t('None'), 'secondary'],
+          ['3', t('Skin type'), [computeSkinType(answers) || row?.skin_type, answers.reactivity === 'often' ? 'Sensitive' : null].filter(Boolean).map(x => t(x)).join(' · ') || t('To discover'), null],
+          ['4', t('Your skin today'), skinState?.states?.length ? skinState.states.map(x => t(stateLabel(x))).join(' · ') : t('Tell us in your morning check-in'), null],
+        ].map(([n, label, value, edit]) => (
+          <Pressable key={n} disabled={!edit || (edit === 'secondary' && (answers.concerns || []).length < 3) || (edit === 'priority' && (answers.concerns || []).length < 2)}
+            onPress={() => open(QUESTIONS.find(x => x.id === edit))} style={styles.priorityRow}>
+            <Text style={[styles.priorityNum, { color: colors.primary }]}>{n}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.caption, { color: colors.muted }]}>{label}</Text>
+              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 1 }]}>{value}</Text>
+            </View>
+          </Pressable>
+        ))}
       </View>
 
       {suspected.map(id => (
@@ -103,7 +126,7 @@ export default function SkinProfileScreen({ navigation }) {
             <Pressable onPress={() => setEditing(null)} hitSlop={12}><Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Cancel')}</Text></Pressable>
           </View>
           <ScrollView contentContainerStyle={{ padding: SPACING.xl }}>
-            {q ? <QuizQuestion question={q} value={draft} onChange={setDraft} compact /> : null}
+            {q ? <QuizQuestion question={resolveQuestion(q, answers)} value={draft} onChange={setDraft} compact /> : null}
           </ScrollView>
           <View style={{ paddingHorizontal: SPACING.xl }}>
             <Button title={t('Save')} onPress={save} loading={saving} />
@@ -115,6 +138,8 @@ export default function SkinProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  priorityRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.sm },
+  priorityNum: { fontSize: 18, fontWeight: '700', width: 18, textAlign: 'center' },
   summary: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.sm },
   card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, marginTop: SPACING.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },

@@ -405,6 +405,15 @@ export const productMatch = (product, profile) => {
   if (worst === 'avoid') score = Math.min(score, 30)
   if (avoid.length) score = Math.min(score, 20)
 
+  // Her priorities (main, then secondary concern) lead: a product that targets
+  // them says so first, and ranks a little higher (Lita, 2026-10-24).
+  const targets = concern => concern && found.find(f => f.pos <= 12 && (f.entry.goodFor || []).includes(concern))
+  const mainHit = targets(profile?.priority)
+  const secondHit = !mainHit && targets(profile?.secondary)
+  const priority = mainHit ? { level: 'main', concern: profile.priority, ingredient: mainHit.entry.name } : secondHit ? { level: 'second', concern: profile.secondary, ingredient: secondHit.entry.name } : null
+  if (priority && !avoid.length && !worst && !cares.length && !unverified.length) score = Math.min(100, score + (priority.level === 'main' ? 6 : 3))
+  const priorityReason = priority && { text: `${priority.level === 'main' ? 'Targets your main concern' : 'Helps your second concern'}: ${priority.concern.toLowerCase()}, with ${priority.ingredient.toLowerCase()}` }
+
   let label
   let tone
   if (avoid.length) { label = 'Avoid'; tone = 'danger' }
@@ -420,7 +429,7 @@ export const productMatch = (product, profile) => {
     score,
     label,
     tone,
-    good: [...safe, ...benefits],
+    good: [...(priorityReason ? [priorityReason] : []), ...safe, ...benefits],
     care: [...avoid, ...triggers, ...cares, ...unverified],
     avoid,
     triggers,
@@ -428,6 +437,7 @@ export const productMatch = (product, profile) => {
     unverified,
     found: found.map(f => f.entry),
     partial,
+    priority,
     // Good or not for her skin, maybe not today: from her current skin state.
     notNow: notRightNow(product, found, profile?.skinState),
   }
