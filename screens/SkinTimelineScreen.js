@@ -58,7 +58,7 @@ export default function SkinTimelineScreen() {
     <Screen back title={t('Skin timeline')} subtitle={t('Your skin story, step by step')}>
       {s ? (
         <>
-          <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR SKIN JOURNEY')}</Text>
+          <Text style={[styles.section, { color: colors.muted }]}>{t('WHAT WORKED FOR YOU')}</Text>
           <PremiumBlur locked={premium === false} title="What worked for your skin" text="What helped, what didn’t and what you stopped, from your own history.">
             <Card>
               <Line icon="checkmark-circle" color={colors.success} title="What worked" list={s.worked} />
