@@ -8,7 +8,9 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
-import { getProduct, addToMyProducts, myProductStatus } from '../utils/catalog'
+import BuyAdvice from '../components/BuyAdvice'
+import { buyVerdict } from '../utils/buy-advice'
+import { getProduct, addToMyProducts, myProductStatus, getMyProducts } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
 import { CONCERN_CONDITIONS } from '../utils/encyclopedia/conditions'
 import { retailersFor, openRetailer, SHOP_LINKS_ENABLED } from '../utils/shop'
@@ -36,6 +38,8 @@ export default function ProductScreen({ navigation, route }) {
   const [showAll, setShowAll] = useState(false)
   const [adding, setAdding] = useState(false)
   const [status, setStatus] = useState(null) // null | 'owned' | 'to_buy'
+  // What she owns, for "Should I buy this?"
+  const [owned, setOwned] = useState(null)
   const [prices, setPrices] = useState(null)
   const [alt, setAlt] = useState(null) // { safe, alternative } for her skin
   // Product details studied count once for My Skin Journey.
@@ -54,6 +58,7 @@ export default function ProductScreen({ navigation, route }) {
   useEffect(() => {
     if (!user?.id || !product?.id) return
     myProductStatus(user.id, product.id).then(setStatus).catch(() => {})
+    getMyProducts(user.id).then(rows => setOwned(rows.filter(r => r.status === 'owned' && r.product).map(r => r.product))).catch(() => setOwned([]))
   }, [user?.id, product?.id])
 
   useEffect(() => {
@@ -125,6 +130,11 @@ export default function ProductScreen({ navigation, route }) {
             <Text style={{ fontWeight: '700' }}>{t('Why?')} </Text>{t(match.notNow.detail)}
           </Text>
         </View>
+      ) : null}
+
+      {/* Not hers yet: is it worth buying, given her skin and what she owns? */}
+      {product && owned && status !== 'owned' ? (
+        <BuyAdvice verdict={buyVerdict({ product, profile, owned })} premium={stopAdvice.premium} />
       ) : null}
 
       {/* In her routine but worth stopping: the one most important reason */}

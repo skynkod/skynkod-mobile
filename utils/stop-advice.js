@@ -5,13 +5,13 @@ import { findIngredients, productMatch, isUnsuitable } from './ingredients-guide
 // important first. The product isn't necessarily bad: it just doesn't make
 // sense for her now. Safety reasons are free, saving-money advice is Premium.
 
-const CONCERNS = ['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity']
+export const CONCERNS = ['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity']
 // Products that treat something (the basics, cleanser, moisturizer and sunscreen, are never "not needed").
-const TREATS = ['serum', 'toner', 'exfoliant', 'mask']
+export const TREATS = ['serum', 'toner', 'exfoliant', 'mask']
 // Ingredients that give a product its job: two products of the same kind with one in common do the same job.
 const KEY_IDS = new Set(['retinol', 'vitaminc', 'niacinamide', 'azelaic', 'salicylic', 'glycolic', 'lactic', 'mandelic', 'pha', 'txa', 'arbutin', 'kojic', 'bakuchiol', 'benzoyl', 'peptides', 'argireline', 'matrixyl', 'copperpeptides'])
 
-const keyActives = product => findIngredients(product).filter(f => f.pos <= 8 && KEY_IDS.has(f.entry.id)).map(f => f.entry)
+export const keyActives = product => findIngredients(product).filter(f => f.pos <= 8 && KEY_IDS.has(f.entry.id)).map(f => f.entry)
 
 // product: the catalogue product. reaction: { tag, count } from the journal.
 // life: shelfLife() of her row. others: the other products in her routines.
