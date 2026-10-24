@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 import { getProductsByIds } from './catalog'
 import { getProductReactions } from './journal-day'
 import { getSkinEvents } from './skin-events'
-import { getVerdicts } from '../components/ExpectationLine'
+import { getVerdicts } from './expectation-verdicts'
 import { getSkinTracking } from './skin-tracking'
 import { buildTimeline, journeySummary } from './skin-tracking-core'
 

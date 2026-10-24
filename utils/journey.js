@@ -9,6 +9,7 @@ import { getDekodResults, compareScans } from './dekod'
 import { questionsFor, fromRow } from './skin-quiz'
 import { BASICS } from './encyclopedia/basics'
 import { logError } from './errorLogger'
+import { getVerdicts } from './expectation-verdicts'
 import {
   VISIBLE_BADGES, canEarn, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
   levelFor, streakFrom, weekStart, dayKey, addDays, activeDaysIn, boxContents,
@@ -24,6 +25,7 @@ import {
 //   ingredients / productPages / opened  { id: firstTimestamp }
 //   shares   [timestamps] each time she shared Skynkod
 //   articles / finished  { id: firstTimestamp }  articles read, products used up
+//   buyChecks / stopAdvised  { productId: firstTimestamp }
 //   box      { lastWeek }              week of the last Koda box opened
 //   stars    [{ week, at }]            seniority stars, one per active week
 //   comeback true once the Welcome Back badge was given
@@ -32,7 +34,7 @@ const key = userId => `journey_${userId}`
 // Bump when the XP or badge rules change before launch: XP and badges are
 // then recalculated from her real activity, quietly (no unlock screens).
 const RULES_VERSION = 2
-const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shares: [], articles: {}, finished: {}, box: null, stars: [], comeback: false })
+const fresh = () => ({ events: {}, badges: {}, ingredients: {}, productPages: {}, opened: {}, shares: [], articles: {}, finished: {}, buyChecks: {}, stopAdvised: {}, box: null, stars: [], comeback: false })
 
 export const loadJourney = async (userId) => {
   try {
@@ -92,6 +94,12 @@ export const trackProductPage = remember('productPages')
 export const trackOpened = remember('opened')
 export const trackArticle = remember('articles')
 export const trackFinished = remember('finished')
+// "Should I buy this?" seen on a product she doesn't own, and a product she
+// removed when Skynkod suggested stopping it (Lita, 2026-10-24).
+export const trackBuyCheck = remember('buyChecks')
+export const trackStopAdvised = remember('stopAdvised')
+// A Better / Same / Worse answer was saved: count it soon.
+export const trackVerdict = userId => { if (userId) syncSoon(userId) }
 
 // She shared Skynkod (the share sheet says it was sent, not just opened).
 export const trackShared = (userId) => {
@@ -110,7 +118,7 @@ const count = async (query) => { const { count: n, error } = await query; if (er
 const answered = v => (Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== '')
 
 const gather = async (userId, state) => {
-  const [profile, routines, products, ticks, journal, dekod, kodaQuestions, rekod, sos, paused, contributions] = await Promise.all([
+  const [profile, routines, products, ticks, journal, dekod, kodaQuestions, rekod, sos, paused, contributions, checkins, verdicts] = await Promise.all([
     supabase.from('users').select('skin_type, skin_concerns, skin_goals, skin_profile, acne_types, skin_conditions, avoid_ingredients, pregnancy, consent_health_at, created_at').eq('id', userId).maybeSingle(),
     supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('user_products').select('id, product_id, category, created_at, opened_at, status').eq('user_id', userId).eq('status', 'owned'),
@@ -122,6 +130,8 @@ const gather = async (userId, state) => {
     getSosHistory(userId),
     getPausedProducts(userId),
     getAcceptedContributions(userId).catch(() => []),
+    supabase.from('skin_checkins').select('id, created_at').eq('user_id', userId),
+    getVerdicts(userId).catch(() => ({})),
   ])
   for (const r of [profile, routines, products, ticks, journal]) if (r.error) throw r.error
   const p = profile.data || {}
@@ -166,6 +176,10 @@ const gather = async (userId, state) => {
     articles: state.articles,
     finished: state.finished,
     basicsIds: BASICS.map(a => a.id),
+    checkins: checkins.data || [],
+    verdicts,
+    buyChecks: state.buyChecks,
+    stopAdvised: state.stopAdvised,
   }
 }
 
@@ -209,7 +223,7 @@ const picture = (state, stats, challenges) => {
     xp,
     level: levelFor(xp),
     streak: streakFrom(stats.routineDayList, dayKey()),
-    badges: VISIBLE_BADGES.map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
+    badges: VISIBLE_BADGES.filter(b => !b.retired || state.badges[b.id]).map(b => ({ ...b, earned: state.badges[b.id] || null, value: progressOf(b, stats, state.badges) })),
     earnedCount: VISIBLE_BADGES.filter(b => state.badges[b.id]).length,
     earnableCount: VISIBLE_BADGES.filter(canEarn).length,
     stars: state.stars.length,

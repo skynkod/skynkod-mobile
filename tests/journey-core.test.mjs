@@ -95,12 +95,12 @@ test('xp: no double award on repeated syncs', () => {
   assert.equal(second.fresh.length, 0)
 })
 
-test('xp: products paid once each, daily cap, re-adding pays nothing', () => {
+test('xp: adding products pays nothing (Skynkod never rewards buying), re-adding neither', () => {
   const day = '2026-10-20T09:00:00Z'
   const products = Array.from({ length: 5 }, (_, i) => ({ product_id: `p${i}`, created_at: day }))
   const events = apply({}, run(empty({ products })).fresh)
   const paid = Object.entries(events).filter(([k, e]) => k.startsWith('product:') && e.xp > 0)
-  assert.equal(paid.length, XP.productDailyCap)
+  assert.equal(paid.length, 0)
   // p0 removed then added again (new row, same catalogue product): no XP.
   const again = run(empty({ products: [{ product_id: 'p0', created_at: '2026-10-21T09:00:00Z' }] }), events)
   assert.ok(!again.fresh.some(e => e.key === 'product:p0'))
@@ -117,8 +117,8 @@ test('challenges: weekly progress, states and stable completion', () => {
   assert.equal(routine.to, '2026-10-25')
   assert.ok(!challenges.some(c => c.id === 'profile'), 'profile challenge hidden once done')
   // Done once this week: stays done even if data changes.
-  const events = { 'challenge:2026-10-19:products-3': { xp: XP.challenge, at: 1 } }
-  const after = run(empty({ profileComplete: true }), events, {}, now).challenges.find(c => c.id === 'products-3')
+  const events = { 'challenge:2026-10-19:buy-3': { xp: XP.challenge, at: 1 } }
+  const after = run(empty({ profileComplete: true }), events, {}, now).challenges.find(c => c.id === 'buy-3')
   assert.equal(after.done, true)
 })
 
@@ -156,4 +156,24 @@ test('contributions: points for each accepted product, badge at 3, never paid tw
   const third = run(empty({ contributions: [...two, { id: 3, reviewed_at: '2026-10-21T11:00:00Z' }] }), events)
   assert.equal(third.badges.includes('official-contributor'), true)
   assert.deepEqual(third.fresh.filter(e => e.key.startsWith('contribution:')).map(e => e.key), ['contribution:3'])
+})
+
+test('new habits pay: check-ins, a product judged on time, a product stopped when advised', () => {
+  const raw = empty({ checkins: [{ id: 'c1', created_at: '2026-10-10T09:00:00Z' }], verdicts: { p1: { value: 'better', at: 1 } }, stopAdvised: { p2: 1 } })
+  const { fresh } = run(raw)
+  const xp = k => fresh.find(e => e.key === k)?.xp
+  assert.equal(xp('checkin:c1'), XP.checkin)
+  assert.equal(xp('verdict:p1'), XP.verdict)
+  assert.equal(xp('stop:p2'), XP.lessIsMore)
+  const stats = buildStats(raw)
+  assert.equal(stats.checkins, 1)
+  assert.equal(stats.stopAdvised, 1)
+})
+
+test('buying badges are retired: they can\'t be earned anymore', () => {
+  const stats = buildStats(empty({ products: Array.from({ length: 40 }, (_, i) => ({ product_id: `p${i}`, created_at: '2026-10-20T09:00:00Z' })) }))
+  const reached = reachedBadges(stats, {})
+  assert.ok(!reached.includes('product-curator') && !reached.includes('collection-builder'))
+  // Already earned ones stay.
+  assert.ok(reachedBadges(stats, { 'product-curator': { at: 1 } }).includes('product-curator'))
 })

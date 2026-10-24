@@ -10,8 +10,9 @@ import { getUserRoutines, saveRoutine } from '../utils/routines-service'
 import { getProductsByIds } from '../utils/catalog'
 import { getProductReactions } from '../utils/journal-day'
 import { stopReason } from '../utils/stop-advice'
-import { getVerdicts } from './ExpectationLine'
+import { getVerdicts } from '../utils/expectation-verdicts'
 import { logStopped } from '../utils/skin-events'
+import { trackStopAdvised } from '../utils/journey'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -58,6 +59,7 @@ export const useStopAdvice = (userId, profile) => {
       if (!saved.success) throw new Error(saved.error)
     }
     logStopped(userId, [product])
+    trackStopAdvised(userId, String(product.id))
     await load()
   }
   const keep = async (product, kind) => {

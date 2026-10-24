@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { trackProductPage } from '../utils/journey'
+import { trackProductPage, trackBuyCheck } from '../utils/journey'
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, LoadingView, EmptyState, useColors } from '../components/ui'
@@ -45,6 +45,8 @@ export default function ProductScreen({ navigation, route }) {
   const [alt, setAlt] = useState(null) // { safe, alternative } for her skin
   // Product details studied count once for My Skin Journey.
   useEffect(() => { if (user?.id && product?.id) trackProductPage(user.id, product.id) }, [user?.id, product?.id])
+  // Smart Shopper: "Should I buy this?" seen on a product she doesn't own.
+  useEffect(() => { if (user?.id && product?.id && owned && !owned.some(p => p.id === product.id)) trackBuyCheck(user.id, String(product.id)) }, [user?.id, product?.id, owned])
   useEffect(() => {
     if (!user?.id || !product?.id) return
     setAlt(null)

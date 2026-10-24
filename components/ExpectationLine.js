@@ -12,8 +12,10 @@ import { SPACING, TYPE } from '../utils/theme'
 // "Your expectations" under each product in her routines (Lita, 2026-10-24):
 // how long she has used it, and when it's fair to judge it. Free.
 
-export const verdictKey = userId => `expect_verdict_${userId}`
-export const getVerdicts = async userId => JSON.parse((await AsyncStorage.getItem(verdictKey(userId)).catch(() => null)) || '{}')
+import { verdictKey, getVerdicts } from '../utils/expectation-verdicts'
+import { trackVerdict } from '../utils/journey'
+
+export { verdictKey, getVerdicts }
 
 export const useExpectations = (userId, productIds = []) => {
   const [state, setState] = useState({ started: {}, verdicts: {} })
@@ -35,7 +37,8 @@ export const useExpectations = (userId, productIds = []) => {
   const answer = async (productId, value) => {
     const verdicts = { ...state.verdicts, [productId]: { value, at: Date.now() } }
     setState(s => ({ ...s, verdicts }))
-    AsyncStorage.setItem(verdictKey(userId), JSON.stringify(verdicts)).catch(() => {})
+    await AsyncStorage.setItem(verdictKey(userId), JSON.stringify(verdicts)).catch(() => {})
+    trackVerdict(userId)
   }
   return { ...state, answer }
 }
