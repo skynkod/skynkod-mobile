@@ -6,6 +6,7 @@ import FeatureIcon from '../components/FeatureIcon'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { saveCheckin } from '../utils/skin-tracking'
+import { markAsked } from '../utils/ask-pace'
 import { OVERALL, CHECKIN_CONCERNS } from '../utils/skin-tracking-core'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
@@ -30,6 +31,7 @@ export default function SkinCheckInScreen({ route, navigation }) {
     setSaving(true)
     try {
       await saveCheckin(user.id, { overall, concerns })
+      markAsked(user.id)
       if (scan) navigation.navigate('Dekod')
       else navigation.navigate('Progress')
     } catch (error) {

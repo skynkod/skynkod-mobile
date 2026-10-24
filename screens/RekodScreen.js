@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react'
+import { markAsked } from '../utils/ask-pace'
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
@@ -336,6 +337,7 @@ export default function RekodScreen({ navigation }) {
     setBusy(true)
     try {
       const res = await recordCheckIn(user.id, plan, value, profile)
+      markAsked(user.id)
       syncSmartReminders(user.id)
       track('rekod_checkin', { answer: value })
       setPlan(res.plan)

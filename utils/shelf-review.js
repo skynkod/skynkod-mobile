@@ -3,14 +3,14 @@ import { activesOf } from './routine-checks'
 import { stopReason } from './stop-advice'
 
 // "Your shelf" (Lita, 2026-10-24): every product she owns sorted into Keep,
-// Use less often, Pause and Not needed, plus what is really missing. The point
+// Use less often, Not right now (her skin today) and Consider stopping, plus what is really missing. The point
 // is to buy less: "You only need one". Summary free, the lists Premium.
 
 export const SHELF_GROUPS = [
   { key: 'keep', label: 'Keep', color: 'success' },
   { key: 'lessOften', label: 'Use less often', color: 'caution' },
-  { key: 'pause', label: 'Pause', color: 'warning' },
-  { key: 'notNeeded', label: 'Not needed', color: 'muted' },
+  { key: 'notNow', label: 'Not right now', color: 'warning' },
+  { key: 'stop', label: 'Consider stopping', color: 'danger' },
   { key: 'missing', label: 'Missing', color: 'primary' },
 ]
 const ESSENTIALS = [
@@ -23,17 +23,18 @@ const TREATS = ['serum', 'toner', 'exfoliant', 'mask']
 // owned: [{ product, life }], reactions: { [productId]: { tag, count } },
 // routineProducts: products in her routines, tooManyExfoliations: from "Your week".
 export const shelfReview = ({ owned = [], profile = null, reactions = {}, routineProducts = [], tooManyExfoliations = false, verdicts = {} }) => {
-  const groups = { keep: [], lessOften: [], pause: [], notNeeded: [], missing: [] }
+  const groups = { keep: [], lessOften: [], notNow: [], stop: [], missing: [] }
   const others = [...routineProducts, ...owned.map(o => o.product)].filter((p, i, all) => p && all.findIndex(x => x?.id === p.id) === i)
   for (const { product, life } of owned) {
     if (!product) continue
     const advice = stopReason({ product, profile, reaction: reactions[product.id], life, others, verdict: verdicts[product.id]?.value })
     const match = profile ? productMatch(product, profile) : null
-    const reacted = ['reaction', 'notHelping'].includes(advice?.kind)
-    if (reacted || match?.notNow) {
-      groups.pause.push({ product, why: reacted ? { text: advice.text, params: advice.params } : { text: match.notNow.title } })
-    } else if (advice) {
-      groups.notNeeded.push({ product, why: { text: advice.title } })
+    // Words used everywhere: Not right now = her skin today (temporary),
+    // Consider stopping = stop it.
+    if (advice) {
+      groups.stop.push({ product, why: { text: advice.params ? advice.text : advice.title, params: advice.params } })
+    } else if (match?.notNow) {
+      groups.notNow.push({ product, why: { text: match.notNow.title } })
     } else if (tooManyExfoliations && activesOf(product).exfoliant) {
       groups.lessOften.push({ product, why: { text: 'Your week has too many exfoliations: 2 or 3 are enough.' } })
     } else {

@@ -249,7 +249,7 @@ export default function RoutinesScreen({ route, navigation }) {
                 ) : null}
                 {productsById[step.product_id] ? (
                   <RoutineProductLine product={productsById[step.product_id]} profile={profile} stopAdvice={stopAdvice}
-                    started={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]}
+                    started={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]} canAsk={expectations.canAsk}
                     onAnswer={async value => { await expectations.answer(step.product_id, value); stopAdvice.reload(); }}
                     onStop={async () => { await stopAdvice.stop(productsById[step.product_id]); const r = await getUserRoutines(user.id); if (r.success) setSavedRoutines(r.data || []); }}
                     kodaPrefill={Array.isArray(step.days) && step.days.length && step.days.length < 7

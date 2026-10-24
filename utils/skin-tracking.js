@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { getDekodResults } from './dekod'
 import { getProductsByIds } from './catalog'
+import { canAskAgain } from './ask-pace'
 import { baselineOf, checkInStatus, progressChanges, whatChanged } from './skin-tracking-core'
 
 // Loads what the skin tracking needs: the journal (6 months), her check-ins,
@@ -25,7 +26,9 @@ export const getCheckInStatus = async (userId) => {
     getCheckins(userId),
     getDekodResults(userId, 30).catch(() => []),
   ])
-  return checkInStatus({ baseline: baselineOf({ entries: first.data || [], scans, checkins }), checkins })
+  const status = checkInStatus({ baseline: baselineOf({ entries: first.data || [], scans, checkins }), checkins })
+  // Another "how is it going?" question in the last 3 days: the review waits.
+  return status.due && !(await canAskAgain(userId)) ? { ...status, due: false } : status
 }
 
 export const getSkinTracking = async (userId) => {

@@ -409,9 +409,16 @@ export default function TodayScreen({ navigation, route }) {
                 </Pressable>
               </View>
             ))}
-            {adjustedOf(period).paused.length ? (
+            {/* Same words everywhere: her skin today says "Not right now"; a plan or
+                her own choice says "Paused". */}
+            {adjustedOf(period).paused.filter(x => x.reason === 'skin state').length ? (
               <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
-                {t('Paused for now:')} {adjustedOf(period).paused.map(x => x.step.product).join(', ')}
+                {t('Not right now:')} {adjustedOf(period).paused.filter(x => x.reason === 'skin state').map(x => x.step.product).join(', ')}
+              </Text>
+            ) : null}
+            {adjustedOf(period).paused.filter(x => x.reason !== 'skin state').length ? (
+              <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
+                {t('Paused for now:')} {adjustedOf(period).paused.filter(x => x.reason !== 'skin state').map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
             <Pressable onPress={() => (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period }))} style={{ paddingTop: SPACING.sm }}>

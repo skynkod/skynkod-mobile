@@ -119,43 +119,36 @@ export default function ProductScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* Her skin today can make a good product wait: "not right for you right now", with the why */}
-      {match.notNow && match.tone !== 'danger' ? (
-        <View style={[styles.matchCard, { backgroundColor: colors.warningSoft, marginBottom: SPACING.md }]}>
-          <View style={styles.matchHead}>
-            <Ionicons name="time-outline" size={36} color={colors.warning} />
-            <View style={{ flex: 1 }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.notNow.title)}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(match.notNow.text)}.</Text>
-            </View>
-          </View>
-          <Text style={[TYPE.caption, { color: colors.text, lineHeight: 18, marginTop: SPACING.sm }]}>
-            <Text style={{ fontWeight: '700' }}>{t('Why?')} </Text>{t(match.notNow.detail)}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* Not hers yet: is it worth buying, given her skin and what she owns? */}
-      {product && owned && status !== 'owned' ? (
-        <BuyAdvice verdict={buyVerdict({ product, profile, owned })} premium={stopAdvice.premium} />
-      ) : null}
-
-      {/* In her routine but worth stopping: the one most important reason */}
-      {product && stopAdvice.inRoutine(product.id) ? (
-        <StopAdvice advice={stopAdvice.adviceFor(product)} product={product} inRoutine premium={stopAdvice.premium}
-          onStop={() => stopAdvice.stop(product)} onKeep={() => stopAdvice.keep(product, stopAdvice.adviceFor(product)?.kind)} style={{ marginTop: 0, marginBottom: SPACING.md }} />
-      ) : null}
-
+      {/* One decision card (Lita's audit, 2026-10-24): her skin today, whether to
+          buy it or stop it, and Koda; the full verdict and ingredients follow. */}
       {product ? (
-        <AskKodaLink label="Ask Koda about this product" returnTo="Product" style={{ marginBottom: SPACING.md }}
-          prefill={t('Should I use {product} with my routine? How and when?', { product: product.name })} />
-      ) : null}
-
-      {/* Her main concern: what skincare can and can't do for it, and the treatments */}
-      {profile?.priority && CONCERN_CONDITIONS[profile.priority] ? (
-        <Pressable onPress={() => navigation.navigate('Condition', { id: CONCERN_CONDITIONS[profile.priority][0] })} style={{ marginBottom: SPACING.md }} hitSlop={4}>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('What skincare can and can’t do for your {concern}', { concern: t(profile.priority).toLowerCase() })} ›</Text>
-        </Pressable>
+        <View style={[styles.decision, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          {match.notNow && match.tone !== 'danger' ? (
+            <View style={styles.decisionRow}>
+              <Ionicons name="time-outline" size={20} color={colors.warning} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.notNow.title)}</Text>
+                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(match.notNow.text)}. {t(match.notNow.detail)}</Text>
+              </View>
+            </View>
+          ) : null}
+          {owned && status !== 'owned' ? (
+            <BuyAdvice verdict={buyVerdict({ product, profile, owned })} premium={stopAdvice.premium} style={{ marginBottom: 0, marginTop: match.notNow ? SPACING.md : 0 }} />
+          ) : null}
+          {stopAdvice.inRoutine(product.id) ? (
+            <StopAdvice advice={stopAdvice.adviceFor(product)} product={product} inRoutine premium={stopAdvice.premium}
+              onStop={() => stopAdvice.stop(product)} onKeep={() => stopAdvice.keep(product, stopAdvice.adviceFor(product)?.kind)} />
+          ) : null}
+          <View style={[styles.decisionFoot, { borderTopColor: colors.border }, !((match.notNow && match.tone !== 'danger') || (owned && status !== 'owned') || (stopAdvice.inRoutine(product.id) && stopAdvice.adviceFor(product))) && styles.decisionFootAlone]}>
+            <AskKodaLink label="Ask Koda about this product" returnTo="Product"
+              prefill={t('Should I use {product} with my routine? How and when?', { product: product.name })} />
+            {profile?.priority && CONCERN_CONDITIONS[profile.priority] ? (
+              <Pressable onPress={() => navigation.navigate('Condition', { id: CONCERN_CONDITIONS[profile.priority][0] })} hitSlop={4} style={{ marginTop: SPACING.sm }}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('What skincare can and can’t do for your {concern}', { concern: t(profile.priority).toLowerCase() })} ›</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
       ) : null}
 
       {/* No full ingredient list: say it plainly instead of a score we can't stand behind */}
@@ -405,6 +398,10 @@ export default function ProductScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  decision: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: SPACING.lg, marginBottom: SPACING.md },
+  decisionRow: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' },
+  decisionFoot: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: SPACING.md, paddingTop: SPACING.md },
+  decisionFootAlone: { borderTopWidth: 0, marginTop: 0, paddingTop: 0 },
   altCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: 20, padding: SPACING.lg, marginTop: SPACING.md },
   hero: { flexDirection: 'row', gap: SPACING.lg, alignItems: 'center' },
   image: { width: 96, height: 96, borderRadius: RADIUS.md, backgroundColor: '#FFFFFF' },

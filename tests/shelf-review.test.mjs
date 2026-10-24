@@ -20,11 +20,11 @@ test('missing sunscreen: "you only need one"', () => {
 
 test('two niacinamide serums: one is not needed', () => {
   const { groups } = shelfReview({ owned: own([cleanser, cream, nia, nia2]), profile })
-  assert.equal(groups.notNeeded.length, 1)
+  assert.equal(groups.stop.length, 1)
 })
 
-test('a reaction pauses the product; too many exfoliations means use less often', () => {
+test('a reaction means consider stopping; too many exfoliations means use less often', () => {
   const { groups } = shelfReview({ owned: own([cleanser, cream, nia, aha]), reactions: { 3: { tag: 'Redness', count: 3 } }, tooManyExfoliations: true, profile: { ...profile, skin_concerns: ['Large pores', 'Dullness', 'Dark spots', 'Fine lines', 'Acne'] } })
-  assert.equal(groups.pause[0].product.id, '3')
+  assert.equal(groups.stop[0].product.id, '3')
   assert.equal(groups.lessOften[0].product.id, '5')
 })

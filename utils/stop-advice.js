@@ -49,7 +49,7 @@ export const stopReason = ({ product, profile = null, reaction = null, life = nu
     const hers = [...new Set([...(profile?.skin_concerns || []), profile?.priority, profile?.secondary].filter(Boolean))]
     const targets = [...new Set(mine.flatMap(a => (a.goodFor || []).filter(g => CONCERNS.includes(g))))]
     if (hers.length && targets.length && !targets.some(c => hers.includes(c))) {
-      return { kind: 'notNeeded', level: 'warning', free: false, title: 'Not needed for you now', text: 'It mainly targets {targets}, which isn’t among your concerns.', params: { targets: targets.slice(0, 2).map(c => c.toLowerCase()).join(' and ') } }
+      return { kind: 'notNeeded', level: 'warning', free: false, title: 'Not needed for you', text: 'It mainly targets {targets}, which isn’t among your concerns.', params: { targets: targets.slice(0, 2).map(c => c.toLowerCase()).join(' and ') } }
     }
   }
   return null

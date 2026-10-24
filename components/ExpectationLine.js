@@ -14,11 +14,12 @@ import { SPACING, TYPE } from '../utils/theme'
 
 import { verdictKey, getVerdicts } from '../utils/expectation-verdicts'
 import { trackVerdict } from '../utils/journey'
+import { markAsked, canAskAgain } from '../utils/ask-pace'
 
 export { verdictKey, getVerdicts }
 
 export const useExpectations = (userId, productIds = []) => {
-  const [state, setState] = useState({ started: {}, verdicts: {} })
+  const [state, setState] = useState({ started: {}, verdicts: {}, canAsk: true })
   const ids = productIds.filter(Boolean).join(',')
   useFocusEffect(useCallback(() => {
     if (!userId || !ids) return
@@ -26,11 +27,12 @@ export const useExpectations = (userId, productIds = []) => {
     Promise.all([
       supabase.from('user_products').select('product_id, opened_at').eq('user_id', userId).in('product_id', ids.split(',')).not('opened_at', 'is', null),
       getVerdicts(userId),
-    ]).then(([res, verdicts]) => {
+      canAskAgain(userId),
+    ]).then(([res, verdicts, canAsk]) => {
       if (!active) return
       const started = {}
       for (const r of res.data || []) if (!started[r.product_id] || r.opened_at < started[r.product_id]) started[r.product_id] = r.opened_at
-      setState({ started, verdicts })
+      setState({ started, verdicts, canAsk })
     }).catch(() => {})
     return () => { active = false }
   }, [userId, ids]))
@@ -39,6 +41,8 @@ export const useExpectations = (userId, productIds = []) => {
     setState(s => ({ ...s, verdicts }))
     await AsyncStorage.setItem(verdictKey(userId), JSON.stringify(verdicts)).catch(() => {})
     trackVerdict(userId)
+    markAsked(userId)
+    setState(s => ({ ...s, canAsk: false }))
   }
   return { ...state, answer }
 }
@@ -54,7 +58,7 @@ const SAID = {
   worse: 'You said your skin got worse with it.',
 }
 
-export default function ExpectationLine({ product, startedAt, verdict, onAnswer }) {
+export default function ExpectationLine({ product, startedAt, verdict, onAnswer, canAsk = true }) {
   const colors = useColors()
   const t = useT()
   const expect = expectationFor(product)
@@ -71,10 +75,10 @@ export default function ExpectationLine({ product, startedAt, verdict, onAnswer 
         <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 17 }]}>
           {st.phase === 'early'
             ? t('Day {day} · too early to judge. {what}: first changes after {range} weeks.', { day: st.day, what: t(expect.what), range })
-            : verdict ? t(SAID[verdict.value]) : t('Week {week} · time to look: how is your skin with it?', { week: st.week })}
+            : verdict ? t(SAID[verdict.value]) : canAsk ? t('Week {week} · time to look: how is your skin with it?', { week: st.week }) : t('Week {week} · we’ll ask how it’s going in a few days.', { week: st.week })}
         </Text>
       </View>
-      {st.phase === 'look' && !verdict ? (
+      {st.phase === 'look' && !verdict && canAsk ? (
         <View style={styles.answers}>
           {ANSWERS.map(a => (
             <Pressable key={a.value} onPress={() => onAnswer?.(a.value)} hitSlop={4} style={[styles.answer, { borderColor: colors.border, backgroundColor: colors.card }]}>

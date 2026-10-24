@@ -13,18 +13,18 @@ import { SPACING, TYPE } from '../utils/theme'
 // Under each product of her routine (Lita's audit, 2026-10-24): one line, the
 // most useful right now. Consider stopping first, then "time to look", then
 // "Day 11", then the verdict. Everything else opens on tap.
-export default function RoutineProductLine({ product, profile, stopAdvice, started, verdict, onAnswer, onStop, kodaPrefill }) {
+export default function RoutineProductLine({ product, profile, stopAdvice, started, verdict, canAsk = true, onAnswer, onStop, kodaPrefill }) {
   const colors = useColors()
   const t = useT()
   const [open, setOpen] = useState(false)
   const advice = stopAdvice.adviceFor(product)
   const adviceShown = advice && (advice.free || stopAdvice.premium)
   const st = expectationStatus(expectationFor(product), started)
-  const top = adviceShown ? 'stop' : st?.phase === 'look' && !verdict ? 'look' : st ? 'day' : 'verdict'
+  const top = adviceShown ? 'stop' : st?.phase === 'look' && !verdict && canAsk ? 'look' : st ? 'day' : 'verdict'
   const tone = advice?.level === 'danger' ? colors.danger : colors.warning
 
   const stopCard = <StopAdvice advice={advice} product={product} inRoutine premium={stopAdvice.premium} onStop={onStop} onKeep={() => stopAdvice.keep(product, advice?.kind)} />
-  const expect = <ExpectationLine product={product} startedAt={started} verdict={verdict} onAnswer={onAnswer} />
+  const expect = <ExpectationLine product={product} startedAt={started} verdict={verdict} onAnswer={onAnswer} canAsk={canAsk} />
 
   return (
     <View>
