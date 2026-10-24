@@ -648,6 +648,10 @@ export default function TodayScreen({ navigation, route }) {
           <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
         </Pressable>
       </View>
+      <Pressable onPress={() => navigation.navigate('Skyncyclopedia')} hitSlop={6} style={styles.learnLink}>
+        <Ionicons name="library-outline" size={15} color={colors.primary} />
+        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Learn about your skin: issues, ingredients, the basics')} ›</Text>
+      </Pressable>
 
       <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
         <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
@@ -712,6 +716,7 @@ function SunGlyph({ size = 24 }) {
 }
 
 const styles = StyleSheet.create({
+  learnLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.sm },
   reactOption: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 14, padding: SPACING.md, marginTop: SPACING.sm },
   modeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingVertical: 5, paddingHorizontal: SPACING.md, marginTop: SPACING.md },
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },

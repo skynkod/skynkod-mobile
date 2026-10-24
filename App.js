@@ -68,6 +68,7 @@ const QUICK_ACTIONS = [
   { icon: 'water-outline', title: 'My routines', subtitle: 'Morning and evening', to: 'Routines' },
   { icon: 'trending-up-outline', title: 'My progress', subtitle: 'How your skin is doing', to: 'Progress' },
   { icon: 'flask-outline', title: 'My products', subtitle: 'Your shelf and wishlist', to: 'Products' },
+  { icon: 'library-outline', title: 'Learn', subtitle: 'Skin issues, ingredients, the basics', to: 'Skyncyclopedia' },
   { icon: 'person-outline', title: 'Profile', subtitle: 'Your account and skin profile', to: 'More' },
 ]
 

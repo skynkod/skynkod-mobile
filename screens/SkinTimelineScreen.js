@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, useColors } from '../components/ui'
 import { PremiumBlur, usePremium } from '../components/PremiumLock'
 import AskKodaLink from '../components/AskKodaLink'
+import ProgressTabs from '../components/ProgressTabs'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { getSkinTimeline } from '../utils/skin-timeline'
@@ -41,7 +42,7 @@ export default function SkinTimelineScreen() {
     getSkinTimeline(user.id).then(setData).catch(error => { logError('Timeline_load', error, {}, 'warn'); setData({ timeline: [], summary: null }) })
   }, [user?.id]))
 
-  if (!data) return <Screen back title={t('Skin timeline')}><ActivityIndicator color={colors.primary} style={{ marginTop: SPACING.xxl }} /></Screen>
+  if (!data) return <Screen back title={t('My progress')}><ProgressTabs current="SkinTimeline" /><ActivityIndicator color={colors.primary} style={{ marginTop: SPACING.xxl }} /></Screen>
   const fmt = d => new Date(d).toLocaleDateString(language, { day: 'numeric', month: 'short' }).toUpperCase()
   const s = data.summary
   const Line = ({ icon, color, title, list }) => (
@@ -55,7 +56,8 @@ export default function SkinTimelineScreen() {
   )
 
   return (
-    <Screen back title={t('Skin timeline')} subtitle={t('Your skin story, step by step')}>
+    <Screen back title={t('My progress')} subtitle={t('Your skin story, step by step')}>
+      <ProgressTabs current="SkinTimeline" />
       {s ? (
         <>
           <Text style={[styles.section, { color: colors.muted }]}>{t('WHAT WORKED FOR YOU')}</Text>

@@ -9,6 +9,7 @@ import { shareReport } from '../utils/skin-report'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import ProgressTabs from '../components/ProgressTabs'
 
 const INSIDE = [
   ['person-outline', 'Your skin profile and treatments'],
@@ -44,8 +45,9 @@ export default function SkinReportScreen() {
   }
 
   return (
-    <Screen back title={t('My skin report')} subtitle={t('One page to show your dermatologist')}
+    <Screen back title={t('My progress')} subtitle={t('One page to show your dermatologist')}
       footer={premium ? <Button title={t('Create my report')} icon="document-text-outline" loading={busy} onPress={create} /> : <UnlockButton />}>
+      <ProgressTabs current="SkinReport" />
       <Card>
         <Text style={[TYPE.overline, { color: colors.muted }]}>{t('WHAT’S INSIDE')}</Text>
         {INSIDE.map(([icon, text]) => (

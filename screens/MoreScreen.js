@@ -40,7 +40,7 @@ export const MORE_SCREENS = [
   { name: 'PregnancySafe', component: PregnancySafeScreen, label: 'What’s safe for you now', icon: 'heart-outline', group: 'track' },
   { name: 'SkinProfile', component: SkinProfileScreen, label: 'My skin profile', subtitle: 'Your answers, editable anytime', icon: 'person-circle-outline', group: 'track' },
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
-  { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Skin mood, routines, concerns', icon: 'trending-up-outline', group: 'track' },
+  { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Progress, timeline and your dermatologist report', icon: 'trending-up-outline', group: 'track' },
   { name: 'SkinTimeline', component: SkinTimelineScreen, label: 'Skin timeline', subtitle: 'Your skin story, step by step', icon: 'git-commit-outline', group: 'track' },
   { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and your Koda box', icon: 'ribbon-outline', group: 'track' },
   { name: 'SkinReport', component: SkinReportScreen, label: 'My skin report', subtitle: 'One page for your dermatologist', icon: 'document-text-outline', group: 'track', premium: true },
@@ -67,7 +67,7 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
 // V1: Budget comes back later as a new feature.
-const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget', 'PregnancySafe']
+const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget', 'PregnancySafe', 'SkinTimeline', 'SkinReport']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 export default function MoreScreen({ navigation }) {
