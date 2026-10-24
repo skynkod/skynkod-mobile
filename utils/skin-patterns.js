@@ -34,13 +34,16 @@ const FACTORS = [
   { id: 'sun', icon: 'sunny-outline', after: 'time in the sun', test: day => day.tags.includes('Sun exposure') },
   { id: 'product', icon: 'flask-outline', after: 'starting a new product', test: day => day.tags.includes('Used new product') || day.openedProduct },
   { id: 'skipped', icon: 'water-outline', after: 'skipping your routine', test: day => day.routineKnown && !day.routineDone },
+  // Only days she logged her water: under half the goal counts as drinking little.
+  { id: 'water', icon: 'water', after: 'days you drink little water', test: day => day.water !== undefined && day.water < 4 },
 ]
 
 // entries: journal rows { date, mood, skin_conditions }
 // openedDates: dates a product was first opened
 // routineDates: dates with at least one routine step done
 // hasRoutine: whether the user has a routine at all
-export const findPatterns = ({ entries = [], openedDates = [], routineDates = [], hasRoutine = false, today = new Date() }) => {
+// water: { 'YYYY-MM-DD': glasses } from the glass on Home
+export const findPatterns = ({ entries = [], openedDates = [], routineDates = [], hasRoutine = false, water = {}, today = new Date() }) => {
   const days = {}
   for (const e of entries) {
     if (!e?.date || !e.mood) continue
@@ -57,6 +60,7 @@ export const findPatterns = ({ entries = [], openedDates = [], routineDates = []
     // Only judge "skipped" from the day the user started logging routines.
     day.routineKnown = hasRoutine && !!firstRoutineDay && key >= firstRoutineDay && key < dayKey(today)
     day.routineDone = routine.has(key)
+    if (water[key] !== undefined) day.water = water[key]
   }
 
   const keys = Object.keys(days).sort()

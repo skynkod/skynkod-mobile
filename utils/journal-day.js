@@ -1,6 +1,7 @@
 import { findPatterns } from './skin-patterns'
 import { readHealth, withHealthTags } from './apple-health'
 import { supabase } from './supabase'
+import { getWaterDays } from './water'
 
 // The Journal keeps one entry per day. Mood and "what's going on" tags are
 // also turned into the 0–10 levels other features read (Koda's tip, the
@@ -124,7 +125,9 @@ export const getSkinPatterns = async (userId) => {
   const routineDates = (routineDays.data || []).map(r => new Date(`${r.date}T12:00:00`))
   // Apple Health, if connected: period days and short nights count as ticked.
   const health = await readHealth().catch(() => null)
+  const water = await getWaterDays(userId, since).catch(() => ({}))
   return findPatterns({
+    water,
     entries: withHealthTags(entries.data || [], health),
     openedDates: (opened.data || []).map(r => r.opened_at),
     routineDates,

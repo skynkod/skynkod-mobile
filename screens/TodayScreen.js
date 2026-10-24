@@ -25,6 +25,7 @@ import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
 import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
 import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { getEnvironment } from '../utils/environment'
+import WaterGlass from '../components/WaterGlass'
 import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
 import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
@@ -596,6 +597,8 @@ export default function TodayScreen({ navigation }) {
           <Text style={[styles.moodMessage, { color: colors.textSecondary }]}>{t(HOME_MOOD_MESSAGES[todayMood] || MOOD_MESSAGES[todayMood])}</Text>
         ) : null}
       </Pressable>
+      {/* Water: one tap per glass, a higher goal on hot days */}
+      <WaterGlass userId={user?.id} tempMax={forecastDays?.[0]?.tempMax} style={{ marginTop: SPACING.md }} />
       <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
         <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
         <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>

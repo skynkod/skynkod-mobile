@@ -53,6 +53,11 @@ const TEXT = {
   evening: { en: 'Time for your evening routine 🌙', fr: "Ta routine du soir, c'est le moment 🌙" },
   eveningRamadan: { en: 'Your evening routine 🌙 And drink enough water before bed 💧', fr: "Ta routine du soir 🌙 Et pense à bien t'hydrater avant de dormir 💧" },
   journal: { en: 'How is your skin this morning? 🌸', fr: 'Comment va ta peau ce matin ? 🌸' },
+  water: [
+    { en: 'A glass of water? 💧 Tap the glass on Home.', fr: 'Un verre d’eau ? 💧 Touche le verre sur l’accueil.' },
+    { en: 'Halfway through the day: how many glasses so far? 💧', fr: 'Mi-journée : combien de verres jusqu’ici ? 💧' },
+    { en: 'One more glass before dinner? 💧', fr: 'Un dernier verre avant le dîner ? 💧' },
+  ],
 }
 
 const scheduleDaily = async (id, title, body, hour, minute, screen) => {
@@ -81,6 +86,18 @@ export const scheduleMorningReminder = async (userId) =>
 // to rehydrate; rescheduled at each app start, so it follows the month.
 export const scheduleEveningReminder = async (userId) =>
   scheduleDaily(`evening-${userId}`, 'Skynkod', (ramadanDay() ? TEXT.eveningRamadan : TEXT.evening)[await lang()], 21, 0, 'Home')
+
+// Water: 3 gentle reminders at most (11:00, 15:00, 18:00), switchable in Notifications.
+export const WATER_TIMES = [[11, 0], [15, 0], [18, 0]]
+export const scheduleWaterReminders = async (userId) => {
+  const l = await lang()
+  for (let i = 0; i < WATER_TIMES.length; i += 1) {
+    await scheduleDaily(`water-${i}-${userId}`, 'Skynkod', TEXT.water[i][l], WATER_TIMES[i][0], WATER_TIMES[i][1], 'Home')
+  }
+}
+export const cancelWaterReminders = async (userId) => {
+  for (let i = 0; i < WATER_TIMES.length; i += 1) await Notifications.cancelScheduledNotificationAsync(`water-${i}-${userId}`).catch(() => {})
+}
 
 export const scheduleJournalReminder = async (userId) =>
   scheduleDaily(`journal-${userId}`, 'Skynkod', TEXT.journal[await lang()], 7, 45, 'Journal')
@@ -137,7 +154,9 @@ export const syncSmartReminders = async (userId) => {
       const startDay = new Date(rekod.startedAt).getDay() + 1
       await scheduleWeekly(`rekod-checkin-${userId}`, SMART_TEXT.checkin[l], startDay, 10, 0, 'Rekod')
     } else {
-      await scheduleEveningReminder(userId)
+      // Back to the generic evening reminder, unless she switched it off.
+      const prefs = JSON.parse((await AsyncStorage.getItem(`notifications_${userId}`).catch(() => null)) || '{}')
+      if (prefs.eveningReminder !== false) await scheduleEveningReminder(userId)
     }
 
     // The Koda box (and the weekly recap on Home), every Monday morning.

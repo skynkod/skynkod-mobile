@@ -3,7 +3,7 @@ import { Text, Switch, Alert } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
 import { logError } from '../utils/errorLogger'
-import { requestNotificationPermissions, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder } from '../utils/notifications'
+import { requestNotificationPermissions, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder, scheduleWaterReminders, cancelWaterReminders } from '../utils/notifications'
 import { Screen, Card, ListRow, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
 
@@ -12,12 +12,13 @@ const REMINDERS = [
   { key: 'journalReminder', id: 'journal', title: 'Morning check-in', time: '7:45', icon: 'happy-outline', schedule: scheduleJournalReminder },
   { key: 'morningReminder', id: 'morning', title: 'Morning routine', time: '8:00', icon: 'sunny-outline', schedule: scheduleMorningReminder },
   { key: 'eveningReminder', id: 'evening', title: 'Evening routine', time: '21:00', icon: 'moon-outline', schedule: scheduleEveningReminder },
+  { key: 'waterReminder', id: 'water', title: 'Drink water', subtitle: 'At 11:00, 15:00 and 18:00', icon: 'water-outline', schedule: scheduleWaterReminders, cancel: cancelWaterReminders },
 ]
 
 export default function NotificationsScreen({ route }) {
   const { userId } = route.params
   const colors = useColors()
-  const [settings, setSettings] = useState({ morningReminder: true, eveningReminder: true, journalReminder: true })
+  const [settings, setSettings] = useState({ morningReminder: true, eveningReminder: true, journalReminder: true, waterReminder: true })
 
   useEffect(() => {
     AsyncStorage.getItem(`notifications_${userId}`)
@@ -40,7 +41,8 @@ export default function NotificationsScreen({ route }) {
         }
         await reminder.schedule(userId)
       } else {
-        await Notifications.cancelScheduledNotificationAsync(`${reminder.id}-${userId}`)
+        if (reminder.cancel) await reminder.cancel(userId)
+        else await Notifications.cancelScheduledNotificationAsync(`${reminder.id}-${userId}`)
       }
     } catch (error) {
       await logError('NotificationsScreen_toggle', error, { userId, key: reminder.key })
@@ -55,7 +57,7 @@ export default function NotificationsScreen({ route }) {
             key={r.key}
             icon={r.icon}
             title={r.title}
-            subtitle={`Every day at ${r.time}`}
+            subtitle={r.subtitle || `Every day at ${r.time}`}
             last={idx === REMINDERS.length - 1}
             right={
               <Switch

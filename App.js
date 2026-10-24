@@ -12,7 +12,7 @@ import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
 import { supabase, signOut, updateUserProfile } from './utils/supabase'
-import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder, syncSmartReminders } from './utils/notifications'
+import { requestNotificationPermissions, getExpoPushToken, scheduleMorningReminder, scheduleEveningReminder, scheduleJournalReminder, scheduleWaterReminders, syncSmartReminders } from './utils/notifications'
 import { logError } from './utils/errorLogger'
 import { setAnalyticsUser, track } from './utils/analytics'
 import * as SplashScreen from 'expo-splash-screen'
@@ -267,10 +267,13 @@ function AppContent() {
           await AsyncStorage.setItem(`push_token_${userId}`, token)
         }
 
+        // Only the reminders she left on in Notifications.
+        const prefs = JSON.parse((await AsyncStorage.getItem(`notifications_${userId}`).catch(() => null)) || '{}')
         await Promise.all([
-          scheduleMorningReminder(userId),
-          scheduleEveningReminder(userId),
-          scheduleJournalReminder(userId),
+          prefs.morningReminder !== false && scheduleMorningReminder(userId),
+          prefs.eveningReminder !== false && scheduleEveningReminder(userId),
+          prefs.journalReminder !== false && scheduleJournalReminder(userId),
+          prefs.waterReminder !== false && scheduleWaterReminders(userId),
         ])
         await syncSmartReminders(userId)
       }
