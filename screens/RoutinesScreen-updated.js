@@ -15,13 +15,12 @@ import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
 import { useSkinProfile } from '../utils/useSkinProfile';
-import StopAdvice, { useStopAdvice } from '../components/StopAdvice';
-import ExpectationLine, { useExpectations } from '../components/ExpectationLine';
-import AskKodaLink from '../components/AskKodaLink';
+import { useStopAdvice } from '../components/StopAdvice';
+import { useExpectations } from '../components/ExpectationLine';
+import RoutineProductLine from '../components/RoutineProductLine';
 import { getProductsByIds, photoOf } from '../utils/catalog';
 import YourWeek from '../components/YourWeek';
 import { weekAudit } from '../utils/week-audit';
-import ProductVerdict from '../components/ProductVerdict';
 import { todaySteps, describeDays } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
@@ -248,23 +247,15 @@ export default function RoutinesScreen({ route, navigation }) {
                     {step.product_id ? <Ionicons name="chevron-forward" size={16} color={colors.muted} /> : null}
                   </Pressable>
                 ) : null}
-                {productsById[step.product_id] ? <ProductVerdict product={productsById[step.product_id]} profile={profile} /> : null}
                 {productsById[step.product_id] ? (
-                  <ExpectationLine product={productsById[step.product_id]} startedAt={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]}
-                    onAnswer={async value => { await expectations.answer(step.product_id, value); stopAdvice.reload(); }} />
-                ) : null}
-                {productsById[step.product_id] ? (
-                  <AskKodaLink label="Ask Koda" returnTo="Routines" style={{ marginTop: SPACING.sm }}
-                    prefill={Array.isArray(step.days) && step.days.length && step.days.length < 7
+                  <RoutineProductLine product={productsById[step.product_id]} profile={profile} stopAdvice={stopAdvice}
+                    started={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]}
+                    onAnswer={async value => { await expectations.answer(step.product_id, value); stopAdvice.reload(); }}
+                    onStop={async () => { await stopAdvice.stop(productsById[step.product_id]); const r = await getUserRoutines(user.id); if (r.success) setSavedRoutines(r.data || []); }}
+                    kodaPrefill={Array.isArray(step.days) && step.days.length && step.days.length < 7
                       ? t('Why do I use {product} only on these days ({days})?', { product: productsById[step.product_id].name, days: t(describeDays(step.days)) })
                       : t('How do I get the most out of {product} in my {period} routine?', { product: productsById[step.product_id].name, period: t(tab === 'morning' ? 'morning' : 'evening') })} />
                 ) : null}
-                {productsById[step.product_id] ? (() => {
-                  const product = productsById[step.product_id];
-                  const advice = stopAdvice.adviceFor(product);
-                  return <StopAdvice advice={advice} product={product} inRoutine premium={stopAdvice.premium}
-                    onStop={async () => { await stopAdvice.stop(product); const r = await getUserRoutines(user.id); if (r.success) setSavedRoutines(r.data || []); }} onKeep={() => stopAdvice.keep(product, advice?.kind)} />;
-                })() : null}
                 {step.tip ? (
                   <View style={styles.tipRow}>
                     <Ionicons name="bulb-outline" size={14} color={colors.primary} />
