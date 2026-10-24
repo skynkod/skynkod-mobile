@@ -9,7 +9,7 @@ import { CommonActions } from '@react-navigation/native'
 import { useColors } from '../components/ui'
 import ProductVerdict from '../components/ProductVerdict'
 import { useAuth } from '../utils/AuthContext'
-import { useT } from '../utils/LanguageContext'
+import { useT, useLanguage } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { productMatch } from '../utils/ingredients-guide'
 import { addToMyProducts, getProductsByIds } from '../utils/catalog'
@@ -20,6 +20,7 @@ import { checkRoutine, suggestedDays, describeDays, EVERY_DAY, DAY_LABELS } from
 import { getUserRoutines } from '../utils/routines-service'
 import { BottomSheet } from '../components/ui'
 import { logError } from '../utils/errorLogger'
+import { isActiveProduct, recentNewActive, recentStartedActives, alreadyStarted } from '../utils/new-actives'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // Guided "build your routine": one essential step per page (I have one /
@@ -27,6 +28,7 @@ import { SPACING, RADIUS, TYPE } from '../utils/theme'
 export default function RoutineBuilderScreen({ navigation, route }) {
   const colors = useColors()
   const t = useT()
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
   const { user } = useAuth()
   const profile = useSkinProfile(user?.id)
@@ -107,6 +109,31 @@ export default function RoutineBuilderScreen({ navigation, route }) {
           { text: t('Keep it'), style: 'cancel' },
         ]
       )
+    } else if (isActiveProduct(picked.product) && user?.id) {
+      // One new active at a time: another one started less than 2 weeks ago
+      // (or just added here, not yet started) and she can't tell what works.
+      const addedHere = slots
+        .filter(slot => slot.uid !== picked.uid && !slot.uid.includes('-saved-') && slot.product && isActiveProduct(slot.product))
+        .map(slot => ({ id: slot.product.id, name: slot.product.name, date: new Date().toISOString() }))
+      Promise.all([alreadyStarted(user.id, picked.product.id), recentStartedActives(user.id)])
+        .then(([started, recent]) => {
+          const other = !started && recentNewActive({ candidate: picked.product, started: [...recent, ...addedHere] })
+          if (!other) return
+          Alert.alert(
+            t('One new active at a time'),
+            t('You started {other} on {date}. To know what really works for your skin (and what irritates it), wait until {until} before starting {product}.', {
+              other: other.name,
+              date: new Date(other.date).toLocaleDateString(language, { day: 'numeric', month: 'short' }),
+              until: other.until.toLocaleDateString(language, { day: 'numeric', month: 'short' }),
+              product: picked.product.name,
+            }),
+            [
+              { text: t('Choose another'), onPress: () => pick(picked.stepKey, picked.uid) },
+              { text: t('Keep it anyway'), style: 'cancel' },
+            ]
+          )
+        })
+        .catch(error => logError('RoutineBuilder_newActive', error, {}, 'warn'))
     }
     setSlots(prev => {
       if (prev.some(slot => slot.uid === picked.uid)) {

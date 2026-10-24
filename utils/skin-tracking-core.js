@@ -101,3 +101,15 @@ export const whatChanged = ({ entries = [], started = [], now = new Date(), minD
   }
   return out
 }
+
+// One new active at a time: wait this long after starting one before the next.
+export const NEW_ACTIVE_WAIT_DAYS = 14
+
+// The most recent other active started less than 2 weeks ago, or null.
+// started: [{ id, name, date }]
+export const recentNewActive = ({ candidate, started = [], now = new Date(), wait = NEW_ACTIVE_WAIT_DAYS }) => {
+  const recent = started
+    .filter(s => s.id !== candidate?.id && now.getTime() - new Date(s.date).getTime() < wait * DAY)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+  return recent ? { ...recent, until: new Date(new Date(recent.date).getTime() + wait * DAY) } : null
+}

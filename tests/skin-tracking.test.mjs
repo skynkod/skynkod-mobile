@@ -72,3 +72,12 @@ test('dehydrated and dry are tracked apart', () => {
   assert.ok(c.find(x => x.key === 'dehydration'))
   assert.equal(c.find(x => x.key === 'dryness'), undefined)
 })
+
+import { recentNewActive } from '../utils/skin-tracking-core.js'
+test('one new active at a time: another started 5 days ago means wait 9 more days', () => {
+  const r = recentNewActive({ candidate: { id: 'b' }, started: [{ id: 'a', name: 'Retinol serum', date: ago(5) }], now: NOW })
+  assert.equal(r.name, 'Retinol serum')
+  assert.equal(Math.round((r.until - NOW) / DAY), 9)
+  assert.equal(recentNewActive({ candidate: { id: 'b' }, started: [{ id: 'a', name: 'x', date: ago(20) }], now: NOW }), null)
+  assert.equal(recentNewActive({ candidate: { id: 'a' }, started: [{ id: 'a', name: 'x', date: ago(2) }], now: NOW }), null)
+})
