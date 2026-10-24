@@ -34,12 +34,14 @@ Si vous cochez la case « Utiliser mes informations sensibles », nous collecton
 Sans cet accord, ces questions ne vous sont pas posées. Vous pouvez retirer votre accord à tout moment dans Profil → Réglages → Confidentialité : ces informations sont alors effacées.
 
 ### d) Votre journal
-Chaque jour, si vous le remplissez : l'état de votre peau (de « très bien » à « terrible »), ce qui se passe (nouveau bouton, rougeurs, sécheresse, mauvaise nuit, stress, règles, soleil, nouveau produit…) et une note libre.
+Chaque jour, si vous le remplissez : l'état de votre peau (de « très bien » à « terrible », et « Your skin feels » : irritée, rouge, déshydratée…), ce qui se passe (nouveau bouton, rougeurs, sécheresse, mauvaise nuit, stress, règles, soleil, nouveau produit…), une note libre et le nombre de verres d'eau que vous notez.
+
+Toutes les 2 semaines, si vous le faites : votre **Skin review** (votre peau va mieux, pareil ou moins bien depuis le début, et ce qui vous gêne). L'application en tire vos progrès (par exemple « boutons −31 % ») et les liens observés avec vos produits ; ce sont des calculs sur vos propres données, jamais un diagnostic.
 
 [⚠️ À trancher avec l'avocat : ces informations peuvent être considérées comme des données de santé. Voir le document « À faire dans l'application ».]
 
 ### e) Vos routines, vos produits et vos dépenses
-Les produits de vos routines et les étapes cochées, les produits que vous possédez ou voulez acheter, leurs dates d'ouverture, vos achats (prix, magasin, date) et votre budget mensuel.
+Les produits de vos routines et les étapes cochées, les produits que vous possédez ou voulez acheter, leurs dates d'ouverture, les produits que vous retirez de vos routines (avec la date), vos réponses « Better / Same / Worse » sur un produit, les conseils que vous choisissez d'ignorer (« Keep it »), vos achats (prix, magasin, date, monnaie) et votre budget mensuel. Vos badges et vos points sont aussi gardés dans votre compte, pour ne pas les perdre en changeant de téléphone.
 
 ### f) Vos conversations avec Koda
 Les messages que vous échangez avec Koda.
@@ -56,6 +58,7 @@ Les écrans que vous ouvrez et les fonctionnalités que vous utilisez (par exemp
 ### j) Les données qui restent sur votre téléphone
 Nous ne recevons pas ces données :
 - **Localisation approximative** (arrondie à environ 10 km) : uniquement si vous l'autorisez, pour calculer l'heure du lever et du coucher du soleil (mode jour ou nuit) et pour la « météo de votre peau ». Elle est enregistrée sur votre téléphone ; pour la météo, seules ces coordonnées arrondies sont envoyées au service météo Open-Meteo, sans votre nom, votre email ni aucun identifiant.
+  **Exception :** pour vous prévenir quand vous êtes loin de chez vous sous un autre climat (« Your environment changed »), l'application garde un relevé par jour pendant 45 jours (ces coordonnées arrondies, la température, l'humidité et l'indice UV). Il est enregistré sur votre téléphone **et dans votre compte**, pour suivre un changement de téléphone, et effacé avec votre compte.
 - **Caméra** : pour scanner le code-barres d'un produit (aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé), et pour Dekod (voir 3h).
 - **Notifications** : les rappels sont programmés sur votre téléphone.
 
@@ -79,7 +82,8 @@ Quand vous écrivez à Koda, votre message est envoyé à notre prestataire d'IA
 - votre profil de peau ;
 - un résumé de votre situation : votre routine, les produits ouverts ou ajoutés récemment et un éventuel plan de 7 jours en cours ;
 - votre programme Rekod, si vous en suivez un (objectifs, semaine, étape du soir) ;
-- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours, les tendances repérées dans votre journal et votre dernier résultat Dekod.
+- les jours où vous utilisez chaque produit, depuis quand vous utilisez vos actifs, les produits que vous avez arrêtés ou que l'application vous suggère d'arrêter, vos réponses « Better / Same / Worse », et le fait que vous soyez en voyage sous un autre climat ;
+- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours, les tendances repérées dans votre journal, votre dernier résultat Dekod, vos progrès, vos Skin reviews, les liens observés avec vos produits et vos verres d'eau.
 
 **Dekod** fonctionne de la même façon : votre photo est envoyée à Anthropic uniquement pour lire ce qui est visible sur votre peau, puis supprimée.
 

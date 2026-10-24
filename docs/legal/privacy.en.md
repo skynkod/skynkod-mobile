@@ -34,12 +34,14 @@ If you tick "Use my sensitive skin information", we also collect: acne type, ski
 Without this consent, these questions are skipped. You can withdraw it at any time in Profile → Settings → Privacy: this information is then erased.
 
 ### d) Your journal
-Each day, if you fill it in: how your skin feels (from "great" to "terrible"), what's going on (new pimple, redness, dryness, poor sleep, stress, period, sun, new product…) and a free note.
+Each day, if you fill it in: how your skin feels (from "great" to "terrible", and "Your skin feels": irritated, red, dehydrated…), what's going on (new pimple, redness, dryness, poor sleep, stress, period, sun, new product…), a free note and the glasses of water you log.
+
+Every 2 weeks, if you do it: your **Skin review** (your skin is better, the same or worse since you started, and what bothers you). The app works out your progress from it (for example "breakouts −31%") and the links seen with your products; these are calculations on your own data, never a diagnosis.
 
 [⚠️ To decide with the lawyer: this may count as health data. See the "App to-do" document.]
 
 ### e) Your routines, products and spending
-Products in your routines and the steps you tick, products you own or want to buy, when you opened them, your purchases (price, store, date) and your monthly budget.
+Products in your routines and the steps you tick, products you own or want to buy, when you opened them, products you take out of your routines (with the date), your "Better / Same / Worse" answers about a product, advice you choose to ignore ("Keep it"), your purchases (price, store, date, currency) and your monthly budget. Your badges and points are also kept in your account, so you don't lose them when you change phone.
 
 ### f) Your conversations with Koda
 The messages you exchange with Koda.
@@ -56,6 +58,7 @@ Which screens you open and which features you use (for example: routine finished
 ### j) Data that stays on your phone
 We don't receive this data:
 - **Approximate location** (rounded to about 10 km): only if you allow it, to work out sunrise and sunset (day or night mode) and for your "skin weather". It is stored on your phone; for the weather, only these rounded coordinates are sent to the Open-Meteo weather service, without your name, email or any identifier.
+  **Exception:** to tell you when you're far from home in another climate ("Your environment changed"), the app keeps one reading a day for 45 days (these rounded coordinates, temperature, humidity and UV index). It is stored on your phone **and in your account**, so it follows you to a new phone, and deleted with your account.
 - **Camera**: to scan a product's barcode (no image is saved or sent; only the barcode number is used), and for Dekod (see 3h).
 - **Notifications**: reminders are scheduled on your phone.
 
@@ -79,7 +82,8 @@ When you write to Koda, your message is sent to our AI provider, **Anthropic PBC
 - your skin profile;
 - a summary of your situation: your routine, products opened or added recently, and any 7-day plan in progress;
 - your Rekod programme, if you follow one (goals, week, tonight's step);
-- **if you consented to health data**: your journal for the last 7 days, the trends spotted in it, and your latest Dekod result.
+- the days you use each product, how long you've used your actives, the products you stopped or that the app suggests stopping, your "Better / Same / Worse" answers, and whether you're travelling in another climate;
+- **if you consented to health data**: your journal for the last 7 days, the trends spotted in it, your latest Dekod result, your progress, your Skin reviews, the links seen with your products and your glasses of water.
 
 **Dekod** works the same way: your photo is sent to Anthropic only to read what is visible on your skin, then deleted.
 
