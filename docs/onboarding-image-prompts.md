@@ -115,3 +115,29 @@ Pour remplacer les icônes de la première question. Ce sont des peaux **en bonn
 ---
 
 **Pour plus tard :** les 38 photos des problèmes de peau montrent surtout des femmes. Pour une app pour tout le monde, on pourra en refaire quelques-unes avec des hommes (boutons, rougeurs, pores, taches), avec le même style commun.
+
+---
+
+## F. Koda et les décors de l'inscription (nouvelle version, 2026-10-25)
+
+Pour remplacer les dessins simples du prototype par des images comme ta maquette. Même façon de faire : on colle d'abord le style commun ci-dessous, puis un prompt à la fois.
+
+**Style commun Koda (à coller une fois)**
+
+> I am going to ask you for illustrations for a skincare app, all in exactly the same style. Style: soft dreamy 3D illustration, glossy and luminous, pastel mauve, blush pink and warm peach palette (#F6EEF3, #EAD7E2, #C49DBA, #FCD5C8), gentle glow, magical but calm, no harsh outlines. The mascot is Koda: a small round glossy peach-pink sun with 8 soft rounded rays, big dark shiny eyes, pink blush cheeks, a small happy mouth, **no arms, no hands, no legs**. No text, no numbers, no watermark. Reply "ready" and wait for each prompt.
+
+**Koda seul, fond transparent (PNG), 1024 × 1024**, une image par expression :
+1. `koda-happy.png` → Koda smiling with open eyes, transparent background.
+2. `koda-wink.png` → Koda winking with one eye, big smile, transparent background.
+3. `koda-joy.png` → Koda with happy closed eyes (^ ^) and an open laughing smile, transparent background.
+4. `koda-calm.png` → Koda with peaceful closed eyes and a soft smile, transparent background.
+5. `koda-curious.png` → Koda with open eyes, a small round "o" mouth and a small pink question mark next to it, transparent background.
+
+**Décors, sans Koda (Koda est ajouté par-dessus dans l'app), format portrait 1080 × 1920**
+6. `scene-map-night.png` → a dreamy mauve twilight landscape seen from above at a slight angle: soft hills, distant mountains, little pink crystals, tiny flowers, mist, a few stars; an empty winding path that glows softly from the bottom to the top of the image. No characters.
+7. `scene-intro-skin.png` → a soft mauve dreamy landscape with a round glowing pastel pedestal (like a shallow crystal bowl) in the center foreground, mountains and mist behind, sparkles. Empty space above the pedestal. No characters.
+8. `scene-intro-face.png` → same style, a vanity scene: a round mirror on a stand, pink crystals and stones on a soft surface, mist and sparkles. Empty space in the center. No characters.
+9. `scene-celebration.png` → same style, a soft glowing heart outline made of light in the center, petals and sparkles floating, mauve hills at the bottom. Empty center. No characters.
+
+**Le visage pour choisir les zones, format portrait 1080 × 1350**
+10. `face-zones.png` → a realistic, calm portrait of a young woman facing the camera, eyes open, natural skin with a few visible pores and light freckles, soft warm light, mauve-pink background, framed from the top of the head to the chin, centered, no makeup look, no text.
