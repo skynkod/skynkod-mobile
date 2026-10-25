@@ -13,6 +13,8 @@ import { requestProduct } from '../utils/community-data'
 import { track } from '../utils/analytics'
 import { searchIngredients, ingredientFit, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
+import TrendCard from '../components/TrendCard'
+import { findTrend } from '../utils/trends'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // What each product is, in plain English, next to names that may be in French.
@@ -60,12 +62,15 @@ export default function SearchScreen({ navigation, route }) {
     ])
   }
 
-  const ingredients = searchIngredients(query).slice(0, 3)
+  // Searching products and ingredients is Premium; checking a trend is free for everyone (Lita, 2026-10-25).
+  const locked = premium === false && !pendingBarcode
+  const trend = findTrend(query)
+  const ingredients = locked ? [] : searchIngredients(query).slice(0, 3)
 
   // Searches 300 ms after the user stops typing; ignores stale answers.
   useEffect(() => {
     const q = query.trim()
-    if (q.length < 2) {
+    if (q.length < 2 || locked) {
       setProducts([])
       return
     }
@@ -87,28 +92,23 @@ export default function SearchScreen({ navigation, route }) {
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, locked])
 
   const hasQuery = query.trim().length >= 2
 
   // Searching without the product in hand is Premium, like Yuka; scanning stays
   // free, and so does finding a product to teach the scanner an unknown barcode.
-  if (premium === false && !pendingBarcode) {
-    return (
-      <Screen back>
-        <View style={styles.locked}>
-          <View style={[styles.lockIcon, { backgroundColor: colors.primarySoft }]}><Ionicons name="search" size={28} color={colors.primary} /></View>
-          <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.lg }]}>{t('PREMIUM')}</Text>
-          <Text style={[TYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.xs }]}>{t('Search any product or ingredient')}</Text>
-          <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm, lineHeight: 22 }]}>
-            {t('Check a product before you buy it, or learn what an ingredient does, without needing the bottle in your hands.')}
-          </Text>
-          <UnlockButton style={{ marginTop: SPACING.xl, alignSelf: 'stretch' }} />
-          <Button title={t('Scan a product, it’s free')} icon="scan-outline" variant="secondary" onPress={() => navigation.navigate('Scanner')} style={{ marginTop: SPACING.sm, alignSelf: 'stretch' }} />
-        </View>
-      </Screen>
-    )
-  }
+  const pitch = (
+    <View style={[styles.pitch, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[TYPE.overline, { color: colors.primary }]}>{t('PREMIUM')}</Text>
+      <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xs }]}>{t('Search any product or ingredient')}</Text>
+      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.xs, lineHeight: 18 }]}>
+        {t('Check a product before you buy it, or learn what an ingredient does, without needing the bottle in your hands.')}
+      </Text>
+      <UnlockButton style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} />
+      <Button title={t('Scan a product, it’s free')} icon="scan-outline" variant="secondary" onPress={() => navigation.navigate('Scanner')} style={{ marginTop: SPACING.sm, alignSelf: 'stretch' }} />
+    </View>
+  )
 
   return (
     <Screen back keyboard>
@@ -117,7 +117,7 @@ export default function SearchScreen({ navigation, route }) {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder={t('Search a product or ingredient')}
+          placeholder={locked ? t('Check a tip seen online') : t('Search a product, ingredient or tip')}
           placeholderTextColor={colors.muted}
           autoFocus
           autoCorrect={false}
@@ -141,7 +141,18 @@ export default function SearchScreen({ navigation, route }) {
         </View>
       ) : null}
 
+      {/* The trend she typed, checked (free) */}
+      {hasQuery && trend ? <TrendCard trend={trend} profile={profile} style={{ marginTop: SPACING.lg }} /> : null}
+
       {!hasQuery ? (
+        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md, lineHeight: 18 }]}>
+          {t('Seen a skincare tip on TikTok? Type it to check it, like “toothpaste on a pimple”. Free.')}
+        </Text>
+      ) : null}
+
+      {locked ? (hasQuery && trend ? null : pitch) : null}
+
+      {!hasQuery && !locked ? (
         <>
           <Text style={[styles.section, { color: colors.muted }]}>{t('POPULAR INGREDIENTS')}</Text>
           <View style={styles.chips}>
@@ -187,7 +198,7 @@ export default function SearchScreen({ navigation, route }) {
         </>
       ) : null}
 
-      {hasQuery ? (
+      {hasQuery && !locked ? (
         <>
           <Text style={[styles.section, { color: colors.muted }]}>{t('PRODUCTS')}</Text>
           {loading && !products.length ? <ActivityIndicator color={colors.primary} style={{ marginTop: SPACING.lg }} /> : null}
@@ -224,8 +235,7 @@ export default function SearchScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  locked: { alignItems: 'center', paddingTop: SPACING.xxl, paddingHorizontal: SPACING.md },
-  lockIcon: { width: 72, height: 72, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  pitch: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.xl },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
   input: { flex: 1, fontSize: 16, height: '100%' },
   section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
