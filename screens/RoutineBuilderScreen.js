@@ -181,7 +181,8 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const pick = (key, uid = key) => navigation.navigate('ProductPicker', { stepKey: key, uid, period })
   const addStep = key => pick(key, `${key}-${Date.now()}`)
   const removeSlot = uid => setSlots(prev => prev.filter(slot => slot.uid !== uid))
-  const addable = STEP_ORDER.filter(key => period === 'morning' || key !== 'sunscreen')
+  // The makeup remover is an evening step, sunscreen a morning one.
+  const addable = STEP_ORDER.filter(key => (period === 'morning' ? key !== 'remover' : key !== 'sunscreen'))
   const askKoda = key =>
     navigation.navigate('Koda', {
       returnTo: 'RoutineBuilder',

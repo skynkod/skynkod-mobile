@@ -45,6 +45,7 @@ import { takeNewThanks } from '../utils/contributions'
 import { skinDay, sunriseOn, skinDayKey } from '../utils/skin-day'
 import { getShortState, startShortEvening, cancelShortEvening, markSimplifyOffered } from '../utils/short-evening'
 import { shortSteps, canGoShort, shouldSuggestSimplify } from '../utils/short-evening-core'
+import { removerNeed, withRemoverStep, hasSunscreen } from '../utils/removers'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { getWeekRecap, recapWeekKey } from '../utils/progress'
@@ -316,8 +317,11 @@ export default function TodayScreen({ navigation, route }) {
     const kept = shortSteps(full.steps)
     return { steps: kept, paused: [...full.paused, ...full.steps.filter(st => !kept.includes(st)).map(step => ({ step, reason: 'short' }))] }
   }
+  // The makeup remover (Lita, 2026-10-25): every evening with sunscreen or daily makeup, optional with makeup some days.
+  const removerNow = removerNeed({ makeup: profile?.makeup, hasSpf: hasSunscreen(routines.morning?.steps || [], routineProducts) })
+  const withEssentials = period => (period === 'evening' ? withRemoverStep(withLipsStep(routines.evening?.steps || []), removerNow) : withLipsStep(routines[period]?.steps || []))
   const adjustedFullOf = period => {
-    const plain = withPauses(todaySteps(withLipsStep(routines[period]?.steps || [])), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    const plain = withPauses(todaySteps(withEssentials(period)), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
     // A product her profile says to avoid (pregnancy, breastfeeding, an allergy)
     // waits, even in a routine made before (integration audit, 2026-10-25).
     const avoid = plain.steps.filter(st => routineProducts[st.product_id] && profile && productMatch(routineProducts[st.product_id], profile).avoid.length)
@@ -344,7 +348,8 @@ export default function TodayScreen({ navigation, route }) {
   const countOf = period => {
     const steps = stepsOf(period)
     // An empty step (no product yet) can't be ticked: it doesn't count.
-    return { total: steps.filter(s => s.product).length, done: steps.filter((s, i) => s.product && done[period][i]).length }
+    // An optional step (the remover with makeup only some days) doesn't count either.
+    return { total: steps.filter(s => s.product && !s.optional).length, done: steps.filter((s, i) => s.product && !s.optional && done[period][i]).length }
   }
   const morning = countOf('morning')
   const evening = countOf('evening')
@@ -491,8 +496,8 @@ export default function TodayScreen({ navigation, route }) {
                 )}
                 {/* A step without a product (Lips in an older routine): pick one in the builder */}
                 <Pressable onPress={() => (s.product_id ? navigation.navigate('Product', { id: s.product_id })
-                  : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withLipsStep(routines[period]?.steps || []) }))} style={{ flex: 1 }}>
-                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}</Text>
+                  : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withEssentials(period) }))} style={{ flex: 1 }}>
+                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}{s.optional ? ` · ${t('on evenings you wear makeup')}` : ''}</Text>
                   <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: done[period][i] ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
                 </Pressable>
               </View>

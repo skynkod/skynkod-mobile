@@ -3,6 +3,7 @@ import { getActivePlan, adjustForPlan } from './emergency-state'
 import { getProductsByIds, getNewestProductId } from './catalog'
 import { getPausedProducts } from './paused-products'
 import { isShortTonight } from './short-evening'
+import { removerNeed, hasSunscreen } from './removers'
 import { shortSteps } from './short-evening-core'
 
 // The routine a period uses everywhere (Home, Routines, Journal, badges): the
@@ -32,8 +33,15 @@ export const withPauses = (steps, { plan = null, products = {}, newest = null, p
 }
 
 // Today's steps of a routine, as Home shows and ticks them.
-export const todayStepsWithPauses = async (userId, routine) => {
-  const steps = todaySteps(routine?.steps || [])
+export const todayStepsWithPauses = async (userId, routine, { morning = null } = {}) => {
+  let steps = todaySteps(routine?.steps || [])
+  // The makeup remover with makeup only some days is optional: not counted (as on Home).
+  if (routine?.type === 'evening' && steps.some(s => s.key === 'remover')) {
+    const { getUserProfile } = await import('./supabase')
+    const { engineProfile } = await import('./skin-quiz')
+    const row = await getUserProfile(userId).catch(() => null)
+    if (removerNeed({ makeup: row ? engineProfile(row).makeup : null, hasSpf: hasSunscreen(morning?.steps || []) }) === 'optional') steps = steps.filter(s => s.key !== 'remover')
+  }
   const [plan, paused] = await Promise.all([getActivePlan(userId).catch(() => null), getPausedProducts(userId).catch(() => [])])
   let products = {}
   let newest = null

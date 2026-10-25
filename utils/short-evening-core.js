@@ -1,5 +1,5 @@
 // "Short version tonight" (Lita, 2026-10-25): on a tired evening, the routine
-// keeps only the essentials (cleanser, cream, lips), so she doesn't skip it all.
+// keeps only the essentials (makeup remover, cleanser, cream, lips), so she doesn't skip it all.
 //   - Rekod takes a one-night pause: the whole programme moves one evening
 //     later (nights, weekly review, end), then goes on as planned.
 //   - 3 short evenings in a week: once, Home offers to simplify her routine.
@@ -7,7 +7,7 @@
 
 const DAY = 86400000
 // Step keys from routine-steps.js (her own routines and Rekod use the same ones).
-const KEEP_KEYS = ['cleanser', 'moisturizer', 'lips']
+const KEEP_KEYS = ['remover', 'cleanser', 'moisturizer', 'lips']
 
 // The essentials of tonight's steps: never a strong night's step.
 export const shortSteps = (steps = []) => steps.filter(st => !st.night && KEEP_KEYS.includes(st.key))

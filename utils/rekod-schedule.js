@@ -60,7 +60,8 @@ const TREATMENT_NIGHT = {
 export const nightInfo = (plan, night, now = new Date()) => (night === 'retinoid' ? { ...NIGHTS.retinoid, ...TREATMENT_NIGHT[treatmentOf(plan, now)] } : NIGHTS[night])
 // What the saved routine was built for: when it changes (a new week, a new
 // level, a rest week ending), the routine is rebuilt.
-export const rekodKey = (plan, now = new Date()) => `${weekPattern(plan).join(',')}|${treatmentOf(plan, now)}|${resting(plan, now) ? 'rest' : ''}`
+// r2: the makeup remover step (2026-10-25) rebuilds routines made before it.
+export const rekodKey = (plan, now = new Date()) => `${weekPattern(plan).join(',')}|${treatmentOf(plan, now)}|${resting(plan, now) ? 'rest' : ''}|r2`
 
 // Nights per week, from the rules (exfoliation, retinoid, repair, reset).
 const LEVELS = [

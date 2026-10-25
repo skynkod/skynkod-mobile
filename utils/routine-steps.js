@@ -1,6 +1,8 @@
 // Routine steps the builder offers. `category` matches products.category.
 
 export const STEP_TYPES = {
+  // First step of the evening, before the cleanser (Lita, 2026-10-25): makeup and sunscreen off.
+  remover: { label: 'Makeup remover', title: 'Your makeup remover', why: 'Melts makeup and sunscreen first, so your cleanser can clean the skin itself. A micellar water, a cleansing oil or a balm.', category: ['cleanser'], icon: 'color-wand-outline' },
   cleanser: { label: 'Cleanser', title: 'Your cleanser', why: 'Removes dirt, oil and sunscreen from your face and neck without stripping your skin.', category: ['cleanser'], icon: 'water-outline' },
   exfoliant: { label: 'Exfoliant', title: 'Your exfoliant', why: 'Smooths texture and unclogs pores, 2–3 nights a week.', category: ['exfoliant'], icon: 'sparkles-outline' },
   toner: { label: 'Toner', title: 'Your toner', why: 'Rebalances and preps your skin for the next steps.', category: ['toner'], icon: 'flask-outline' },
@@ -18,7 +20,7 @@ export const STEP_TYPES = {
 }
 
 // Order steps are applied in.
-export const STEP_ORDER = ['cleanser', 'exfoliant', 'toner', 'serum', 'treatment', 'eye', 'moisturizer', 'mask', 'sunscreen', 'lipscrub', 'lips', 'lipmask']
+export const STEP_ORDER = ['remover', 'cleanser', 'exfoliant', 'toner', 'serum', 'treatment', 'eye', 'moisturizer', 'mask', 'sunscreen', 'lipscrub', 'lips', 'lipmask']
 
 export const ESSENTIALS = {
   morning: ['cleanser', 'eye', 'moisturizer', 'sunscreen', 'lips'],
@@ -27,7 +29,7 @@ export const ESSENTIALS = {
 
 export const OPTIONAL = {
   morning: ['toner', 'serum'],
-  evening: ['exfoliant', 'toner', 'serum', 'mask', 'lipscrub', 'lipmask'],
+  evening: ['remover', 'exfoliant', 'toner', 'serum', 'mask', 'lipscrub', 'lipmask'],
 }
 
 export const sortSteps = keys => [...keys].sort((a, b) => STEP_ORDER.indexOf(a) - STEP_ORDER.indexOf(b))

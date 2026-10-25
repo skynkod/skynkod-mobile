@@ -12,6 +12,7 @@ import { getUserProfile } from './supabase'
 import { engineProfile } from './skin-quiz'
 import { getPausedProducts } from './paused-products'
 import { getProductReactions } from './journal-day'
+import { isRemover, removerPrefer, REMOVER_ACTION } from './removers'
 import { loadState } from './cloud-state'
 import { purgeRunning } from './purge-core'
 import {
@@ -160,6 +161,7 @@ const chooser = async (userId, profile, pref = 'own') => {
 // Why each step is there, in plain words. Active steps explain their main
 // active from the ingredient guide instead.
 const ROLE_WHY = {
+  remover: 'Melts your sunscreen and makeup first, so your cleanser can clean the skin itself.',
   cleanser: 'Cleans gently without stripping, so your skin handles the actives better.',
   moisturizer: 'Locks in hydration and protects your skin barrier: the base of every result.',
   sunscreen: 'The step that protects your results: without it, actives can’t do their job.',
@@ -228,7 +230,10 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   // SPF 50 from the name ("SPF 50", "50+", "SPF50"), never "150 ml".
   const spf50 = p => /spf\s?50|\b50\s?\+|\bspf\s?50\+?/i.test(p.name || '')
 
-  const cleanser = await pick(['cleanser'], gentle)
+  // A cleanser that rinses, not a micellar water or a cleansing oil: those are the remover step.
+  const cleanser = await pick(['cleanser'], { ...gentle, reject: isRemover })
+  // Rekod's mornings always end with sunscreen: a remover every evening (Lita, 2026-10-25).
+  const remover = await pick(['cleanser'], { ...gentle, unique: true, reject: p => !isRemover(p), prefer: removerPrefer(profile) })
   // unique: the repair step never repeats the day cream.
   const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant, unique: true })
   const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50 } : { ...gentle, prefer: spf50 })
@@ -283,6 +288,7 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const isMask = c => c && /mask|masque|sleeping|overnight/i.test(c.product.name || '')
 
   const evening = [
+    remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exWant),
     daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),

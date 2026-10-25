@@ -198,6 +198,8 @@ export const engineProfile = (row) => {
     pregnancy: row?.pregnancy || null,
     skin_goals: row?.skin_goals || [],
     sex: sp.sex || null,
+    // Makeup or tinted products: rarely / some / daily (the makeup remover step).
+    makeup: sp.makeup || null,
     meds,
     fragile,
     // Her main and secondary concern (they lead the product verdicts and Rekod).

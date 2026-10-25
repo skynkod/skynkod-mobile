@@ -176,7 +176,7 @@ export default function JournalScreen({ route, navigation }) {
       const isToday = sameDay(selected, skinDay());
       const rows = (await Promise.all(['morning', 'evening'].map(async type => {
         const routine = currentRoutine(list, type);
-        const steps = isToday ? await todayStepsWithPauses(user.id, routine) : todaySteps(routine?.steps || [], selected);
+        const steps = isToday ? await todayStepsWithPauses(user.id, routine, { morning: currentRoutine(list, 'morning') }) : todaySteps(routine?.steps || [], selected);
         return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
       }))).filter(Boolean);
       setRoutineLog({ rows, regularity });
