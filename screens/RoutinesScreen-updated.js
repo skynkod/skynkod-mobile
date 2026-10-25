@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { currentRoutine } from '../utils/current-routine';
+import { currentRoutine, withLipsStep } from '../utils/current-routine';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -90,9 +90,11 @@ export default function RoutinesScreen({ route, navigation }) {
       .catch(() => {});
   }, [savedIds]);
   const generated = buildRoutine(skinType || 'Combination', []);
-  const steps = saved ? todaySteps(saved.steps) : generated[tab] || [];
-  const completed = steps.filter((_, idx) => done[idx]).length;
-  const progress = steps.length ? completed / steps.length : 0;
+  const steps = saved ? todaySteps(withLipsStep(saved.steps)) : generated[tab] || [];
+  // An empty step (Lips in an older routine) can't be ticked: it doesn't count.
+  const filled = saved ? steps.filter(s => s.product) : steps;
+  const completed = steps.filter((s, idx) => done[idx] && (!saved || s.product)).length;
+  const progress = filled.length ? completed / filled.length : 0;
 
   const toggleStep = async (idx) => {
     const next = { ...done, [idx]: !done[idx] };
@@ -104,7 +106,7 @@ export default function RoutinesScreen({ route, navigation }) {
 
   if (loading) return <LoadingView />;
 
-  const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now(), editSteps: saved?.steps || null });
+  const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now(), editSteps: saved ? withLipsStep(saved.steps) : null });
 
   // Back skips the routine builder screens and returns to where she came
   // from (usually Home), never to the steps she just finished.
@@ -163,7 +165,7 @@ export default function RoutinesScreen({ route, navigation }) {
           <View>
             <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Today')}</Text>
             <Text style={[TYPE.heading, { color: colors.text, marginTop: 2 }]}>
-              {completed === steps.length && steps.length ? t('All done ✨') : t('{done} of {total} steps', { done: completed, total: steps.length })}
+              {completed === filled.length && filled.length ? t('All done ✨') : t('{done} of {total} steps', { done: completed, total: filled.length })}
             </Text>
           </View>
           <Text style={[TYPE.title, { color: colors.primary }]}>{Math.round(progress * 100)}%</Text>
@@ -209,7 +211,7 @@ export default function RoutinesScreen({ route, navigation }) {
           const isDone = !!done[idx];
           const last = idx === steps.length - 1;
           return (
-            <Pressable key={`${tab}-${idx}`} onPress={() => toggleStep(idx)} style={styles.stepRow}>
+            <Pressable key={`${tab}-${idx}`} onPress={() => (step.product ? toggleStep(idx) : build())} style={styles.stepRow}>
               <View style={styles.timeline}>
                 <View
                   style={[
@@ -246,7 +248,9 @@ export default function RoutinesScreen({ route, navigation }) {
                     <Text style={[TYPE.body, { color: step.product_id ? colors.primary : colors.textSecondary, flex: 1, fontWeight: step.product_id ? '600' : '400' }]}>{t(step.product)}</Text>
                     {step.product_id ? <Ionicons name="chevron-forward" size={16} color={colors.muted} /> : null}
                   </Pressable>
-                ) : null}
+                ) : (
+                  <Text style={[TYPE.body, { color: colors.primary, fontWeight: '600', marginTop: SPACING.xs }]}>{t('Pick a product')} ›</Text>
+                )}
                 {productsById[step.product_id] ? (
                   <RoutineProductLine product={productsById[step.product_id]} profile={profile} stopAdvice={stopAdvice}
                     started={expectations.started[step.product_id]} verdict={expectations.verdicts[step.product_id]} canAsk={expectations.canAsk}

@@ -35,7 +35,7 @@ import { spacingState, spaceActives, restoreActives, dismissSpacing } from '../u
 import { currentSeason, SEASONS } from '../utils/seasons'
 import * as Location from 'expo-location'
 import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
-import { currentRoutine, withPauses } from '../utils/current-routine'
+import { currentRoutine, withPauses, withLipsStep } from '../utils/current-routine'
 import { takeNewThanks } from '../utils/contributions'
 import { skinDay, sunriseOn } from '../utils/skin-day'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
@@ -269,7 +269,7 @@ export default function TodayScreen({ navigation, route }) {
 
   const reactive = isReactiveState(skinState?.states)
   const adjustedOf = period => {
-    const base = withPauses(todaySteps(routines[period]?.steps || []), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    const base = withPauses(todaySteps(withLipsStep(routines[period]?.steps || [])), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
     if (!reactive) return base
     // Irritated, red, damaged barrier or over-exfoliated: strong actives wait.
     const waiting = base.steps.filter(st => strongFace(routineProducts[st.product_id]))
@@ -289,7 +289,8 @@ export default function TodayScreen({ navigation, route }) {
   const stepsOf = period => adjustedOf(period).steps
   const countOf = period => {
     const steps = stepsOf(period)
-    return { total: steps.length, done: steps.filter((_, i) => done[period][i]).length }
+    // An empty step (no product yet) can't be ticked: it doesn't count.
+    return { total: steps.filter(s => s.product).length, done: steps.filter((s, i) => s.product && done[period][i]).length }
   }
   const morning = countOf('morning')
   const evening = countOf('evening')
@@ -307,7 +308,7 @@ export default function TodayScreen({ navigation, route }) {
     track('routine_step', { period })
     syncSoon(user.id, 2500)
     const steps = stepsOf(period)
-    if (next[idx] && steps.every((_, i) => next[i])) {
+    if (next[idx] && steps.every((s, i) => !s.product || next[i])) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       track('routine_done', { period })
       setOpen(null)
@@ -424,11 +425,17 @@ export default function TodayScreen({ navigation, route }) {
             <Text style={[TYPE.caption, { color: colors.muted, marginBottom: SPACING.xs }]}>{t('On your face and neck, then your eyes and lips.')}</Text>
             {stepsOf(period).map((s, i) => (
               <View key={`${s.key}-${i}`} style={[styles.stepRow, { borderTopColor: colors.border }]}>
-                <Pressable onPress={() => toggle(period, i)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: !!done[period][i] }}
-                  style={[styles.check, { borderColor: done[period][i] ? colors.primary : colors.border, backgroundColor: done[period][i] ? colors.primary : 'transparent' }]}>
-                  {done[period][i] ? <Ionicons name="checkmark" size={14} color={colors.onPrimary} /> : null}
-                </Pressable>
-                <Pressable onPress={() => s.product_id && navigation.navigate('Product', { id: s.product_id })} style={{ flex: 1 }}>
+                {s.product ? (
+                  <Pressable onPress={() => toggle(period, i)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: !!done[period][i] }}
+                    style={[styles.check, { borderColor: done[period][i] ? colors.primary : colors.border, backgroundColor: done[period][i] ? colors.primary : 'transparent' }]}>
+                    {done[period][i] ? <Ionicons name="checkmark" size={14} color={colors.onPrimary} /> : null}
+                  </Pressable>
+                ) : (
+                  <View style={[styles.check, { borderColor: colors.primary, borderStyle: 'dashed' }]}><Ionicons name="add" size={14} color={colors.primary} /></View>
+                )}
+                {/* A step without a product (Lips in an older routine): pick one in the builder */}
+                <Pressable onPress={() => (s.product_id ? navigation.navigate('Product', { id: s.product_id })
+                  : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withLipsStep(routines[period]?.steps || []) }))} style={{ flex: 1 }}>
                   <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}</Text>
                   <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: done[period][i] ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
                 </Pressable>

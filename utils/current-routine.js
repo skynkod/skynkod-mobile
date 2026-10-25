@@ -11,6 +11,12 @@ export const currentRoutine = (routines, type) => {
   return newest && Array.isArray(newest.steps) && newest.steps.some(s => s.product) ? newest : null
 }
 
+// Lips are an essential step (Lita, 2026-10-25): a routine saved without one
+// shows an empty Lips step, to pick a balm for.
+export const withLipsStep = (steps = []) => (steps.some(s => s.key === 'lips' || (s.cats || []).includes('lip care'))
+  ? steps
+  : [...steps, { key: 'lips', action: 'Lips', product: null, product_id: null, cats: ['lip care'], days: null }])
+
 // Steps left out today: a 7-day skin plan pauses strong products, and she can
 // pause one herself after a reaction.
 export const withPauses = (steps, { plan = null, products = {}, newest = null, pausedIds = [] } = {}) => {
