@@ -9,6 +9,7 @@ import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
 import PurgeCard from '../components/PurgeCard'
+import { PatchTestOffer } from '../components/PatchTest'
 import { purgeOfferFor, purgeCheckOf } from '../utils/purge-check'
 import BuyAdvice from '../components/BuyAdvice'
 import AskKodaLink from '../components/AskKodaLink'
@@ -41,6 +42,8 @@ export default function ProductScreen({ navigation, route }) {
   const [showAll, setShowAll] = useState(false)
   const [adding, setAdding] = useState(false)
   const [status, setStatus] = useState(null) // null | 'owned' | 'to_buy'
+  // "New product" mode: the patch test line shows right after "I have it" (Lita, 2026-10-25).
+  const [justOwned, setJustOwned] = useState(false)
   // What she owns, for "Should I buy this?"
   const [owned, setOwned] = useState(null)
   const [prices, setPrices] = useState(null)
@@ -110,6 +113,7 @@ export default function ProductScreen({ navigation, route }) {
     try {
       await addToMyProducts(user.id, product, nextStatus)
       setStatus(nextStatus)
+      if (nextStatus === 'owned') setJustOwned(true)
     } catch (error) {
       await logError('ProductScreen_add', error, { id: product.id }, 'warn')
       Alert.alert(t('Error'), t("Couldn't add this product. Try again."))
@@ -364,7 +368,9 @@ export default function ProductScreen({ navigation, route }) {
           <Text style={[TYPE.bodyStrong, { color: colors.success, flex: 1 }]}>{t('In my products')}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.success} />
         </Pressable>
-      ) : (
+      ) : null}
+      {status === 'owned' && justOwned ? <PatchTestOffer userId={user?.id} product={product} profile={profile} /> : null}
+      {status === 'owned' ? null : (
         <>
           {status === 'to_buy' ? (
             <View style={[styles.statusBar, { backgroundColor: colors.primarySoft }]}>

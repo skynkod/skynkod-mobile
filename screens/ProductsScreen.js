@@ -17,6 +17,7 @@ import ProductThumb from '../components/ProductThumb'
 import { getUserRoutines } from '../utils/routines-service'
 import { SHOP_LINKS_ENABLED } from '../utils/shop'
 import { logError } from '../utils/errorLogger'
+import { patchOfferFor, startPatchTest, declinePatchTest } from '../utils/patch-test'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // Filter chips, in routine order; only categories the user has are shown.
@@ -124,7 +125,18 @@ export default function ProductsScreen({ navigation }) {
 
   const openedToday = async (row) => {
     setRows(prev => prev.map(r => (r.id === row.id ? { ...r, opened_at: new Date().toISOString().slice(0, 10) } : r)))
+    // "New product" mode (Lita, 2026-10-25): only for sensitive skin, allergies or a strong active.
+    const offer = await patchOfferFor(user.id, row.product, profile).catch(() => null)
     await setOpened(row.id).then(() => trackOpened(user.id, row.id)).catch(error => logError('ProductsScreen_opened', error, {}, 'warn'))
+    if (!offer) return
+    const date = d => d.toLocaleDateString(language, { day: 'numeric', month: 'short' })
+    Alert.alert(t('New for your skin?'), [
+      t('Test it first: a little under your jaw tonight. Tomorrow morning, we’ll ask you how it went.'),
+      offer.other ? t('You started {other} on {date}. One new product at a time: wait until {until} to know what suits your skin.', { other: offer.other.name, date: date(new Date(offer.other.date)), until: date(offer.other.until) }) : null,
+    ].filter(Boolean).join('\n\n'), [
+      { text: t('No thanks'), style: 'cancel', onPress: () => declinePatchTest(user.id).catch(() => {}) },
+      { text: t('Test it'), onPress: () => startPatchTest(user.id, row.product).catch(error => logError('Patch_start', error, {}, 'warn')) },
+    ])
   }
 
   const openLife = (row) => {

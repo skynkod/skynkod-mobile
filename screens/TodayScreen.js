@@ -32,6 +32,7 @@ import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
 import SkinForecast from '../components/SkinForecast'
 import PurgeCard, { usePurgeCard } from '../components/PurgeCard'
+import { PatchTestCard, usePatchTestDue } from '../components/PatchTest'
 import { usePremium } from '../components/PremiumLock'
 import { isPremiumUser } from '../utils/premium'
 import { syncSmartReminders } from '../utils/notifications'
@@ -173,6 +174,9 @@ export default function TodayScreen({ navigation, route }) {
   useFocusEffect(useCallback(() => { if (user?.id) getPausedProducts(user.id).then(setPausedProducts) }, [user?.id]))
   // "Purging or a reaction?" (Lita, 2026-10-25): spots after a new product.
   const purge = usePurgeCard(user?.id)
+  // "New product" mode: the patch test's question, the morning after.
+  const patch = usePatchTestDue(user?.id)
+  const onPatchChange = async () => { await patch.reload(); if (user?.id) getPausedProducts(user.id).then(setPausedProducts).catch(() => {}) }
   const onPurgeChange = async () => { await purge.reload(); if (user?.id) { getPausedProducts(user.id).then(setPausedProducts).catch(() => {}); syncSmartReminders(user.id) } }
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
@@ -539,6 +543,7 @@ export default function TodayScreen({ navigation, route }) {
           )}
         </View>
       ) : null),
+    keyed('patch', patch.test ? <PatchTestCard userId={user.id} test={patch.test} onChange={onPatchChange} /> : null),
     keyed('purge', purge.state ? <PurgeCard userId={user.id} state={purge.state} onChange={onPurgeChange} /> : null),
     keyed('review', checkIn ? (
         <Pressable onPress={() => navigation.navigate('SkinCheckIn', { week: checkIn.week })} style={[styles.recap, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
