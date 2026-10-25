@@ -26,7 +26,7 @@ This processing has been [declared to / authorised by] the **Moroccan data prote
 Email address, password (stored encrypted by our host; we never see it), first name, **date of birth** (to check you are at least 18), your consent choices and their dates.
 
 ### b) Your skin profile
-Skin type, concerns (for example breakouts, dark spots, redness) and goals.
+Skin type, concerns and goals. You pick your skin issues by tapping photos (face, eyes, lips, neck); we only keep the list of the ones you picked, never an image of you. Photos of issues a doctor confirms (rosacea, eczema…) only show with your agreement for health data.
 
 ### c) Health data (only with your explicit consent)
 If you tick "Use my sensitive skin information", we also collect: acne type, skin conditions (rosacea, eczema…), ingredients to avoid or allergies, pregnancy or breastfeeding.
@@ -34,7 +34,7 @@ If you tick "Use my sensitive skin information", we also collect: acne type, ski
 Without this consent, these questions are skipped. You can withdraw it at any time in Profile → Settings → Privacy: this information is then erased.
 
 ### d) Your journal
-Each day, if you fill it in: how your skin feels (from "great" to "terrible", and "Your skin feels": irritated, red, dehydrated…), what's going on (new pimple, redness, dryness, poor sleep, stress, period, sun, new product…), a free note and the glasses of water you log.
+Each day, if you fill it in: how your skin feels (from "great" to "terrible", and "Your skin feels": irritated, red, dehydrated…), what's going on (new pimple, redness, dryness, poor sleep, stress, period, sun, new product…), a free note, and last night's sleep (how you slept and how many hours), if you log it. The app looks in your own data for whether sleep seems to affect your skin.
 
 Every 2 weeks, if you do it: your **Skin review** (your skin is better, the same or worse since you started, and what bothers you). The app works out your progress from it (for example "breakouts −31%") and the links seen with your products; these are calculations on your own data, never a diagnosis.
 
@@ -50,7 +50,7 @@ The messages you exchange with Koda.
 Prices and stores you enter, barcodes you link to a product, and products you ask us to add to the catalogue.
 
 ### h) Dekod, the skin scan
-When you use Dekod, you take one photo of your face. It is cropped to your face, sent once to be analysed, then deleted: **it is never stored, by us or by our provider**. Only the result is kept in your account (what is visible: redness, shine, blemishes, dryness, tone, with a short tip for each). You give your agreement before your first scan, and you can delete any result at any time from the app. Dekod gives cosmetic observations, never a medical diagnosis.
+When you use Dekod, you take one photo of your face. It is cropped to your face, sent once to be analysed, then deleted: **it is never stored, by us or by our provider**. The copies of the photo on your phone are deleted too as soon as it has been used. Only the result is kept in your account, saved by our server (what is visible, scored 0 to 10: redness, shine, spots, blackheads, dryness, dark spots and tone, dullness, with a short tip for each, and the measured brightness of the photo). You give your agreement before your first scan; we keep the date of that agreement in your account. You can withdraw it at any time in Settings › Privacy, and delete any result, or all of them, from the app. Dekod gives cosmetic observations, never a medical diagnosis.
 
 ### i) How you use the app, and errors
 Which screens you open and which features you use (for example: routine finished, morning check-in done, a message sent to Koda, a product scanned or not found), with the date, your phone type (iPhone or Android), the app version and its language. When a search finds no product, the words searched. When the app runs into an error, a technical report (screen, error message). **Never** what you write in your journal, your mood, or the content of your messages to Koda. This data is linked to your account. You can turn it off at any time in Settings › Privacy › "Help improve Skynkod".
@@ -83,7 +83,7 @@ When you write to Koda, your message is sent to our AI provider, **Anthropic PBC
 - a summary of your situation: your routine, products opened or added recently, and any 7-day plan in progress;
 - your Rekod programme, if you follow one (goals, week, tonight's step);
 - the days you use each product, how long you've used your actives, the products you stopped or that the app suggests stopping, your "Better / Same / Worse" answers, and whether you're travelling in another climate;
-- **if you consented to health data**: your journal for the last 7 days, the trends spotted in it, your latest Dekod result, your progress, your Skin reviews, the links seen with your products and your glasses of water.
+- **if you consented to health data**: your journal for the last 7 days (including your sleep), the trends spotted in it, your latest Dekod result, your progress, your Skin reviews, and the links seen with your products.
 
 **Dekod** works the same way: your photo is sent to Anthropic only to read what is visible on your skin, then deleted.
 

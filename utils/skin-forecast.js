@@ -37,10 +37,11 @@ const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() +
 // journal shows them for free; Premium sees them all.
 const FACTOR_NOTED = { sleep: 'a short night', stress: 'stress', period: 'your period', sun: 'time in the sun', product: 'a new product' }
 const REACTION_SOON = {
-  breakout: 'Breakouts often follow within 2 days.',
-  redness: 'Redness often follows within 2 days.',
-  dryness: 'Dryness often follows within 2 days.',
-  rough: 'A rougher skin day often follows within 2 days.',
+  // What her own journal showed, never a certainty (full audit, 2026-10-25).
+  breakout: 'In your journal, breakouts often came within 2 days after.',
+  redness: 'In your journal, redness often came within 2 days after.',
+  dryness: 'In your journal, dryness often came within 2 days after.',
+  rough: 'In your journal, a rougher skin day often came within 2 days after.',
 }
 export const personalSignals = (patterns, { premium, today = new Date() } = {}) => {
   if (!patterns?.ready) return []

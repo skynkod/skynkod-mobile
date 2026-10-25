@@ -26,7 +26,7 @@ Ce traitement a fait l'objet [d'une déclaration / d'une demande d'autorisation]
 Adresse email, mot de passe (stocké de façon chiffrée par notre hébergeur, nous ne le voyons jamais), prénom, **date de naissance** (pour vérifier que vous avez au moins 18 ans), vos choix de consentement et leurs dates.
 
 ### b) Votre profil de peau
-Type de peau, préoccupations (par exemple boutons, taches, rougeurs) et objectifs.
+Type de peau, préoccupations et objectifs. Vous choisissez vos problèmes de peau en touchant des photos (visage, yeux, lèvres, cou) ; nous gardons seulement la liste de ceux que vous avez choisis, jamais d'image de vous. Les photos de problèmes qui relèvent d'un médecin (rosacée, eczéma…) ne s'affichent qu'avec votre accord pour les données de santé.
 
 ### c) Données de santé (uniquement avec votre accord explicite)
 Si vous cochez la case « Utiliser mes informations sensibles », nous collectons aussi : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement.
@@ -34,7 +34,7 @@ Si vous cochez la case « Utiliser mes informations sensibles », nous collecton
 Sans cet accord, ces questions ne vous sont pas posées. Vous pouvez retirer votre accord à tout moment dans Profil → Réglages → Confidentialité : ces informations sont alors effacées.
 
 ### d) Votre journal
-Chaque jour, si vous le remplissez : l'état de votre peau (de « très bien » à « terrible », et « Your skin feels » : irritée, rouge, déshydratée…), ce qui se passe (nouveau bouton, rougeurs, sécheresse, mauvaise nuit, stress, règles, soleil, nouveau produit…), une note libre et le nombre de verres d'eau que vous notez.
+Chaque jour, si vous le remplissez : l'état de votre peau (de « très bien » à « terrible », et « Your skin feels » : irritée, rouge, déshydratée…), ce qui se passe (nouveau bouton, rougeurs, sécheresse, mauvaise nuit, stress, règles, soleil, nouveau produit…), une note libre, et votre sommeil de la nuit (comment vous avez dormi et combien d'heures), si vous le notez. L'application cherche dans vos propres données si le sommeil semble jouer sur votre peau.
 
 Toutes les 2 semaines, si vous le faites : votre **Skin review** (votre peau va mieux, pareil ou moins bien depuis le début, et ce qui vous gêne). L'application en tire vos progrès (par exemple « boutons −31 % ») et les liens observés avec vos produits ; ce sont des calculs sur vos propres données, jamais un diagnostic.
 
@@ -50,7 +50,7 @@ Les messages que vous échangez avec Koda.
 Les prix et magasins que vous indiquez, les codes-barres que vous associez à un produit, et les produits que vous demandez à ajouter au catalogue.
 
 ### h) Dekod, le scan de peau
-Quand vous utilisez Dekod, vous prenez une photo de votre visage. Elle est recadrée sur votre visage, envoyée une seule fois pour être analysée, puis supprimée : **elle n'est jamais conservée, ni par nous ni par notre prestataire**. Seul le résultat est gardé dans votre compte (ce qui est visible : rougeurs, brillance, imperfections, sécheresse, teint, avec un court conseil pour chacun). Vous donnez votre accord avant votre premier scan, et vous pouvez supprimer chaque résultat à tout moment depuis l'application. Dekod donne des observations cosmétiques, jamais un diagnostic médical.
+Quand vous utilisez Dekod, vous prenez une photo de votre visage. Elle est recadrée sur votre visage, envoyée une seule fois pour être analysée, puis supprimée : **elle n'est jamais conservée, ni par nous ni par notre prestataire**. Les copies de la photo sur votre téléphone sont aussi effacées dès qu'elle a servi. Seul le résultat est gardé dans votre compte, enregistré par notre serveur (ce qui est visible, noté de 0 à 10 : rougeurs, brillance, boutons, points noirs, sécheresse, taches et teint, teint terne, avec un court conseil pour chacun, et la luminosité mesurée de la photo). Vous donnez votre accord avant votre premier scan ; nous gardons la date de cet accord dans votre compte. Vous pouvez le retirer à tout moment dans Réglages › Confidentialité, et supprimer chaque résultat, ou tous, depuis l'application. Dekod donne des observations cosmétiques, jamais un diagnostic médical.
 
 ### i) Votre utilisation de l'application, et les erreurs
 Les écrans que vous ouvrez et les fonctionnalités que vous utilisez (par exemple : routine terminée, check-in du matin fait, message envoyé à Koda, produit scanné ou introuvable), avec la date, le type de téléphone (iPhone ou Android), la version de l'application et sa langue. Quand une recherche ne trouve aucun produit, les mots recherchés. Quand l'application rencontre une erreur, un rapport technique (écran, message d'erreur). **Jamais** ce que vous écrivez dans votre journal, votre humeur, ni le contenu de vos messages à Koda. Ces données sont liées à votre compte. Vous pouvez les désactiver à tout moment dans Réglages › Confidentialité › « Aider à améliorer Skynkod ».
@@ -83,7 +83,7 @@ Quand vous écrivez à Koda, votre message est envoyé à notre prestataire d'IA
 - un résumé de votre situation : votre routine, les produits ouverts ou ajoutés récemment et un éventuel plan de 7 jours en cours ;
 - votre programme Rekod, si vous en suivez un (objectifs, semaine, étape du soir) ;
 - les jours où vous utilisez chaque produit, depuis quand vous utilisez vos actifs, les produits que vous avez arrêtés ou que l'application vous suggère d'arrêter, vos réponses « Better / Same / Worse », et le fait que vous soyez en voyage sous un autre climat ;
-- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours, les tendances repérées dans votre journal, votre dernier résultat Dekod, vos progrès, vos Skin reviews, les liens observés avec vos produits et vos verres d'eau.
+- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours (dont votre sommeil), les tendances repérées dans votre journal, votre dernier résultat Dekod, vos progrès, vos Skin reviews et les liens observés avec vos produits.
 
 **Dekod** fonctionne de la même façon : votre photo est envoyée à Anthropic uniquement pour lire ce qui est visible sur votre peau, puis supprimée.
 

@@ -9,7 +9,7 @@ import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
 import { currentRoutine, todayStepsWithPauses } from '../utils/current-routine';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
-import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions } from '../utils/journal-day';
+import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions, saveSleep, SLEEP_QUALITY, SLEEP_HOURS } from '../utils/journal-day';
 import SkinStateChips from '../components/SkinStateChips';
 import { getCondition } from '../utils/encyclopedia/conditions';
 // A ticked sign → the issue sheet it may point to.
@@ -102,6 +102,8 @@ export default function JournalScreen({ route, navigation }) {
     getPausedProducts(user.id).then(setPaused);
   }, [user?.id]);
   const [note, setNote] = useState('');
+  // Last night's sleep, also editable here, any day (full audit, 2026-10-25).
+  const [sleep, setSleep] = useState({ hours: null, quality: null });
   const [status, setStatus] = useState('idle'); // idle | dirty | saving | saved
   const [routineLog, setRoutineLog] = useState(null);
   const [skinPatterns, setSkinPatterns] = useState(null);
@@ -135,6 +137,7 @@ export default function JournalScreen({ route, navigation }) {
       setStates(entry?.skin_state || []);
       setNewProducts(Array.isArray(entry?.products_used) ? entry.products_used : []);
       setNote(entry?.notes || '');
+      setSleep({ hours: entry?.sleep_hours != null ? Number(entry.sleep_hours) : null, quality: entry?.sleep_quality || null });
       setStatus('idle');
     } catch (error) {
       await logError('Journal_loadWeek', error, {}, 'warn');
@@ -216,6 +219,20 @@ export default function JournalScreen({ route, navigation }) {
   const saveNow = () => {
     queue.current = queue.current.then(saveOnce);
     return queue.current;
+  };
+  const pickSleep = (change) => {
+    const next = { ...sleep, ...change };
+    setSleep(next);
+    queue.current = queue.current.then(async () => {
+      try {
+        const id = await saveSleep(user.id, selected, next, entryRef.current);
+        entryRef.current = id;
+        setEntryId(id);
+        syncSoon(user.id);
+      } catch (error) {
+        logError('Journal_sleep', error, {}, 'warn');
+      }
+    });
   };
   const saveOnce = async () => {
     if (!dirty.current || !user?.id) return;
@@ -337,6 +354,33 @@ export default function JournalScreen({ route, navigation }) {
         >
           <Ionicons name="chevron-forward" size={18} color={sameDay(weekStart, startOfWeek(today)) ? 'transparent' : colors.muted} />
         </Pressable>
+      </View>
+
+      {/* The night before: saved at once, in the same queue as the rest of the day */}
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.overline, { color: colors.primary }]}>{t('THE NIGHT BEFORE')}</Text>
+        <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm }}>
+          {SLEEP_QUALITY.map(q => {
+            const on = sleep.quality === q.value;
+            return (
+              <Pressable key={q.value} onPress={() => pickSleep({ quality: on ? null : q.value })} accessibilityState={{ selected: on }}
+                style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
+                <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{t(q.label)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm }}>
+          {SLEEP_HOURS.map(h => {
+            const on = sleep.hours === h;
+            return (
+              <Pressable key={h} onPress={() => pickSleep({ hours: on ? null : h })} accessibilityState={{ selected: on }}
+                style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
+                <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{h === 4 ? '≤4 h' : h === 9 ? '9+ h' : `${h} h`}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {/* Check-in */}
@@ -595,6 +639,7 @@ export default function JournalScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  sleepChip: { height: 34, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   week: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
   day: { width: 40, alignItems: 'center', paddingVertical: 8, borderRadius: 14 },
   dayName: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },

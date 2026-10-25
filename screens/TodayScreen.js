@@ -625,17 +625,35 @@ export default function TodayScreen({ navigation, route }) {
 
       {/* Check any product, right under the skin weather (Lita, 2026-10-25) */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
+      {/* Searching without the product in hand is Premium: a free account gets the
+          scan first, and the search says it's Premium (full audit, 2026-10-25). */}
       <View style={styles.searchRow}>
-        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="search" size={18} color={colors.muted} />
-          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
-        </Pressable>
-        <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
-          style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
-          <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
-        </Pressable>
+        {premium === false ? (
+          <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
+            style={({ pressed }) => [styles.scanBtn, { flex: 1, justifyContent: 'center', backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+            <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
+            <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan a product')}</Text>
+          </Pressable>
+        ) : (
+          <>
+            <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="search" size={18} color={colors.muted} />
+              <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
+            </Pressable>
+            <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
+              style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
+              <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
+              <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
+            </Pressable>
+          </>
+        )}
       </View>
+      {premium === false ? (
+        <Pressable onPress={() => navigation.navigate('Search')} hitSlop={6} style={styles.learnLink}>
+          <Ionicons name="search" size={14} color={colors.primary} />
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Search without the product')} <Ionicons name="diamond" size={11} color={colors.primary} /></Text>
+        </Pressable>
+      ) : null}
 
 
       {/* One card of the moment, the most important first (Lita's audit, 2026-10-24) */}

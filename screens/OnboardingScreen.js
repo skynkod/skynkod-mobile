@@ -32,13 +32,13 @@ const BRAND_MAUVE = '#C5A8BB'
 // say it all"), grouped after the audit (2026-10-24) so it stays short.
 const FEATURES = [
   { icon: 'rekod', title: 'Rekod, your skin programme', text: 'A routine of proven actives, built for your skin and introduced week by week.' },
-  { icon: 'dekod', title: 'Dekod, your skin scan', text: 'One selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
+  { icon: 'dekod', title: 'Dekod, your skin scan', text: 'One selfie reads redness, shine, spots, blackheads, dryness, dark spots and dullness, and follows how they change.' },
   { icon: 'koda', title: 'Koda, your AI skin coach', text: 'Knows your skin, your routine and your history, and answers about your situation.' },
   { icon: 'scan', title: 'Check any product', text: 'Scan it or search it: every ingredient is checked against your skin.' },
   { icon: 'bag-check-outline', title: 'Should I buy this?', text: 'Before you buy: does it suit your skin, and do you already own something that does the same job?' },
   { icon: 'remove-circle-outline', title: 'Fewer products, better skin', text: 'What to stop, what your shelf really needs, and your next best buy. Skynkod never pushes you to buy.' },
   { icon: 'progress', title: 'See what really works', text: 'A skin review every 2 weeks, your progress in numbers, when it’s too early to judge, and your skin timeline.' },
-  { icon: 'forecast', title: 'Your skin forecast', text: 'The next 3 days: weather, your habits, your cycle and your travels, and what your skin will need.' },
+  { icon: 'forecast', title: 'Your skin forecast', text: 'Today: the weather, your habits, your cycle and your travels, and what your skin will need.' },
   { icon: 'journal', title: 'What your skin tells you', text: 'A 10-second check-in that learns what makes your skin react.' },
   { icon: 'routines', title: 'Your routines, in the right order', text: 'Morning and evening, with your own products, how much, and which evening for each active.' },
   { icon: 'emergency', title: 'When your skin reacts', text: 'Space your actives or follow a gentle 7-day plan. Pregnancy and seasons adapt the whole app too.' },

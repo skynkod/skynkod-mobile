@@ -8,7 +8,6 @@ import { getDekodResults } from './dekod'
 import { getSkinTracking } from './skin-tracking'
 import { getVerdicts } from './expectation-verdicts'
 import { getSkinEvents } from './skin-events'
-import { getWaterDays, waterGoal } from './water'
 import { loadState } from './cloud-state'
 import { getProductsByIds } from './catalog'
 import { getProductReactions } from './journal-day'
@@ -49,15 +48,14 @@ export const buildKodaContext = async (userId) => {
   }
 
   // What Skynkod worked out since (Lita's audit, 2026-10-24): progress, what may
-  // have helped, her own verdicts, products stopped or worth stopping, water,
-  // travel. Health-related parts only with the health consent.
+  // have helped, her own verdicts, products stopped or worth stopping, her
+  // sleep, travel (no water since the glass left Home, full audit 2026-10-25). Health-related parts only with the health consent.
   const routineSteps = ((routines?.success ? routines.data : []) || []).flatMap(r => r.steps || [])
   const routineIds = [...new Set(routineSteps.map(s => s.product_id).filter(Boolean))]
-  const [track, verdictMap, events, waterDays, away, routineProducts, reactions] = await Promise.all([
+  const [track, verdictMap, events, away, routineProducts, reactions] = await Promise.all([
     healthOk ? safe(getSkinTracking(userId)) : null,
     safe(getVerdicts(userId)),
     safe(getSkinEvents(userId)),
-    healthOk ? safe(getWaterDays(userId, since)) : null,
     safe(loadState(userId, 'climate_away', false)),
     routineIds.length ? safe(getProductsByIds(routineIds)) : [],
     healthOk ? safe(getProductReactions(userId)) : [],
@@ -75,7 +73,8 @@ export const buildKodaContext = async (userId) => {
     const a = stopReason({ product: p, profile, reaction: reactionOf[String(p.id)], others: routineProducts, verdict: verdictMap?.[p.id]?.value })
     return a ? { name: p.name, reason: a.title } : null
   }).filter(Boolean).slice(0, 5)
-  const waterList = Object.values(waterDays || {})
+  // Her last 7 nights, from "How did you sleep?" on Home.
+  const nights = (entries || []).filter(e => e.sleep_hours != null && Date.now() - new Date(e.date).getTime() <= 7 * 86400000)
 
   const monthAgo = Date.now() - 30 * 86400000
   const recentProducts = (products || [])
@@ -110,7 +109,7 @@ export const buildKodaContext = async (userId) => {
     activesTiming: actives.length ? actives : null,
     stopped: (events || []).filter(e => e.kind === 'stopped').slice(0, 5).map(e => ({ name: e.name, date: String(e.created_at).slice(0, 10) })),
     considerStopping: considerStopping.length ? considerStopping : null,
-    water: waterList.length ? { daysLogged: waterList.length, average: Math.round((waterList.reduce((a, b) => a + b, 0) / waterList.length) * 10) / 10, goal: waterGoal() } : null,
+    sleep: healthOk && nights.length ? { nights: nights.length, averageHours: Math.round((nights.reduce((a, e) => a + Number(e.sleep_hours), 0) / nights.length) * 10) / 10, shortNights: nights.filter(e => Number(e.sleep_hours) < 6 || e.sleep_quality === 'bad').length } : null,
     travelling: !!away,
     dekod: dekod?.[0] ? {
       date: String(dekod[0].created_at).slice(0, 10),

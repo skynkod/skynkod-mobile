@@ -1,7 +1,6 @@
 import { findPatterns } from './skin-patterns'
 import { readHealth, withHealthTags } from './apple-health'
 import { supabase } from './supabase'
-import { getWaterDays } from './water'
 
 // The Journal keeps one entry per day. Mood and "what's going on" tags are
 // also turned into the 0–10 levels other features read (Koda's tip, the
@@ -75,7 +74,7 @@ const dayBounds = (day) => {
 export const getEntriesBetween = async (userId, start, end) => {
   const { data, error } = await supabase
     .from('journal_entries')
-    .select('id, date, mood, skin_conditions, skin_state, notes, products_used')
+    .select('id, date, mood, skin_conditions, skin_state, notes, products_used, sleep_hours, sleep_quality')
     .eq('user_id', userId)
     .gte('date', start.toISOString())
     .lt('date', end.toISOString())
@@ -148,9 +147,7 @@ export const getSkinPatterns = async (userId) => {
   const routineDates = (routineDays.data || []).map(r => new Date(`${r.date}T12:00:00`))
   // Apple Health, if connected: period days and short nights count as ticked.
   const health = await readHealth().catch(() => null)
-  const water = await getWaterDays(userId, since).catch(() => ({}))
   return findPatterns({
-    water,
     entries: withHealthTags(entries.data || [], health),
     openedDates: (opened.data || []).map(r => r.opened_at),
     routineDates,
@@ -168,8 +165,12 @@ export const getProductReactions = async (userId) => {
     .eq('user_id', userId).gte('date', since.toISOString()).order('date', { ascending: true })
   if (error) throw error
   const rows = (data || []).map(r => ({ t: new Date(r.date).getTime(), tags: r.skin_conditions || [], products: Array.isArray(r.products_used) ? r.products_used : [] }))
+  // A product she marked as opened in My products counts as started that day,
+  // even without ticking "Used new product" in the journal (full audit, 2026-10-25).
+  const opened = await supabase.from('user_products').select('product_id, product_name, opened_at').eq('user_id', userId).not('opened_at', 'is', null).gte('opened_at', since.toISOString())
+  const starts = [...rows, ...(opened.data || []).filter(o => o.product_id).map(o => ({ t: new Date(o.opened_at).getTime(), products: [{ id: o.product_id, name: o.product_name }] }))]
   const found = {}
-  for (const intro of rows) {
+  for (const intro of starts) {
     for (const p of intro.products) {
       if (!p?.id) continue
       const after = rows.filter(r => r.t >= intro.t && r.t <= intro.t + 5 * 86400000)

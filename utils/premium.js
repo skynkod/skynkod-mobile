@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { userCurrency } from './currency'
 
 export const isPremiumUser = async (userId) => {
   try {
@@ -63,7 +64,7 @@ export const PREMIUM_PLANS = [
 export const PREMIUM_BENEFITS = [
   // Icons: feature names from components/FeatureIcon.js (official logos for Rekod and Koda).
   { icon: 'rekod', title: 'Rekod', text: 'Your skin programme: 4 to 12 weeks built around your skin and your goals.' },
-  { icon: 'dekod', title: 'Dekod', text: 'Your skin scan: one selfie reads redness, shine, blemishes, dryness and tone, and follows how they change.' },
+  { icon: 'dekod', title: 'Dekod', text: 'Your skin scan: one selfie reads redness, shine, spots, blackheads, dryness, dark spots and dullness, and follows how they change.' },
   { icon: 'koda', title: 'Koda every day', text: 'Up to 20 questions a day to your skin coach, instead of 3 a week.' },
   { icon: 'emergency', title: 'Emergency mode', text: 'Full 7-day SOS plans: when your skin reacts, a gentle plan day by day.' },
   { icon: 'flask-outline', title: 'Every ingredient explained', text: 'What each one does for your skin, and better alternatives when a product isn’t for you.' },
@@ -76,6 +77,11 @@ export const PREMIUM_BENEFITS = [
   { icon: 'layering', title: 'Your routine in the right order', text: 'How to layer your own products, morning and evening.' },
   { icon: 'report', title: 'My skin report', text: 'One page to show your dermatologist: your routine, your journal and your questions.' },
 ]
+
+// Skynkod is global (full audit, 2026-10-25): the price comes from her App
+// Store in her currency. Until the store answers, a fallback shows only in the
+// currency it was written in; elsewhere no number is made up.
+export const planPrice = plan => (userCurrency() === 'MAD' ? plan.fallbackPrice : null)
 
 // In-app purchases need the store accounts; until then the page explains it.
 export const startPurchase = async () => ({ unavailable: true })

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { logError } from '../utils/errorLogger'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
-import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue } from '../utils/premium'
+import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue, planPrice } from '../utils/premium'
 import { Screen, Card, Button, IconCircle, useColors } from '../components/ui'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -80,8 +80,8 @@ export default function PremiumScreen({ navigation, route }) {
           <Button title={cta} icon="diamond-outline" loading={busy} onPress={buy} />
           <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>
             {chosen.trialDays
-              ? t('Free for {n} days, then {price} a {per}. Cancel anytime.', { n: chosen.trialDays, price: chosen.fallbackPrice, per: t(chosen.per) })
-              : t('{price} a {per}. Cancel anytime.', { price: chosen.fallbackPrice, per: t(chosen.per) })}
+              ? (planPrice(chosen) ? t('Free for {n} days, then {price} a {per}. Cancel anytime.', { n: chosen.trialDays, price: planPrice(chosen), per: t(chosen.per) }) : t('Free for {n} days, then your App Store price. Cancel anytime.', { n: chosen.trialDays }))
+              : (planPrice(chosen) ? t('{price} a {per}. Cancel anytime.', { price: planPrice(chosen), per: t(chosen.per) }) : t('Your App Store price. Cancel anytime.'))}
           </Text>
           {route?.params?.fromOnboarding ? (
             <Text onPress={() => navigation.goBack()} style={[TYPE.bodyStrong, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.md }]}>{t('Not now')}</Text>
@@ -135,7 +135,7 @@ export default function PremiumScreen({ navigation, route }) {
                 {p.trialDays ? t('{n} days free, the best value', { n: p.trialDays }) : p.note ? t(p.note) : t('Cancel anytime')}
               </Text>
             </View>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{p.fallbackPrice}<Text style={[TYPE.caption, { color: colors.muted }]}> / {t(p.per)}</Text></Text>
+            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{planPrice(p) || t('Every {per}', { per: t(p.per) })}{planPrice(p) ? <Text style={[TYPE.caption, { color: colors.muted }]}> / {t(p.per)}</Text> : null}</Text>
           </Pressable>
         )
       })}

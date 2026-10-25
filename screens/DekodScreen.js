@@ -411,10 +411,10 @@ export default function DekodScreen({ navigation }) {
         </>
       )}>
       <Text style={[styles.landingTitle, { color: P.text }]}>{t('See what your skin shows today')}</Text>
-      <Text style={[TYPE.body, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>{t('One selfie reads 5 points of your skin, with one tip for each.')}</Text>
+      <Text style={[TYPE.body, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>{t('One selfie reads 7 points of your skin, with one tip for each.')}</Text>
       <View style={{ gap: SPACING.lg, marginTop: SPACING.xxl }}>
         {[
-          ['grid-outline', 'Redness, shine, blemishes, dryness and tone'],
+          ['grid-outline', 'Redness, shine, spots, blackheads, dryness, dark spots and dullness'],
           ['trending-up-outline', 'Follow how they change, scan after scan'],
           ['shield-checkmark-outline', 'Your photo is analysed, then deleted'],
         ].map(([icon, text]) => (
