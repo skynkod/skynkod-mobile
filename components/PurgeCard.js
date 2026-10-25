@@ -27,6 +27,7 @@ const WHY = {
   'new-place': 'Spots in places where you don’t usually get them mean your skin is reacting to the product, not purging.',
   itch: 'Itching, stinging or burning mean your skin is irritated, not purging.',
   'too-long': '8 weeks without getting better: it isn’t a purge any more.',
+  'irritation-later': 'Since then, your journal shows itching or redness coming back: it looks more like a reaction than a purge.',
 }
 
 export default function PurgeCard({ userId, state, onChange, style }) {

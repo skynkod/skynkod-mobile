@@ -12,6 +12,8 @@ import { getUserProfile } from './supabase'
 import { engineProfile } from './skin-quiz'
 import { getPausedProducts } from './paused-products'
 import { getProductReactions } from './journal-day'
+import { loadState } from './cloud-state'
+import { purgeRunning } from './purge-core'
 import {
   GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, goalsOf,
   planWeeks, calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo,
@@ -502,9 +504,12 @@ export const startMaintenance = async (userId, plan, profile, mode = 'gentle') =
   return { plan: next, routine }
 }
 
+// A purge being followed (purge-core.js): Rekod keeps its level meanwhile.
+export const isPurgingNow = async userId => purgeRunning(await loadState(userId, 'purge_checks', {}).catch(() => ({})))
+
 // After a weekly check-in: new level, new evening days.
 export const recordCheckIn = async (userId, plan, answer, profile) => {
-  const next = applyCheckIn(plan, answer)
+  const next = applyCheckIn(plan, answer, new Date(), { hold: await isPurgingNow(userId) })
   const routine = await buildRekodRoutine(userId, next, profile)
   const res = await saveRoutine(userId, 'evening', routine.evening)
   if (!res.success) throw new Error(res.error)

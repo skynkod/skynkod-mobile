@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import { getProductReactions } from './journal-day'
 import { getProductsByIds } from './catalog'
 import { isActiveProduct } from './new-actives'
-import { needsQuestions, verdictOf, followUpDue, answerFollowUp } from './purge-core'
+import { needsQuestions, verdictOf, followUpDue, answerFollowUp, laterReaction, isPurging } from './purge-core'
 
 // "Purging or a reaction?" (Lita, 2026-10-25): her answers, kept in her
 // account by product, and what the card shows now. The rules: purge-core.js.
@@ -20,6 +20,15 @@ const activeIds = async (ids) => new Set((ids.length ? await getProductsByIds(id
 export const purgeCardState = async (userId, now = new Date()) => {
   if (!userId) return null
   const checks = await getPurgeChecks(userId)
+  // Itching or redness coming back since a "purge" answer: a reaction after all.
+  const running = Object.values(checks).filter(c => isPurging(c) && !c.closed)
+  if (running.length) {
+    const since = new Date(Math.min(...running.map(c => new Date(c.at).getTime()))).toISOString()
+    const { data } = await supabase.from('journal_entries').select('date, skin_conditions').eq('user_id', userId).gte('date', since)
+    for (const c of running) {
+      if (laterReaction(c, data || [])) checks[c.productId] = await save(userId, { ...c, verdict: 'reaction', reason: 'irritation-later', closed: true, seen: false })
+    }
+  }
   for (const check of Object.values(checks)) {
     const step = followUpDue(check, now)
     if (step) return { kind: 'followup', step, check }

@@ -48,3 +48,15 @@ export const answerFollowUp = (check, step, better) => {
   // 8 weeks and still not better: not a purge any more.
   return better ? { ...check, week8: 'better', closed: true } : { ...check, week8: 'not-better', verdict: 'reaction', reason: 'too-long', closed: true }
 }
+
+// The safety net (Lita, 2026-10-25): after a "purge" answer, itching on 2 days
+// or redness on 3 days in her journal means it's a reaction after all.
+export const laterReaction = (check, rows = []) => {
+  if (!isPurging(check) || check.closed) return false
+  const after = rows.filter(r => new Date(r.date) > new Date(check.at))
+  const days = tag => new Set(after.filter(r => (r.skin_conditions || []).includes(tag)).map(r => new Date(r.date).toDateString())).size
+  return days('Itchiness / Sensitivity') >= 2 || days('Redness') >= 3
+}
+
+// A purge still running: Rekod doesn't step up meanwhile.
+export const purgeRunning = checks => Object.values(checks || {}).some(c => isPurging(c) && !c.closed)

@@ -28,7 +28,7 @@ import { prioritiesOf } from '../utils/skin-quiz'
 import { syncSmartReminders } from '../utils/notifications'
 import {
   GOALS, NIGHTS, nightInfo, goalOf, goalsTitle, weekOf, weekPattern, checkInDue,
-  buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive, patternFromRoutine,
+  buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive, patternFromRoutine, isPurgingNow,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
   decideStep, stepId, saveRekodPlan, projectRekod, programmeFinished, startMaintenance,
   conflictWith, planWeeks, planWhy, extendRekod, restorePreviousRoutine, regularityOf, endAdvice, optionsForStep,
@@ -130,6 +130,9 @@ export default function RekodScreen({ navigation }) {
   // The explanation shows until she hides it; then Rekod opens on the goals.
   const [introHidden, setIntroHidden] = useState(false)
   React.useEffect(() => { if (user?.id) isIntroHidden('rekod', user.id).then(setIntroHidden) }, [user?.id])
+  // A purge being followed: "All good" keeps the level (Lita, 2026-10-25).
+  const [purging, setPurging] = useState(false)
+  useFocusEffect(useCallback(() => { if (user?.id) isPurgingNow(user.id).then(setPurging).catch(() => setPurging(false)) }, [user?.id]))
 
   // A changed step goes into the saved routine (members) or the preview (before joining).
   const applyStep = async (period, index, step) => {
@@ -641,7 +644,7 @@ export default function RekodScreen({ navigation }) {
                   <Text style={[TYPE.caption, { color: C.primary, marginTop: SPACING.md }]}>{fromJournal === suggested && fromDekod !== suggested ? 'Your journal this week suggests the highlighted answer.' : 'Your latest Dekod suggests the highlighted answer.'}</Text>
                 ) : null}
                 <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
-                  {[['good', 'All good', 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
+                  {[['good', 'All good', purging ? 'Same level while your skin purges' : 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
                     <Pressable key={v} disabled={busy} onPress={async () => { tap(); await checkIn(v); setCheckOpen(false) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderColor: suggested === v ? C.primary : C.border, borderWidth: suggested === v ? 2 : 1, opacity: pressed ? 0.8 : 1 }]}>
                       <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}{suggested === v ? (fromJournal === v && fromDekod !== v ? ' · your journal' : ' · Dekod') : ''}</Text>
                       <Text style={[TYPE.caption, { color: C.muted }]}>{h}</Text>

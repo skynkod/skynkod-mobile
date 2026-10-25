@@ -240,13 +240,15 @@ export const checkInDue = (plan, now = new Date()) => {
 // "good": move up a level · "little": stay · "lot": go back a level and rest.
 // At least 2 weeks at a level before the next one (audit 2026-10-25: a beginner
 // reached 4 strong nights by week 3). "A lot" also rests the skin for 7 days.
-export const applyCheckIn = (plan, answer, now = new Date()) => {
+// During a purge ("Purging or a reaction?"), "all good" keeps the level: the
+// skin isn't pushed harder while it purges (Lita, 2026-10-25).
+export const applyCheckIn = (plan, answer, now = new Date(), { hold = false } = {}) => {
   const week = weekOf(plan, now)
   const since = plan.levelSince ?? 1
   let level = plan.level
   let levelSince = since
   // In maintenance the pace stays: "all good" never adds strong nights (audit 3).
-  if (answer === 'good' && !plan.maintenance && week - since >= 2) { level = Math.min(level + 1, TARGET[plan.experience] ?? 2); if (level !== plan.level) levelSince = week }
+  if (answer === 'good' && !hold && !plan.maintenance && week - since >= 2) { level = Math.min(level + 1, TARGET[plan.experience] ?? 2); if (level !== plan.level) levelSince = week }
   if (answer === 'lot') { level = Math.max(level - 1, 0); levelSince = week }
   return {
     ...plan,

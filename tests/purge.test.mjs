@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { verdictOf, needsQuestions, isPurging, followUpDue, followUpDate, answerFollowUp } from '../utils/purge-core.js'
+import { verdictOf, needsQuestions, isPurging, followUpDue, followUpDate, answerFollowUp, laterReaction, purgeRunning } from '../utils/purge-core.js'
+import { applyCheckIn } from '../utils/rekod-schedule.js'
 
 // The 3 questions.
 assert.equal(verdictOf({ active: true, where: 'usual', itch: false }).verdict, 'purge')
@@ -32,4 +33,23 @@ assert.equal(tooLong.verdict, 'reaction')
 assert.equal(tooLong.reason, 'too-long')
 assert.equal(isPurging(tooLong), false, 'after 8 weeks it counts as a reaction again')
 assert.equal(followUpDate(tooLong), null)
-console.log('purge: 21 checks passed')
+
+// The safety net: itching on 2 days, or redness on 3 days, after a purge answer.
+const row = (d, tags) => ({ date: day(d).toISOString(), skin_conditions: tags })
+assert.equal(laterReaction(check, [row(3, ['Itchiness / Sensitivity'])]), false)
+assert.equal(laterReaction(check, [row(3, ['Itchiness / Sensitivity']), row(5, ['Itchiness / Sensitivity'])]), true)
+assert.equal(laterReaction(check, [row(2, ['Redness']), row(4, ['Redness'])]), false)
+assert.equal(laterReaction(check, [row(2, ['Redness']), row(4, ['Redness']), row(6, ['Redness'])]), true)
+assert.equal(laterReaction(check, [row(-3, ['Itchiness / Sensitivity']), row(-1, ['Itchiness / Sensitivity'])]), false, 'only after the answer')
+assert.equal(laterReaction(better, [row(30, ['Itchiness / Sensitivity']), row(31, ['Itchiness / Sensitivity'])]), false, 'a closed purge stays closed')
+
+// Rekod keeps its level while a purge runs.
+assert.equal(purgeRunning({ 7: check }), true)
+assert.equal(purgeRunning({ 7: better }), false)
+assert.equal(purgeRunning({ 7: tooLong }), false)
+const plan = { level: 1, levelSince: 1, experience: 'used', startedAt: new Date(2026, 8, 1).toISOString(), checkins: [] }
+const now = new Date(2026, 8, 25)
+assert.equal(applyCheckIn(plan, 'good', now).level, 2)
+assert.equal(applyCheckIn(plan, 'good', now, { hold: true }).level, 1)
+assert.equal(applyCheckIn(plan, 'lot', now, { hold: true }).level, 0, 'slowing down still works')
+console.log('purge: 33 checks passed')
