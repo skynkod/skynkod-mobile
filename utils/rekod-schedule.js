@@ -147,6 +147,18 @@ export const nightCounts = (plan) => {
   }
   // A strong reaction: a week of rest, repair and reset nights only.
   if (resting(plan)) c = { ex: 0, ret: 0, rep: 4, reset: 3 }
+  // Two weeks back after a rest week (audit 3): first no acids and 2 strong
+  // nights at most, then 3 strong nights at most with one acid night.
+  else if (plan.restUntil) {
+    const since = new Date() - new Date(plan.restUntil)
+    if (since < 7 * 86400000) {
+      c.rep += c.ex; c.ex = 0
+      if (c.ret > 2) { c.rep += c.ret - 2; c.ret = 2 }
+    } else if (since < 14 * 86400000) {
+      if (c.ex > 1) { c.rep += c.ex - 1; c.ex = 1 }
+      while (c.ex + c.ret > 3) { if (c.ret > 0) c.ret -= 1; else c.ex -= 1; c.rep += 1 }
+    }
+  }
   return c
 }
 export const resting = (plan, now = new Date()) => !!plan.restUntil && now < new Date(plan.restUntil)
@@ -233,7 +245,8 @@ export const applyCheckIn = (plan, answer, now = new Date()) => {
   const since = plan.levelSince ?? 1
   let level = plan.level
   let levelSince = since
-  if (answer === 'good' && week - since >= 2) { level = Math.min(level + 1, TARGET[plan.experience] ?? 2); if (level !== plan.level) levelSince = week }
+  // In maintenance the pace stays: "all good" never adds strong nights (audit 3).
+  if (answer === 'good' && !plan.maintenance && week - since >= 2) { level = Math.min(level + 1, TARGET[plan.experience] ?? 2); if (level !== plan.level) levelSince = week }
   if (answer === 'lot') { level = Math.max(level - 1, 0); levelSince = week }
   return {
     ...plan,

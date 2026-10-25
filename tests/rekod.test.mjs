@@ -56,3 +56,36 @@ const simple = nightCounts({ goal: 'spots', goals: ['spots'], experience: 'used'
 assert.equal(simple.rep, 0)
 assert.equal(simple.ret + simple.ex, 2)
 console.log('rekod audit 2: checks passed')
+
+// Audit 3: back gently after a rest week; maintenance never speeds up.
+const now = new Date()
+const afterRest = nightCounts({ goal: 'spots', goals: ['spots'], experience: 'used', level: 3, restUntil: new Date(now.getTime() - 864e5).toISOString(), startedAt: new Date(now.getTime() - 6 * 7 * 864e5).toISOString() })
+assert.equal(afterRest.ex, 0)
+assert.ok(afterRest.ret <= 2)
+const kept = applyCheckIn({ goal: 'spots', goals: ['spots'], experience: 'used', level: 2, levelSince: 1, maintenance: true, startedAt: new Date(now.getTime() - 20 * 7 * 864e5).toISOString() }, 'good')
+assert.equal(kept.level, 2)
+console.log('rekod audit 3: checks passed')
+
+// Audit 3: 1,000 programmes week by week with check-ins: never more than 2
+// extra strong nights from one week to the next, and a rest after "a lot".
+let seed = 7
+const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
+const WEEK = 7 * 864e5
+for (let r = 0; r < 1000; r++) {
+  const experience = ['none', 'some', 'used'][r % 3]
+  const start = Date.now() - 20 * WEEK
+  let plan = { goal: GOALS[r % 7].id, goals: [GOALS[r % 7].id], experience, level: { none: 0, some: 1, used: 2 }[experience], levelSince: 1, sensitive: r % 4 === 0, reactive: r % 8 === 0, priority: experience === 'used' ? [null, 'retinoid', 'exfoliation'][r % 3] : null, startedAt: new Date(start).toISOString(), checkins: [] }
+  let previous = null
+  for (let w = 2; w <= 16; w++) {
+    const at = new Date(start + (w - 1) * WEEK + 3600e3)
+    const answer = ['good', 'good', 'good', 'little', 'lot'][Math.floor(rand() * 5)]
+    plan = applyCheckIn(plan, answer, at)
+    const shifted = { ...plan, startedAt: new Date(Date.now() - (w - 1) * WEEK - 3600e3).toISOString(), restUntil: plan.restUntil ? new Date(Date.now() + (new Date(plan.restUntil) - at)).toISOString() : null }
+    const c = nightCounts(shifted)
+    const strong = c.ex + c.ret
+    if (answer === 'lot') assert.equal(strong, 0, 'a rest week after a strong reaction')
+    if (previous !== null) assert.ok(strong - previous <= 2, `too big a step up: ${previous} -> ${strong}`)
+    previous = strong
+  }
+}
+console.log('rekod: 1,000 programmes checked week by week')

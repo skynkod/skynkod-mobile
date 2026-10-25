@@ -388,7 +388,10 @@ export const refreshRekodRoutine = async (userId, plan) => {
   const out = {}
   for (const type of ['morning', 'evening']) {
     const current = (data || []).find(r => r.type === type)?.steps || []
-    const merged = fresh[type].map(step => current.find(c => c.custom && c.key === step.key && c.night === step.night) ? { ...current.find(c => c.custom && c.key === step.key && c.night === step.night), days: step.days } : step)
+    // Her own product stays only while the step keeps the same active: when azelaic
+    // acid makes way for retinol, the step gets a retinol product (audit 3).
+    const sameStep = (c, step) => c.custom && c.key === step.key && c.night === step.night && JSON.stringify(c.want || []) === JSON.stringify(step.want || [])
+    const merged = fresh[type].map(step => current.find(c => sameStep(c, step)) ? { ...current.find(c => sameStep(c, step)), days: step.days } : step)
     const sig = list => JSON.stringify(list.map(x => [x.key, x.product_id, x.days, (x.issues || []).length, !!x.why]))
     if (sig(merged) !== sig(current)) {
       const res = await saveRoutine(userId, type, merged)

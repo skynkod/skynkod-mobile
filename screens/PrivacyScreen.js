@@ -10,6 +10,9 @@ import { logError } from '../utils/errorLogger'
 import { setAnalyticsOff } from '../utils/analytics'
 import { SPACING, TYPE } from '../utils/theme'
 import { exportMyData, isDiscreet, setDiscreet, isLockOn, canLock, setLock } from '../utils/privacy'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { supabase } from '../utils/supabase'
+import { refreshIfRekod } from '../utils/rekod'
 
 const OFFERS_ENABLED = false
 
@@ -109,10 +112,33 @@ export default function PrivacyScreen({ navigation }) {
         {
           text: t('Stop and delete'),
           style: 'destructive',
-          onPress: () => save({ consent_health_at: null, acne_types: [], skin_conditions: [], avoid_ingredients: [], pregnancy: null }),
+          // Rekod is rebuilt without the deleted answers.
+          onPress: async () => { await save({ consent_health_at: null, acne_types: [], skin_conditions: [], avoid_ingredients: [], pregnancy: null }); refreshIfRekod(user.id).catch(() => {}) },
         },
       ]
     )
+  }
+
+  // Dekod's consent can be withdrawn here (audit 3); her saved results can go too.
+  const setDekod = (on) => {
+    if (on) {
+      const at = new Date().toISOString()
+      AsyncStorage.setItem(`dekod_consent_${user.id}`, at).catch(() => {})
+      return save({ consent_dekod_at: at })
+    }
+    const stop = async (erase) => {
+      await AsyncStorage.removeItem(`dekod_consent_${user.id}`).catch(() => {})
+      await save({ consent_dekod_at: null })
+      if (erase) {
+        const { error } = await supabase.from('dekod_results').delete().eq('user_id', user.id)
+        if (error) { logError('PrivacyScreen_dekodErase', error, {}, 'warn'); Alert.alert(t('Error'), t('Please try again.')) }
+      }
+    }
+    Alert.alert(t('Stop Dekod?'), t('Dekod won’t analyse any new photo. Your past results can stay in your account or be deleted now.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Stop, keep my results'), onPress: () => stop(false) },
+      { text: t('Stop and delete my results'), style: 'destructive', onPress: () => stop(true) },
+    ])
   }
 
   const date = iso => (iso ? new Date(iso).toLocaleDateString(language, { day: 'numeric', month: 'long', year: 'numeric' }) : null)
@@ -135,6 +161,12 @@ export default function PrivacyScreen({ navigation }) {
           subtitle={t('Skin conditions, acne type, allergies and pregnancy, used only to personalise your advice.')}
           value={profile.consent_health_at}
           onChange={setHealth}
+        />
+        <Row
+          title={t('Dekod skin scan')}
+          subtitle={t('Your selfie is analysed, then deleted; only the result is kept in your account.')}
+          value={profile.consent_dekod_at}
+          onChange={setDekod}
         />
         <Row
           title={t('Help improve Skynkod')}
