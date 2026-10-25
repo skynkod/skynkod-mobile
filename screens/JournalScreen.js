@@ -22,6 +22,8 @@ import { issuesFromTags } from '../utils/sos-plan';
 import { isPremiumUser } from '../utils/premium';
 import { PremiumBlur } from '../components/PremiumLock';
 import { skinDay, skinDayKey } from '../utils/skin-day';
+import PurgeCard, { usePurgeCard } from '../components/PurgeCard';
+import { syncSmartReminders } from '../utils/notifications';
 
 // A ticked problem suggests the matching 7-day plan (Emergency mode).
 const planFor = tags => {
@@ -95,6 +97,14 @@ export default function JournalScreen({ route, navigation }) {
   const [owned, setOwned] = useState([]);
   const [reactions, setReactions] = useState([]);
   const [paused, setPaused] = useState([]);
+  // "Purging or a reaction?" (Lita, 2026-10-25): also on Home.
+  const purge = usePurgeCard(user?.id);
+  const onPurgeChange = async () => {
+    await purge.reload();
+    getProductReactions(user.id).then(setReactions).catch(() => {});
+    getPausedProducts(user.id).then(setPaused).catch(() => {});
+    syncSmartReminders(user.id);
+  };
   useEffect(() => {
     if (!user?.id) return;
     getMyProducts(user.id).then(rows => setOwned(rows.filter(r => r.status === 'owned' && r.product_id).map(r => ({ id: r.product_id, name: [r.product?.brand || r.brand, r.product?.name || r.product_name].filter(Boolean).join(' ') })))).catch(() => {});
@@ -532,8 +542,10 @@ export default function JournalScreen({ route, navigation }) {
         </Pressable>
       </View>
 
-      {/* A product that keeps being followed by a reaction */}
-      {reactions.slice(0, 2).map(r => {
+      <PurgeCard userId={user?.id} state={purge.state} onChange={onPurgeChange} style={styles.card} />
+
+      {/* A product that keeps being followed by a reaction (the one asked about above waits) */}
+      {reactions.filter(r => !(purge.state?.kind === 'ask' && purge.state.product.id === r.product.id)).slice(0, 2).map(r => {
         const isPaused = paused.some(p => p.id === r.product.id);
         return (
           <View key={r.product.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>

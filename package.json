@@ -70,7 +70,8 @@
     "test:sleep": "node --import ./tests/extensionless.mjs --test --no-warnings tests/sleep.test.mjs",
     "test:issues": "node --import ./tests/extensionless.mjs --test --no-warnings tests/skin-issues.test.mjs",
     "test:dekod": "node --import ./tests/extensionless.mjs --test --no-warnings tests/dekod.test.mjs",
-    "test:rekod": "node --import ./tests/extensionless.mjs --test --no-warnings tests/rekod.test.mjs"
+    "test:rekod": "node --import ./tests/extensionless.mjs --test --no-warnings tests/rekod.test.mjs",
+    "test:purge": "node --import ./tests/extensionless.mjs --test --no-warnings tests/purge.test.mjs"
   },
   "private": true
 }

@@ -112,6 +112,7 @@ const COPY = {
   // Added to the morning reminder on their day.
   rekodReview: { en: 'Your Rekod review is ready.', fr: 'Ton bilan Rekod est prêt.' },
   dekodDay: { en: 'Time for your weekly Dekod scan.', fr: 'C’est le moment de ton scan Dekod de la semaine.' },
+  purgeCheck: { en: 'Your spots after a new product: tell us how it’s going.', fr: 'Tes boutons après un nouveau produit : dis-nous comment ça va.' },
 }
 
 const scheduleDaily = async (id, title, body, hour, minute, screen) => {
@@ -181,13 +182,16 @@ export const syncSmartReminders = async (userId) => {
     const { isPremiumUser } = await import('./premium')
     const { currentSkinState, isReactiveState } = await import('./skin-state')
     const { getUserRoutines } = await import('./routines-service')
-    const [rekod, sos, scans, premium, skin, routines] = await Promise.all([
+    const { getPurgeChecks } = await import('./purge-check')
+    const { followUpDate } = await import('./purge-core')
+    const [rekod, sos, scans, premium, skin, routines, purges] = await Promise.all([
       getRekodPlan(userId).catch(() => null),
       getActivePlan(userId).catch(() => null),
       getDekodResults(userId, 1).catch(() => []),
       isPremiumUser(userId).catch(() => false),
       currentSkinState(userId).catch(() => null),
       getUserRoutines(userId).catch(() => null),
+      getPurgeChecks(userId).catch(() => ({})),
     ])
 
     // Clear everything this function owns, old ids included.
@@ -235,6 +239,8 @@ export const syncSmartReminders = async (userId) => {
       return date.getDay() === new Date(rekod.startedAt).getDay() && date >= new Date(new Date(rekod.startedAt).getTime() + 7 * 86400000)
     }
     const reactingToday = isReactiveState(skin?.states)
+    // "Purging or a reaction?": the 4- and 8-week follow-ups, in the morning reminder of their day.
+    const purgeDates = Object.values(purges || {}).map(followUpDate).filter(Boolean)
 
     for (let d = 0; d < DAYS_AHEAD; d += 1) {
       const date = dayOf(d)
@@ -243,6 +249,7 @@ export const syncSmartReminders = async (userId) => {
       const extras = [
         date.getDay() === 0 && scans?.length && premium ? COPY.dekodDay[l] : null,
         reviewDue(date) ? COPY.rekodReview[l] : null,
+        purgeDates.some(f => sameDay(f, date)) ? COPY.purgeCheck[l] : null,
       ].filter(Boolean)
       if (sos && sos.phase !== 'return' && sd >= 0 && sd < 7) await once(`am-${d}-${userId}`, { title: COPY.sosMorning[l].title(sd + 1, sos.situation.title), body: COPY.sosMorning[l].body }, at(date, hm(prefs.morningTime)), 'Emergency')
       else if (prefs.morningReminder) await once(`am-${d}-${userId}`, { title: COPY.morning[l].title, body: [COPY.morning[l].body, ...extras].join(' ') }, at(date, hm(prefs.morningTime)), 'Home')

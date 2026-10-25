@@ -1,6 +1,8 @@
 import { findPatterns } from './skin-patterns'
 import { readHealth, withHealthTags } from './apple-health'
 import { supabase } from './supabase'
+import { loadState } from './cloud-state'
+import { isPurging } from './purge-core'
 
 // The Journal keeps one entry per day. Mood and "what's going on" tags are
 // also turned into the 0–10 levels other features read (Koda's tip, the
@@ -183,8 +185,10 @@ export const getProductReactions = async (userId) => {
       }
     }
   }
+  // Spots she answered as a purge (purge-core.js) aren't a reaction to that product.
+  const checks = await loadState(userId, 'purge_checks', {})
   return Object.values(found)
-    .filter(f => f.days.size >= 2)
-    .map(f => ({ product: f.product, count: f.days.size, tag: Object.entries(f.tags).sort((a, b) => b[1] - a[1])[0][0] }))
+    .filter(f => f.days.size >= 2 && !isPurging(checks?.[f.product.id]))
+    .map(f => ({ product: f.product, count: f.days.size, tag: Object.entries(f.tags).sort((a, b) => b[1] - a[1])[0][0], tags: Object.keys(f.tags) }))
     .sort((a, b) => b.count - a.count)
 }

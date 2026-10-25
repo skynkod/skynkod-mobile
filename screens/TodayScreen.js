@@ -31,6 +31,7 @@ import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../u
 import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
 import SkinForecast from '../components/SkinForecast'
+import PurgeCard, { usePurgeCard } from '../components/PurgeCard'
 import { usePremium } from '../components/PremiumLock'
 import { isPremiumUser } from '../utils/premium'
 import { syncSmartReminders } from '../utils/notifications'
@@ -170,6 +171,9 @@ export default function TodayScreen({ navigation, route }) {
   // Products she paused herself (after a reaction): left out of the routine.
   const [pausedProducts, setPausedProducts] = useState([])
   useFocusEffect(useCallback(() => { if (user?.id) getPausedProducts(user.id).then(setPausedProducts) }, [user?.id]))
+  // "Purging or a reaction?" (Lita, 2026-10-25): spots after a new product.
+  const purge = usePurgeCard(user?.id)
+  const onPurgeChange = async () => { await purge.reload(); if (user?.id) { getPausedProducts(user.id).then(setPausedProducts).catch(() => {}); syncSmartReminders(user.id) } }
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
     const key = `recap_seen_${user.id}_${recapWeekKey()}`
@@ -535,6 +539,7 @@ export default function TodayScreen({ navigation, route }) {
           )}
         </View>
       ) : null),
+    keyed('purge', purge.state ? <PurgeCard userId={user.id} state={purge.state} onChange={onPurgeChange} /> : null),
     keyed('review', checkIn ? (
         <Pressable onPress={() => navigation.navigate('SkinCheckIn', { week: checkIn.week })} style={[styles.recap, { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
