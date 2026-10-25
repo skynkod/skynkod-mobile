@@ -79,9 +79,10 @@ const isAcceptable = (product, profile) => {
 //   3. the mildest "not 100% safe" one. `level` limits to 'safe' or 'acceptable'.
 const pickFrom = (candidates, profile, { want = [], wantRequired = false, avoidHarsh = false, noStrong = false, exclude = [], avoid = [], reject = null, prefer = null, strictOnly = false, level = null } = {}) => {
   const skip = avoid.filter(a => !want.includes(a))
-  // Lash and brow serums sit in "eye care" but don't care for the skin around the eyes.
+  // Lash and brow serums aren't skincare (removed from the catalogue 2026-10-25);
+  // this guards future imports. An eye serum that also helps lashes stays.
   const base = candidates.filter(p => p && !exclude.includes(p.id) && (!avoidHarsh || !harsh(p)) && !(reject && reject(p))
-    && !(p.category === 'eye care' && /lash|brow|\bcils?\b|sourcil|mascara/i.test(p.name || ''))
+    && !(p.category === 'eye care' && /eyelash|lash (and|&) brow|brow serum|mascara|sourcil|\bcils\b/i.test(p.name || ''))
     && (!noStrong || (!isStrong(p) && (want.includes('vitaminc') || !strongVitC(p))))
     && (!skip.length || !has(p, skip, 8)))
   // The active must be one of the first ingredients, not a trace.
