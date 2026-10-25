@@ -79,7 +79,7 @@ export default function PurgeCard({ userId, state, onChange, style }) {
     const n = step === 'where' ? 1 : step === 'itch' ? 2 : 3
     return box(<>
       {head(t('PURGING OR A REACTION?'))}
-      {step === 'where' ? body(t('Spots keep showing up since you started {product}. A few quick questions to know if it’s normal.', { product: product.name })) : null}
+      {step === 'where' ? body(t(state.manual ? 'A few quick questions to know if your spots since {product} are normal.' : 'Spots keep showing up since you started {product}. A few quick questions to know if it’s normal.', { product: product.name })) : null}
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('Question {n} of {total}', { n, total })}</Text>
       {step === 'where' ? <>
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Where are the spots?')}</Text>

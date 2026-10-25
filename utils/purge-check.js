@@ -1,4 +1,5 @@
 import { loadState, saveState } from './cloud-state'
+import { supabase } from './supabase'
 import { getProductReactions } from './journal-day'
 import { getProductsByIds } from './catalog'
 import { isActiveProduct } from './new-actives'
@@ -12,6 +13,9 @@ export const getPurgeChecks = async (userId) => {
   return checks && typeof checks === 'object' ? checks : {}
 }
 
+// Strong actives among these products: their spots are looked at for 3 weeks.
+const activeIds = async (ids) => new Set((ids.length ? await getProductsByIds(ids) : []).filter(isActiveProduct).map(p => p.id))
+
 // A follow-up that's due first, then an answer she hasn't read, then new spots to ask about.
 export const purgeCardState = async (userId, now = new Date()) => {
   if (!userId) return null
@@ -22,7 +26,7 @@ export const purgeCardState = async (userId, now = new Date()) => {
   }
   const unseen = Object.values(checks).find(c => !c.seen)
   if (unseen) return { kind: 'result', check: unseen }
-  const reactions = await getProductReactions(userId).catch(() => [])
+  const reactions = await getProductReactions(userId, { longFor: activeIds }).catch(() => [])
   const r = reactions.find(x => needsQuestions(x, checks))
   if (!r) return null
   const [product] = await getProductsByIds([r.product.id]).catch(() => [])
@@ -44,3 +48,21 @@ export const answerPurgeFollowUp = (userId, check, step, better) =>
   save(userId, { ...answerFollowUp(check, step, better), seen: false })
 
 export const markPurgeSeen = (userId, check) => save(userId, { ...check, seen: true })
+
+// The product page (Lita, 2026-10-25): "Spots since you started it?" for a
+// product she started in the last 8 weeks and hasn't been asked about.
+export const purgeOfferFor = async (userId, product) => {
+  if (!userId || !product?.id) return null
+  const checks = await getPurgeChecks(userId)
+  if (checks[product.id]) return null
+  const since = new Date(Date.now() - 8 * 7 * 86400000).toISOString()
+  const [opened, journal] = await Promise.all([
+    supabase.from('user_products').select('id').eq('user_id', userId).eq('product_id', product.id).gte('opened_at', since).limit(1),
+    supabase.from('journal_entries').select('products_used').eq('user_id', userId).gte('date', since),
+  ])
+  const inJournal = (journal.data || []).some(r => Array.isArray(r.products_used) && r.products_used.some(p => p?.id === product.id))
+  if (!opened.data?.length && !inJournal) return null
+  return { kind: 'ask', manual: true, product: { id: product.id, name: product.name }, active: isActiveProduct(product) }
+}
+
+export const purgeCheckOf = async (userId, productId) => (await getPurgeChecks(userId))[productId] || null

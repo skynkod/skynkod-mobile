@@ -160,8 +160,11 @@ export const getSkinPatterns = async (userId) => {
 // ---------- Products and reactions ----------
 // When a reaction (spots, redness, itching, peeling) shows up 0 to 5 days after
 // she started a product, more than once, the journal points it out.
+// "Purging or a reaction?" passes `longFor` (ids of strong actives): a purge
+// often starts 1 to 3 weeks in, so spots count up to 21 days after those.
 const REACTIONS = ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking']
-export const getProductReactions = async (userId) => {
+const PURGE_DAYS = 21
+export const getProductReactions = async (userId, { longFor = null } = {}) => {
   const since = new Date(Date.now() - 120 * 86400000)
   const { data, error } = await supabase.from('journal_entries').select('date, skin_conditions, products_used')
     .eq('user_id', userId).gte('date', since.toISOString()).order('date', { ascending: true })
@@ -171,13 +174,17 @@ export const getProductReactions = async (userId) => {
   // even without ticking "Used new product" in the journal (full audit, 2026-10-25).
   const opened = await supabase.from('user_products').select('product_id, product_name, opened_at').eq('user_id', userId).not('opened_at', 'is', null).gte('opened_at', since.toISOString())
   const starts = [...rows, ...(opened.data || []).filter(o => o.product_id).map(o => ({ t: new Date(o.opened_at).getTime(), products: [{ id: o.product_id, name: o.product_name }] }))]
+  const long = longFor ? await longFor([...new Set(starts.flatMap(s => s.products.map(p => p?.id)).filter(Boolean))]).catch(() => new Set()) : new Set()
   const found = {}
   for (const intro of starts) {
     for (const p of intro.products) {
       if (!p?.id) continue
-      const after = rows.filter(r => r.t >= intro.t && r.t <= intro.t + 5 * 86400000)
+      const days = long.has(p.id) ? PURGE_DAYS : 5
+      const after = rows.filter(r => r.t >= intro.t && r.t <= intro.t + days * 86400000)
       for (const r of after) {
-        const hit = r.tags.filter(tag => REACTIONS.includes(tag))
+        // After day 5, only spots count (the purge window), not redness or itching.
+        const late = r.t > intro.t + 5 * 86400000
+        const hit = r.tags.filter(tag => REACTIONS.includes(tag) && (!late || tag === 'New pimple'))
         if (!hit.length) continue
         found[p.id] = found[p.id] || { product: p, days: new Set(), tags: {} }
         found[p.id].days.add(new Date(r.t).toDateString())

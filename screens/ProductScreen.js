@@ -8,6 +8,8 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import StopAdvice, { useStopAdvice } from '../components/StopAdvice'
+import PurgeCard from '../components/PurgeCard'
+import { purgeOfferFor, purgeCheckOf } from '../utils/purge-check'
 import BuyAdvice from '../components/BuyAdvice'
 import AskKodaLink from '../components/AskKodaLink'
 import { buyVerdict } from '../utils/buy-advice'
@@ -56,6 +58,20 @@ export default function ProductScreen({ navigation, route }) {
     if (!product?.id) return
     getPriceStats(product.id).then(setPrices).catch(() => setPrices(null))
   }, [product?.id])
+
+  // "Spots since you started it?": only for a product started in the last 8 weeks (Lita, 2026-10-25).
+  const [purgeOffer, setPurgeOffer] = useState(null)
+  const [purgeOpen, setPurgeOpen] = useState(null)
+  useEffect(() => {
+    if (!user?.id || !product?.id) return
+    purgeOfferFor(user.id, product).then(setPurgeOffer).catch(() => setPurgeOffer(null))
+  }, [user?.id, product?.id])
+  // After her answers, the card shows its answer; once read, it's gone.
+  const onPurgeChange = async () => {
+    const check = await purgeCheckOf(user.id, product.id)
+    setPurgeOffer(null)
+    setPurgeOpen(check && !check.seen ? { kind: 'result', check } : null)
+  }
 
   // Is it already on the user's shelf or wishlist?
   useEffect(() => {
@@ -142,6 +158,12 @@ export default function ProductScreen({ navigation, route }) {
           <View style={[styles.decisionFoot, { borderTopColor: colors.border }, !((match.notNow && match.tone !== 'danger') || (owned && status !== 'owned') || (stopAdvice.inRoutine(product.id) && stopAdvice.adviceFor(product))) && styles.decisionFootAlone]}>
             <AskKodaLink label="Ask Koda about this product" returnTo="Product"
               prefill={t('Should I use {product} with my routine? How and when?', { product: product.name })} />
+            {purgeOffer && !purgeOpen ? (
+              <Pressable onPress={() => setPurgeOpen(purgeOffer)} hitSlop={4} style={{ marginTop: SPACING.sm }}>
+                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Spots since you started it? Purging or a reaction')} ›</Text>
+              </Pressable>
+            ) : null}
+            {purgeOpen ? <PurgeCard userId={user.id} state={purgeOpen} onChange={onPurgeChange} style={{ marginTop: SPACING.md }} /> : null}
             {profile?.priority && CONCERN_CONDITIONS[profile.priority] ? (
               <Pressable onPress={() => navigation.navigate('Condition', { id: CONCERN_CONDITIONS[profile.priority][0] })} hitSlop={4} style={{ marginTop: SPACING.sm }}>
                 <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('What skincare can and can’t do for your {concern}', { concern: t(profile.priority).toLowerCase() })} ›</Text>
