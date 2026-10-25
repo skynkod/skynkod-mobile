@@ -6,17 +6,12 @@ import FeatureIcon from './FeatureIcon'
 import { useNavigation } from '@react-navigation/native'
 import * as Haptics from 'expo-haptics'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING, TYPE, livePalette, liveStyles } from '../utils/theme'
 
 // The space shared by Skynkod's Premium features (same look as Rekod): light
 // and calm like the rest of the app, deep plum for what is Premium, a close
 // button on every screen (Lita, 2026-10-23).
-export const P = {
-  bg: '#FBF8FA', card: '#FFFFFF', border: '#EDE5EA',
-  text: '#1E1A1D', textSecondary: '#5E565C', muted: '#857C83',
-  primary: '#8A6380', primarySoft: '#F1E8EE', onPrimary: '#FFFFFF',
-  success: '#3E9A6D', warn: '#C98422', plum: '#33202E',
-}
+export const P = livePalette({ plum: ['#33202E', '#E8D6E1'], warn: ['#C98422', '#E8AA4E'] })
 
 export const tap = () => { Haptics.selectionAsync().catch(() => {}) }
 
@@ -99,7 +94,7 @@ export function Carousel({ slides }) {
   )
 }
 
-const styles = StyleSheet.create({
+const styles = liveStyles(() => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
   scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
   footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm },
@@ -110,7 +105,7 @@ const styles = StyleSheet.create({
   slideTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 32, lineHeight: 38, textAlign: 'center' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: SPACING.md },
   dot: { height: 8, borderRadius: 4 },
-})
+}))
 
 // "Don't show again" for the intro of a Premium feature, per user.
 const introKey = (feature, userId) => `intro_hidden_${feature}_${userId}`

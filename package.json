@@ -67,7 +67,8 @@
     "test:buy": "node --import ./tests/extensionless.mjs --test --no-warnings tests/buy-advice.test.mjs",
     "test:nextbuy": "node --import ./tests/extensionless.mjs --test --no-warnings tests/next-buy.test.mjs",
     "test:water": "node --test --no-warnings tests/water.test.mjs",
-    "test:layering": "node --import ./tests/extensionless.mjs --test --no-warnings tests/layering.test.mjs"
+    "test:layering": "node --import ./tests/extensionless.mjs --test --no-warnings tests/layering.test.mjs",
+    "test:sleep": "node --import ./tests/extensionless.mjs --test --no-warnings tests/sleep.test.mjs"
   },
   "private": true
 }

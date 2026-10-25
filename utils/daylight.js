@@ -3,7 +3,9 @@
 // evening greeting when it actually gets dark.
 const RAD = Math.PI / 180
 
-export const sunTimes = (date, latitude, longitude) => {
+// `zenith` 90.833 is the real sunrise and sunset; 96 is dawn and dusk (civil
+// twilight), when it's already or still light outside.
+export const sunTimes = (date, latitude, longitude, zenith = 90.833) => {
   const dayStartUtc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
   const dayOfYear = Math.floor((dayStartUtc - Date.UTC(date.getFullYear(), 0, 0)) / 86400000)
   const gamma = (2 * Math.PI / 365) * (dayOfYear - 1)
@@ -12,7 +14,7 @@ export const sunTimes = (date, latitude, longitude) => {
   const decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma)
     - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma)
     - 0.002697 * Math.cos(3 * gamma) + 0.00148 * Math.sin(3 * gamma)
-  const cosH = Math.cos(90.833 * RAD) / (Math.cos(latitude * RAD) * Math.cos(decl)) - Math.tan(latitude * RAD) * Math.tan(decl)
+  const cosH = Math.cos(zenith * RAD) / (Math.cos(latitude * RAD) * Math.cos(decl)) - Math.tan(latitude * RAD) * Math.tan(decl)
   if (cosH > 1) return { polarNight: true }
   if (cosH < -1) return { polarDay: true }
   const hourAngle = Math.acos(cosH) / RAD
@@ -24,11 +26,11 @@ export const sunTimes = (date, latitude, longitude) => {
   }
 }
 
-// Night between sunset and sunrise where we know the place; otherwise a
-// fixed 7 pm – 7 am window.
+// Night between dusk and dawn where we know the place (light outside means the
+// light mode, Lita 2026-10-25); otherwise a fixed 7 pm – 7 am window.
 export const isNightAt = (now = new Date(), coords = null) => {
   if (coords) {
-    const times = sunTimes(now, coords.latitude, coords.longitude)
+    const times = sunTimes(now, coords.latitude, coords.longitude, 96)
     if (times.polarNight) return true
     if (times.polarDay) return false
     return now < times.sunrise || now >= times.sunset

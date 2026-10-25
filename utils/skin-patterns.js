@@ -26,9 +26,13 @@ const REACTIONS = [
   { id: 'rough', label: 'Rough skin days', verb: 'come', test: day => day.mood === 'bad' || day.mood === 'terrible' },
 ]
 
+const shortNight = day => (day.sleepHours != null && day.sleepHours < 6) || day.sleepQuality === 'bad'
+const goodNight = day => day.sleepHours != null && day.sleepHours >= 7 && day.sleepQuality !== 'bad'
+
 // What happens in daily life.
 const FACTORS = [
-  { id: 'sleep', icon: 'bed-outline', after: 'a poor night’s sleep', test: day => day.tags.includes('Poor sleep') },
+  // Her morning answer (under 6 hours, or slept badly), the tag, or Apple Health.
+  { id: 'sleep', icon: 'bed-outline', after: 'a poor night’s sleep', test: day => day.tags.includes('Poor sleep') || shortNight(day) },
   { id: 'stress', icon: 'pulse-outline', after: 'stressful days', test: day => day.tags.includes('Stress') },
   { id: 'period', icon: 'calendar-outline', after: 'your period', test: day => day.tags.includes('Hormonal / Period') },
   { id: 'sun', icon: 'sunny-outline', after: 'time in the sun', test: day => day.tags.includes('Sun exposure') },
@@ -47,7 +51,7 @@ export const findPatterns = ({ entries = [], openedDates = [], routineDates = []
   const days = {}
   for (const e of entries) {
     if (!e?.date || !e.mood) continue
-    days[dayKey(e.date)] = { mood: e.mood, tags: e.skin_conditions || [] }
+    days[dayKey(e.date)] = { mood: e.mood, tags: e.skin_conditions || [], sleepHours: e.sleep_hours == null ? null : Number(e.sleep_hours), sleepQuality: e.sleep_quality || null }
   }
   const checkIns = Object.keys(days).length
   if (checkIns < CHECK_INS_NEEDED) return { checkIns, needed: CHECK_INS_NEEDED, ready: false, patterns: [] }
@@ -123,6 +127,26 @@ export const findPatterns = ({ entries = [], openedDates = [], routineDates = []
         total: done.length,
         positive: true,
         strength: (doneRate - skippedRate) * good(done),
+      })
+    }
+  }
+
+  // Sleep, the good side: does her skin feel better after a good night?
+  const slept = keys.filter(k => goodNight(days[k]))
+  const short = keys.filter(k => shortNight(days[k]))
+  if (slept.length >= 4 && short.length >= 4) {
+    const sleptRate = good(slept) / slept.length
+    const shortRate = good(short) / short.length
+    if (sleptRate - shortRate >= MIN_LIFT) {
+      found.push({
+        id: 'sleep-good',
+        factor: 'sleep',
+        icon: 'bed-outline',
+        text: 'Your skin feels better after nights of 7 hours or more.',
+        times: good(slept),
+        total: slept.length,
+        positive: true,
+        strength: (sleptRate - shortRate) * good(slept),
       })
     }
   }

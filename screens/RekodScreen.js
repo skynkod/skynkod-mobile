@@ -14,7 +14,8 @@ import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { searchProducts, getMyProducts } from '../utils/catalog'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING, TYPE, livePalette, liveStyles } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
 import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
@@ -38,13 +39,7 @@ const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']
 
 // Light and calm like the rest of the app (Lita, 2026-10-23); deep plum marks
 // what is Premium.
-const C = {
-  bg: '#FBF8FA', card: '#FFFFFF', border: '#EDE5EA',
-  text: '#1E1A1D', textSecondary: '#5E565C', muted: '#857C83',
-  primary: '#8A6380', primarySoft: '#F1E8EE', onPrimary: '#FFFFFF',
-  success: '#3E9A6D', successSoft: '#E3F3EA', warning: '#C98422',
-  plum: '#33202E',
-}
+const C = livePalette({ plum: ['#33202E', '#E8D6E1'] })
 
 function Shell({ navigation, overline, title, subtitle, footer, children, onBack, scroll = true }) {
   return (
@@ -101,6 +96,7 @@ const Loading = ({ label }) => (
 const PROVEN = ['SPF 50', 'Retinol', 'Exfoliate', 'Azelaic acid']
 
 export default function RekodScreen({ navigation }) {
+  useTheme() // redraws in the colours of the mode on screen
   const colors = C
   const { user } = useAuth()
   // The explanation and the quiz are free; her personal routine and plan are Premium.
@@ -914,7 +910,7 @@ function RoutineTabs({ routine, onOpen, paused }) {
                 {s.days?.length ? <Text style={[styles.miniChip, { color: C.muted, backgroundColor: C.card }]}>{describeDays(s.days)}</Text> : null}
                 {s.product ? <Text style={[styles.miniChip, { color: s.owned ? C.success : C.primary, backgroundColor: s.owned ? C.successSoft : C.primarySoft }]}>{s.owned ? '✓ Yours' : 'Suggested'}</Text> : null}
                 {PROVEN.includes(s.action) ? <Text style={[styles.miniChip, { color: C.success, backgroundColor: C.successSoft }]}>Proven</Text> : null}
-                {paused?.has(s.night) ? <Text style={[styles.miniChip, { color: C.warning, backgroundColor: '#FBF0DE' }]}>Paused · 7-day plan</Text> : null}
+                {paused?.has(s.night) ? <Text style={[styles.miniChip, { color: C.warning, backgroundColor: C.warningSoft }]}>Paused · 7-day plan</Text> : null}
               </View>
             </View>
             {s.issues?.length || !s.product ? <View style={[styles.warnDot, { backgroundColor: s.issues?.[0]?.level === 'avoid' ? '#CF4F57' : '#C98422' }]} /> : null}
@@ -1114,7 +1110,7 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
   )
 }
 
-const styles = StyleSheet.create({
+const styles = liveStyles(() => StyleSheet.create({
   dash: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md },
   dashTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 26, lineHeight: 30 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
@@ -1167,7 +1163,7 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 11, fontWeight: '700' },
   question: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.sm },
   option: { borderRadius: 18, padding: SPACING.lg },
-})
+}))
 
 // Her own product instead of the one we chose: her shelf first, then search.
 function OwnProductPicker({ visible, userId, onClose, onPick }) {

@@ -21,7 +21,8 @@ import { todaySteps, activesOf, daysOf } from '../utils/routine-checks'
 import { currentSkinState, isReactiveState, stateLabel } from '../utils/skin-state'
 import SkinStateChips from '../components/SkinStateChips'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
-import { MOODS, MOOD_MESSAGES, saveDay } from '../utils/journal-day'
+import { MOODS, MOOD_MESSAGES, saveDay, saveSleep, SLEEP_QUALITY, SLEEP_HOURS } from '../utils/journal-day'
+import { tipOfTheMoment } from '../utils/daily-tips'
 import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
 import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { getEnvironment } from '../utils/environment'
@@ -121,7 +122,9 @@ export default function TodayScreen({ navigation, route }) {
   // Once today's check-in is done, Home shows one line (Lita, 2026-10-24); it
   // stays open right after picking, so she can add how her skin feels.
   const [checkinOpen, setCheckinOpen] = useState(false)
-  useFocusEffect(useCallback(() => { setCheckinOpen(false) }, []))
+  // "How did you sleep?" each morning (Lita, 2026-10-25), one line once answered.
+  const [sleepOpen, setSleepOpen] = useState(false)
+  useFocusEffect(useCallback(() => { setCheckinOpen(false); setSleepOpen(false) }, []))
   // "Not now" on the reacting card: hidden for the rest of the day.
   const [reactDismissed, setReactDismissed] = useState(false)
   useFocusEffect(useCallback(() => {
@@ -227,7 +230,7 @@ export default function TodayScreen({ navigation, route }) {
       const since = new Date(Date.now() - 60 * 86400000)
       const [{ data: ticks }, { data: entries }] = await Promise.all([
         supabase.from('routine_completions').select('date').eq('user_id', user.id).gte('date', localDay(since)),
-        supabase.from('journal_entries').select('id, date, mood, skin_conditions, skin_state, notes, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
+        supabase.from('journal_entries').select('id, date, mood, skin_conditions, skin_state, notes, sleep_hours, sleep_quality, created_at, updated_at').eq('user_id', user.id).gte('date', since.toISOString()).order('date', { ascending: false }),
       ])
       const today = (entries || []).find(x => sameSkinDay(x.date, coords))
       setEntry(today || null)
@@ -326,6 +329,24 @@ export default function TodayScreen({ navigation, route }) {
       navigation.navigate('Journal', { openNew: Date.now() })
     } catch (error) {
       await logError('Today_mood', error)
+    }
+  }
+
+  // Last night's sleep, saved on today's entry; read by the journal patterns.
+  const todayEntry = sameSkinDay(entry?.date, coords) ? entry : null
+  const sleepDone = todayEntry?.sleep_hours != null && !!todayEntry?.sleep_quality
+  const pickSleep = async (change) => {
+    tap()
+    const next = { hours: todayEntry?.sleep_hours ?? null, quality: todayEntry?.sleep_quality ?? null, ...change }
+    try {
+      const day = skinDay(new Date(), coords)
+      const id = await saveSleep(user.id, day, next, todayEntry?.id)
+      const noon = new Date(day)
+      noon.setHours(12, 0, 0, 0)
+      setEntry({ skin_conditions: [], ...(todayEntry || {}), id, date: todayEntry?.date || noon.toISOString(), sleep_hours: next.hours, sleep_quality: next.quality })
+      if (next.hours != null && next.quality) { setSleepOpen(false); if (!sleepDone) track('sleep_logged') }
+    } catch (error) {
+      logError('Today_sleep', error)
     }
   }
 
@@ -583,6 +604,20 @@ export default function TodayScreen({ navigation, route }) {
       <SkinForecast forecast={forecast} now={weather} season={SEASONS[currentSeason(new Date(), coords?.latitude ?? null).id]}
         signals={forecastSignals} onEnableLocation={enableLocation} />
 
+      {/* Check any product, right under the skin weather (Lita, 2026-10-25) */}
+      <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
+      <View style={styles.searchRow}>
+        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
+        </Pressable>
+        <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
+          style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
+          <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
+          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
+        </Pressable>
+      </View>
+
 
       {/* One card of the moment, the most important first (Lita's audit, 2026-10-24) */}
       {moments.length ? (
@@ -615,8 +650,55 @@ export default function TodayScreen({ navigation, route }) {
         </Pressable>
       ) : null}
 
+      {/* One tip a day: water and sun by day, sleep at night (Lita, 2026-10-25) */}
+      {(() => {
+        const tip = tipOfTheMoment({ period: afterSunrise && hour < 18 ? 'day' : 'evening', sleptHours: todayEntry?.sleep_hours ?? null })
+        return (
+          <View style={[styles.tip, { backgroundColor: colors.primarySoft }]}>
+            <Ionicons name={afterSunrise && hour < 18 ? 'water-outline' : 'bed-outline'} size={16} color={colors.primary} />
+            <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(tip.text, tip.params)}</Text>
+          </View>
+        )
+      })()}
+
       {/* 3 · Today's check-in (one line once done) */}
       <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin today')}</Text>
+      {/* Last night's sleep, in the morning only */}
+      {now === 'morning' ? (sleepDone && !sleepOpen ? (
+        <Pressable onPress={() => setSleepOpen(true)} style={[styles.logCard, styles.logRow, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: SPACING.sm }]}>
+          <View style={[styles.logIcon, { backgroundColor: colors.successSoft }]}><Ionicons name="bed-outline" size={20} color={colors.success} /></View>
+          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t('Slept {n} h · {how}', { n: todayEntry.sleep_hours, how: t(SLEEP_QUALITY.find(q => q.value === todayEntry.sleep_quality)?.label).toLowerCase() })}</Text>
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Edit')}</Text>
+        </Pressable>
+      ) : (
+        <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: SPACING.sm }]}>
+          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('How did you sleep?')}</Text>
+          <View style={[styles.chipsRow, { marginTop: SPACING.md }]}>
+            {SLEEP_QUALITY.map(q => {
+              const on = todayEntry?.sleep_quality === q.value
+              return (
+                <Pressable key={q.value} onPress={() => pickSleep({ quality: q.value })} accessibilityState={{ selected: on }}
+                  style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
+                  <MaterialCommunityIcons name={q.icon} size={18} color={on ? colors.onPrimary : colors.primary} />
+                  <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{t(q.label)}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('How many hours?')}</Text>
+          <View style={[styles.chipsRow, { marginTop: SPACING.sm }]}>
+            {SLEEP_HOURS.map(h => {
+              const on = todayEntry?.sleep_hours != null && Number(todayEntry.sleep_hours) === h
+              return (
+                <Pressable key={h} onPress={() => pickSleep({ hours: h })} accessibilityState={{ selected: on }}
+                  style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
+                  <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{h === 4 ? '≤4' : h === 9 ? '9+' : h}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </View>
+      )) : null}
       {todayMood && !checkinOpen ? (
         <Pressable onPress={() => setCheckinOpen(true)} style={[styles.logCard, styles.logRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.logIcon, { backgroundColor: colors.successSoft }]}><Ionicons name="checkmark" size={20} color={colors.success} /></View>
@@ -652,19 +734,6 @@ export default function TodayScreen({ navigation, route }) {
         ) : null}
       </Pressable>
       )}
-      {/* 4 · Check any product */}
-      <Text style={[styles.section, { color: colors.muted }]}>{t('Check a product')}</Text>
-      <View style={styles.searchRow}>
-        <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="search" size={18} color={colors.muted} />
-          <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
-        </Pressable>
-        <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
-          style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
-          <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
-        </Pressable>
-      </View>
       <Pressable onPress={() => navigation.navigate('Skyncyclopedia')} hitSlop={6} style={styles.learnLink}>
         <Ionicons name="library-outline" size={15} color={colors.primary} />
         <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Learn about your skin: issues, ingredients, the basics')} ›</Text>
@@ -733,6 +802,8 @@ function SunGlyph({ size = 24 }) {
 }
 
 const styles = StyleSheet.create({
+  chipsRow: { flexDirection: 'row', gap: SPACING.sm },
+  sleepChip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 38, borderRadius: 999 },
   learnLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.sm },
   reactOption: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 14, padding: SPACING.md, marginTop: SPACING.sm },
   modeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingVertical: 5, paddingHorizontal: SPACING.md, marginTop: SPACING.md },

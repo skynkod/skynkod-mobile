@@ -97,3 +97,18 @@ export const isNightTime = () => {
   const hour = new Date().getHours()
   return hour >= 20 || hour < 6
 }
+
+// For screens whose colours live outside React (Rekod, Dekod): the palette of
+// the mode on screen right now. The ThemeProvider sets it; a screen that reads
+// it also calls useTheme() so it redraws when day turns to night.
+let liveDark = false
+export const setLiveDark = (dark) => { liveDark = !!dark }
+// `extra`: { name: [light, dark] } for colours the main palette doesn't have.
+export const livePalette = (extra = {}) => new Proxy({}, {
+  get: (_, key) => (key in extra ? extra[key][liveDark ? 1 : 0] : (liveDark ? DARK_COLORS : LIGHT_COLORS)[key]),
+})
+// StyleSheet built from livePalette, made once per mode.
+export const liveStyles = (make) => {
+  const made = {}
+  return new Proxy({}, { get: (_, key) => (made[liveDark] = made[liveDark] || make())[key] })
+}

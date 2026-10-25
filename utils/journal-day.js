@@ -24,6 +24,29 @@ export const MOOD_MESSAGES = {
   terrible: 'Rough day for your skin. Keep it simple and gentle today, and tick what’s going on below.',
 }
 
+// "How did you sleep?" each morning on Home (Lita, 2026-10-25).
+export const SLEEP_QUALITY = [
+  { value: 'good', label: 'Well', icon: 'emoticon-happy-outline' },
+  { value: 'okay', label: 'Okay', icon: 'emoticon-neutral-outline' },
+  { value: 'bad', label: 'Badly', icon: 'emoticon-sad-outline' },
+]
+export const SLEEP_HOURS = [4, 5, 6, 7, 8, 9]
+
+// Saves last night's sleep on today's entry (created without a mood if needed).
+export const saveSleep = async (userId, day, { hours, quality }, existingId) => {
+  const fields = { sleep_hours: hours ?? null, sleep_quality: quality ?? null }
+  if (existingId) {
+    const { error } = await supabase.from('journal_entries').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', existingId)
+    if (error) throw error
+    return existingId
+  }
+  const noon = new Date(day)
+  noon.setHours(12, 0, 0, 0)
+  const { data, error } = await supabase.from('journal_entries').insert({ user_id: userId, date: noon.toISOString(), skin_conditions: [], ...fields }).select('id').single()
+  if (error) throw error
+  return data.id
+}
+
 export const TAGS = [
   'New pimple', 'Redness', 'Dryness', 'Itchiness / Sensitivity', 'Oily', 'Peeling / Flaking',
   'Sun exposure', 'Poor sleep', 'Stress', 'Hormonal / Period', 'Used new product',
@@ -115,7 +138,7 @@ export const situationFromCheckIn = (entry) => {
 export const getSkinPatterns = async (userId) => {
   const since = new Date(Date.now() - 90 * 86400000)
   const [entries, opened, routineDays, routines] = await Promise.all([
-    supabase.from('journal_entries').select('date, mood, skin_conditions').eq('user_id', userId).gte('date', since.toISOString()),
+    supabase.from('journal_entries').select('date, mood, skin_conditions, sleep_hours, sleep_quality').eq('user_id', userId).gte('date', since.toISOString()),
     supabase.from('user_products').select('opened_at').eq('user_id', userId).gte('opened_at', since.toISOString()),
     supabase.from('routine_completions').select('date').eq('user_id', userId).gte('date', since.toISOString().slice(0, 10)),
     supabase.from('routines').select('id').eq('user_id', userId).limit(1),

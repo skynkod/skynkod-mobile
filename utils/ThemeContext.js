@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Location from 'expo-location'
-import { DARK_COLORS, LIGHT_COLORS } from './theme'
+import { DARK_COLORS, LIGHT_COLORS, setLiveDark } from './theme'
 import { isNightAt } from './daylight'
 import { setSkinDayCoords } from './skin-day'
 import { logError } from './errorLogger'
@@ -90,6 +90,7 @@ export const ThemeProvider = ({ children }) => {
   const toggleTheme = () => setThemeMode(isDark ? 'light' : 'dark')
 
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS
+  setLiveDark(isDark)
 
   return (
     <ThemeContext.Provider value={{ isDark, isNight: nightNow, coords, updateLocation, themeMode, setThemeMode, toggleTheme, colors, loading }}>

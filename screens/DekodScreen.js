@@ -12,7 +12,8 @@ import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodRes
 import { logError } from '../utils/errorLogger'
 import { syncSmartReminders } from '../utils/notifications'
 import { track } from '../utils/analytics'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING, TYPE, liveStyles } from '../utils/theme'
+import { useTheme } from '../utils/ThemeContext'
 
 const LABEL = 'Dekod · Premium'
 
@@ -48,6 +49,7 @@ const cropToOval = async (photo, oval) => {
 // intro → consent (first time) → photo tips → camera → check → result,
 // and once she has scans, a home with the latest one, evolution and history.
 export default function DekodScreen({ navigation }) {
+  useTheme() // redraws in the colours of the mode on screen
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const [premium, setPremium] = useState(undefined)
@@ -397,7 +399,7 @@ export default function DekodScreen({ navigation }) {
   )
 }
 
-const styles = StyleSheet.create({
+const styles = liveStyles(() => StyleSheet.create({
   landingTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderColor: P.border, backgroundColor: P.card, borderRadius: 18, padding: SPACING.md },
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: P.primarySoft },
@@ -414,4 +416,4 @@ const styles = StyleSheet.create({
   close: { position: 'absolute', top: 60, left: 20 },
   shutter: { position: 'absolute', bottom: 50, alignSelf: 'center', width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF' },
-})
+}))
