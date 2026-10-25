@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics'
 import { Screen, Card, Button, ProgressBar, Banner, Chip, SegmentedControl, useColors } from '../components/ui'
 import { BadgeImage, LevelEmblem, TierPill, TIER_STYLE } from '../components/Badge'
 import { BoxArt, TeaArt, StarArt } from '../components/KodaBox'
+import { KODA_BOX_ON } from '../utils/journey-core'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { syncJourney, openBox, makeBoxReadyForTest } from '../utils/journey'
@@ -145,7 +146,7 @@ export default function MySkinJourneyScreen() {
       {tab === 'challenges' ? (
         <>
           {/* The Koda box */}
-          {data.box.ready || tester ? (
+          {KODA_BOX_ON && (data.box.ready || tester) ? (
             <Card style={{ marginTop: SPACING.lg, alignItems: 'center' }}>
               <BoxArt size={110} />
               <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{data.box.ready ? t('Your Koda box has arrived') : t('Your next Koda box comes on Monday')}</Text>

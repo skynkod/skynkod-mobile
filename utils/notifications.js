@@ -223,7 +223,6 @@ export const syncSmartReminders = async (userId) => {
       const sd = sosDay(date)
       // Morning.
       const extras = [
-        date.getDay() === 1 ? EXTRA.recap[l] : null,
         date.getDay() === 0 && scans?.length && premium ? EXTRA.dekod[l] : null,
         reviewDue(date) ? EXTRA.rekod[l] : null,
       ].filter(Boolean)

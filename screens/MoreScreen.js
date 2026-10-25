@@ -42,7 +42,7 @@ export const MORE_SCREENS = [
   { name: 'Photos', component: PhotosScreen, label: 'Photos', subtitle: 'Progress pictures', icon: 'camera-outline', group: 'track' },
   { name: 'Progress', component: MyProgressScreen, label: 'My progress', subtitle: 'Progress, timeline and your dermatologist report', icon: 'trending-up-outline', group: 'track' },
   { name: 'SkinTimeline', component: SkinTimelineScreen, label: 'Skyn Timeline', subtitle: 'Your skin story, step by step', icon: 'git-commit-outline', group: 'track' },
-  { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and your Koda box', icon: 'ribbon-outline', group: 'track' },
+  { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and challenges', icon: 'ribbon-outline', group: 'track' },
   { name: 'SkinReport', component: SkinReportScreen, label: 'My skin report', subtitle: 'One page for your dermatologist', icon: 'document-text-outline', group: 'track', premium: true },
   { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your Skyn Shelf', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
@@ -163,7 +163,7 @@ export default function MoreScreen({ navigation }) {
           })}
         </View>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, textAlign: 'center' }]}>
-          {t('{n} active weeks · one star in your Koda box for each', { n: journey?.stars || 0 })}
+          {t('{n} active weeks', { n: journey?.stars || 0 })}
         </Text>
       </Card>
 

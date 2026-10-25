@@ -12,7 +12,7 @@ import { getVerdicts } from './expectation-verdicts'
 import { loadState, saveState } from './cloud-state'
 import {
   VISIBLE_BADGES, canEarn, badgeOf, buildStats, progressOf, reachedBadges, nextSteps, weekChallenges, newXpEvents, totalXp,
-  levelFor, streakFrom, weekStart, dayKey, addDays, activeDaysIn, boxContents,
+  levelFor, streakFrom, weekStart, dayKey, addDays, activeDaysIn, boxContents, KODA_BOX_ON,
 } from './journey-core'
 
 // The service behind My Skin Journey: reads what she really did (Supabase),
@@ -188,7 +188,14 @@ const gather = async (userId, state) => {
 
 // Reads everything, awards what's new, saves, and tells the toast.
 // Returns the full picture for the My Skin Journey screen.
-export const syncJourney = (userId) => serial(async () => {
+// While the Koda box is set aside (Lita, 2026-10-25), each active week still
+// earns its seniority star, quietly, as if the box had been opened.
+export const syncJourney = (userId) => {
+  const result = syncJourneyNow(userId)
+  result.then(d => { if (!KODA_BOX_ON && d?.boxDue) openBox(userId).catch(() => {}) }).catch(() => {})
+  return result
+}
+const syncJourneyNow = (userId) => serial(async () => {
   const state = await loadJourney(userId)
   const raw = await gather(userId, state)
   const stats = buildStats(raw)
@@ -231,7 +238,8 @@ const picture = (state, stats, challenges) => {
     nextSteps: nextSteps(stats, state.badges),
     challenges,
     stats,
-    box: boxOf(state),
+    box: KODA_BOX_ON ? boxOf(state) : { ready: false },
+    boxDue: boxOf(state).ready,
   }
 }
 

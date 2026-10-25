@@ -95,7 +95,7 @@ export default function NotificationsScreen({ route }) {
         ))}
       </Card>
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
-        {t('Your Rekod review, Dekod day and Koda box come with the morning reminder, never as an extra one.')}
+        {t('Your Rekod review and Dekod day come with the morning reminder, never as an extra one.')}
       </Text>
     </Screen>
   )

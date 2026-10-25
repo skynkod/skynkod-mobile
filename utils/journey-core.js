@@ -461,6 +461,9 @@ export const newXpEvents = ({ raw, stats, badges, challenges, week }, events = {
 export const totalXp = events => Object.values(events).reduce((n, e) => n + (e.xp || 0), 0)
 
 // ---------- The Koda box ----------
+// Set aside for this version (Lita, 2026-10-25): hidden everywhere, code kept
+// to bring it back later.
+export const KODA_BOX_ON = false
 
 // Days with a ticked routine or a journal entry during the week starting on `week`.
 export const activeDaysIn = (raw, week) => {
