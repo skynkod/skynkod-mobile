@@ -23,6 +23,7 @@ import SkinStateChips from '../components/SkinStateChips'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay, saveSleep, SLEEP_QUALITY, SLEEP_HOURS } from '../utils/journal-day'
 import { tipOfTheMoment } from '../utils/daily-tips'
+import { productMatch } from '../utils/ingredients-guide'
 import { getRekodPlan, NIGHTS, nightInfo, goalsTitle, weekOf, planWeeks, rekodKey, refreshRekodRoutine, patternFromRoutine } from '../utils/rekod'
 import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { getEnvironment } from '../utils/environment'
@@ -279,7 +280,11 @@ export default function TodayScreen({ navigation, route }) {
 
   const reactive = isReactiveState(skinState?.states)
   const adjustedOf = period => {
-    const base = withPauses(todaySteps(withLipsStep(routines[period]?.steps || [])), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    const plain = withPauses(todaySteps(withLipsStep(routines[period]?.steps || [])), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    // A product her profile says to avoid (pregnancy, breastfeeding, an allergy)
+    // waits, even in a routine made before (integration audit, 2026-10-25).
+    const avoid = plain.steps.filter(st => routineProducts[st.product_id] && profile && productMatch(routineProducts[st.product_id], profile).avoid.length)
+    const base = { steps: plain.steps.filter(st => !avoid.includes(st)), paused: [...plain.paused, ...avoid.map(step => ({ step, reason: 'avoid' }))] }
     if (!reactive) return base
     // Irritated, red, damaged barrier or over-exfoliated: strong actives wait.
     const waiting = base.steps.filter(st => strongFace(routineProducts[st.product_id]))
@@ -462,9 +467,14 @@ export default function TodayScreen({ navigation, route }) {
                 {t('Not right now:')} {adjustedOf(period).paused.filter(x => x.reason === 'skin state').map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
-            {adjustedOf(period).paused.filter(x => x.reason !== 'skin state').length ? (
+            {adjustedOf(period).paused.filter(x => x.reason === 'avoid').length ? (
+              <Text style={[TYPE.caption, { color: colors.warning, paddingTop: SPACING.sm }]}>
+                {['pregnant', 'breastfeeding'].includes(pregnancy) ? t('Not during pregnancy or breastfeeding:') : t('Not for you (your allergies):')} {adjustedOf(period).paused.filter(x => x.reason === 'avoid').map(x => x.step.product).join(', ')}
+              </Text>
+            ) : null}
+            {adjustedOf(period).paused.filter(x => x.reason !== 'skin state' && x.reason !== 'avoid').length ? (
               <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
-                {t('Paused for now:')} {adjustedOf(period).paused.filter(x => x.reason !== 'skin state').map(x => x.step.product).join(', ')}
+                {t('Paused for now:')} {adjustedOf(period).paused.filter(x => x.reason !== 'skin state' && x.reason !== 'avoid').map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
             <Pressable onPress={() => (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period }))} style={{ paddingTop: SPACING.sm }}>

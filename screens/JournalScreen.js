@@ -102,6 +102,7 @@ export default function JournalScreen({ route, navigation }) {
     getPausedProducts(user.id).then(setPaused);
   }, [user?.id]);
   const [note, setNote] = useState('');
+  const [fromScan, setFromScan] = useState(false); // tags ticked from a Dekod scan
   // Last night's sleep, also editable here, any day (full audit, 2026-10-25).
   const [sleep, setSleep] = useState({ hours: null, quality: null });
   const [status, setStatus] = useState('idle'); // idle | dirty | saving | saved
@@ -192,11 +193,8 @@ export default function JournalScreen({ route, navigation }) {
     const preset = route?.params?.presetTags;
     if (!route?.params?.presetAt || !preset?.length) return;
     dirty.current = true;
-    // Okay only lists everyday issues: anything else needs the full Bad list.
-    const needsFull = preset.some(tag => !OKAY_TAGS.includes(tag));
-    const base = ['okay', 'bad', 'terrible'].includes(mood) ? mood : route.params.presetMood || 'okay';
-    const m = base === 'okay' && needsFull ? 'bad' : base;
-    setMood(m);
+    // What Dekod saw is ticked; her mood stays hers to pick (integration audit, 2026-10-25).
+    setFromScan(true);
     setTags(prev => [...new Set([...prev, ...preset])]);
     setStatus('dirty');
   }, [route?.params?.presetAt]);
@@ -426,13 +424,13 @@ export default function JournalScreen({ route, navigation }) {
           </View>
         ) : null}
 
-        {/* Only when the skin isn’t at its best: Okay, Not great or Tough day */}
-        {['okay', 'bad', 'terrible'].includes(mood) ? (
+        {/* Only when the skin isn’t at its best: Okay, Not great or Tough day (or ticked from a Dekod scan) */}
+        {['okay', 'bad', 'terrible'].includes(mood) || (fromScan && !mood) ? (
           <>
         <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
         <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
         <View style={styles.tags}>
-          {(mood === 'okay' ? OKAY_TAGS : TAGS).map(tag => {
+          {(mood === 'okay' && !tags.some(tag => !OKAY_TAGS.includes(tag)) ? OKAY_TAGS : TAGS).map(tag => {
             const on = tags.includes(tag);
             return (
               <Pressable

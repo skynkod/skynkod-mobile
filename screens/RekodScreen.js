@@ -8,6 +8,8 @@ import * as Haptics from 'expo-haptics'
 import Svg, { Circle } from 'react-native-svg'
 import { useAuth } from '../utils/AuthContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
+import { getEntriesBetween } from '../utils/journal-day'
+import { getCheckInStatus } from '../utils/skin-tracking'
 import { getUserRoutines } from '../utils/routines-service'
 import { describeDays } from '../utils/routine-checks'
 import { logError } from '../utils/errorLogger'
@@ -113,6 +115,7 @@ export default function RekodScreen({ navigation }) {
   const [sheet, setSheet] = useState(null) // { period, idx }: a step's details
   const [checkOpen, setCheckOpen] = useState(false)
   const [scans, setScans] = useState([]) // Dekod scans, newest first
+  const [reactDays, setReactDays] = useState(0) // days with a reaction in her journal this week
   const [fullOpen, setFullOpen] = useState(false) // the whole programme, week by week
   const [sos, setSos] = useState(null) // a 7-day plan (Emergency mode) running alongside
   const [olderDay0, setOlderDay0] = useState(null) // an older Dekod scan she chose as Day 0
@@ -214,6 +217,10 @@ export default function RekodScreen({ navigation }) {
       getActivePlan(user.id).then(setSos).catch(() => setSos(null))
       const dekod = await getDekodResults(user.id).catch(() => [])
       setScans(dekod)
+      // Her journal this week, for the review's suggested answer (integration audit).
+      getEntriesBetween(user.id, new Date(Date.now() - 7 * 86400000), new Date(Date.now() + 86400000))
+        .then(rows => setReactDays(rows.filter(r => isReactiveState(r.skin_state) || (r.skin_conditions || []).some(c => ['Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking'].includes(c))).length))
+        .catch(() => setReactDays(0))
       // No Day 0 yet: the first Dekod scan since the start becomes it.
       if (p && !p.baseline) {
         const first = [...dekod].reverse().find(h => new Date(h.created_at) >= new Date(p.startedAt) - 86400000)
@@ -342,6 +349,9 @@ export default function RekodScreen({ navigation }) {
       track('rekod_checkin', { answer: value })
       setPlan(res.plan)
       setRoutine(r => ({ ...r, evening: res.routine.evening }))
+      // Every 2 weeks, her progress review follows right away: one moment, not two (integration audit).
+      const review = await getCheckInStatus(user.id, { afterRekod: true }).catch(() => null)
+      if (review?.due) { setCheckOpen(false); navigation.navigate('SkinCheckIn', { week: review.week }) }
     } catch (error) {
       await logError('Rekod_checkin', error)
       Alert.alert('Something went wrong', 'Please try again.')
@@ -613,7 +623,11 @@ export default function RekodScreen({ navigation }) {
             // A Dekod from the last 3 days points to an answer.
             const week = recentScan(scans, 3)
             // This week's scans (up to 3) averaged, against Day 0.
-            const suggested = week && plan.baseline ? checkInFromDekod(startPoints(scans, plan.startedAt, plan.baseline.points), averagePoints(scans.filter(s => Date.now() - new Date(s.created_at).getTime() <= 7 * 86400000), 3)) : null
+            const fromDekod = week && plan.baseline ? checkInFromDekod(startPoints(scans, plan.startedAt, plan.baseline.points), averagePoints(scans.filter(s => Date.now() - new Date(s.created_at).getTime() <= 7 * 86400000), 3)) : null
+            // Her journal counts too: 3 days or more with redness or irritation is "a lot", 1–2 "a little".
+            const fromJournal = reactDays >= 3 ? 'lot' : reactDays >= 1 ? 'little' : null
+            const RANK = { good: 0, little: 1, lot: 2 }
+            const suggested = [fromDekod, fromJournal].filter(Boolean).sort((a, b) => RANK[b] - RANK[a])[0] || null
             return (
               <>
                 {!week ? (
@@ -622,13 +636,14 @@ export default function RekodScreen({ navigation }) {
                     <Text style={[TYPE.bodyStrong, { color: C.primary, flex: 1 }]}>Scan with Dekod first</Text>
                     <Ionicons name="chevron-forward" size={16} color={C.primary} />
                   </Pressable>
-                ) : suggested ? (
-                  <Text style={[TYPE.caption, { color: C.primary, marginTop: SPACING.md }]}>Your latest Dekod suggests the highlighted answer.</Text>
+                ) : null}
+                {suggested ? (
+                  <Text style={[TYPE.caption, { color: C.primary, marginTop: SPACING.md }]}>{fromJournal === suggested && fromDekod !== suggested ? 'Your journal this week suggests the highlighted answer.' : 'Your latest Dekod suggests the highlighted answer.'}</Text>
                 ) : null}
                 <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
                   {[['good', 'All good', 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
                     <Pressable key={v} disabled={busy} onPress={async () => { tap(); await checkIn(v); setCheckOpen(false) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderColor: suggested === v ? C.primary : C.border, borderWidth: suggested === v ? 2 : 1, opacity: pressed ? 0.8 : 1 }]}>
-                      <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}{suggested === v ? ' · Dekod' : ''}</Text>
+                      <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}{suggested === v ? (fromJournal === v && fromDekod !== v ? ' · your journal' : ' · Dekod') : ''}</Text>
                       <Text style={[TYPE.caption, { color: C.muted }]}>{h}</Text>
                     </Pressable>
                   ))}

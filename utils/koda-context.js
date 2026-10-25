@@ -14,6 +14,12 @@ import { getProductReactions } from './journal-day'
 import { describeDays } from './routine-checks'
 import { stopReason } from './stop-advice'
 import { expectationFor, expectationStatus } from './expectations'
+import { withPauses } from './current-routine'
+import { todaySteps, activesOf } from './routine-checks'
+import { productMatch } from './ingredients-guide'
+import { engineProfile } from './skin-quiz'
+import { currentSkinState, isReactiveState } from './skin-state'
+import { getPausedProducts } from './paused-products'
 
 // What Koda should know about the user's week, sent with each question.
 // Journal days and skin patterns are health data: only shared when the user
@@ -61,6 +67,26 @@ export const buildKodaContext = async (userId) => {
     healthOk ? safe(getProductReactions(userId)) : [],
   ])
   const byId = Object.fromEntries((routineProducts || []).map(p => [String(p.id), p]))
+
+  // What waits today, as Home shows it (integration audit, 2026-10-25), so Koda
+  // never tells her to use a product that is paused: her own pauses, the 7-day
+  // plan, what her profile says to avoid (pregnancy, allergies), and strong
+  // actives while her skin is reacting.
+  const [ownPaused, skinToday] = await Promise.all([safe(getPausedProducts(userId)), safe(currentSkinState(userId))])
+  const engine = profile ? engineProfile(profile) : null
+  const reacting = isReactiveState(skinToday?.states)
+  const pausedToday = []
+  for (const r of (routines?.success ? routines.data : []) || []) {
+    const steps = todaySteps(r.steps || [])
+    const { paused } = withPauses(steps, { plan, products: byId, pausedIds: (ownPaused || []).map(p => p.id) })
+    for (const x of paused) pausedToday.push({ name: x.step.product, why: (ownPaused || []).some(p => String(p.id) === String(x.step.product_id)) ? 'paused by her' : '7-day plan' })
+    for (const st of steps) {
+      const p = byId[String(st.product_id)]
+      if (!p || paused.some(x => x.step === st)) continue
+      if (engine && productMatch(p, engine).avoid.length) pausedToday.push({ name: st.product, why: engine.pregnancy ? 'pregnancy or breastfeeding' : 'her allergies' })
+      else if (reacting && !['eye care', 'lip care'].includes(p.category) && (activesOf(p).retinoid || activesOf(p).exfoliant || activesOf(p).benzoyl)) pausedToday.push({ name: st.product, why: 'her skin is reacting today' })
+    }
+  }
   const opened = Object.fromEntries((products || []).filter(p => p.opened_at && p.product_id).map(p => [String(p.product_id), p.opened_at]))
   const reactionOf = Object.fromEntries((reactions || []).map(r => [String(r.product?.id), r]))
   const verdicts = Object.entries(verdictMap || {}).map(([id, v]) => ({ name: byId[id]?.name || null, answer: v?.value })).filter(v => v.name)
@@ -93,6 +119,7 @@ export const buildKodaContext = async (userId) => {
       : null,
     patterns: healthOk && patterns?.ready ? patterns.patterns.map(p => p.text) : null,
     routine,
+    pausedToday: pausedToday.slice(0, 8),
     recentProducts,
     plan: plan ? { id: plan.situation.id, title: plan.situation.title, day: plan.dayIndex + 1 } : null,
     rekod: rekod ? {

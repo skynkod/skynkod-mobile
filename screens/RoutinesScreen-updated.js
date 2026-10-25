@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { currentRoutine, withLipsStep } from '../utils/current-routine';
+import { getRekodPlan } from '../utils/rekod';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,6 +35,9 @@ export default function RoutinesScreen({ route, navigation }) {
   const { isNight } = useTheme();
   const [tab, setTab] = useState(isNight ? 'evening' : 'morning');
   const [savedRoutines, setSavedRoutines] = useState([]);
+  // During Rekod, changes are made in Rekod, where they're kept (integration audit, 2026-10-25).
+  const [inRekod, setInRekod] = useState(false);
+  useEffect(() => { if (user?.id) getRekodPlan(user.id).then(p => setInRekod(!!p)).catch(() => {}); }, [user?.id]);
   const [skinType, setSkinType] = useState(null);
   const [done, setDone] = useState({});
   const [loading, setLoading] = useState(true);
@@ -106,7 +110,9 @@ export default function RoutinesScreen({ route, navigation }) {
 
   if (loading) return <LoadingView />;
 
-  const build = () => navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now(), editSteps: saved ? withLipsStep(saved.steps) : null });
+  const build = () => (inRekod
+    ? navigation.navigate('Rekod')
+    : navigation.navigate('RoutineBuilder', { period: tab, startedAt: Date.now(), editSteps: saved ? withLipsStep(saved.steps) : null }));
 
   // Back skips the routine builder screens and returns to where she came
   // from (usually Home), never to the steps she just finished.

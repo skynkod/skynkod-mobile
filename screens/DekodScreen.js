@@ -11,6 +11,7 @@ import { isPremiumUser } from '../utils/premium'
 import { DEKOD_POINTS, OLD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, journalFrom, getDekodResults, deleteDekodResult, scoreOf, levelFor, splitScans, compareScans } from '../utils/dekod'
 import { File } from 'expo-file-system'
 import { syncSoon } from '../utils/journey'
+import { getActivePlan } from '../utils/emergency-state'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { logError } from '../utils/errorLogger'
 import { syncSmartReminders } from '../utils/notifications'
@@ -66,6 +67,9 @@ export default function DekodScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions()
   const camera = useRef(null)
   const photos = useRef([]) // the photo files on the phone, deleted once used
+  // A 7-day plan already running: Dekod doesn't offer to start another (integration audit).
+  const [sosOn, setSosOn] = useState(false)
+  useFocusEffect(useCallback(() => { if (user?.id) getActivePlan(user.id).then(p => setSosOn(!!p)).catch(() => {}) }, [user?.id]))
   const ovalRef = useRef(null)
   const ovalRect = useRef(null) // where the oval sits on screen
   const [history, setHistory] = useState(null) // past scans, newest first
@@ -284,9 +288,9 @@ export default function DekodScreen({ navigation }) {
       <PremiumShell label={LABEL} onBack={toHome} overline={t('Today')} title={t('Your Dekod')} subtitle={result.summary}
         footer={(
           <>
-            {next.issues.length ? <PButton title={t('Emergency mode')} icon="medkit-outline" onPress={() => navigation.navigate('Emergency', { issues: next.issues, openedAt: Date.now() })} /> : null}
+            {next.issues.length && !sosOn ? <PButton title={t('Emergency mode')} icon="medkit-outline" onPress={() => navigation.navigate('Emergency', { issues: next.issues, openedAt: Date.now() })} /> : null}
             {next.tags.length ? (
-              <PButton title={t('Add to my journal')} icon="create-outline" outline={!!next.issues.length}
+              <PButton title={t('Add to my journal')} icon="create-outline" outline={!!next.issues.length && !sosOn}
                 onPress={() => navigation.navigate('Journal', { openNew: Date.now(), presetAt: Date.now(), presetTags: next.tags, presetMood: next.mood })} />
             ) : null}
             {!next.tags.length ? <PButton title={t('Done')} onPress={toHome} /> : null}

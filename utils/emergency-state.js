@@ -95,8 +95,28 @@ export const repauseAfterReaction = async (userId) => {
   }
 }
 
-export const startPlan = (userId, plan) => AsyncStorage.setItem(key(userId), JSON.stringify({ plan, startedAt: new Date().toISOString() }))
-export const endPlan = userId => AsyncStorage.removeItem(key(userId))
+// A 7-day plan puts Rekod on hold (integration audit, 2026-10-25): its week
+// becomes a rest week and the programme gets one more week; afterwards Rekod
+// comes back gently over 2 weeks, while the plan brings products back one by one.
+const holdRekod = async (userId, until) => {
+  const { getRekodPlan, saveRekodPlan, refreshRekodRoutine } = await import('./rekod')
+  const rekod = await getRekodPlan(userId).catch(() => null)
+  if (!rekod) return
+  const next = until
+    ? { ...rekod, restUntil: until, extraWeeks: (rekod.extraWeeks || 0) + 1 }
+    : { ...rekod, restUntil: rekod.restUntil && new Date(rekod.restUntil) > new Date() ? new Date().toISOString() : rekod.restUntil }
+  await saveRekodPlan(userId, next)
+  await refreshRekodRoutine(userId, next)
+}
+export const startPlan = async (userId, plan) => {
+  const startedAt = new Date().toISOString()
+  await AsyncStorage.setItem(key(userId), JSON.stringify({ plan, startedAt }))
+  await holdRekod(userId, new Date(Date.now() + 7 * 86400000).toISOString()).catch(() => {})
+}
+export const endPlan = async (userId) => {
+  await AsyncStorage.removeItem(key(userId))
+  await holdRekod(userId, null).catch(() => {})
+}
 
 const PAUSE_REASONS = {
   retinoid: 'retinol',

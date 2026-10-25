@@ -10,6 +10,8 @@ import { allProductsByCategory, getMyProducts } from './catalog'
 import { saveRoutine } from './routines-service'
 import { getUserProfile } from './supabase'
 import { engineProfile } from './skin-quiz'
+import { getPausedProducts } from './paused-products'
+import { getProductReactions } from './journal-day'
 import {
   GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, goalsOf,
   planWeeks, calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo,
@@ -108,9 +110,22 @@ const pickFrom = (candidates, profile, { want = [], wantRequired = false, avoidH
   return null
 }
 
+// Products Rekod never brings back (integration audit, 2026-10-25): the ones
+// she stopped, paused, or that her journal links to a reaction.
+const offLimits = async (userId) => {
+  const [paused, stopped, reactions] = await Promise.all([
+    getPausedProducts(userId).catch(() => []),
+    supabase.from('skin_events').select('product_id').eq('user_id', userId).eq('kind', 'stopped').then(r => r.data || [], () => []),
+    getProductReactions(userId).catch(() => []),
+  ])
+  return new Set([...paused.map(p => String(p.id)), ...stopped.map(e => String(e.product_id)), ...reactions.map(r => String(r.product?.id))])
+}
+
 // The user's own products first, then the catalogue.
 const chooser = async (userId, profile, pref = 'own') => {
-  const mine = pref === 'new' ? [] : (await getMyProducts(userId).catch(() => [])).filter(r => r.status !== 'to_buy' && r.product).map(r => r.product)
+  const banned = await offLimits(userId).catch(() => new Set())
+  const allowed = p => !banned.has(String(p.id))
+  const mine = pref === 'new' ? [] : (await getMyProducts(userId).catch(() => [])).filter(r => r.status !== 'to_buy' && r.product && allowed(r.product)).map(r => r.product)
   const cache = {}
   const used = []
   const usedActives = new Set()
@@ -122,7 +137,7 @@ const chooser = async (userId, profile, pref = 'own') => {
     const o = { ...opts, exclude: opts.unique ? used : [], avoid: opts.unique && face ? [...usedActives] : [] }
     const ownList = mine.filter(p => categories.includes(p.category))
     const key = categories.join('|')
-    cache[key] = cache[key] || await allProductsByCategory(categories).catch(() => [])
+    cache[key] = cache[key] || (await allProductsByCategory(categories).catch(() => [])).filter(allowed)
     // Her own 100% safe product, else a 100% safe one from the catalogue; a
     // "not 100% safe" product only when nothing safe exists anywhere.
     const own = pickFrom(ownList, profile, { ...o, level: 'safe' })

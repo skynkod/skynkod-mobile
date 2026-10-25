@@ -20,7 +20,7 @@ export const saveCheckin = async (userId, { overall, concerns }) => {
 }
 
 // Only what Home needs: is the 2-week check-in due?
-export const getCheckInStatus = async (userId) => {
+export const getCheckInStatus = async (userId, { afterRekod = false } = {}) => {
   const [first, checkins, scans, rekod] = await Promise.all([
     supabase.from('journal_entries').select('date').eq('user_id', userId).order('date', { ascending: true }).limit(1),
     getCheckins(userId),
@@ -28,10 +28,11 @@ export const getCheckInStatus = async (userId) => {
     supabase.from('rekod_plans').select('user_id').eq('user_id', userId).maybeSingle(),
   ])
   // A Rekod member answers her weekly Rekod review: no second review on top (full audit, 2026-10-25).
-  if (rekod?.data) return { due: false, rekod: true }
+  // Right after her Rekod review, the Skin review follows in the same moment when it's due.
+  if (rekod?.data && !afterRekod) return { due: false, rekod: true }
   const status = checkInStatus({ baseline: baselineOf({ entries: first.data || [], scans, checkins }), checkins })
   // Another "how is it going?" question in the last 3 days: the review waits.
-  return status.due && !(await canAskAgain(userId)) ? { ...status, due: false } : status
+  return status.due && !afterRekod && !(await canAskAgain(userId)) ? { ...status, due: false } : status
 }
 
 export const getSkinTracking = async (userId) => {
