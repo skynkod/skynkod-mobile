@@ -6,19 +6,32 @@
 // skin_concerns, acne_types, skin_conditions, avoid_ingredients, pregnancy,
 // skin_goals). Health questions are only asked with the health consent.
 
+import { fromIssues, getIssue } from './skin-issues'
+
 export const CHAPTERS = [
   { id: 'goal', label: 'Your goal', cheer: 'Everything that follows is shaped around this.' },
   { id: 'you', label: 'About you', cheer: 'Let’s get to know each other.' },
   { id: 'test', label: 'Your skin test', cheer: 'No mirror needed, just think of an ordinary day.' },
   { id: 'bothers', label: 'What bothers you', cheer: 'Your skin is starting to talk to us…' },
-  { id: 'signs', label: 'Mystery signs', cheer: 'Some things are hard to name. Let’s look closer.' },
   { id: 'health', label: 'Your health', cheer: 'Private, and only used to keep you safe.' },
   { id: 'habits', label: 'Your habits', cheer: 'Your days shape your skin too.' },
   { id: 'prefs', label: 'Your preferences', cheer: 'Last stretch!' },
 ]
 
 const o = (value, label, hint) => ({ value, label, hint })
-const CONCERN_OPTIONS = ['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity'].map(c => o(c, c))
+// Her concerns come from the photos she taps (utils/skin-issues.js); the main
+// and second concern pick from them, eyes and lips included.
+const CONCERN_OPTIONS = [...['Acne', 'Redness', 'Dryness', 'Dark spots', 'Fine lines', 'Large pores', 'Dullness', 'Sensitivity'].map(c => o(c, c)),
+  o('Oily', 'Oily skin'), o('Dehydration', 'Dehydrated skin'), o('Dark circles', 'Dark circles'), o('Puffy eyes', 'Puffy eyes'), o('Milia', 'Milia'),
+  o('Chapped lips', 'Dry, chapped lips'), o('Cracked lip corners', 'Cracked lip corners')]
+
+// Answers with what the photos say: concerns, acne types (and old accounts
+// without photos keep what they had).
+export const withIssues = (a = {}, health = true) => {
+  if (!Array.isArray(a.issues)) return a
+  const f = fromIssues(a.issues, { health })
+  return { ...a, concerns: f.concerns, acneTypes: f.acneTypes }
+}
 
 // A question whose options come from another answer (the priorities choose
 // among her concerns; the second one never repeats the first).
@@ -53,8 +66,8 @@ export const QUESTIONS = [
   { id: 'sun', chapter: 'test', type: 'single', title: 'In the sun, you…', subtitle: 'It tells us how easily you get dark spots, and which sunscreen suits you.',
     options: [o('burn', 'Always burn, never tan'), o('burntan', 'Burn, then tan a little'), o('tan', 'Tan easily, rarely burn'), o('never', 'Never burn')] },
 
-  { id: 'concerns', chapter: 'bothers', type: 'multi', title: 'What would you like to work on?', subtitle: 'Pick as many as you like.',
-    options: CONCERN_OPTIONS },
+  // Photos to tap, face, eyes, lips and neck, no limit (Lita, 2026-10-25).
+  { id: 'issues', chapter: 'bothers', type: 'issues', title: 'What would you like to work on?', subtitle: 'Tap every photo that looks like your skin. As many as you like.', options: [] },
   // Priorities (Lita, 2026-10-24): not everything at once. Asked only when
   // there's a choice; options are the concerns she picked (resolveQuestion).
   { id: 'priority', chapter: 'bothers', type: 'single', pickFrom: 'concerns', title: 'Which one matters most to you right now?', subtitle: 'Your main concern guides every recommendation. You can change it anytime.', showIf: a => (a.concerns || []).length >= 2,
@@ -63,20 +76,7 @@ export const QUESTIONS = [
     options: CONCERN_OPTIONS },
   { id: 'acneWhere', chapter: 'bothers', type: 'multi', title: 'Where do you get breakouts?', showIf: a => (a.concerns || []).includes('Acne'),
     options: [o('forehead', 'Forehead'), o('cheeks', 'Cheeks'), o('jaw', 'Jawline and chin'), o('mouth', 'Around the mouth'), o('body', 'Chest or back')] },
-  { id: 'acneTypes', chapter: 'bothers', type: 'multi', sensitive: true, title: 'What kind of breakouts?', subtitle: 'It changes which ingredients help.', showIf: a => (a.concerns || []).includes('Acne'),
-    options: [o('Comedonal', 'Blackheads and whiteheads'), o('Inflammatory', 'Red, inflamed spots'), o('Cystic', 'Deep, painful cysts'), o('Hormonal', 'Hormonal (jawline, around periods)'), o('Fungal', 'Tiny itchy bumps (fungal acne)'), o('Unsure', 'Not sure')] },
 
-  { id: 'signs', chapter: 'signs', type: 'multi', sensitive: true, title: 'Do you notice any of these?', subtitle: 'Pick what looks familiar. We’ll tell you what it might be.',
-    options: [
-      o('tiny_itchy', 'Tiny bumps, all the same size, that itch and get worse with heat or sweat'),
-      o('flush', 'Redness on the cheeks and nose that comes and goes (heat, spicy food, stress)'),
-      o('vessels', 'Small visible red lines on the cheeks or nose'),
-      o('flaky', 'Flaky, slightly greasy patches around the nose, eyebrows or hairline'),
-      o('mouth', 'Small red bumps around the mouth or nose that sting'),
-      o('itchy_dry', 'Dry, itchy patches, sometimes in the folds of elbows or knees'),
-      o('brown', 'Brown patches on the cheeks, forehead or upper lip, darker in summer'),
-      o('None', 'None of these'),
-    ] },
 
   { id: 'conditions', chapter: 'health', type: 'multi', sensitive: true, title: 'Has a doctor ever diagnosed one of these?',
     options: [o('Rosacea', 'Rosacea'), o('Eczema', 'Eczema or atopic skin'), o('Perioral dermatitis', 'Perioral dermatitis'), o('Seborrheic dermatitis', 'Seborrheic dermatitis'), o('Psoriasis', 'Psoriasis'), o('Melasma', 'Melasma'), o('None', 'None of these')] },
@@ -110,8 +110,10 @@ export const QUESTIONS = [
     options: [o('fragrance_free', 'Fragrance-free'), o('vegan', 'Vegan'), o('cruelty_free', 'Cruelty-free'), o('None', 'Nothing in particular')] },
 ]
 
-export const questionsFor = (answers, health) =>
-  QUESTIONS.filter(q => (health || !q.sensitive) && (!q.showIf || q.showIf(answers))).map(q => resolveQuestion(q, answers))
+export const questionsFor = (raw, health) => {
+  const answers = withIssues(raw, health)
+  return QUESTIONS.filter(q => (health || !q.sensitive) && (!q.showIf || q.showIf(answers))).map(q => resolveQuestion(q, answers))
+}
 
 // ---------- Results ----------
 
@@ -133,14 +135,16 @@ export const SUSPICIONS = {
   'Seborrheic dermatitis': { from: ['flaky'], title: 'It might be seborrheic dermatitis', text: 'Flaky, slightly greasy patches around the nose and eyebrows often come from seborrheic dermatitis.', field: 'condition' },
   'Perioral dermatitis': { from: ['mouth'], title: 'It might be perioral dermatitis', text: 'Small stinging bumps around the mouth can be perioral dermatitis. Rich creams and some products can make it worse.', field: 'condition' },
   Eczema: { from: ['itchy_dry'], title: 'It might be eczema', text: 'Dry, itchy patches, especially in skin folds, are common with eczema (atopic skin). Barrier-repair products help a lot.', field: 'condition' },
+  Psoriasis: { from: [], title: 'It might be psoriasis', text: 'Thick, red patches with silvery scales can be psoriasis. Gentle, fragrance-free care helps; a doctor can confirm it and treat it.', field: 'condition' },
   Melasma: { from: ['brown'], title: 'It might be melasma', text: 'Brown patches that darken in summer are often melasma. Daily sunscreen is essential.', field: 'condition' },
 }
 export const DOCTOR_NOTE = 'Only a doctor or dermatologist can confirm it. We recommend seeing one. Meanwhile, Skynkod avoids the ingredients known to make it worse.'
 
 export const suspicionsFrom = (a) => {
   const signs = a.signs || []
+  const photos = fromIssues(a.issues || []).suspected
   const diagnosed = [...(a.conditions || []), ...(a.acneTypes || [])]
-  return Object.entries(SUSPICIONS).filter(([id, s]) => s.from.some(f => signs.includes(f)) && !diagnosed.includes(id)).map(([id]) => id)
+  return Object.entries(SUSPICIONS).filter(([id, s]) => (s.from.some(f => signs.includes(f)) || photos.includes(id)) && !diagnosed.includes(id)).map(([id]) => id)
 }
 
 export const PHOTOTYPE = { burn: 'I–II', burntan: 'III', tan: 'IV', never: 'V–VI' }
@@ -150,7 +154,8 @@ export const PHOTOTYPE = { burn: 'I–II', burntan: 'III', tan: 'IV', never: 'V�
 const clean = list => (list || []).filter(v => v !== 'None')
 
 // Answers → users row fields.
-export const toColumns = (a, health) => {
+export const toColumns = (raw, health) => {
+  const a = withIssues(raw, health)
   const concerns = [...(a.concerns || [])]
   if (a.reactivity === 'often' && !concerns.includes('Sensitivity')) concerns.push('Sensitivity')
   return {
@@ -167,7 +172,7 @@ export const toColumns = (a, health) => {
 }
 
 // users row → answers, for the profile screen (older accounts have only columns).
-export const fromRow = (row) => ({
+export const fromRow = (row) => withIssues({
   ...(row?.skin_profile || {}),
   concerns: row?.skin_profile?.concerns || row?.skin_concerns || [],
   goals: row?.skin_profile?.goals || row?.skin_goals || [],
@@ -202,6 +207,8 @@ export const engineProfile = (row) => {
 
 export const answerLabel = (q, value) => {
   if (value === undefined || value === null || (Array.isArray(value) && !value.length)) return null
-  const labels = (Array.isArray(value) ? value : [value]).map(v => q.options.find(x => x.value === v)?.label).filter(Boolean)
+  const labels = q.type === 'issues'
+    ? value.map(v => getIssue(v)?.label).filter(Boolean)
+    : (Array.isArray(value) ? value : [value]).map(v => q.options.find(x => x.value === v)?.label).filter(Boolean)
   return labels.join(' · ') || null
 }

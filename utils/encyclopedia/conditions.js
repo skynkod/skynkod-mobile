@@ -463,11 +463,18 @@ export const CONCERN_CONDITIONS = {
   'Fine lines': ['fine-lines', 'deep-wrinkles', 'sagging', 'volume-loss'],
   'Large pores': ['enlarged-pores', 'sebaceous-filaments', 'oily-skin'],
   Dullness: ['dullness', 'uneven-texture'],
+  Oily: ['oily-skin', 'enlarged-pores'],
+  Dehydration: ['dehydrated-skin'],
+  'Dark circles': ['dark-circles'],
+  'Puffy eyes': ['puffy-eyes'],
+  Milia: ['milia'],
+  'Chapped lips': ['chapped-lips'],
+  'Cracked lip corners': ['angular-cheilitis'],
   Sensitivity: ['sensitive-skin', 'contact-dermatitis', 'rosacea'],
 }
 
 // Onboarding "mystery signs" (skin-quiz SUSPICIONS) → their sheet.
-export const SUSPICION_CONDITION = { Fungal: 'fungal-acne', Rosacea: 'rosacea', 'Seborrheic dermatitis': 'seborrheic-dermatitis', 'Perioral dermatitis': 'perioral-dermatitis', Eczema: 'eczema', Melasma: 'melasma' }
+export const SUSPICION_CONDITION = { Fungal: 'fungal-acne', Rosacea: 'rosacea', 'Seborrheic dermatitis': 'seborrheic-dermatitis', 'Perioral dermatitis': 'perioral-dermatitis', Eczema: 'eczema', Melasma: 'melasma', Psoriasis: 'facial-psoriasis' }
 
 // The line every sheet carries.
 export const GUIDE_NOTE = 'Skynkod helps you identify a possible issue and guides you, but it doesn’t replace a dermatologist. See one to confirm it and choose your treatment.'

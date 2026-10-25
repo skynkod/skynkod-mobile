@@ -11,7 +11,7 @@ import { useT } from '../utils/LanguageContext'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { currentSkinState, stateLabel } from '../utils/skin-state'
 import { getCondition, CONCERN_CONDITIONS, SUSPICION_CONDITION } from '../utils/encyclopedia/conditions'
-import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, resolveQuestion, prioritiesOf } from '../utils/skin-quiz'
+import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, resolveQuestion, prioritiesOf, withIssues } from '../utils/skin-quiz'
 import { logError } from '../utils/errorLogger'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
@@ -44,7 +44,7 @@ export default function SkinProfileScreen({ navigation }) {
     const ok = await updateUserProfile(user.id, toColumns(next, health))
     setSaving(false)
     if (!ok) return Alert.alert(t('Error'), t("Couldn't save your answer. Try again."))
-    setAnswers(next)
+    setAnswers(withIssues(next, health))
     setEditing(null)
     syncSoon(user.id)
   }
@@ -141,7 +141,7 @@ export default function SkinProfileScreen({ navigation }) {
             <Pressable onPress={() => setEditing(null)} hitSlop={12}><Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Cancel')}</Text></Pressable>
           </View>
           <ScrollView contentContainerStyle={{ padding: SPACING.xl }}>
-            {q ? <QuizQuestion question={resolveQuestion(q, answers)} value={draft} onChange={setDraft} compact /> : null}
+            {q ? <QuizQuestion question={resolveQuestion(q, answers)} value={draft} onChange={setDraft} compact health={health} /> : null}
           </ScrollView>
           <View style={{ paddingHorizontal: SPACING.xl }}>
             <Button title={t('Save')} onPress={save} loading={saving} />

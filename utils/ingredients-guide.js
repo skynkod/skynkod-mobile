@@ -1,3 +1,4 @@
+import { ZONE_CONCERNS, EYE_LIP_ONLY } from './skin-issues'
 // Skynkod compatibility engine.
 //
 // 1. INGREDIENTS describes what common skincare ingredients do (goodFor), how
@@ -23,21 +24,21 @@ const I = (id, name, match, what, goodFor = [], extra = {}) => ({ id, name, matc
 
 export const INGREDIENTS = [
   // ---------- Hydrating and barrier ----------
-  I('hyaluronic', 'Hyaluronic acid', ['hyaluronic acid', 'sodium hyaluronate', 'hydrolyzed hyaluronic', 'hyaluronate'], 'Draws water into the skin for plump, bouncy hydration.', ['Dryness', 'Fine lines', 'Dry', 'Normal', 'Combination', 'Sensitive', 'Eczema']),
-  I('glycerin', 'Glycerin', ['glycerin'], 'A gentle, reliable humectant that keeps skin hydrated.', ['Dryness', 'Dry', 'Normal', 'Sensitive', 'Eczema']),
-  I('ceramides', 'Ceramides', ['ceramide'], 'Lipids that rebuild the skin barrier and lock moisture in.', ['Dryness', 'Sensitivity', 'Redness', 'Dry', 'Sensitive', 'Eczema', 'Rosacea', 'Psoriasis']),
-  I('cholesterol', 'Cholesterol', ['cholesterol'], 'Part of the skin barrier; works with ceramides.', ['Dryness', 'Dry', 'Eczema']),
-  I('panthenol', 'Panthenol', ['panthenol'], 'Pro-vitamin B5. Soothes, hydrates and helps skin repair.', ['Sensitivity', 'Redness', 'Dryness', 'Sensitive', 'Dry', 'Eczema', 'Rosacea']),
-  I('squalane', 'Squalane', ['squalane'], 'A light, non-greasy oil that softens and protects.', ['Dryness', 'Fine lines', 'Dry', 'Normal', 'Sensitive'], { comedogenic: 1 }),
-  I('urea', 'Urea', ['urea'], 'Hydrates deeply and softens rough, dry patches.', ['Dryness', 'Dry', 'Psoriasis', 'Eczema'], { irritancy: 1 }),
+  I('hyaluronic', 'Hyaluronic acid', ['hyaluronic acid', 'sodium hyaluronate', 'hydrolyzed hyaluronic', 'hyaluronate'], 'Draws water into the skin for plump, bouncy hydration.', ['Dryness', 'Fine lines', 'Dry', 'Normal', 'Combination', 'Sensitive', 'Eczema', 'Dehydration']),
+  I('glycerin', 'Glycerin', ['glycerin'], 'A gentle, reliable humectant that keeps skin hydrated.', ['Dryness', 'Dry', 'Normal', 'Sensitive', 'Eczema', 'Dehydration']),
+  I('ceramides', 'Ceramides', ['ceramide'], 'Lipids that rebuild the skin barrier and lock moisture in.', ['Dryness', 'Sensitivity', 'Redness', 'Dry', 'Sensitive', 'Eczema', 'Rosacea', 'Psoriasis', 'Chapped lips']),
+  I('cholesterol', 'Cholesterol', ['cholesterol'], 'Part of the skin barrier; works with ceramides.', ['Dryness', 'Dry', 'Eczema', 'Chapped lips']),
+  I('panthenol', 'Panthenol', ['panthenol'], 'Pro-vitamin B5. Soothes, hydrates and helps skin repair.', ['Sensitivity', 'Redness', 'Dryness', 'Sensitive', 'Dry', 'Eczema', 'Rosacea', 'Chapped lips', 'Cracked lip corners', 'Dehydration']),
+  I('squalane', 'Squalane', ['squalane'], 'A light, non-greasy oil that softens and protects.', ['Dryness', 'Fine lines', 'Dry', 'Normal', 'Sensitive', 'Chapped lips'], { comedogenic: 1 }),
+  I('urea', 'Urea', ['urea'], 'Hydrates deeply and softens rough, dry patches.', ['Dryness', 'Dry', 'Psoriasis', 'Eczema', 'Dehydration'], { irritancy: 1 }),
   I('betaglucan', 'Beta-glucan', ['beta-glucan', 'beta glucan'], 'Soothes and hydrates; great for reactive skin.', ['Sensitivity', 'Redness', 'Dryness', 'Sensitive', 'Rosacea']),
-  I('polyglutamic', 'Polyglutamic acid', ['polyglutamic acid'], 'Holds even more water than hyaluronic acid.', ['Dryness', 'Dry']),
+  I('polyglutamic', 'Polyglutamic acid', ['polyglutamic acid'], 'Holds even more water than hyaluronic acid.', ['Dryness', 'Dry', 'Dehydration']),
   I('allantoin', 'Allantoin', ['allantoin'], 'Soothes and softens irritated skin.', ['Sensitivity', 'Redness', 'Sensitive', 'Eczema']),
   I('oat', 'Colloidal oatmeal', ['avena sativa', 'oat kernel'], 'Calms itching and dryness; a classic for eczema.', ['Eczema', 'Sensitivity', 'Dryness', 'Sensitive', 'Dry', 'Psoriasis']),
   I('ectoin', 'Ectoin', ['ectoin'], 'Protects and calms stressed, reactive skin.', ['Sensitivity', 'Redness', 'Sensitive', 'Rosacea']),
-  I('petrolatum', 'Petrolatum', ['petrolatum', 'paraffinum liquidum', 'mineral oil'], 'Seals moisture in; very protective for dry, damaged skin.', ['Dryness', 'Dry', 'Eczema', 'Psoriasis'], { comedogenic: 1, tags: ['heavy-occlusive'] }),
+  I('petrolatum', 'Petrolatum', ['petrolatum', 'paraffinum liquidum', 'mineral oil'], 'Seals moisture in; very protective for dry, damaged skin.', ['Dryness', 'Dry', 'Eczema', 'Psoriasis', 'Chapped lips', 'Cracked lip corners'], { comedogenic: 1, tags: ['heavy-occlusive'] }),
   I('dimethicone', 'Dimethicone', ['dimethicone'], 'Silky silicone that smooths and protects.', ['Dry', 'Normal'], { comedogenic: 1 }),
-  I('shea', 'Shea butter', ['butyrospermum parkii', 'shea butter'], 'Rich butter that nourishes very dry skin.', ['Dryness', 'Dry', 'Eczema'], { comedogenic: 1, tags: ['fungal-trigger', 'nut'] }),
+  I('shea', 'Shea butter', ['butyrospermum parkii', 'shea butter'], 'Rich butter that nourishes very dry skin.', ['Dryness', 'Dry', 'Eczema', 'Chapped lips'], { comedogenic: 1, tags: ['fungal-trigger', 'nut'] }),
   I('jojoba', 'Jojoba oil', ['simmondsia chinensis'], 'Light oil close to skin\'s own sebum.', ['Dry', 'Combination'], { comedogenic: 2, tags: ['fungal-trigger'] }),
   I('rosehip', 'Rosehip oil', ['rosa canina', 'rosa moschata', 'rosa rubiginosa'], 'Nourishing oil that helps with marks and fine lines.', ['Fine lines', 'Dark spots', 'Dry'], { comedogenic: 1, tags: ['fungal-trigger'] }),
 
@@ -45,18 +46,18 @@ export const INGREDIENTS = [
   I('centella', 'Centella asiatica', ['centella', 'madecassoside', 'asiaticoside', 'madecassic acid', 'asiatic acid'], 'A calming plant extract that soothes irritation and supports healing.', ['Redness', 'Sensitivity', 'Acne', 'Sensitive', 'Rosacea', 'Inflammatory', 'Eczema']),
   I('bisabolol', 'Bisabolol', ['bisabolol'], 'Chamomile-derived soother for red, irritated skin.', ['Redness', 'Sensitivity', 'Sensitive', 'Rosacea']),
   I('licorice', 'Licorice root', ['glycyrrhiza', 'dipotassium glycyrrhizate'], 'Calms redness and helps fade dark spots.', ['Redness', 'Dark spots', 'Rosacea', 'Melasma']),
-  I('greentea', 'Green tea', ['camellia sinensis', 'green tea'], 'Antioxidant that soothes and helps control oil.', ['Redness', 'Oily', 'Acne', 'Rosacea']),
+  I('greentea', 'Green tea', ['camellia sinensis', 'green tea'], 'Antioxidant that soothes and helps control oil.', ['Redness', 'Oily', 'Acne', 'Rosacea', 'Puffy eyes']),
   I('heartleaf', 'Heartleaf (Houttuynia)', ['houttuynia'], 'Calms irritation and helps with breakouts.', ['Acne', 'Redness', 'Sensitivity', 'Oily', 'Inflammatory']),
   I('mugwort', 'Mugwort', ['artemisia'], 'Traditional Korean soother for irritated skin.', ['Redness', 'Sensitivity', 'Acne']),
   I('aloe', 'Aloe vera', ['aloe barbadensis'], 'Cools and soothes.', ['Redness', 'Sensitivity', 'Sensitive']),
   I('propolis', 'Propolis', ['propolis'], 'Soothing, helps breakouts and adds glow.', ['Acne', 'Dullness', 'Inflammatory']),
   I('snail', 'Snail mucin', ['snail secretion'], 'Hydrates, soothes and helps skin repair.', ['Dryness', 'Dark spots', 'Dullness', 'Dry', 'Normal']),
   I('ginseng', 'Ginseng', ['panax ginseng'], 'Antioxidant that boosts radiance.', ['Dullness', 'Fine lines']),
-  I('caffeine', 'Caffeine', ['caffeine'], 'De-puffs and wakes up tired-looking skin.', ['Dullness']),
+  I('caffeine', 'Caffeine', ['caffeine'], 'De-puffs and wakes up tired-looking skin.', ['Dullness', 'Puffy eyes', 'Dark circles']),
   I('rice', 'Rice extract', ['oryza sativa'], 'Brightens and softens.', ['Dullness', 'Dark spots']),
 
   // ---------- Actives ----------
-  I('niacinamide', 'Niacinamide', ['niacinamide'], 'Vitamin B3. Calms redness, evens tone, controls oil and strengthens the barrier.', ['Redness', 'Large pores', 'Dark spots', 'Acne', 'Oily', 'Combination', 'Dullness', 'Rosacea', 'Melasma', 'Inflammatory', 'Hormonal'], { irritancy: 1 }),
+  I('niacinamide', 'Niacinamide', ['niacinamide'], 'Vitamin B3. Calms redness, evens tone, controls oil and strengthens the barrier.', ['Redness', 'Large pores', 'Dark spots', 'Acne', 'Oily', 'Combination', 'Dullness', 'Rosacea', 'Melasma', 'Inflammatory', 'Hormonal', 'Dark circles'], { irritancy: 1 }),
   I('zinc', 'Zinc PCA', ['zinc pca', 'zinc gluconate'], 'Helps regulate oil and calm breakouts.', ['Acne', 'Oily', 'Large pores', 'Inflammatory', 'Seborrheic dermatitis']),
   I('zincpyrithione', 'Zinc pyrithione', ['zinc pyrithione'], 'Antifungal; helps fungal acne and flaky, itchy patches.', ['Fungal', 'Seborrheic dermatitis']),
   I('sulfur', 'Sulfur', ['sulfur', 'sulphur'], 'Dries out spots and calms fungal breakouts.', ['Acne', 'Fungal', 'Inflammatory', 'Seborrheic dermatitis', 'Oily'], { irritancy: 2 }),
@@ -66,10 +67,10 @@ export const INGREDIENTS = [
   I('mandelic', 'Mandelic acid (AHA)', ['mandelic acid'], 'A slow, gentle AHA; good for breakouts and dark marks.', ['Acne', 'Dark spots', 'Dullness', 'Melasma', 'Comedonal'], { irritancy: 1, tags: ['aha', 'exfoliant'] }),
   I('pha', 'PHA', ['gluconolactone', 'lactobionic acid'], 'The gentlest acids: exfoliate with little irritation.', ['Dullness', 'Sensitivity', 'Sensitive'], { tags: ['exfoliant'] }),
   I('azelaic', 'Azelaic acid', ['azelaic acid', 'potassium azeloyl diglycinate'], 'Calms redness, fades marks and helps with breakouts. Safe in pregnancy.', ['Redness', 'Acne', 'Dark spots', 'Sensitivity', 'Rosacea', 'Melasma', 'Inflammatory', 'Comedonal', 'Hormonal'], { irritancy: 1 }),
-  I('retinol', 'Retinol', ['retinol', 'retinal', 'retinyl', 'hydroxypinacolone retinoate', 'retinoate', 'adapalene', 'tretinoin'], 'Vitamin A. Speeds cell renewal for smoother skin, fewer lines and clearer pores.', ['Fine lines', 'Acne', 'Dark spots', 'Large pores', 'Oily', 'Normal', 'Comedonal', 'Inflammatory', 'Hormonal'], { irritancy: 3, tags: ['retinoid', 'pregnancy-avoid', 'eczema-trigger', 'rosacea-trigger'] }),
+  I('retinol', 'Retinol', ['retinol', 'retinal', 'retinyl', 'hydroxypinacolone retinoate', 'retinoate', 'adapalene', 'tretinoin'], 'Vitamin A. Speeds cell renewal for smoother skin, fewer lines and clearer pores.', ['Fine lines', 'Acne', 'Dark spots', 'Large pores', 'Oily', 'Normal', 'Comedonal', 'Inflammatory', 'Hormonal', 'Dark circles'], { irritancy: 3, tags: ['retinoid', 'pregnancy-avoid', 'eczema-trigger', 'rosacea-trigger'] }),
   I('bakuchiol', 'Bakuchiol', ['bakuchiol'], 'A plant alternative to retinol, gentler on the skin.', ['Fine lines', 'Sensitivity', 'Sensitive', 'Acne']),
   I('benzoyl', 'Benzoyl peroxide', ['benzoyl peroxide'], 'Kills acne bacteria; strong but effective on inflamed breakouts.', ['Acne', 'Inflammatory', 'Oily'], { irritancy: 3, tags: ['drying'] }),
-  I('vitaminc', 'Vitamin C', ['ascorbic acid', 'ascorbyl', 'ascorbic', 'ascorbate'], 'Antioxidant that brightens, fades dark spots and protects from pollution.', ['Dullness', 'Dark spots', 'Fine lines', 'Normal', 'Combination', 'Melasma'], { irritancy: 1 }),
+  I('vitaminc', 'Vitamin C', ['ascorbic acid', 'ascorbyl', 'ascorbic', 'ascorbate'], 'Antioxidant that brightens, fades dark spots and protects from pollution.', ['Dullness', 'Dark spots', 'Fine lines', 'Normal', 'Combination', 'Melasma', 'Dark circles'], { irritancy: 1 }),
   I('arbutin', 'Alpha-arbutin', ['arbutin'], 'Fades dark spots and evens skin tone.', ['Dark spots', 'Melasma']),
   I('txa', 'Tranexamic acid', ['tranexamic acid'], 'Targets stubborn dark spots and melasma.', ['Dark spots', 'Melasma']),
   I('kojic', 'Kojic acid', ['kojic acid'], 'Brightens and fades dark spots.', ['Dark spots', 'Melasma'], { irritancy: 2 }),
@@ -80,12 +81,12 @@ export const INGREDIENTS = [
   I('matrixyl', 'Matrixyl', ['palmitoyl pentapeptide-4', 'palmitoyl tripeptide-1', 'palmitoyl tetrapeptide-7', 'matrixyl', 'palmitoyl oligopeptide'], 'Signals the skin to make more collagen, for skin that looks firmer and smoother over time.', ['Fine lines', 'Normal', 'Dry', 'Combination', 'Sensitive'], { source: { label: 'Robinson LR et al. Topical palmitoyl pentapeptide provides improvement in photoaged human facial skin. Int J Cosmet Sci 2005', url: 'https://pubmed.ncbi.nlm.nih.gov/18492182/' } }),
   I('copperpeptides', 'Copper peptides', ['copper tripeptide-1', 'ghk-cu', 'copper peptide'], 'Help firm thin skin and support its repair. Use them at a different time from pure vitamin C and strong acids.', ['Fine lines', 'Normal', 'Dry', 'Sensitive'], { source: { label: 'Pickart L et al. GHK peptide as a natural modulator of multiple cellular pathways in skin regeneration. Biomed Res Int 2015', url: 'https://pubmed.ncbi.nlm.nih.gov/26236730/' } }),
   I('ferulic', 'Ferulic acid', ['ferulic acid'], 'Antioxidant that boosts vitamins C and E.', ['Fine lines', 'Dullness']),
-  I('vitamine', 'Vitamin E', ['tocopherol', 'tocopheryl'], 'Antioxidant that protects and softens.', ['Dry', 'Fine lines']),
+  I('vitamine', 'Vitamin E', ['tocopherol', 'tocopheryl'], 'Antioxidant that protects and softens.', ['Dry', 'Fine lines', 'Chapped lips']),
 
   I('hydrocolloid', 'Hydrocolloid', ['hydrocolloid'], 'Pimple patches that absorb fluid, protect the spot and stop you picking.', ['Acne', 'Inflammatory']),
 
   // ---------- Sun filters ----------
-  I('zincoxide', 'Zinc oxide (mineral SPF)', ['zinc oxide'], 'Mineral UV filter, gentle on reactive skin.', ['Sensitivity', 'Redness', 'Sensitive', 'Rosacea', 'Melasma', 'Eczema']),
+  I('zincoxide', 'Zinc oxide (mineral SPF)', ['zinc oxide'], 'Mineral UV filter, gentle on reactive skin.', ['Sensitivity', 'Redness', 'Sensitive', 'Rosacea', 'Melasma', 'Eczema', 'Cracked lip corners']),
   I('titanium', 'Titanium dioxide (mineral SPF)', ['titanium dioxide'], 'Mineral UV filter, well tolerated.', ['Sensitive', 'Rosacea', 'Melasma']),
   I('chemicalspf', 'Chemical UV filters', ['avobenzone', 'butyl methoxydibenzoylmethane', 'octocrylene', 'homosalate', 'octinoxate', 'ethylhexyl methoxycinnamate', 'bemotrizinol', 'bis-ethylhexyloxyphenol', 'ethylhexyl triazone', 'diethylamino hydroxybenzoyl', 'tinosorb', 'uvinul'], 'Absorb UV light; light textures, sometimes sting sensitive eyes.', ['Melasma', 'Dark spots'], { irritancy: 1 }),
 
@@ -98,7 +99,7 @@ export const INGREDIENTS = [
   I('witchhazel', 'Witch hazel', ['hamamelis'], 'Astringent; can be drying for sensitive skin.', ['Oily'], { irritancy: 2, tags: ['rosacea-trigger'] }),
   I('sls', 'Sodium lauryl sulfate', ['sodium lauryl sulfate', 'ammonium lauryl sulfate'], 'Harsh foaming agent that can strip and irritate.', [], { irritancy: 4, comedogenic: 2, tags: ['drying', 'eczema-trigger', 'rosacea-trigger'] }),
   I('scrub', 'Physical scrub particles', ['juglans regia shell', 'prunus armeniaca seed powder', 'apricot kernel', 'walnut shell'], 'Rough particles that can cause micro-tears.', [], { irritancy: 3, tags: ['rosacea-trigger'] }),
-  I('lanolin', 'Lanolin', ['lanolin', 'adeps lanae'], 'Rich wool wax; very moisturizing but a known allergen for some.', ['Dry'], { comedogenic: 2, tags: ['lanolin'] }),
+  I('lanolin', 'Lanolin', ['lanolin', 'adeps lanae'], 'Rich wool wax; very moisturizing but a known allergen for some.', ['Dry', 'Chapped lips'], { comedogenic: 2, tags: ['lanolin'] }),
   I('nutoils', 'Nut oils', ['prunus amygdalus dulcis', 'macadamia', 'juglans regia seed', 'corylus avellana', 'argania spinosa', 'arachis hypogaea', 'pistacia vera', 'bertholletia excelsa', 'anacardium occidentale'], 'Nourishing oils from nuts.', ['Dry'], { comedogenic: 2, tags: ['nut', 'fungal-trigger'] }),
   I('coconut', 'Coconut oil', ['cocos nucifera'], 'Rich oil that can clog pores on breakout-prone skin.', ['Dry'], { comedogenic: 4, tags: ['nut', 'fungal-trigger'] }),
   I('cocoabutter', 'Cocoa butter', ['theobroma cacao'], 'Very rich butter that can clog pores.', ['Dry'], { comedogenic: 4, tags: ['fungal-trigger'] }),
@@ -345,9 +346,26 @@ export const ingredientFit = (entry, profile) => {
   return { label: 'Fine for you', tone: 'neutral', helps, warns }
 }
 
+// Lip and eye products sit on their own small area (Lita, 2026-10-25): they're
+// judged on the state of her lips or eye contour, her allergies and pregnancy
+// (and sensitive skin or eczema near the eyes), never on fungal acne, pores or
+// oil. Face products leave the eye and lip concerns out.
+const zoneOf = product => (product?.category === 'lip care' ? 'lips' : product?.category === 'eye care' ? 'eyes' : null)
+const zoneFacts = (facts, zone) => {
+  if (!zone) return { ...facts, mine: facts.mine.filter(c => !EYE_LIP_ONLY.includes(c)) }
+  const eyes = zone === 'eyes'
+  return {
+    ...facts,
+    mine: facts.mine.filter(c => ZONE_CONCERNS[zone].includes(c)),
+    breakoutProne: false, dry: false, fungal: false, rosacea: false, perioral: false,
+    sensitive: eyes && facts.sensitive,
+    eczema: eyes && facts.eczema,
+  }
+}
+
 // Product verdict for the user: score, label, tone and the reasons.
 export const productMatch = (product, profile) => {
-  const facts = profileFacts(profile)
+  const facts = zoneFacts(profileFacts(profile), zoneOf(product))
   const found = findIngredients(product)
   const partial = !product?.ingredients_text
   const rinseOff = product?.category === 'cleanser'
@@ -407,7 +425,7 @@ export const productMatch = (product, profile) => {
 
   // Her priorities (main, then secondary concern) lead: a product that targets
   // them says so first, and ranks a little higher (Lita, 2026-10-24).
-  const targets = concern => concern && found.find(f => f.pos <= 12 && (f.entry.goodFor || []).includes(concern))
+  const targets = concern => concern && facts.mine.includes(concern) && found.find(f => f.pos <= 12 && (f.entry.goodFor || []).includes(concern))
   const mainHit = targets(profile?.priority)
   const secondHit = !mainHit && targets(profile?.secondary)
   const priority = mainHit ? { level: 'main', concern: profile.priority, ingredient: mainHit.entry.name } : secondHit ? { level: 'second', concern: profile.secondary, ingredient: secondHit.entry.name } : null

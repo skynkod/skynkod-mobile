@@ -433,6 +433,11 @@ export default function JournalScreen({ route, navigation }) {
           </View>
         ) : null}
 
+        {/* Something new on her skin: the photos, to add it to her profile (Lita, 2026-10-25) */}
+        <Pressable onPress={() => navigation.navigate('SkinIssues')} hitSlop={6} style={{ marginTop: SPACING.md }}>
+          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>+ {t('New skin issue')}</Text>
+        </Pressable>
+
         {tags.some(tag => TAG_TIPS[tag]) ? (
           <View style={[styles.tipBox, { backgroundColor: colors.surface, flexDirection: 'column', alignItems: 'stretch', gap: 6 }]}>
             {tags.filter(tag => TAG_TIPS[tag]).map(tag => (

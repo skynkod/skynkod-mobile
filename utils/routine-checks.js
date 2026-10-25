@@ -63,7 +63,11 @@ const overlap = (x, y) => daysOf(x).filter(d => daysOf(y).includes(d))
 // Checks one routine (with the other period's routine for context).
 // Returns [{ level: 'warning' | 'info', title, text, fix? }], where fix is
 // { stepIndex, days } to apply with one tap.
-export const checkRoutine = ({ period, steps, productsById, otherSteps = [], otherProductsById = {} }) => {
+// `priority`: her main concern. When two products clash, the one that works on
+// it keeps its days and the other moves (Lita, 2026-10-25); otherwise both stay.
+const worksOn = (product, concern) => !!concern && findIngredients(product).some(f => f.pos <= 12 && (f.entry.goodFor || []).includes(concern))
+
+export const checkRoutine = ({ period, steps, productsById, otherSteps = [], otherProductsById = {}, priority = null }) => {
   const issues = []
   const items = steps
     .map((step, index) => ({ step, index, product: productsById[step.product_id] }))
@@ -94,14 +98,18 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
     for (const c of acids) {
       const same = overlap(r.step, c.step)
       if (!same.length) continue
-      const acidDays = daysOf(c.step).filter(d => !daysOf(r.step).includes(d))
+      // Usually the acid moves; if only the acid works on her main concern, the retinol moves.
+      const acidLeads = worksOn(c.product, priority) && !worksOn(r.product, priority)
+      const [keep, move] = acidLeads ? [c, r] : [r, c]
+      const moveDays = daysOf(move.step).filter(d => !daysOf(keep.step).includes(d))
       issues.push({
         key: `retinol-acid-${r.product.id}`,
-        stepIndex: c.index,
+        stepIndex: move.index,
         level: 'warning',
         title: 'Retinol and acids on the same day',
-        text: `Using ${r.product.name} and ${c.product.name} together (${describeDays(same)}) can irritate your skin. Alternate them instead.`,
-        fix: { stepIndex: c.index, days: acidDays.length ? acidDays : [2, 6].filter(d => !daysOf(r.step).includes(d)) },
+        text: `Using ${r.product.name} and ${c.product.name} together (${describeDays(same)}) can irritate your skin. Alternate them instead.`
+          + (worksOn(keep.product, priority) && !worksOn(move.product, priority) ? ` ${keep.product.name} works on your main concern, so it keeps its days.` : ''),
+        fix: { stepIndex: move.index, days: moveDays.length ? moveDays : [2, 6].filter(d => !daysOf(keep.step).includes(d)) },
       })
     }
   }
@@ -123,13 +131,16 @@ export const checkRoutine = ({ period, steps, productsById, otherSteps = [], oth
     for (let j = i + 1; j < exfoliants.length; j++) {
       const same = overlap(exfoliants[i].step, exfoliants[j].step)
       if (same.length) {
+        const firstMoves = worksOn(exfoliants[j].product, priority) && !worksOn(exfoliants[i].product, priority)
+        const [keep, move] = firstMoves ? [exfoliants[j], exfoliants[i]] : [exfoliants[i], exfoliants[j]]
         issues.push({
           key: `two-exfoliants-${exfoliants[i].product.id}`,
-          stepIndex: exfoliants[j].index,
+          stepIndex: move.index,
           level: 'warning',
           title: 'Two exfoliants on the same day',
-          text: `${exfoliants[i].product.name} and ${exfoliants[j].product.name} both exfoliate (${describeDays(same)}). Use them on different days.`,
-          fix: { stepIndex: exfoliants[j].index, days: daysOf(exfoliants[j].step).filter(d => !daysOf(exfoliants[i].step).includes(d)) },
+          text: `${exfoliants[i].product.name} and ${exfoliants[j].product.name} both exfoliate (${describeDays(same)}). Use them on different days.`
+            + (worksOn(keep.product, priority) && !worksOn(move.product, priority) ? ` ${keep.product.name} works on your main concern, so it keeps its days.` : ''),
+          fix: { stepIndex: move.index, days: daysOf(move.step).filter(d => !daysOf(keep.step).includes(d)) },
         })
       }
     }

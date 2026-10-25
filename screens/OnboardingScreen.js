@@ -17,7 +17,7 @@ import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
 import QuizQuestion from '../components/QuizQuestion'
 import FeatureIcon from '../components/FeatureIcon'
-import { CHAPTERS, questionsFor, toColumns, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, PHOTOTYPE } from '../utils/skin-quiz'
+import { CHAPTERS, questionsFor, toColumns, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, PHOTOTYPE, withIssues } from '../utils/skin-quiz'
 import { useT } from '../utils/LanguageContext'
 
 const OFFERS_ENABLED = false
@@ -526,10 +526,10 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       <>
         <Text style={[TYPE.overline, { color: BRAND_MAUVE, marginBottom: SPACING.sm }]}>{t('Chapter {n}', { n: chapterNo })} · {t(chapter.label)}</Text>
         {firstOfChapter ? <Text style={[TYPE.body, { color: colors.textSecondary, marginBottom: SPACING.lg, fontStyle: 'italic' }]}>{t(chapter.cheer)}</Text> : null}
-        <QuizQuestion question={q} value={answers[q.id]} onChange={v => setAnswer(q.id, v)} onPicked={() => setTimeout(next, 260)} />
+        <QuizQuestion question={q} value={answers[q.id]} onChange={v => setAnswer(q.id, v)} onPicked={() => setTimeout(next, 260)} health={health} />
       </>
     )
-    footer = q.type === 'multi'
+    footer = q.type === 'multi' || q.type === 'issues'
       ? <Pill title={(answers[q.id] || []).length ? t('Continue') : t('Skip')} onPress={next} />
       : <Pill title={t('Skip')} variant="ghost" onPress={next} />
   } else {
@@ -547,7 +547,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
             <Text style={styles.summaryValue}>{PHOTOTYPE[answers.sun]}</Text>
           </>) : null}
           <Text style={styles.summaryLabel}>{t('Working on')}</Text>
-          <Text style={[styles.summaryValue, { marginBottom: 0 }]}>{(answers.concerns || []).map(c => t(c)).join(' · ') || t('Keeping my skin healthy')}</Text>
+          <Text style={[styles.summaryValue, { marginBottom: 0 }]}>{(withIssues(answers, health).concerns || []).map(c => t(c)).join(' · ') || t('Keeping my skin healthy')}</Text>
         </View>
         {health && suspicionsFrom(answers).map(id => (
           <View key={id} style={[styles.suspicion, { backgroundColor: colors.card, borderColor: colors.border }]}>

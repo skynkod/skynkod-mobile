@@ -29,6 +29,7 @@ import HomeScreen from './screens/TodayScreen'
 import JournalScreen from './screens/JournalScreen'
 import KodaScreen from './screens/KodaScreen-updated'
 import RoutinesScreen from './screens/RoutinesScreen-updated'
+import SkinIssuesScreen from './screens/SkinIssuesScreen'
 import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
 import SearchScreen from './screens/SearchScreen'
 import ProductScreen from './screens/ProductScreen'
@@ -147,6 +148,7 @@ function AppTabs({ userId }) {
       {/* Screens opened from Home, (+) or Profile: hidden from the tab bar. */}
       {[
         { name: 'Routines', component: RoutinesScreen },
+        { name: 'SkinIssues', component: SkinIssuesScreen },
         { name: 'Search', component: SearchScreen },
         { name: 'Product', component: ProductScreen },
         { name: 'Ingredient', component: IngredientScreen },

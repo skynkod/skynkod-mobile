@@ -210,6 +210,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
     productsById: Object.fromEntries(chosenSlots.map(slot => [slot.product.id, slot.product])),
     otherSteps: other.steps,
     otherProductsById: other.productsById,
+    priority: profile?.priority,
   })
   // "I'm used to this": the warning stays quiet for that product.
   const acknowledge = issue => {

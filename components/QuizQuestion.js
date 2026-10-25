@@ -3,13 +3,23 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useColors } from './ui'
 import { useT } from '../utils/LanguageContext'
 import { SPACING, TYPE } from '../utils/theme'
+import IssuePicker from './IssuePicker'
 
 // One skin-quiz question (utils/skin-quiz.js), the same at sign-up and in
 // "My skin profile". Single choice calls onPicked after the tap; multi choice
 // toggles, where "None" clears the rest.
-export default function QuizQuestion({ question: q, value, onChange, onPicked, compact }) {
+export default function QuizQuestion({ question: q, value, onChange, onPicked, compact, health }) {
   const colors = useColors()
   const t = useT()
+  if (q.type === 'issues') {
+    return (
+      <View>
+        <Text style={[compact ? styles.titleCompact : styles.title, { color: colors.text }]}>{t(q.title)}</Text>
+        {q.subtitle ? <Text style={[TYPE.body, { color: colors.muted, marginTop: SPACING.sm }]}>{t(q.subtitle)}</Text> : null}
+        <IssuePicker value={Array.isArray(value) ? value : []} onChange={onChange} health={health} />
+      </View>
+    )
+  }
   const selected = Array.isArray(value) ? value : value ? [value] : []
 
   const tap = (v) => {
