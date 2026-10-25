@@ -48,17 +48,70 @@ export const getExpoPushToken = async () => {
 
 // Reminders speak the app's language and open the right page when tapped.
 const lang = async () => ((await AsyncStorage.getItem('skynkod_language').catch(() => null)) === 'fr' ? 'fr' : 'en')
-const TEXT = {
-  morning: { en: 'Your morning routine is waiting ☀️', fr: "Ta routine du matin t'attend ☀️" },
-  evening: { en: 'Time for your evening routine 🌙', fr: "Ta routine du soir, c'est le moment 🌙" },
-  eveningRamadan: { en: 'Your evening routine 🌙 And drink enough water before bed 💧', fr: "Ta routine du soir 🌙 Et pense à bien t'hydrater avant de dormir 💧" },
-  journal: { en: 'How is your skin this morning? 🌸', fr: 'Comment va ta peau ce matin ? 🌸' },
-  // No promise on the skin, just the reminder (notifications audit, 2026-10-25).
-  water: [
-    { en: 'A glass of water? 💧', fr: 'Un verre d’eau ? 💧' },
-    { en: 'Time for a glass of water 💧', fr: 'C’est le moment d’un verre d’eau 💧' },
-    { en: 'One more glass of water before dinner? 💧', fr: 'Un dernier verre d’eau avant le dîner ? 💧' },
-  ],
+// Every reminder, simple and useful (Lita, 2026-10-25): a title that says what
+// it is, one line that says what to do. No emoji, no promise on the skin.
+const COPY = {
+  morning: {
+    en: { title: 'Morning check-in', body: 'How is your skin today? Then your morning routine.' },
+    fr: { title: 'Check-in du matin', body: 'Comment va ta peau aujourd’hui ? Puis ta routine du matin.' },
+  },
+  evening: {
+    en: { title: 'Evening routine', body: 'Cleanse, then your evening routine.' },
+    fr: { title: 'Routine du soir', body: 'Démaquillage, puis ta routine du soir.' },
+  },
+  eveningRamadan: {
+    en: { title: 'Evening routine', body: 'Your evening routine, and enough water before bed.' },
+    fr: { title: 'Routine du soir', body: 'Ta routine du soir, et pense à bien boire avant de dormir.' },
+  },
+  water: {
+    en: { title: 'Water', body: 'Time for a glass of water.' },
+    fr: { title: 'Eau', body: 'C’est le moment de boire un verre d’eau.' },
+  },
+  // The Rekod nights: what to put on tonight.
+  exfoliation: {
+    en: { title: 'Tonight: exfoliation', body: 'Your exfoliant, then your cream. No retinol tonight.' },
+    fr: { title: 'Ce soir : exfoliation', body: 'Ton exfoliant, puis ta crème. Pas de rétinol ce soir.' },
+  },
+  retinoid: {
+    en: { title: 'Tonight: retinol', body: 'Retinol on dry skin, then your cream.' },
+    fr: { title: 'Ce soir : rétinol', body: 'Le rétinol sur peau sèche, puis ta crème.' },
+  },
+  azelaic: {
+    en: { title: 'Tonight: azelaic acid', body: 'Azelaic acid, then your cream.' },
+    fr: { title: 'Ce soir : acide azélaïque', body: 'L’acide azélaïque, puis ta crème.' },
+  },
+  gentle: {
+    en: { title: 'Tonight: your treatment', body: 'Your gentle treatment, then your cream.' },
+    fr: { title: 'Ce soir : ton traitement', body: 'Ton traitement doux, puis ta crème.' },
+  },
+  repair: {
+    en: { title: 'Tonight: repair', body: 'Your repair serum, then your cream. No strong actives.' },
+    fr: { title: 'Ce soir : réparation', body: 'Ton sérum réparateur, puis ta crème. Pas d’actif fort.' },
+  },
+  reset: {
+    en: { title: 'Tonight: rest', body: 'Just cleanser and cream tonight.' },
+    fr: { title: 'Ce soir : repos', body: 'Juste nettoyant et crème ce soir.' },
+  },
+  reacting: {
+    en: { title: 'Tonight: gentle', body: 'Your skin is reacting: cleanser and cream only, no strong actives.' },
+    fr: { title: 'Ce soir : douceur', body: 'Ta peau réagit : nettoyant et crème seulement, pas d’actif fort.' },
+  },
+  // The 7-day plan.
+  sosMorning: {
+    en: { title: (day, name) => `Day ${day} of 7 · ${name}`, body: 'Open your plan for today.' },
+    fr: { title: (day, name) => `Jour ${day} sur 7 · ${name}`, body: 'Ouvre ton plan du jour.' },
+  },
+  sosEvening: {
+    en: { title: 'Tonight: gentle', body: 'Cleanser and cream only, as in your plan.' },
+    fr: { title: 'Ce soir : douceur', body: 'Nettoyant et crème seulement, comme prévu dans ton plan.' },
+  },
+  sosBack: {
+    en: { title: 'Tonight: a product comes back', body: what => `Tonight, ${what} come back into your routine.` },
+    fr: { title: 'Ce soir : un produit revient', body: what => `Ce soir, on réintroduit ${what} dans ta routine.` },
+  },
+  // Added to the morning reminder on their day.
+  rekodReview: { en: 'Your Rekod review is ready.', fr: 'Ton bilan Rekod est prêt.' },
+  dekodDay: { en: 'Time for your weekly Dekod scan.', fr: 'C’est le moment de ton scan Dekod de la semaine.' },
 }
 
 const scheduleDaily = async (id, title, body, hour, minute, screen) => {
@@ -80,47 +133,20 @@ const scheduleDaily = async (id, title, body, hour, minute, screen) => {
   }
 }
 
-export const scheduleMorningReminder = async (userId) =>
-  scheduleDaily(`morning-${userId}`, 'Skynkod', TEXT.morning[await lang()], 8, 0, 'Home')
-
-// During Ramadan (in Arab and Muslim countries) the bedtime reminder also says
-// to rehydrate; rescheduled at each app start, so it follows the month.
-export const scheduleEveningReminder = async (userId) =>
-  scheduleDaily(`evening-${userId}`, 'Skynkod', (ramadanDay() ? TEXT.eveningRamadan : TEXT.evening)[await lang()], 21, 0, 'Home')
 
 // Water: one gentle reminder at 15:00; 11:00 and 18:00 only if she asks (Notifications).
 export const WATER_TIMES = [[15, 0], [11, 0], [18, 0]]
 export const scheduleWaterReminders = async (userId, extra = false) => {
   const l = await lang()
-  const order = [1, 0, 2] // texts: morning, mid-day, evening
   for (let i = 0; i < (extra ? 3 : 1); i += 1) {
-    await scheduleDaily(`water-${i}-${userId}`, 'Skynkod', TEXT.water[order[i]][l], WATER_TIMES[i][0], WATER_TIMES[i][1], 'Home')
+    await scheduleDaily(`water-${i}-${userId}`, COPY.water[l].title, COPY.water[l].body, WATER_TIMES[i][0], WATER_TIMES[i][1], 'Home')
   }
 }
 export const cancelWaterReminders = async (userId) => {
   for (let i = 0; i < WATER_TIMES.length; i += 1) await Notifications.cancelScheduledNotificationAsync(`water-${i}-${userId}`).catch(() => {})
 }
 
-export const scheduleJournalReminder = async (userId) =>
-  scheduleDaily(`journal-${userId}`, 'Skynkod', TEXT.journal[await lang()], 7, 45, 'Journal')
 
-// ---------- Smart reminders (Rekod, Dekod, 7-day plan) ----------
-// Re-synced at each app start and whenever a programme or plan changes.
-const NIGHT_TEXT = {
-  exfoliation: { en: 'Tonight: exfoliation night ✨', fr: 'Ce soir : soirée exfoliation ✨' },
-  retinoid: { en: 'Tonight: retinol night 🌙', fr: 'Ce soir : soirée rétinol 🌙' },
-  // The treatment night's true name (Rekod audit 2): azelaic acid, or a gentle treatment in pregnancy.
-  azelaic: { en: 'Tonight: azelaic acid night 🌙', fr: 'Ce soir : soirée acide azélaïque 🌙' },
-  gentle: { en: 'Tonight: gentle treatment night 🌙', fr: 'Ce soir : soirée traitement doux 🌙' },
-  repair: { en: 'Tonight: repair night 🩹', fr: 'Ce soir : soirée réparation 🩹' },
-  reset: { en: 'Tonight: reset night, just cleanse and moisturize 🍃', fr: 'Ce soir : soirée repos, nettoyer et hydrater 🍃' },
-}
-const SMART_TEXT = {
-  checkin: { en: 'Your weekly Rekod review is ready 📈', fr: 'Ton Rekod review de la semaine est prêt 📈' },
-  dekod: { en: 'Time for this week’s Dekod: see how your skin changed 🔍', fr: 'C’est l’heure du Dekod de la semaine : vois comment ta peau évolue 🔍' },
-  sos: { en: (day, title) => `Day ${day} of 7 · ${title}`, fr: (day, title) => `Jour ${day} sur 7 · ${title}` },
-  recap: { en: 'Your Koda box has arrived 📦 Open it to see what your week brought you.', fr: 'Ta box de Koda est arrivée 📦 Ouvre-la pour voir ce que ta semaine t’a apporté.' },
-}
 const cancel = id => Notifications.cancelScheduledNotificationAsync(id).catch(() => {})
 
 // ---------- All the reminders, at most 3 a day (Lita's audit, 2026-10-24) ----------
@@ -133,14 +159,6 @@ const cancel = id => Notifications.cancelScheduledNotificationAsync(id).catch(()
 // week of that day, a rest week, her skin reacting today, a review that's due),
 // at the times she chose. Re-planned at each app start and whenever something
 // changes; after 4 weeks without opening the app, they stop rather than guess.
-const MORNING = { en: 'Good morning! How’s your skin? Then your morning routine ☀️', fr: 'Bonjour ! Comment va ta peau ? Puis ta routine du matin ☀️' }
-const EXTRA = {
-  recap: { en: 'Your Koda box has arrived 📦', fr: 'Ta box de Koda est arrivée 📦' },
-  dekod: { en: 'It’s Dekod day 🔍', fr: 'C’est le jour du Dekod 🔍' },
-  rekod: { en: 'Your Rekod review is ready 📈', fr: 'Ton Rekod review est prêt 📈' },
-}
-const CALM_EVENING = { en: 'Your calm evening routine 🌙', fr: 'Ta routine douce du soir 🌙' }
-const REACTING_EVENING = { en: 'Your skin is reacting: a gentle routine tonight, strong actives wait 🌙', fr: 'Ta peau réagit : routine douce ce soir, les actifs forts attendent 🌙' }
 const DAYS_AHEAD = 28
 export const DEFAULT_TIMES = { morningTime: '08:00', eveningTime: '21:00' }
 export const getReminderPrefs = async (userId) => ({
@@ -182,8 +200,8 @@ export const syncSmartReminders = async (userId) => {
 
     const now = new Date()
     const at = (date, [h, m]) => { const d = new Date(date); d.setHours(h, m, 0, 0); return d }
-    const once = (id, body, date, screen) => (date > now ? Notifications.scheduleNotificationAsync({
-      identifier: id, content: { title: 'Skynkod', body, sound: true, data: { screen } },
+    const once = (id, { title, body }, date, screen) => (date > now ? Notifications.scheduleNotificationAsync({
+      identifier: id, content: { title, body, sound: true, data: { screen } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
     }).catch(() => {}) : Promise.resolve())
     const dayOf = d => new Date(now.getFullYear(), now.getMonth(), now.getDate() + d)
@@ -195,7 +213,7 @@ export const syncSmartReminders = async (userId) => {
     const back = {}
     for (const r of sos?.schedule || []) if (!r.again) back[r.day] = r.id
     const sosLast = sos ? Math.min(20, Math.max(7, ...Object.keys(back).map(Number))) : -1
-    const BACK = {
+    const BACK_WHAT = {
       en: { mask: 'masks', fragrance: 'fragranced products', vitaminC: 'vitamin C', scrub: 'scrubs', exfoliant: 'exfoliants', acid: 'acids', retinoid: 'retinol (one night out of two)' },
       fr: { mask: 'les masques', fragrance: 'les produits parfumés', vitaminC: 'la vitamine C', scrub: 'les gommages', exfoliant: 'les exfoliants', acid: 'les acides', retinoid: 'le rétinol (un soir sur deux)' },
     }
@@ -223,23 +241,23 @@ export const syncSmartReminders = async (userId) => {
       const sd = sosDay(date)
       // Morning.
       const extras = [
-        date.getDay() === 0 && scans?.length && premium ? EXTRA.dekod[l] : null,
-        reviewDue(date) ? EXTRA.rekod[l] : null,
+        date.getDay() === 0 && scans?.length && premium ? COPY.dekodDay[l] : null,
+        reviewDue(date) ? COPY.rekodReview[l] : null,
       ].filter(Boolean)
-      if (sos && sos.phase !== 'return' && sd >= 0 && sd < 7) await once(`am-${d}-${userId}`, `${SMART_TEXT.sos[l](sd + 1, sos.situation.title)} ☀️`, at(date, hm(prefs.morningTime)), 'Emergency')
-      else if (prefs.morningReminder) await once(`am-${d}-${userId}`, [MORNING[l], ...extras].join(' '), at(date, hm(prefs.morningTime)), 'Home')
-      else if (extras.length) await once(`am-${d}-${userId}`, extras.join(' '), at(date, [10, 0]), 'Home')
+      if (sos && sos.phase !== 'return' && sd >= 0 && sd < 7) await once(`am-${d}-${userId}`, { title: COPY.sosMorning[l].title(sd + 1, sos.situation.title), body: COPY.sosMorning[l].body }, at(date, hm(prefs.morningTime)), 'Emergency')
+      else if (prefs.morningReminder) await once(`am-${d}-${userId}`, { title: COPY.morning[l].title, body: [COPY.morning[l].body, ...extras].join(' ') }, at(date, hm(prefs.morningTime)), 'Home')
+      else if (extras.length) await once(`am-${d}-${userId}`, { title: 'Skynkod', body: extras.join(' ') }, at(date, [10, 0]), 'Home')
       // Evening.
       let body = null
       let screen = 'Home'
-      if (sos && sd >= 0 && sd <= sosLast) body = back[sd] ? (l === 'fr' ? `Ce soir, on réintroduit ${BACK.fr[back[sd]]} dans ta routine 🌿` : `Tonight, we bring back ${BACK.en[back[sd]]} into your routine 🌿`) : CALM_EVENING[l]
+      if (sos && sd >= 0 && sd <= sosLast) body = back[sd] ? { title: COPY.sosBack[l].title, body: COPY.sosBack[l].body(BACK_WHAT[l][back[sd]]) } : COPY.sosEvening[l]
       else if (prefs.eveningReminder && rekod) {
         const night = rekodNight(date)
         const strong = night === 'retinoid' || night === 'exfoliation'
         const treatment = treatmentOnDate(rekod, date, now)
-        body = d === 0 && strong && reactingToday ? REACTING_EVENING[l] : NIGHT_TEXT[night === 'retinoid' && treatment !== 'retinol' ? treatment : night][l]
+        body = d === 0 && strong && reactingToday ? COPY.reacting[l] : COPY[night === 'retinoid' && treatment !== 'retinol' ? treatment : night][l]
         screen = 'Rekod'
-      } else if (prefs.eveningReminder) body = (d === 0 && reactingToday ? REACTING_EVENING : ramadanDay(date) ? TEXT.eveningRamadan : TEXT.evening)[l]
+      } else if (prefs.eveningReminder) body = (d === 0 && reactingToday ? COPY.reacting : ramadanDay(date) ? COPY.eveningRamadan : COPY.evening)[l]
       if (body) await once(`pm-${d}-${userId}`, body, at(date, hm(prefs.eveningTime)), screen)
     }
 
