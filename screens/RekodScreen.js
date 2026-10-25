@@ -16,7 +16,7 @@ import { searchProducts, getMyProducts } from '../utils/catalog'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, TYPE, livePalette, liveStyles } from '../utils/theme'
 import { useTheme } from '../utils/ThemeContext'
-import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod } from '../utils/dekod'
+import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod, averagePoints } from '../utils/dekod'
 import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
 import { getActivePlan } from '../utils/emergency-state'
@@ -357,7 +357,8 @@ export default function RekodScreen({ navigation }) {
   if (plan && programmeFinished(plan)) {
     const base = plan.baseline
     const latest = scans[0]
-    const rows = base && latest && latest.id !== base.id ? compareScans(base.points, latest.result?.points) : null
+    // The last 3 scans averaged: one odd photo doesn't make a result (Dekod v2).
+    const rows = base && latest && latest.id !== base.id ? compareScans(base.points, averagePoints(scans, 3)) : null
     const weeksDone = planWeeks(plan)
     const advice = endAnswer ? endAdvice(plan, endAnswer, regularity ?? 1) : null
     const run = async (fn, event) => {
@@ -557,7 +558,7 @@ export default function RekodScreen({ navigation }) {
           const base = plan.baseline
           const finished = weekOf(plan) > goal.weeks
           if (base && latest && latest.id !== base.id) {
-            const rows = compareScans(base.points, latest.result?.points)
+            const rows = compareScans(base.points, averagePoints(scans, 3))
             return (
               <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -606,7 +607,8 @@ export default function RekodScreen({ navigation }) {
           {(() => {
             // A Dekod from the last 3 days points to an answer.
             const week = recentScan(scans, 3)
-            const suggested = week && plan.baseline ? checkInFromDekod(plan.baseline.points, week.result?.points) : null
+            // This week's scans (up to 3) averaged, against Day 0.
+            const suggested = week && plan.baseline ? checkInFromDekod(plan.baseline.points, averagePoints(scans.filter(s => Date.now() - new Date(s.created_at).getTime() <= 7 * 86400000), 3)) : null
             return (
               <>
                 {!week ? (

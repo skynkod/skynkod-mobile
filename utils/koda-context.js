@@ -113,7 +113,7 @@ export const buildKodaContext = async (userId) => {
     travelling: !!away,
     dekod: dekod?.[0] ? {
       date: String(dekod[0].created_at).slice(0, 10),
-      points: Object.fromEntries(Object.entries(dekod[0].result?.points || {}).map(([k, v]) => [k, v?.level || 'none'])),
+      points: Object.fromEntries(Object.entries(dekod[0].result?.points || {}).map(([k, v]) => [k, typeof v?.score === 'number' ? `${v.score}/10` : v?.level || 'not read'])),
     } : null,
   }
 }

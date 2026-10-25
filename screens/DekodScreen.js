@@ -8,7 +8,8 @@ import { P, PremiumShell, PButton, PLoading, tap } from '../components/PremiumSp
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
-import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults, deleteDekodResult } from '../utils/dekod'
+import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults, deleteDekodResult, scoreOf, levelFor, averagePoints, compareScans } from '../utils/dekod'
+import { useSkinProfile } from '../utils/useSkinProfile'
 import { logError } from '../utils/errorLogger'
 import { syncSmartReminders } from '../utils/notifications'
 import { track } from '../utils/analytics'
@@ -18,7 +19,6 @@ import { useTheme } from '../utils/ThemeContext'
 const LABEL = 'Dekod · Premium'
 
 const LEVEL = { none: 'None', light: 'Light', visible: 'Visible' }
-const RANK = { none: 0, light: 1, visible: 2 }
 const LEVEL_COLOR = { none: P.success, light: P.primary, visible: P.warn }
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
 
@@ -39,9 +39,10 @@ const cropToOval = async (photo, oval) => {
   const h = Math.min(photo.height - y, Math.round((oval.height + 2 * my) / scale))
   const context = ImageManipulator.manipulate(photo.uri)
   if (w > 50 && h > 50) context.crop({ originX: x, originY: y, width: w, height: h })
-  context.resize({ width: 720 })
+  // Sharp enough for blackheads and texture (Dekod v2, 2026-10-25).
+  context.resize({ width: 1200 })
   const image = await context.renderAsync()
-  return image.saveAsync({ format: SaveFormat.JPEG, compress: 0.75, base64: true })
+  return image.saveAsync({ format: SaveFormat.JPEG, compress: 0.85, base64: true })
 }
 
 
@@ -52,6 +53,7 @@ export default function DekodScreen({ navigation }) {
   useTheme() // redraws in the colours of the mode on screen
   const { t, language } = useLanguage()
   const { user } = useAuth()
+  const profile = useSkinProfile(user?.id)
   const [premium, setPremium] = useState(undefined)
   const [consent, setConsent] = useState(undefined)
   const [stage, setStage] = useState('home') // home | consent | tips | camera | analysing | result
@@ -100,14 +102,15 @@ export default function DekodScreen({ navigation }) {
       if (!photo?.base64) {
         // Cropping failed: fall back to the whole photo, resized.
         const ctx = ImageManipulator.manipulate(raw.uri)
-        ctx.resize({ width: 720 })
-        Object.assign(raw, await (await ctx.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 0.7, base64: true }))
+        ctx.resize({ width: 1200 })
+        Object.assign(raw, await (await ctx.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 0.85, base64: true }))
       }
       const final = photo?.base64 ? photo : raw
       if (!final?.base64) return
       setShot({ uri: final.uri, checks: null })
       setStage('analysing')
-      const res = await runDekod(final.base64, language)
+      // Her skin type and known issues make the notes and tips kinder; the scores never use them.
+      const res = await runDekod(final.base64, language, profile ? { skinType: profile.skin_type, issues: profile.skin_concerns } : null)
       if (res.error === 'daily_limit') {
         toHome()
         return Alert.alert(t('See you tomorrow 🌸'), t('You’ve had your Dekod today. Come back tomorrow for a new scan.'))
@@ -133,17 +136,22 @@ export default function DekodScreen({ navigation }) {
   const Points = ({ points }) => (
     <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
       {DEKOD_POINTS.map(p => {
-        const r = points?.[p.key] || { level: 'none' }
+        const r = points?.[p.key] || {}
+        const score = scoreOf(points, p.key)
+        const level = levelFor(score)
         return (
           <View key={p.key} style={styles.row}>
             <View style={styles.rowIcon}><Ionicons name={p.icon} size={18} color={P.primary} /></View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
                 <Text style={[TYPE.bodyStrong, { color: P.text, flex: 1 }]}>{t(p.label)}</Text>
-                <Text style={[styles.chip, { color: LEVEL_COLOR[r.level], borderColor: LEVEL_COLOR[r.level] }]}>{t(LEVEL[r.level])}</Text>
+                {/* A point the photo didn't show is "Not read", never "None" */}
+                <Text style={[styles.chip, { color: level ? LEVEL_COLOR[level] : P.muted, borderColor: level ? LEVEL_COLOR[level] : P.border }]}>
+                  {level ? `${t(LEVEL[level])}${typeof r.score === 'number' ? ` · ${r.score}/10` : ''}` : t('Not read')}
+                </Text>
               </View>
               {r.note ? <Text style={[TYPE.caption, { color: P.textSecondary, marginTop: 3, lineHeight: 18 }]}>{r.note}</Text> : null}
-              {r.level !== 'none' && r.tip ? <Text style={[TYPE.caption, { color: P.primary, marginTop: 3, lineHeight: 18 }]}>{r.tip}</Text> : null}
+              {level && level !== 'none' && r.tip ? <Text style={[TYPE.caption, { color: P.primary, marginTop: 3, lineHeight: 18 }]}>{r.tip}</Text> : null}
             </View>
           </View>
         )
@@ -190,7 +198,7 @@ export default function DekodScreen({ navigation }) {
     const done = !!c
     const color = !done ? P.border : shot.ok ? P.success : P.warn
     const lines = done ? [
-      [c.light === 'ok', c.light === 'dark' ? 'A bit too dark: face a window' : c.light === 'bright' ? 'Too bright: avoid direct sun' : 'Light OK'],
+      [c.light === 'ok', c.light === 'dark' ? 'A bit too dark: face a window' : c.light === 'bright' ? 'Too bright: avoid direct sun' : c.light === 'warm' ? 'Lamp light: face a window' : 'Light OK'],
       [c.position === 'ok', c.position === 'far' ? 'Come a little closer' : c.position === 'off' ? 'Face the camera, in the oval' : c.position === 'none' ? 'We can’t see your face' : 'Face well placed'],
       [c.sharp, c.sharp ? 'Sharp photo' : 'A little blurry: hold still'],
     ] : []
@@ -250,7 +258,8 @@ export default function DekodScreen({ navigation }) {
 
   // ---------- Result ----------
   if (stage === 'result' && result) {
-    const next = journalFrom(result.points)
+    // Her usual: the scans before this one (not this one).
+    const next = journalFrom(result.points, (history || []).filter(h => h.result?.summary !== result.summary || h.created_at < new Date(Date.now() - 120000).toISOString()))
     return (
       <PremiumShell label={LABEL} onBack={toHome} overline={t('Today')} title={t('Your Dekod')} subtitle={result.summary}
         footer={(
@@ -305,7 +314,6 @@ export default function DekodScreen({ navigation }) {
     const latest = history[0]
     const scannedToday = sameDay(latest.created_at, new Date())
     const ordered = [...history].reverse().slice(-8) // oldest → newest, last 8
-    const first = history[history.length - 1]
     return (
       <PremiumShell label={LABEL}
         overline={`${t('Latest scan')} · ${new Date(latest.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}`}
@@ -324,23 +332,23 @@ export default function DekodScreen({ navigation }) {
           <>
             <Text style={[styles.section, { color: P.primary }]}>{t('Your evolution')}</Text>
             <View style={{ gap: SPACING.sm }}>
-              {DEKOD_POINTS.map(p => {
-                const from = first.result?.points?.[p.key]?.level || 'none'
-                const to = latest.result?.points?.[p.key]?.level || 'none'
-                const better = RANK[to] < RANK[from]
-                const worse = RANK[to] > RANK[from]
+              {compareScans(averagePoints([...history].reverse(), 2), averagePoints(history, 3)).map(row => {
+                const p = DEKOD_POINTS.find(x => x.key === row.key)
+                const { from, to } = row
+                const better = row.trend === 'better'
+                const worse = row.trend === 'worse'
                 return (
                   <View key={p.key} style={styles.row}>
                     <View style={{ flex: 1 }}>
                       <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t(p.label)}</Text>
                       <Text style={{ color: better ? P.success : worse ? P.warn : P.muted, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
-                        {t(LEVEL[from])} → {t(LEVEL[to])}
+                        {from ? t(LEVEL[from]) : t('Not read')} → {to ? t(LEVEL[to]) : t('Not read')}
                       </Text>
                     </View>
                     <View style={styles.bars}>
                       {ordered.map(h => {
-                        const lvl = h.result?.points?.[p.key]?.level || 'none'
-                        return <View key={h.id} style={[styles.bar, { height: 6 + RANK[lvl] * 8, backgroundColor: LEVEL_COLOR[lvl] }]} />
+                        const sc = scoreOf(h.result?.points, p.key)
+                        return <View key={h.id} style={[styles.bar, { height: 4 + (sc ?? 0) * 2, backgroundColor: sc === null ? P.border : LEVEL_COLOR[levelFor(sc)] }]} />
                       })}
                     </View>
                   </View>
