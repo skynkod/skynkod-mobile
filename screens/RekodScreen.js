@@ -24,7 +24,7 @@ import { isReactiveState, stateLabel, REACTIVE as REACTIVE_STATES } from '../uti
 import { prioritiesOf } from '../utils/skin-quiz'
 import { syncSmartReminders } from '../utils/notifications'
 import {
-  GOALS, NIGHTS, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
+  GOALS, NIGHTS, nightInfo, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
   decideStep, stepId, saveRekodPlan, projectRekod, programmeFinished, startMaintenance,
@@ -279,8 +279,10 @@ export default function RekodScreen({ navigation }) {
     setBusy(true)
     try {
       const draft = { ...final, sensitive: !!final.sensitive || isReactive(profile), reactive: isReactive(profile), level: { none: 0, some: 1, used: 2 }[final.experience] ?? 0, startedAt: new Date().toISOString(), checkins: [] }
-      setDraft(draft)
-      setPreview(await buildRekodRoutine(user.id, draft, profile))
+      // The built routine tells the preview what the plan holds (pregnancy, steps with no safe product).
+      const built = await buildRekodRoutine(user.id, draft, profile)
+      setDraft({ ...draft, ...built.flags })
+      setPreview(built)
       setStep('preview')
     } catch (error) {
       await logError('Rekod_preview', error)
@@ -486,8 +488,8 @@ export default function RekodScreen({ navigation }) {
             <Text style={[TYPE.overline, { color: C.primary }]}>{plan.maintenance ? 'My Rekod · keeping my results' : 'My Rekod'}</Text>
             <Text style={[styles.dashTitle, { color: C.text }]} numberOfLines={2}>{goalsTitle(plan)}</Text>
             <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
-              <Ionicons name={NIGHTS[tonight].icon} size={14} color={C.primary} />
-              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {NIGHTS[tonight].short}{tonightPaused ? ' · paused' : ''}</Text>
+              <Ionicons name={nightInfo(plan, tonight).icon} size={14} color={C.primary} />
+              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {nightInfo(plan, tonight).short}{tonightPaused ? ' · paused' : ''}</Text>
             </View>
           </View>
         </View>
@@ -510,7 +512,7 @@ export default function RekodScreen({ navigation }) {
           <View style={[styles.card, { backgroundColor: C.primarySoft, borderColor: C.border, flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' }]}>
             <Ionicons name="time-outline" size={18} color={C.primary} style={{ marginTop: 1 }} />
             <Text style={[TYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>
-              Not right for you tonight: your skin is {stateLabel(profile.skinState.states.find(x => REACTIVE_STATES.includes(x))).toLowerCase()}. Skip the {NIGHTS[tonight].short.toLowerCase()} and make it a repair night. Your plan stays the same.
+              Not right for you tonight: your skin is {stateLabel(profile.skinState.states.find(x => REACTIVE_STATES.includes(x))).toLowerCase()}. Skip the {nightInfo(plan, tonight).short.toLowerCase()} and make it a repair night. Your plan stays the same.
             </Text>
           </View>
         ) : null}
@@ -760,7 +762,7 @@ export default function RekodScreen({ navigation }) {
                 <View key={n} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
                   <Ionicons name={NIGHTS[n].icon} size={14} color={C.primary} style={{ marginTop: 2 }} />
                   <Text style={[TYPE.caption, { color: C.textSecondary, flex: 1, lineHeight: 18 }]}>
-                    <Text style={{ color: C.text, fontWeight: '700' }}>{n === 'retinoid' && first.azelaic ? 'Azelaic acid night' : NIGHTS[n].label}</Text>: {NIGHT_WORDS[n === 'retinoid' && first.azelaic ? 'azelaic' : n]}
+                    <Text style={{ color: C.text, fontWeight: '700' }}>{n === 'retinoid' ? TREATMENT_LABEL[first.treatment] : NIGHTS[n].label}</Text>: {NIGHT_WORDS[n === 'retinoid' ? first.treatment : n]}
                   </Text>
                 </View>
               ))}
@@ -861,11 +863,14 @@ const tap = () => { Haptics.selectionAsync().catch(() => {}) }
 const MORNING_WORDS = { cleanser: 'Cleanser', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'SPF 50' }
 const NIGHT_WORDS = {
   exfoliation: 'an acid gently clears pores and dead cells.',
-  retinoid: 'retinol renews your skin; it starts low and increases slowly.',
+  retinol: 'retinol renews your skin; it starts low and increases slowly.',
   azelaic: 'azelaic acid calms redness and evens the tone, gently.',
+  gentle: 'a pregnancy-safe treatment (bakuchiol or peptides) works gently on your goal.',
   repair: 'soothing care, your skin rests and rebuilds.',
   reset: 'just cleanser and cream: a night off.',
 }
+// The treatment night's true name (Rekod audit 2026-10-25).
+const TREATMENT_LABEL = { retinol: 'Retinol night', azelaic: 'Azelaic acid night', gentle: 'Gentle treatment night' }
 const GOAL_END = { clear: 'Clearer skin, fewer breakouts', antiaging: 'Smoother skin, softer fine lines', spots: 'Visibly faded spots, a more even tone', glow: 'Brighter, smoother skin', pores: 'Less visible pores, less shine', calm: 'Calmer, more comfortable skin', hydration: 'Comfortable, hydrated skin' }
 const GOAL_ICONS = { clear: 'water-outline', antiaging: 'hourglass-outline', spots: 'contrast-outline', glow: 'sunny-outline', pores: 'grid-outline', calm: 'leaf-outline', hydration: 'rainy-outline' }
 const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'sparkles-outline', treatment: 'moon-outline', eye: 'eye-outline', lips: 'happy-outline', lipscrub: 'sparkles-outline', lipmask: 'moon-outline' }
@@ -999,7 +1004,7 @@ function FullPlan({ visible, onClose, plan, routine }) {
                           <Ionicons name={NIGHTS[n].icon} size={15} color={C.primary} style={{ marginTop: 2 }} />
                           <View style={{ flex: 1 }}>
                             <Text style={[TYPE.caption, { color: C.text, fontWeight: '700' }]}>
-                              {n === 'retinoid' && w.azelaic ? 'Azelaic acid night' : NIGHTS[n].label} · {w.pattern.filter(x => x === n).length}×
+                              {n === 'retinoid' ? TREATMENT_LABEL[w.treatment] : NIGHTS[n].label} · {w.pattern.filter(x => x === n).length}×
                             </Text>
                             <Text style={[TYPE.caption, { color: C.textSecondary }]}>{productFor(n) || NIGHT_PRODUCT_HINT[n]}</Text>
                           </View>

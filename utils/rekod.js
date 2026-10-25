@@ -6,172 +6,22 @@
 
 import { supabase } from './supabase'
 import { findIngredients, productMatch, isUnsuitable, getIngredient } from './ingredients-guide'
-import { productsByCategory, getMyProducts } from './catalog'
+import { allProductsByCategory, getMyProducts } from './catalog'
 import { saveRoutine } from './routines-service'
 import { getUserProfile } from './supabase'
 import { engineProfile } from './skin-quiz'
-
-// ---------- Goals ----------
-
-// Length = the realistic time for a visible result (rules, sections 5–11):
-// skin renews itself about every 4 weeks (Lita, 2026-10-23).
-export const GOALS = [
-  { id: 'clear', title: 'Clear skin', subtitle: 'Breakouts, blackheads', weeks: 12, results: 'First change around week 6 to 8', why: 'Breakouts usually improve after 6 to 8 weeks of steady care, and look clear around week 12.' },
-  { id: 'antiaging', title: 'Anti-aging', subtitle: 'Lines, firmness', weeks: 12, results: 'First change around week 8 to 12', why: 'Retinol needs 8 to 12 weeks to smooth fine lines visibly; firmness keeps improving after that.' },
-  { id: 'spots', title: 'Dark spots', subtitle: 'Marks, uneven tone', weeks: 12, results: 'First change around week 8 to 12', why: 'Dark spots fade slowly, layer by layer: 8 to 12 weeks, with sunscreen every morning.' },
-  { id: 'glow', title: 'Glow', subtitle: 'Dull, tired skin', weeks: 6, results: 'First change around week 3 or 4', why: 'Skin renews itself about every 4 weeks: in 6 weeks its surface looks smoother and brighter.' },
-  { id: 'pores', title: 'Smaller pores', subtitle: 'Shine, texture', weeks: 12, results: 'First change around week 8', why: 'Pores look smaller once they stay unclogged, which takes 8 to 12 weeks.' },
-  { id: 'calm', title: 'Calm skin', subtitle: 'Redness, reactivity', weeks: 4, results: 'First change within 2 to 4 weeks', why: 'A calmer, stronger skin barrier takes about one skin renewal cycle: 4 weeks.' },
-  { id: 'hydration', title: 'Deep hydration', subtitle: 'Tight, dry skin', weeks: 4, results: 'First change within 1 to 2 weeks', why: 'Hydration improves fast; 4 weeks lets your skin barrier settle.' },
-]
-// Goals that work against each other: a reactive skin first repairs its
-// barrier, with no exfoliation, while these goals rely on acids or retinol.
-export const INCOMPATIBLE = { calm: ['antiaging', 'glow', 'pores'], antiaging: ['calm'], glow: ['calm'], pores: ['calm'] }
-export const conflictWith = (picked, id) => picked.find(g => (INCOMPATIBLE[g] || []).includes(id)) || null
-export const goalOf = id => GOALS.find(g => g.id === id) || GOALS[0]
-export const goalsTitle = plan => (plan.goals?.length ? plan.goals : [plan.goal]).map(id => goalOf(id).title).join(' · ')
-const goalsOf = plan => (plan.goals?.length ? plan.goals : [plan.goal])
-// The programme lasts as long as its longest goal; a calm-only plan for a skin
-// that reacts often gets 2 more weeks; "Extend 4 weeks" adds to it.
-export const planWeeks = (plan) => {
-  const goals = goalsOf(plan)
-  let weeks = Math.max(...goals.map(g => goalOf(g).weeks))
-  if (goals.length === 1 && goals[0] === 'calm' && plan.sensitive) weeks = 6
-  return weeks + (plan.extraWeeks || 0)
-}
-// With "Calm skin", the barrier comes first: calm rules for the first 4 weeks
-// (the whole plan when calm is the only goal).
-export const calmPhase = (plan, now = new Date()) => goalsOf(plan).includes('calm') && (goalsOf(plan).length === 1 || weekOf(plan, now) < 5)
-// Why the plan lasts this long, from the goal that sets the length.
-export const planWhy = plan => goalOf(goalsOf(plan).reduce((a, g) => (goalOf(g).weeks > goalOf(a).weeks ? g : a), goalsOf(plan)[0])).why
-
-// ---------- The week (skin cycling) ----------
-
-export const NIGHTS = {
-  exfoliation: { label: 'Exfoliation night', short: 'Exfoliate', icon: 'sparkles-outline' },
-  retinoid: { label: 'Retinol night', short: 'Retinol', icon: 'moon-outline' },
-  repair: { label: 'Repair night', short: 'Repair', icon: 'bandage-outline' },
-  reset: { label: 'Reset night', short: 'Reset', icon: 'leaf-outline' },
-}
-
-// Nights per week, from the rules (exfoliation, retinoid, repair, reset).
-const LEVELS = [
-  { ex: 0, ret: 2, rep: 3, reset: 2 }, // 0: beginner, weeks 1–2
-  { ex: 1, ret: 2, rep: 2, reset: 2 }, // 1: beginner, weeks 3–4
-  { ex: 1, ret: 3, rep: 2, reset: 1 }, // 2: some experience
-  { ex: 2, ret: 3, rep: 1, reset: 1 }, // 3: used to actives, balanced
-]
-const PRIORITY = {
-  retinoid: { ex: 1, ret: 4, rep: 1, reset: 1 },
-  exfoliation: { ex: 3, ret: 2, rep: 1, reset: 1 },
-}
-const START = { none: 0, some: 1, used: 2 }
-const REACTIVE_CONDITIONS = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Seborrheic dermatitis']
-export const isReactive = profile => (profile?.skin_conditions || []).some(c => REACTIVE_CONDITIONS.includes(c))
-const TARGET = { none: 2, some: 2, used: 3 }
-
-// The counts for a plan's current level, adapted to the goal and the skin.
-export const nightCounts = (plan) => {
-  const top = plan.experience === 'used' && plan.level >= 3
-  let c = { ...(top && plan.priority && PRIORITY[plan.priority] ? PRIORITY[plan.priority] : LEVELS[Math.min(plan.level, 3)]) }
-  if (plan.sensitive) {
-    // Never more than 2 exfoliation nights; the extra goes to repair.
-    if (c.ex > 2) { c.rep += c.ex - 2; c.ex = 2 }
-  }
-  if (plan.reactive) {
-    // Rosacea, eczema, perioral or seborrheic dermatitis: no exfoliating acids.
-    c.rep += c.ex; c.ex = 0
-  }
-  if (plan.fragile) {
-    // Isotretinoin or a prescription skin cream: no acids, no retinoid, only gentle care.
-    c.rep += c.ex + c.ret; c.ex = 0; c.ret = 0
-  }
-  if (calmPhase(plan)) {
-    // No acids; the "retinoid" night becomes azelaic acid from week 3.
-    c.rep += c.ex; c.ex = 0
-    if (weekOf(plan) < 3) { c.rep += c.ret; c.ret = 0 } else if (c.ret > 2) { c.rep += c.ret - 2; c.ret = 2 }
-  }
-  if (goalsOf(plan).every(g => g === 'hydration')) {
-    // No strong actives: repair and reset nights only.
-    c = { ex: 0, ret: 0, rep: 4, reset: 3 }
-  }
-  if (plan.goal === 'glow' && plan.experience === 'none') { c.rep += c.ret; c.ret = 0 }
-  if (plan.extraReset) {
-    // Last check-in said the skin reacted: one active night becomes a reset night.
-    if (c.ret > 0) { c.ret -= 1; c.reset += 1 } else if (c.ex > 0) { c.ex -= 1; c.reset += 1 }
-  }
-  if (plan.maintenance && plan.maintenanceMode === 'simple') {
-    // Simplified routine: one strong active, two evenings a week.
-    const strong = c.ret ? 'ret' : c.ex ? 'ex' : null
-    c = { ex: strong === 'ex' ? 2 : 0, ret: strong === 'ret' ? 2 : 0, rep: 2, reset: strong ? 3 : 5 }
-  } else if (plan.maintenance && plan.maintenanceMode !== 'asis') {
-    // "Keep my results": the same products with fewer strong nights.
-    if (c.ret > 1) { c.ret -= 1; c.rep += 1 }
-    if (c.ex > 1) { c.ex -= 1; c.reset += 1 }
-  }
-  return c
-}
-
-// Seven nights, Monday first. Strong nights are spread out; a reactive skin
-// never gets two strong nights in a row.
-export const weekPattern = (plan) => {
-  const c = nightCounts(plan)
-  const strong = [...Array(c.ret).fill('retinoid'), ...Array(c.ex).fill('exfoliation')]
-  // Alternate exfoliation and retinoid among the strong nights.
-  const ordered = []
-  let r = strong.filter(s => s === 'retinoid'), e = strong.filter(s => s === 'exfoliation')
-  while (r.length || e.length) {
-    if (e.length && (ordered.length % 2 === 0 || !r.length)) ordered.push(e.shift())
-    else if (r.length) ordered.push(r.shift())
-  }
-  const week = Array(7).fill(null)
-  const n = ordered.length
-  // A reactive skin gets a gentle night between two strong ones (Mon, Wed, Fri, Sun).
-  const spaced = plan.sensitive && n <= 4 ? [0, 2, 4, 6] : null
-  ordered.forEach((night, i) => {
-    let pos = spaced ? spaced[i] : Math.round((i * 7) / Math.max(n, 1))
-    while (week[pos % 7]) pos += 1
-    week[pos % 7] = night
-  })
-  // Gentle nights: repair right after a strong night, otherwise whichever is left most.
-  let rep = c.rep, reset = c.reset
-  for (let i = 0; i < 7; i += 1) {
-    if (week[i]) continue
-    const afterStrong = i > 0 && (week[i - 1] === 'retinoid' || week[i - 1] === 'exfoliation')
-    const useRepair = rep > 0 && (afterStrong || !reset || rep >= reset)
-    if (useRepair) { week[i] = 'repair'; rep -= 1 } else { week[i] = 'reset'; reset -= 1 }
-  }
-  return week // index 0 = Monday … 6 = Sunday
-}
-
-const JS_DAY = [1, 2, 3, 4, 5, 6, 0] // Monday-first index → Date.getDay()
-export const tonightNight = (plan, date = new Date()) => weekPattern(plan)[JS_DAY.indexOf(date.getDay())]
-
-// ---------- Weeks and check-ins ----------
-
-export const weekOf = (plan, now = new Date()) =>
-  Math.max(1, Math.floor((now - new Date(plan.startedAt)) / (7 * 86400000)) + 1)
-
-export const checkInDue = (plan, now = new Date()) => {
-  const last = plan.checkins?.[plan.checkins.length - 1]
-  // After the programme: a short check every 4 weeks.
-  if (plan.maintenance) return now - new Date(Math.max(new Date(plan.maintenanceSince || plan.startedAt), last ? new Date(last.at) : 0)) >= 28 * 86400000
-  return weekOf(plan, now) > 1 && (!last || last.week < weekOf(plan, now))
-}
-
-// "good": move up a level · "little": stay · "lot": go back a level and rest.
-export const applyCheckIn = (plan, answer, now = new Date()) => {
-  const week = weekOf(plan, now)
-  let level = plan.level
-  if (answer === 'good') level = Math.min(level + 1, TARGET[plan.experience] ?? 2)
-  if (answer === 'lot') level = Math.max(level - 1, 0)
-  return {
-    ...plan,
-    level,
-    extraReset: answer !== 'good',
-    checkins: [...(plan.checkins || []), { week, answer, at: now.toISOString() }],
-  }
-}
+import {
+  GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, goalsOf,
+  planWeeks, calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo,
+  rekodKey, START, isReactive, nightCounts, resting, weekPattern,
+  JS_DAY, tonightNight, weekOf, checkInDue, applyCheckIn, projectRekod,
+} from './rekod-schedule'
+export {
+  GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, planWeeks,
+  calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo, rekodKey,
+  isReactive, nightCounts, resting, weekPattern, tonightNight, weekOf,
+  checkInDue, applyCheckIn, projectRekod,
+} from './rekod-schedule'
 
 // ---------- Choosing products ----------
 
@@ -179,6 +29,16 @@ export const applyCheckIn = (plan, answer, now = new Date()) => {
 // (the tail of an INCI list is under ~1%).
 const has = (product, ids, maxPos = 99) => findIngredients(product).some(f => ids.includes(f.entry.id) && f.pos <= maxPos)
 const STRONG = ['retinol', 'glycolic', 'salicylic', 'lactic', 'mandelic', 'benzoyl', 'azelaic']
+// A gentle step never hides a strong active (audit 2026-10-25: a "retinol
+// cream" was picked as the day cream). A retinoid counts wherever it sits in
+// the list, the others in the first 12; the name gives it away too.
+const strongName = p => /retin(ol|al|oid)|\bAHA\b|\bBHA\b|\bPHA\b|peel|glycolic|salicylic|lactic|mandelic|azelaic|exfoli/i.test(p?.name || '')
+const isStrong = p => has(p, ['retinol']) || has(p, STRONG, 12) || strongName(p)
+// Concentrated vitamin C stings reactive skin: only where it's the step's own active.
+const strongVitC = p => has(p, ['vitaminc'], 5) || /vitamin\s?c\b|vit\.?\s?c\b|ascorbic/i.test(p?.name || '')
+// Actives that shouldn't come twice in one routine (vitamin C in the morning
+// and again at night, two acids…): each one has a single step.
+const ONCE = ['vitaminc', 'retinol', 'glycolic', 'salicylic', 'lactic', 'mandelic', 'azelaic', 'bakuchiol', 'arbutin', 'txa', 'kojic', 'benzoyl']
 // Basics every product has: never the reason a product is "similar".
 const BASICS = ['glycerin', 'hyaluronic', 'dimethicone', 'petrolatum', 'squalane', 'shea', 'aloe', 'vitamine', 'allantoin', 'jojoba']
 const harsh = p => has(p, ['sls', 'scrub', 'alcohol', 'fragrance', 'essentialoils']) || /scrub|exfoli|peel/i.test(p?.name || '')
@@ -217,13 +77,19 @@ const isAcceptable = (product, profile) => {
 //   1. 100% safe with the wanted active, 2. 100% safe without it (when the active
 //   is only a preference, like ceramides in a moisturizer), and only then
 //   3. the mildest "not 100% safe" one. `level` limits to 'safe' or 'acceptable'.
-const pickFrom = (candidates, profile, { want = [], wantRequired = false, avoidHarsh = false, noStrong = false, exclude = [], prefer = null, strictOnly = false, level = null } = {}) => {
-  const base = candidates.filter(p => p && !exclude.includes(p.id) && (!avoidHarsh || !harsh(p)) && (!noStrong || !has(p, STRONG, 12)))
+const pickFrom = (candidates, profile, { want = [], wantRequired = false, avoidHarsh = false, noStrong = false, exclude = [], avoid = [], reject = null, prefer = null, strictOnly = false, level = null } = {}) => {
+  const skip = avoid.filter(a => !want.includes(a))
+  // Lash and brow serums sit in "eye care" but don't care for the skin around the eyes.
+  const base = candidates.filter(p => p && !exclude.includes(p.id) && (!avoidHarsh || !harsh(p)) && !(reject && reject(p))
+    && !(p.category === 'eye care' && /lash|brow|\bcils?\b|sourcil|mascara/i.test(p.name || ''))
+    && (!noStrong || (!isStrong(p) && (want.includes('vitaminc') || !strongVitC(p))))
+    && (!skip.length || !has(p, skip, 8)))
   // The active must be one of the first ingredients, not a trace.
   const withActive = want.length ? base.filter(p => has(p, want, 8)) : base
   const pools = want.length && !wantRequired ? [withActive, base] : [withActive]
   const rank = p => (productMatch(p, profile || {}).score || 0) + (prefer && prefer(p) ? 100 : 0)
-  const best = list => list.map(p => ({ p, score: rank(p) })).sort((a, b) => b.score - a.score)[0]?.p || null
+  // Ties go to the lowest id: the same profile always gets the same product.
+  const best = list => list.map(p => ({ p, score: rank(p) })).sort((a, b) => b.score - a.score || a.p.id - b.p.id)[0]?.p || null
   if (level !== 'acceptable') {
     for (const pool of pools) {
       const safe = best(pool.filter(p => isSafeFor(p, profile)))
@@ -235,7 +101,7 @@ const pickFrom = (candidates, profile, { want = [], wantRequired = false, avoidH
   for (const pool of pools) {
     const ok = pool.filter(p => isAcceptable(p, profile))
     const mild = ok.map(p => ({ p, n: safetyIssues(p, profile).reduce((a, i) => a + (i.level === 'patch' ? 3 : 1), 0), score: rank(p) }))
-      .sort((a, b) => a.n - b.n || b.score - a.score)[0]?.p
+      .sort((a, b) => a.n - b.n || b.score - a.score || a.p.id - b.p.id)[0]?.p
     if (mild) return mild
   }
   return null
@@ -246,12 +112,16 @@ const chooser = async (userId, profile, pref = 'own') => {
   const mine = pref === 'new' ? [] : (await getMyProducts(userId).catch(() => [])).filter(r => r.status !== 'to_buy' && r.product).map(r => r.product)
   const cache = {}
   const used = []
+  const usedActives = new Set()
   return async (categories, opts = {}) => {
-    // Each treatment step gets its own product (the same serum isn't both the treatment and the repair).
-    const o = { ...opts, exclude: opts.unique ? used : [] }
+    // Each treatment step gets its own product (the same serum isn't both the
+    // treatment and the repair), and each strong active comes once (eyes and
+    // lips are their own small areas and don't count).
+    const face = !categories.some(c => c === 'eye care' || c === 'lip care')
+    const o = { ...opts, exclude: opts.unique ? used : [], avoid: opts.unique && face ? [...usedActives] : [] }
     const ownList = mine.filter(p => categories.includes(p.category))
     const key = categories.join('|')
-    cache[key] = cache[key] || await productsByCategory(categories, 200).catch(() => [])
+    cache[key] = cache[key] || await allProductsByCategory(categories).catch(() => [])
     // Her own 100% safe product, else a 100% safe one from the catalogue; a
     // "not 100% safe" product only when nothing safe exists anywhere.
     const own = pickFrom(ownList, profile, { ...o, level: 'safe' })
@@ -261,7 +131,10 @@ const chooser = async (userId, profile, pref = 'own') => {
       ownMild = pickFrom(ownList, profile, { ...o, level: 'acceptable' })
       found = ownMild || pickFrom(cache[key], profile, { ...o, level: 'acceptable' })
     }
-    if (found && opts.unique) used.push(found.id)
+    if (found && opts.unique) {
+      used.push(found.id)
+      if (face) findIngredients(found).filter(f => ONCE.includes(f.entry.id) && f.pos <= 8).forEach(f => usedActives.add(f.entry.id))
+    }
     return found ? { product: found, owned: found === own || found === ownMild, issues: isSafeFor(found, profile) ? [] : safetyIssues(found, profile) } : null
   }
 }
@@ -318,9 +191,10 @@ const loadProfile = async (userId) => {
 export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const profile = await loadProfile(userId).catch(() => givenProfile || {})
   // The latest skin profile decides the precautions (a new diagnosis, a new treatment).
-  const plan = { ...basePlan, reactive: !!basePlan.reactive || isReactive(profile), fragile: !!profile.fragile, sensitive: !!basePlan.sensitive || isReactive(profile) || !!profile.fragile }
+  const pregnantNow = ['pregnant', 'breastfeeding'].includes(profile?.pregnancy)
+  const plan = { ...basePlan, reactive: !!basePlan.reactive || isReactive(profile), fragile: !!profile.fragile, sensitive: !!basePlan.sensitive || isReactive(profile) || !!profile.fragile, pregnant: pregnantNow }
   const pick = await chooser(userId, profile, plan.productPref)
-  const pregnant = ['pregnant', 'breastfeeding'].includes(profile?.pregnancy)
+  const pregnant = pregnantNow
   const gentle = { avoidHarsh: true, noStrong: true }
   // Up to 3 goals: the first one sets the plan's pace, all of them choose the actives.
   const goals = plan.goals?.length ? plan.goals : [plan.goal]
@@ -329,10 +203,12 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const moistWant = goals.some(g => g === 'calm' || g === 'hydration') ? ['ceramides'] : []
   const exWant = plan.sensitive ? ['mandelic', 'pha', 'lactic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
   const repairWant = union(goals.map(g => repairFor[g])).length ? union(goals.map(g => repairFor[g])) : ['ceramides', 'panthenol', 'centella', 'peptides']
-  const spf50 = p => /50/.test(p.name || '')
+  // SPF 50 from the name ("SPF 50", "50+", "SPF50"), never "150 ml".
+  const spf50 = p => /spf\s?50|\b50\s?\+|\bspf\s?50\+?/i.test(p.name || '')
 
   const cleanser = await pick(['cleanser'], gentle)
-  const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant })
+  // unique: the repair step never repeats the day cream.
+  const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant, unique: true })
   const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50 } : { ...gentle, prefer: spf50 })
   const amSerum = plan.maintenance && plan.maintenanceMode === 'simple' ? null : await pick(['serum', 'toner'], { ...gentle, want: amWant, wantRequired: true, unique: true })
   // Eyes (essential, Lita 2026-10-24): peptides every day; lips: an SPF balm by day.
@@ -350,17 +226,23 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     lipSpf && stepFrom('lips', 'Lips · SPF', lipSpf, { cats: ['lip care'] }, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
-  const week = weekPattern(plan)
-  const daysFor = night => week.map((n, i) => (n === night ? JS_DAY[i] : null)).filter(d => d !== null)
-
-  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, wantRequired: true, unique: true, prefer: p => p.category === 'exfoliant' })
+  // A peel or a high-strength acid only for a skin used to actives (audit 2026-10-25:
+  // a 30% AHA peel came up for a skin with "some" experience).
+  const tooStrongAcid = p => /peel/i.test(p.name || '') || Number((p.name || '').match(/(\d+(?:[.,]\d+)?)\s?%/)?.[1]?.replace(',', '.') || 0) >= 15
+  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, wantRequired: true, unique: true, prefer: p => p.category === 'exfoliant', reject: plan.experience === 'used' && !plan.sensitive ? null : tooStrongAcid })
   // Reactive conditions start with azelaic acid; a retinoid only after 4 calm weeks.
-  const retinoidWant = calmPhase(plan) || (plan.reactive && weekOf(plan) < 5) ? ['azelaic'] : pregnant ? ['bakuchiol', 'peptides'] : ['retinol']
+  const retinoidWant = { azelaic: ['azelaic'], gentle: ['bakuchiol', 'peptides'], retinol: ['retinol'] }[treatmentOf(plan)]
   // Start low: a gentle strength for beginners and reactive skin (rules, section 3).
   const gentleStrength = p => /0[.,]0?[12]\s?%|0[.,]2|starter|0[.,]1|2\s?% emulsion|emulsion/i.test(p.name || '')
   const midStrength = p => /0[.,][2-5]|emulsion|2\s?%/i.test(p.name || '')
   const strength = plan.experience === 'used' && !plan.sensitive ? null : plan.experience === 'some' && !plan.sensitive ? midStrength : gentleStrength
   const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, wantRequired: true, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
+  // A strong step with no safe product: its nights become repair nights, so the
+  // calendar never shows a night with nothing to do.
+  plan.missing = [!exfoliant && 'exfoliation', !retinoid && 'retinoid'].filter(Boolean)
+  const week = weekPattern(plan)
+  const daysFor = night => week.map((n, i) => (n === night ? JS_DAY[i] : null)).filter(d => d !== null)
+
   const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, wantRequired: true, unique: true })
   // Eyes at night: a retinoid eye cream on the retinoid nights (never in pregnancy,
   // calm phase or reactive start), peptides on the other nights.
@@ -394,7 +276,8 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const decide = period => list => list
     .filter(st => !(plan.removed || []).includes(stepId(period, st)))
     .map(st => ((plan.accepted || []).includes(stepId(period, st)) ? { ...st, accepted: true } : st))
-  return { morning: decide('morning')(morning), evening: decide('evening')(evening) }
+  // `flags`: what the plan must remember so Home, Koda and the calendar say the same thing.
+  return { morning: decide('morning')(morning), evening: decide('evening')(evening), flags: { reactive: plan.reactive, fragile: plan.fragile, sensitive: plan.sensitive, pregnant: plan.pregnant, missing: plan.missing, builtKey: rekodKey(plan) } }
 }
 
 // ---------- Changing one product ----------
@@ -413,7 +296,7 @@ export const decideStep = (plan, period, step, decision) => {
 export const findSafeAlternative = async (userId, step) => {
   const profile = await loadProfile(userId).catch(() => ({}))
   const cats = step.cats || [step.key === 'treatment' || step.key === 'exfoliant' ? 'serum' : step.key]
-  const candidates = (await productsByCategory(cats, 300).catch(() => [])).filter(p => p.id !== step.product_id)
+  const candidates = (await allProductsByCategory(cats).catch(() => [])).filter(p => p.id !== step.product_id)
   const strong = ['exfoliant', 'treatment'].includes(step.key)
   const opts = { strictOnly: true, avoidHarsh: !strong, noStrong: !strong }
   const found = pickFrom(candidates, profile, { ...opts, want: step.want || [] }) || pickFrom(candidates, profile, opts)
@@ -427,10 +310,10 @@ export const optionsForStep = async (userId, step, n = 2) => {
   const cats = step.cats || [step.key === 'treatment' || step.key === 'exfoliant' ? 'serum' : step.key]
   const strong = ['exfoliant', 'treatment'].includes(step.key)
   const want = step.want || []
-  const pool = (await productsByCategory(cats, 300).catch(() => []))
-    .filter(p => p.id !== step.product_id && isSafeFor(p, profile) && (!want.length || has(p, want, 8)) && (strong || (!harsh(p) && !has(p, STRONG, 12))))
+  const pool = (await allProductsByCategory(cats).catch(() => []))
+    .filter(p => p.id !== step.product_id && isSafeFor(p, profile) && (!want.length || has(p, want, 8)) && (strong || (!harsh(p) && !isStrong(p))))
   const irritancy = p => findIngredients(p).reduce((a, f) => a + (f.entry.irritancy || 0), 0)
-  const ranked = pool.map(p => ({ p, score: productMatch(p, profile).score || 0, irr: irritancy(p) })).sort((a, b) => b.score - a.score)
+  const ranked = pool.map(p => ({ p, score: productMatch(p, profile).score || 0, irr: irritancy(p) })).sort((a, b) => b.score - a.score || a.p.id - b.p.id)
   const picks = ranked.slice(0, n).map(r => r.p)
   const gentlest = [...ranked].sort((a, b) => a.irr - b.irr || b.score - a.score)[0]?.p
   if (gentlest && !picks.includes(gentlest)) { if (picks.length < n) picks.push(gentlest); else picks[n - 1] = gentlest }
@@ -456,7 +339,7 @@ export const safeAlternativeFor = async (userId, product) => {
   const opts = { strictOnly: true, avoidHarsh: !strong, noStrong: !strong, want: main ? [main.id] : [], wantRequired: !!main && !basicRole }
   // Same kind of product first, then a close kind (a serum for a cream…).
   for (const cat of cats) {
-    const candidates = (await productsByCategory([cat], 300).catch(() => [])).filter(p => p.id !== product.id)
+    const candidates = (await allProductsByCategory([cat]).catch(() => [])).filter(p => p.id !== product.id)
     const alt = pickFrom(candidates, profile, opts)
     if (alt) return { safe: false, alternative: alt, active: alt && main && has(alt, [main.id], 10) ? main.name.split(' (')[0] : null }
   }
@@ -489,8 +372,10 @@ export const replaceRoutineStep = async (userId, period, index, step) => {
 export const refreshRekodRoutine = async (userId, plan) => {
   const profile = await loadProfile(userId).catch(() => ({}))
   const flags = { reactive: !!plan.reactive || isReactive(profile), fragile: !!profile.fragile }
-  if (flags.reactive !== !!plan.reactive || flags.fragile !== !!plan.fragile) await saveRekodPlan(userId, { ...plan, ...flags })
-  const fresh = await buildRekodRoutine(userId, { ...plan, ...flags })
+  const fresh = await buildRekodRoutine(userId, { ...plan, ...flags }, profile)
+  // The plan remembers what the routine was built for (treatment, missing steps, week).
+  const kept = { ...plan, ...flags, ...fresh.flags }
+  if (JSON.stringify(['reactive', 'fragile', 'sensitive', 'pregnant', 'missing', 'builtKey'].map(k => plan[k])) !== JSON.stringify(['reactive', 'fragile', 'sensitive', 'pregnant', 'missing', 'builtKey'].map(k => kept[k]))) await saveRekodPlan(userId, kept)
   const { data } = await supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false })
   const out = {}
   for (const type of ['morning', 'evening']) {
@@ -533,6 +418,7 @@ export const startRekod = async (userId, answers, givenProfile) => {
     // 'own': her products first when they suit her skin · 'new': suggestions only.
     productPref: answers.productPref || 'own',
     level: START[answers.experience] ?? 0,
+    levelSince: 1,
     startedAt: new Date().toISOString(),
     checkins: [],
     extraReset: false,
@@ -549,6 +435,7 @@ export const startRekod = async (userId, answers, givenProfile) => {
     const res = await saveRoutine(userId, type, routine[type])
     if (!res.success) throw new Error(res.error)
   }
+  Object.assign(plan, routine.flags)
   await saveRekodPlan(userId, plan)
   return { plan, routine }
 }
@@ -567,6 +454,7 @@ export const startMaintenance = async (userId, plan, profile, mode = 'gentle') =
     const res = await saveRoutine(userId, type, routine[type])
     if (!res.success) throw new Error(res.error)
   }
+  Object.assign(next, routine.flags)
   await saveRekodPlan(userId, next)
   return { plan: next, routine }
 }
@@ -577,6 +465,7 @@ export const recordCheckIn = async (userId, plan, answer, profile) => {
   const routine = await buildRekodRoutine(userId, next, profile)
   const res = await saveRoutine(userId, 'evening', routine.evening)
   if (!res.success) throw new Error(res.error)
+  Object.assign(next, routine.flags)
   await saveRekodPlan(userId, next)
   return { plan: next, routine }
 }
@@ -618,36 +507,4 @@ export const endAdvice = (plan, answer, regularity) => {
 export const leaveRekod = async (userId) => {
   const { error } = await supabase.from('rekod_plans').delete().eq('user_id', userId)
   if (error) throw error
-}
-
-// ---------- The whole programme, week by week ----------
-// The path if every weekly check-in says "All good": the level goes up one
-// step a week until the target, and the nights follow the same rules as the
-// real plan. Check-ins can slow it down, so it is a forecast, not a promise.
-const PHASES = ['Gentle start', 'Building up', 'Steady rhythm', 'Full strength']
-export const projectRekod = (plan, now = new Date()) => {
-  const current = weekOf(plan, now)
-  const target = TARGET[plan.experience] ?? 2
-  const weeks = []
-  let previous = null
-  for (let w = 1; w <= planWeeks(plan); w += 1) {
-    const level = w <= current ? plan.level : Math.min(plan.level + (w - current), target)
-    // The same plan, as it would be in week w.
-    const startedAt = new Date(now.getTime() - (w - 1) * 7 * 86400000).toISOString()
-    const at = { ...plan, level, startedAt, extraReset: w === current ? plan.extraReset : false }
-    const counts = nightCounts(at)
-    const pattern = weekPattern(at)
-    const azelaic = calmPhase(at) || (plan.reactive && w < 5)
-    const changes = []
-    if (previous) {
-      if (counts.ret > previous.ret) changes.push(previous.ret ? `${azelaic ? 'Azelaic acid' : 'Retinol'}: ${counts.ret} nights` : `New: ${azelaic ? 'azelaic acid' : 'retinol'} comes in (${counts.ret} nights)`)
-      if (counts.ex > previous.ex) changes.push(previous.ex ? `Exfoliation: ${counts.ex} nights` : `New: exfoliation comes in (${counts.ex} night${counts.ex > 1 ? 's' : ''})`)
-      if (plan.reactive && w === 5 && plan.goal !== 'calm') changes.push('Azelaic acid makes way for a gentle retinol')
-    } else {
-      changes.push('Your routine starts gently')
-    }
-    weeks.push({ week: w, level, phase: PHASES[Math.min(level, 3)], counts, pattern, azelaic, changes, past: w < current, now: w === current })
-    previous = counts
-  }
-  return weeks
 }

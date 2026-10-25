@@ -3,7 +3,7 @@ import { getUserRoutines } from './routines-service'
 import { getMyProducts } from './catalog'
 import { getEntriesBetween, getSkinPatterns } from './journal-day'
 import { getActivePlan } from './emergency-state'
-import { getRekodPlan, goalsTitle, weekOf, tonightNight, NIGHTS, planWeeks } from './rekod'
+import { getRekodPlan, goalsTitle, weekOf, tonightNight, nightInfo, planWeeks } from './rekod'
 import { getDekodResults } from './dekod'
 import { getSkinTracking } from './skin-tracking'
 import { getVerdicts } from './expectation-verdicts'
@@ -100,7 +100,7 @@ export const buildKodaContext = async (userId) => {
       goals: goalsTitle(rekod),
       week: weekOf(rekod),
       weeks: planWeeks(rekod),
-      tonight: NIGHTS[tonightNight(rekod)]?.label || null,
+      tonight: nightInfo(rekod, tonightNight(rekod))?.label || null,
     } : null,
     progress: track?.changes?.length ? track.changes.map(c => ({ concern: c.label, change: c.change })) : null,
     skinReviews: track?.checkins?.length ? track.checkins.slice(0, 3).map(c => ({ date: String(c.created_at).slice(0, 10), overall: c.overall, concerns: c.concerns || [] })) : null,

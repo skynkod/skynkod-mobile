@@ -23,7 +23,7 @@ import SkinStateChips from '../components/SkinStateChips'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay, saveSleep, SLEEP_QUALITY, SLEEP_HOURS } from '../utils/journal-day'
 import { tipOfTheMoment } from '../utils/daily-tips'
-import { getRekodPlan, tonightNight, NIGHTS, goalsTitle, weekOf, planWeeks } from '../utils/rekod'
+import { getRekodPlan, tonightNight, NIGHTS, nightInfo, goalsTitle, weekOf, planWeeks, rekodKey, refreshRekodRoutine } from '../utils/rekod'
 import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { getEnvironment } from '../utils/environment'
 import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
@@ -193,6 +193,7 @@ export default function TodayScreen({ navigation, route }) {
   }, [user?.id]))
   const closeRecap = () => { AsyncStorage.setItem(recap.key, '1').catch(() => {}); setRecap(null) }
 
+  const rebuilding = useRef(null)
   const load = useCallback(async () => {
     if (!user?.id) return
     try {
@@ -210,6 +211,12 @@ export default function TodayScreen({ navigation, route }) {
       const withOnline = (local, set) => ({ ...Object.fromEntries([...(set || [])].map(i => [i, true])), ...local })
       setDone({ morning: withOnline(JSON.parse(m || '{}'), online?.morning), evening: withOnline(JSON.parse(e || '{}'), online?.evening) })
       setPlan(p)
+      // A new week, level or the end of a rest week changes the Rekod nights:
+      // the routine follows at once, without opening Rekod (audit 2026-10-25).
+      if (p && p.builtKey !== rekodKey(p) && rebuilding.current !== rekodKey(p)) {
+        rebuilding.current = rekodKey(p)
+        refreshRekodRoutine(user.id, p).then(() => load()).catch(error => logError('Today_rekodRefresh', error, {}, 'warn'))
+      }
       const ids = [...(morning?.steps || []), ...(evening?.steps || [])].map(x => x.product_id).filter(Boolean)
       const rows = ids.length ? await getProductsByIds(ids).catch(() => []) : []
       const byId = Object.fromEntries(rows.map(x => [x.id, x]))
@@ -365,7 +372,7 @@ export default function TodayScreen({ navigation, route }) {
   const swapAt = Math.max(40, topBottom - barHeight)
   const bigFade = scrollY.interpolate({ inputRange: [0, swapAt * 0.6], outputRange: [1, 0], extrapolate: 'clamp' })
   const smallFade = scrollY.interpolate({ inputRange: [swapAt * 0.5, swapAt], outputRange: [0, 1], extrapolate: 'clamp' })
-  const tonight = plan ? NIGHTS[tonightNight(plan)] : null
+  const tonight = plan ? nightInfo(plan, tonightNight(plan)) : null
   const forecast = buildForecast({ days: forecastDays, profile })
   // Local weather is off: ask again, or open the phone's settings if iOS won't ask.
   const enableLocation = async () => {
@@ -378,7 +385,7 @@ export default function TodayScreen({ navigation, route }) {
   const forecastSignals = [
     periodSignal(period, patterns),
     ...personalSignals(patterns, { premium: !!premium }),
-    ...rekodSignals(plan, { nightOf: tonightNight, nights: NIGHTS }).map(s => ({ ...s, params: { ...s.params, when: whenNight(s.day) } })),
+    ...rekodSignals(plan, { nightOf: tonightNight, nights: NIGHTS, info: nightInfo }).map(s => ({ ...s, params: { ...s.params, when: whenNight(s.day) } })),
   ].filter(Boolean)
 
   const Row = ({ period, icon, title, count }) => {

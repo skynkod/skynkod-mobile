@@ -45,6 +45,18 @@ export const productsByCategory = async (categories, limit = 80) => {
   return data || []
 }
 
+// Every product of these categories, in a fixed order (Rekod, 2026-10-25): the
+// same profile must always get the same routine, from the whole catalogue.
+export const allProductsByCategory = async (categories) => {
+  const out = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await visible(supabase.from('products').select(FIELDS).in('category', categories)).order('id').range(from, from + 999)
+    if (error) throw error
+    out.push(...(data || []))
+    if (!data || data.length < 1000) return out
+  }
+}
+
 export const getProductsByIds = async (ids) => {
   if (!ids.length) return []
   const { data, error } = await supabase.from('products').select(FIELDS).in('id', ids)

@@ -53,13 +53,13 @@ export const personalSignals = (patterns, { premium, today = new Date() } = {}) 
 }
 
 // Her strong Rekod nights in the next 3 days.
-export const rekodSignals = (plan, { nightOf, nights, today = new Date() }) => {
+export const rekodSignals = (plan, { nightOf, nights, info = null, today = new Date() }) => {
   if (!plan || !nightOf) return []
   const out = []
   for (let i = 0; i < 3; i += 1) {
     const date = addDays(today, i)
     const id = nightOf(plan, date)
-    if (id === 'retinoid' || id === 'exfoliation') out.push({ icon: 'rekod', text: 'Rekod: {night} {when}.', params: { night: nights[id].label.toLowerCase() }, day: i })
+    if (id === 'retinoid' || id === 'exfoliation') out.push({ icon: 'rekod', text: 'Rekod: {night} {when}.', params: { night: (info ? info(plan, id, date) : nights[id]).label.toLowerCase() }, day: i })
   }
   return out.slice(0, 2)
 }
