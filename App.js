@@ -372,6 +372,8 @@ function AppContent() {
   // The account was deleted on the server (under 18 at sign-up): back to login.
   const handleAccountGone = async () => {
     await AsyncStorage.removeItem('skynkod_user').catch(() => {})
+    // Signed out (session ended or account gone): her reminders stop too (notifications audit).
+    await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {})
     setAnalyticsUser(null)
     setUser(null)
   }

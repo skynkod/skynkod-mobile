@@ -299,3 +299,13 @@ export const projectRekod = (plan, now = new Date()) => {
   }
   return weeks
 }
+
+// The same plan seen from another day (for reminders planned ahead): its weeks,
+// rest week and treatment as they will be on `date`, without new check-ins.
+export const shiftedTo = (plan, date, now = new Date()) => {
+  const gap = date - now
+  const shift = iso => (iso ? new Date(new Date(iso).getTime() - gap).toISOString() : iso)
+  return { ...plan, startedAt: shift(plan.startedAt), restUntil: shift(plan.restUntil) }
+}
+export const nightOnDate = (plan, date, now = new Date()) => weekPattern(shiftedTo(plan, date, now))[JS_DAY.indexOf(date.getDay())]
+export const treatmentOnDate = (plan, date, now = new Date()) => treatmentOf(shiftedTo(plan, date, now), now)

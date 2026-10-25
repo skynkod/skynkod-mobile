@@ -20,7 +20,7 @@ export {
   GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, planWeeks,
   calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo, rekodKey,
   isReactive, nightCounts, resting, weekPattern, tonightNight, weekOf,
-  checkInDue, applyCheckIn, projectRekod,
+  checkInDue, applyCheckIn, projectRekod, shiftedTo, nightOnDate, treatmentOnDate,
 } from './rekod-schedule'
 
 // ---------- Choosing products ----------

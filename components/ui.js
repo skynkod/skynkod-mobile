@@ -207,7 +207,8 @@ export function IconCircle({ name, size = 40, color, background, iconSize }) {
   )
 }
 
-export function ListRow({ icon, iconColor, iconBackground, title, subtitle, right, onPress, last, destructive }) {
+// `below`: an extra control under the subtitle (a time chooser…).
+export function ListRow({ icon, iconColor, iconBackground, title, subtitle, right, onPress, last, destructive, below = null }) {
   const { colors } = useTheme()
   const content = (
     <View style={[styles.listRow, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
@@ -215,6 +216,7 @@ export function ListRow({ icon, iconColor, iconBackground, title, subtitle, righ
       <View style={{ flex: 1 }}>
         <Text style={[TYPE.bodyStrong, { color: destructive ? colors.danger : colors.text }]}>{title}</Text>
         {subtitle ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{subtitle}</Text> : null}
+        {below}
       </View>
       {right !== undefined ? right : onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
     </View>

@@ -292,6 +292,8 @@ export default function TodayScreen({ navigation, route }) {
       const id = await saveDay(user.id, day, { mood: current?.mood || null, tags: current?.skin_conditions || [], notes: current?.notes || '', states: next }, current?.id)
       setEntry({ ...(current || {}), id, skin_state: next, date: current?.date || day.toISOString() })
       refreshSkinState(routines.evening?.steps || [], routineProducts)
+      // Tonight's reminder follows her skin (reacting: a gentle evening).
+      syncSmartReminders(user.id)
     } catch (error) {
       logError('Today_states', error)
     }

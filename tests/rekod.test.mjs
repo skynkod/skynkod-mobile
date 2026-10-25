@@ -89,3 +89,18 @@ for (let r = 0; r < 1000; r++) {
   }
 }
 console.log('rekod: 1,000 programmes checked week by week')
+
+// Notifications audit: the nights planned ahead follow the plan's own weeks.
+{
+  const { nightOnDate, treatmentOnDate } = await import('../utils/rekod-schedule.js')
+  const now = new Date()
+  const calm = { goal: 'calm', goals: ['calm'], experience: 'none', level: 0, startedAt: new Date(now.getTime() - 7 * 864e5 - 3600e3).toISOString() }
+  // Week 2 of a calm plan: no treatment night; two weeks later (week 4) azelaic acid arrives.
+  const in2weeks = new Date(now.getTime() + 14 * 864e5)
+  const week4 = Array.from({ length: 7 }, (_, i) => nightOnDate(calm, new Date(in2weeks.getTime() + i * 864e5), now))
+  assert.ok(week4.includes('retinoid'), 'the treatment night shows up in the weeks ahead')
+  assert.equal(treatmentOnDate(calm, in2weeks, now), 'azelaic')
+  const thisWeek = Array.from({ length: 7 }, (_, i) => nightOnDate(calm, new Date(now.getTime() + i * 864e5), now))
+  assert.ok(!thisWeek.slice(0, 3).includes('retinoid'))
+  console.log('rekod: nights planned ahead checked')
+}
