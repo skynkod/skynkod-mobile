@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getDekodResults, compareScans, averagePoints } from './dekod'
+import { getDekodResults, compareScans, splitScans } from './dekod'
 import { localDay } from './routine-log'
 
 // "My progress" and the weekly recap: everything comes from what she already
@@ -81,10 +81,9 @@ export const getProgress = async (userId) => {
   // Dekod, if she scans: first scan of the last 3 months against the latest.
   const scans = await getDekodResults(userId, 30).catch(() => [])
   const recentScans = scans.filter(s => now - new Date(s.created_at).getTime() <= 90 * DAY)
-  const dekod = recentScans.length > 1
-    // First scans against the latest ones, each averaged (up to 2 and 3): only clear changes show (Dekod v2).
-    ? { from: recentScans[recentScans.length - 1].created_at, to: recentScans[0].created_at, rows: compareScans(averagePoints([...recentScans].reverse(), 2), averagePoints(recentScans, 3)) }
-    : null
+  // First scans against the latest ones, averaged and never the same scans (Dekod audit 2).
+  const split = splitScans(recentScans)
+  const dekod = split ? { from: split.fromAt, to: split.toAt, rows: compareScans(split.from, split.to) } : null
 
   return { weeks, moodTrend, calendar, routinesDone, concerns, dekod, hasData: entries.length > 0 || ticks.length > 0 }
 }

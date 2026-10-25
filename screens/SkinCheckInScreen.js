@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, Button, useColors } from '../components/ui'
@@ -9,6 +9,8 @@ import { saveCheckin } from '../utils/skin-tracking'
 import { markAsked } from '../utils/ask-pace'
 import { OVERALL, CHECKIN_CONCERNS } from '../utils/skin-tracking-core'
 import { logError } from '../utils/errorLogger'
+import { usePremium } from '../components/PremiumLock'
+import { getDekodResults } from '../utils/dekod'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // The check-in every 2 weeks (Lita, 2026-10-24): three quick answers, about
@@ -22,6 +24,11 @@ export default function SkinCheckInScreen({ route, navigation }) {
   const [overall, setOverall] = useState(null)
   const [concerns, setConcerns] = useState([])
   const [scan, setScan] = useState(false)
+  // Dekod is offered when she can scan: Premium, or her free scan not used yet (audit 2).
+  const premium = usePremium()
+  const [scanned, setScanned] = useState(null)
+  useEffect(() => { if (user?.id) getDekodResults(user.id, 1).then(r => setScanned(r.length > 0)).catch(() => setScanned(true)) }, [user?.id])
+  const canScan = premium || scanned === false
   const [saving, setSaving] = useState(false)
 
   const toggle = c => setConcerns(list => (list.includes(c) ? list.filter(x => x !== c) : [...list, c]))
@@ -73,6 +80,7 @@ export default function SkinCheckInScreen({ route, navigation }) {
       </View>
       <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Nothing? Leave it empty.')}</Text>
 
+      {canScan ? (
       <Pressable onPress={() => setScan(s => !s)} accessibilityRole="checkbox" accessibilityState={{ checked: scan }}
         style={[styles.scan, { borderColor: scan ? colors.primary : colors.border, backgroundColor: colors.card }]}>
         <FeatureIcon name="dekod" size={22} color={colors.primary} />
@@ -82,6 +90,7 @@ export default function SkinCheckInScreen({ route, navigation }) {
         </View>
         <Ionicons name={scan ? 'checkbox' : 'square-outline'} size={22} color={scan ? colors.primary : colors.muted} />
       </Pressable>
+      ) : null}
     </Screen>
   )
 }

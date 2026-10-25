@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 import { programmeFinished, weekOf, planWeeks } from './rekod'
 import { getSosHistory } from './emergency-state'
 import { getPausedProducts } from './paused-products'
-import { getDekodResults, compareScans, averagePoints } from './dekod'
+import { getDekodResults, compareScans, splitScans } from './dekod'
 import { questionsFor, fromRow } from './skin-quiz'
 import { BASICS } from './encyclopedia/basics'
 import { logError } from './errorLogger'
@@ -146,7 +146,7 @@ const gather = async (userId, state) => {
   }
   // Real Results can come from Dekod: the latest scan better than the first.
   // At least 3 scans, averaged, and a clear change (Dekod v2).
-  const dekodBetter = dekod.length >= 3 && compareScans(averagePoints([...dekod].reverse(), 2), averagePoints(dekod, 3)).some(c => c.trend === 'better')
+  const dekodBetter = dekod.length >= 3 && compareScans(splitScans(dekod).from, splitScans(dekod).to).some(c => c.trend === 'better')
   const answers = fromRow(p)
   return {
     profileComplete: !!p.skin_type && ((p.skin_concerns || []).length > 0 || (p.skin_goals || []).length > 0),

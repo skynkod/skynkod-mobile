@@ -8,7 +8,9 @@ import { P, PremiumShell, PButton, PLoading, tap } from '../components/PremiumSp
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
-import { DEKOD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, saveDekodResult, journalFrom, getDekodResults, deleteDekodResult, scoreOf, levelFor, averagePoints, compareScans } from '../utils/dekod'
+import { DEKOD_POINTS, OLD_POINTS, hasDekodConsent, giveDekodConsent, runDekod, journalFrom, getDekodResults, deleteDekodResult, scoreOf, levelFor, splitScans, compareScans } from '../utils/dekod'
+import { File } from 'expo-file-system'
+import { syncSoon } from '../utils/journey'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { logError } from '../utils/errorLogger'
 import { syncSmartReminders } from '../utils/notifications'
@@ -21,6 +23,9 @@ const LABEL = 'Dekod · Premium'
 const LEVEL = { none: 'None', light: 'Light', visible: 'Visible' }
 const LEVEL_COLOR = { none: P.success, light: P.primary, visible: P.warn }
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
+// We promise the photo is deleted (audit 2, 2026-10-25): the copies the camera
+// and the crop leave on the phone go too, as soon as they're no longer shown.
+const deletePhotos = uris => uris.forEach(uri => { try { if (uri) new File(uri).delete() } catch { /* already gone */ } })
 
 // Keeps only the face: the part of the photo under the on-screen oval (plus a
 // small margin), resized so the analysis sees the skin, not the room.
@@ -60,6 +65,7 @@ export default function DekodScreen({ navigation }) {
   const [result, setResult] = useState(null)
   const [permission, requestPermission] = useCameraPermissions()
   const camera = useRef(null)
+  const photos = useRef([]) // the photo files on the phone, deleted once used
   const ovalRef = useRef(null)
   const ovalRect = useRef(null) // where the oval sits on screen
   const [history, setHistory] = useState(null) // past scans, newest first
@@ -84,7 +90,8 @@ export default function DekodScreen({ navigation }) {
   // evolution and new scans are Premium.
   const canScan = premium || (history !== null && history.length === 0)
 
-  const toHome = () => { setStage('home'); setViewing(null); setShot(null) }
+  const forgetPhotos = () => { deletePhotos(photos.current); photos.current = [] }
+  const toHome = () => { forgetPhotos(); setStage('home'); setViewing(null); setShot(null) }
   const begin = () => { tap(); setStage(consent ? 'tips' : 'consent') }
   const openCamera = async () => {
     if (!permission?.granted) {
@@ -98,6 +105,7 @@ export default function DekodScreen({ navigation }) {
     try {
       const raw = await camera.current?.takePictureAsync({ quality: 0.8, shutterSound: false })
       if (!raw?.uri) return
+      photos.current.push(raw.uri)
       const photo = ovalRect.current ? await cropToOval(raw, ovalRect.current).catch(() => null) : null
       if (!photo?.base64) {
         // Cropping failed: fall back to the whole photo, resized.
@@ -106,38 +114,50 @@ export default function DekodScreen({ navigation }) {
         Object.assign(raw, await (await ctx.renderAsync()).saveAsync({ format: SaveFormat.JPEG, compress: 0.85, base64: true }))
       }
       const final = photo?.base64 ? photo : raw
+      photos.current.push(final.uri)
       if (!final?.base64) return
       setShot({ uri: final.uri, checks: null })
       setStage('analysing')
       // Her skin type and known issues make the notes and tips kinder; the scores never use them.
       const res = await runDekod(final.base64, language, profile ? { skinType: profile.skin_type, issues: profile.skin_concerns } : null)
+      if (res.error === 'consent_required') {
+        forgetPhotos()
+        setConsent(false)
+        return setStage('consent')
+      }
       if (res.error === 'daily_limit') {
         toHome()
         return Alert.alert(t('See you tomorrow 🌸'), t('You’ve had your Dekod today. Come back tomorrow for a new scan.'))
       }
       if (res.error) {
+        forgetPhotos()
         setStage('tips')
         return Alert.alert(t('Dekod is unavailable'), t('Please try again in a moment.'))
       }
       // The oval turns green (all good) or orange (what to change) on the photo.
       setShot({ uri: final.uri, checks: res.checks || null, ok: !!res.ok, retake: res.retake })
       if (!res.ok) return
+      // Saved by the server (audit 2): the app only shows it.
       setResult(res)
-      setTimeout(() => setStage('result'), 1400)
+      setTimeout(() => { setStage('result'); forgetPhotos() }, 1400)
       track('dekod_done')
-      saveDekodResult(user.id, res).then(() => { loadHistory(); syncSmartReminders(user.id) }).catch(error => logError('Dekod_save', error, {}, 'warn'))
+      loadHistory()
+      syncSmartReminders(user.id)
+      syncSoon(user.id)
     } catch (error) {
+      forgetPhotos()
       setStage('tips')
       await logError('Dekod_shoot', error, {}, 'warn')
     }
   }
 
   // One compact row per point, like Rekod's routine steps.
-  const Points = ({ points }) => (
+  // Scans from before Dekod v2 keep their own five points (audit 2).
+  const Points = ({ points, version }) => (
     <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
-      {DEKOD_POINTS.map(p => {
+      {(version === 2 ? DEKOD_POINTS : OLD_POINTS).map(p => {
         const r = points?.[p.key] || {}
-        const score = scoreOf(points, p.key)
+        const score = version === 2 ? scoreOf(points, p.key) : (r.level ? scoreOf({ [p.key]: { level: r.level } }, p.key) : null)
         const level = levelFor(score)
         return (
           <View key={p.key} style={styles.row}>
@@ -206,8 +226,8 @@ export default function DekodScreen({ navigation }) {
       <PremiumShell label={LABEL} scroll={false}
         footer={done && !shot.ok ? (
           <>
-            <PButton title={t('Retake the photo')} icon="camera-outline" onPress={() => { setShot(null); setStage('camera') }} />
-            <PButton title={t('See the tips again')} outline onPress={() => { setShot(null); setStage('tips') }} />
+            <PButton title={t('Retake the photo')} icon="camera-outline" onPress={() => { forgetPhotos(); setShot(null); setStage('camera') }} />
+            <PButton title={t('See the tips again')} outline onPress={() => { forgetPhotos(); setShot(null); setStage('tips') }} />
           </>
         ) : null}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -250,7 +270,7 @@ export default function DekodScreen({ navigation }) {
             try { await deleteDekodResult(viewing.id); toHome(); loadHistory() } catch (error) { logError('Dekod_delete', error, {}, 'warn'); Alert.alert(t('Couldn’t delete'), t('Please try again.')) }
           } },
         ])} />}>
-        <Points points={viewing.result?.points} />
+        <Points points={viewing.result?.points} version={viewing.result?.version} />
         <Disclaimer />
       </PremiumShell>
     )
@@ -259,7 +279,7 @@ export default function DekodScreen({ navigation }) {
   // ---------- Result ----------
   if (stage === 'result' && result) {
     // Her usual: the scans before this one (not this one).
-    const next = journalFrom(result.points, (history || []).filter(h => h.result?.summary !== result.summary || h.created_at < new Date(Date.now() - 120000).toISOString()))
+    const next = journalFrom(result.points, (history || []).filter(h => h.id !== result.id))
     return (
       <PremiumShell label={LABEL} onBack={toHome} overline={t('Today')} title={t('Your Dekod')} subtitle={result.summary}
         footer={(
@@ -272,7 +292,7 @@ export default function DekodScreen({ navigation }) {
             {!next.tags.length ? <PButton title={t('Done')} onPress={toHome} /> : null}
           </>
         )}>
-        <Points points={result.points} />
+        <Points points={result.points} version={result.version} />
         <Disclaimer />
       </PremiumShell>
     )
@@ -305,6 +325,8 @@ export default function DekodScreen({ navigation }) {
         <Line icon="sparkles-outline" text="No makeup, clean face" />
         <Line icon="person-outline" text="Face the camera, hair tied back" />
         <Line icon="phone-portrait-outline" text="Phone at eye level, no filter" />
+        {/* Shine and redness change through the day and after products: same conditions, comparable scans */}
+        <Line icon="time-outline" text="Same time each day, before your skincare" />
       </PremiumShell>
     )
   }
@@ -326,13 +348,13 @@ export default function DekodScreen({ navigation }) {
               <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your free scan is done. Premium: a scan a day and your evolution.')}</Text>
             </>
           )}>
-        <Points points={latest.result?.points} />
+        <Points points={latest.result?.points} version={latest.result?.version} />
 
         {history.length > 1 ? (
           <>
             <Text style={[styles.section, { color: P.primary }]}>{t('Your evolution')}</Text>
             <View style={{ gap: SPACING.sm }}>
-              {compareScans(averagePoints([...history].reverse(), 2), averagePoints(history, 3)).map(row => {
+              {compareScans(splitScans(history).from, splitScans(history).to).map(row => {
                 const p = DEKOD_POINTS.find(x => x.key === row.key)
                 const { from, to } = row
                 const better = row.trend === 'better'

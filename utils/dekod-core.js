@@ -13,6 +13,15 @@ export const DEKOD_POINTS = [
   { key: 'radiance', label: 'Dullness', icon: 'sparkles-outline', tag: null, issue: null, old: 'tone' },
 ]
 
+// The five points of scans made before Dekod v2, shown as they were.
+export const OLD_POINTS = [
+  { key: 'redness', label: 'Redness', icon: 'pulse-outline' },
+  { key: 'shine', label: 'Shine', icon: 'sunny-outline' },
+  { key: 'blemishes', label: 'Spots', icon: 'ellipse-outline' },
+  { key: 'dryness', label: 'Dryness', icon: 'water-outline' },
+  { key: 'tone', label: 'Tone & dark spots', icon: 'color-palette-outline' },
+]
+
 // A point's score 0–10, or null when it wasn't read. Old scans: none → 1,
 // light → 4, visible → 7 ("tone" stood for both dark spots and dullness).
 const OLD_SCORE = { none: 1, light: 4, visible: 7 }
@@ -32,6 +41,25 @@ export const averagePoints = (scans = [], n = 3) => Object.fromEntries(DEKOD_POI
   const score = values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : null
   return [p.key, { score, level: levelFor(score) }]
 }))
+
+// Before and after, from scans that never overlap (audit 2: with 2 or 3 scans
+// the same ones were "before" and "after", so nothing ever changed).
+// `scans` newest first; null with fewer than 2.
+export const splitScans = (scans = []) => {
+  if (scans.length < 2) return null
+  const before = Math.min(2, Math.floor(scans.length / 2))
+  const after = Math.min(3, scans.length - before)
+  const oldest = [...scans].reverse()
+  return { from: averagePoints(oldest, before), to: averagePoints(scans, after), fromAt: oldest[0].created_at, toAt: scans[0].created_at }
+}
+
+// Her starting point for Rekod: the scans of her first week averaged (one
+// odd Day 0 photo shouldn't skew everything), else the Day 0 scan.
+export const startPoints = (scans = [], startedAt, baselinePoints = null) => {
+  const start = new Date(startedAt).getTime()
+  const firstWeek = scans.filter(s => { const at = new Date(s.created_at).getTime(); return at >= start - 86400000 && at <= start + 7 * 86400000 })
+  return firstWeek.length ? averagePoints([...firstWeek].reverse(), 3) : baselinePoints
+}
 
 // What the scan suggests for the journal and Emergency mode. The scan never
 // decides her mood; Emergency is offered only when a point is clearly marked

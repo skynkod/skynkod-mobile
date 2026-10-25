@@ -173,7 +173,9 @@ export const syncSmartReminders = async (userId) => {
     // The extras of each weekday (Monday-first index).
     const extras = Array.from({ length: 7 }, () => [])
     extras[0].push(EXTRA.recap[l])
-    if (scans?.length) extras[6].push(EXTRA.dekod[l])
+    // Only for those who can scan again (Premium): the free scan is a one-off (Dekod audit 2).
+    const { isPremiumUser } = await import('./premium')
+    if (scans?.length && await isPremiumUser(userId).catch(() => false)) extras[6].push(EXTRA.dekod[l])
     if (rekod) extras[(new Date(rekod.startedAt).getDay() + 6) % 7].push(EXTRA.rekod[l])
     const at = (date, h, m) => { const d = new Date(date); d.setHours(h, m, 0, 0); return d }
     const once = (id, body, date, screen) => (date > new Date() ? Notifications.scheduleNotificationAsync({
