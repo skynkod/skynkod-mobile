@@ -141,3 +141,31 @@ Pour remplacer les dessins simples du prototype par des images comme ta maquette
 
 **Le visage pour choisir les zones, format portrait 1080 × 1350**
 10. `face-zones.png` → a realistic, calm portrait of a young woman facing the camera, eyes open, natural skin with a few visible pores and light freckles, soft warm light, mauve-pink background, framed from the top of the head to the chin, centered, no makeup look, no text.
+
+---
+
+## G. Les icônes de l'inscription en 3D (pour remplacer mes dessins)
+
+Mêmes matières que Koda : brillant, doux, pastel. **Fond transparent (PNG), 512 × 512, une icône seule, centrée, sans texte.**
+
+**Style commun (à coller une fois)**
+
+> I am going to ask you for a set of app icons, all in exactly the same style as Koda, the glossy peach-pink sun mascot: soft dreamy 3D, glossy jelly-like material, pastel blush pink, mauve and warm peach (#FAD3E2, #D08AB2, #D9B6E6, #FCE1D3), a gentle highlight on the top left, a soft shadow, cute but elegant, no face, no eyes, no text. One object per image, centered, transparent background, 512 × 512. Reply "ready" and wait for each prompt.
+
+Les 7 étapes :
+1. `icon-skin.png` → a single glossy water drop.
+2. `icon-face.png` → a simple serene feminine face seen from the front, eyes closed, hair tied up, minimal features.
+3. `icon-eye.png` → a single almond-shaped eye with long lashes and a mauve iris.
+4. `icon-lips.png` → soft full lips, slightly parted, glossy pink.
+5. `icon-neck.png` → an elegant neck and collarbones seen from the front, no face.
+6. `icon-life.png` → a crescent moon with two tiny stars.
+7. `icon-safety.png` → a rounded shield with a small heart in the middle.
+8. `icon-profile.png` → a faceted pink diamond.
+
+Les objectifs :
+9. `icon-goal-clear.png` → two sparkling four-point stars.
+10. `icon-goal-hydrated.png` → a drop with a few tiny bubbles.
+11. `icon-goal-even.png` → a round soft circle, half peach, half pink.
+12. `icon-goal-firm.png` → a plump heart with a small arrow pointing up.
+13. `icon-goal-pores.png` → a soft round skin-coloured disc with tiny dots fading away.
+14. `icon-goal-calm.png` → a smooth leaf.
