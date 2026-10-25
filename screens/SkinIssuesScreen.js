@@ -9,6 +9,8 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { fromRow, toColumns } from '../utils/skin-quiz'
 import { syncSoon } from '../utils/journey'
 import { logError } from '../utils/errorLogger'
+import { refreshIfRekod } from '../utils/rekod'
+import { syncSmartReminders } from '../utils/notifications'
 import { SPACING } from '../utils/theme'
 
 // "+ New skin issue" from the journal (Lita, 2026-10-25): the same photos as
@@ -34,6 +36,8 @@ export default function SkinIssuesScreen({ navigation }) {
     setSaving(false)
     if (!ok) return Alert.alert(t('Error'), t("Couldn't save your answer. Try again."))
     syncSoon(user.id)
+    // Rekod follows her health answers at once (pregnancy, diagnosis, treatment).
+    refreshIfRekod(user.id).then(done => { if (done) syncSmartReminders(user.id) }).catch(error => logError('Rekod_safetyRefresh', error, {}, 'warn'))
     navigation.goBack()
   }
 

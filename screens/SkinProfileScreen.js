@@ -13,6 +13,8 @@ import { currentSkinState, stateLabel } from '../utils/skin-state'
 import { getCondition, CONCERN_CONDITIONS, SUSPICION_CONDITION } from '../utils/encyclopedia/conditions'
 import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, resolveQuestion, prioritiesOf, withIssues } from '../utils/skin-quiz'
 import { logError } from '../utils/errorLogger'
+import { refreshIfRekod } from '../utils/rekod'
+import { syncSmartReminders } from '../utils/notifications'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // Every sign-up answer, editable anytime: a new diagnosis, a new treatment,
@@ -47,6 +49,8 @@ export default function SkinProfileScreen({ navigation }) {
     setAnswers(withIssues(next, health))
     setEditing(null)
     syncSoon(user.id)
+    // Rekod follows her health answers at once (pregnancy, diagnosis, treatment).
+    refreshIfRekod(user.id).then(done => { if (done) syncSmartReminders(user.id) }).catch(error => logError('Rekod_safetyRefresh', error, {}, 'warn'))
   }
 
   const open = (q) => { setDraft(answers[q.id] ?? (q.type === 'multi' ? [] : null)); setEditing(q.id) }

@@ -108,14 +108,18 @@ export const nightCounts = (plan) => {
   // Nothing safe in the catalogue for a strong step: that night becomes a repair night.
   if ((plan.missing || []).includes('retinoid')) { c.rep += c.ret; c.ret = 0 }
   if ((plan.missing || []).includes('exfoliation')) { c.rep += c.ex; c.ex = 0 }
+  // Retinol after azelaic acid (reactive skin, or the end of the calm phase):
+  // it restarts at 2 nights for 2 weeks (audit 2, 2026-10-25).
+  if (treatmentOf(plan) === 'retinol' && (plan.reactive || goalsOf(plan).includes('calm')) && [5, 6].includes(weekOf(plan)) && c.ret > 2) { c.rep += c.ret - 2; c.ret = 2 }
   if (plan.extraReset) {
     // Last check-in said the skin reacted: one active night becomes a reset night.
     if (c.ret > 0) { c.ret -= 1; c.reset += 1 } else if (c.ex > 0) { c.ex -= 1; c.reset += 1 }
   }
   if (plan.maintenance && plan.maintenanceMode === 'simple') {
     // Simplified routine: one strong active, two evenings a week.
+    // No repair serum in it: the other nights are cleanser and cream only.
     const strong = c.ret ? 'ret' : c.ex ? 'ex' : null
-    c = { ex: strong === 'ex' ? 2 : 0, ret: strong === 'ret' ? 2 : 0, rep: 2, reset: strong ? 3 : 5 }
+    c = { ex: strong === 'ex' ? 2 : 0, ret: strong === 'ret' ? 2 : 0, rep: 0, reset: strong ? 5 : 7 }
   } else if (plan.maintenance && plan.maintenanceMode !== 'asis') {
     // "Keep my results": the same products with fewer strong nights.
     if (c.ret > 1) { c.ret -= 1; c.rep += 1 }

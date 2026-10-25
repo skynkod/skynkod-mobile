@@ -19,13 +19,14 @@ import { useTheme } from '../utils/ThemeContext'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod, averagePoints, startPoints } from '../utils/dekod'
 import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
+import { isPremiumUser } from '../utils/premium'
 import { getActivePlan } from '../utils/emergency-state'
 import { isReactiveState, stateLabel, REACTIVE as REACTIVE_STATES } from '../utils/skin-state'
 import { prioritiesOf } from '../utils/skin-quiz'
 import { syncSmartReminders } from '../utils/notifications'
 import {
-  GOALS, NIGHTS, nightInfo, goalOf, goalsTitle, weekOf, weekPattern, tonightNight, checkInDue,
-  buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive,
+  GOALS, NIGHTS, nightInfo, goalOf, goalsTitle, weekOf, weekPattern, checkInDue,
+  buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive, patternFromRoutine,
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
   decideStep, stepId, saveRekodPlan, projectRekod, programmeFinished, startMaintenance,
   conflictWith, planWeeks, planWhy, extendRekod, restorePreviousRoutine, regularityOf, endAdvice, optionsForStep,
@@ -226,8 +227,9 @@ export default function RekodScreen({ navigation }) {
         const res = await getUserRoutines(user.id)
         const latest = type => (res.success ? res.data.find(r => r.type === type)?.steps : null) || []
         setRoutine({ morning: latest('morning'), evening: latest('evening') })
-        // Then bring it up to date with the latest safety rules and catalogue.
-        refreshRekodRoutine(user.id, p).then(setRoutine).catch(error => logError('Rekod_refresh', error, {}, 'warn'))
+        // Then bring it up to date with the latest safety rules and catalogue
+        // (Premium: without it, her routine stays as it is; health changes rebuild it anyway).
+        if (await isPremiumUser(user.id).catch(() => false)) refreshRekodRoutine(user.id, p).then(setRoutine).catch(error => logError('Rekod_refresh', error, {}, 'warn'))
       }
     } catch (error) {
       await logError('Rekod_load', error, {}, 'warn')
@@ -247,7 +249,7 @@ export default function RekodScreen({ navigation }) {
       setKnown({ reactivity: sp.reactivity, actives: sp.actives })
       const fromSignup = { clear: 'clear', hydration: 'hydration', even_tone: 'spots', anti_aging: 'antiaging' }
       // Her main then secondary concern lead the goal list (Lita, 2026-10-24).
-      const fromConcern = { Acne: 'clear', 'Dark spots': 'spots', 'Fine lines': 'antiaging', Redness: 'calm', Sensitivity: 'calm', Dryness: 'hydration', Dullness: 'glow', 'Large pores': 'pores' }
+      const fromConcern = { Acne: 'clear', 'Dark spots': 'spots', 'Fine lines': 'antiaging', Redness: 'calm', Sensitivity: 'calm', Dryness: 'hydration', Dehydration: 'hydration', Dullness: 'glow', 'Large pores': 'pores', Oily: 'pores' }
       const { main, second } = prioritiesOf({ concerns: sp.concerns || row?.skin_concerns || [], priority: sp.priority, secondary: sp.secondary })
       const first = [main, second].map(c => fromConcern[c]).filter(Boolean)
       setPicked(prev => (prev.length ? prev : [...first, ...(row?.skin_goals || []).map(g => fromSignup[g])].filter(Boolean).reduce((list, g) => (list.length < 3 && !conflictWith(list, g) && !list.includes(g) ? [...list, g] : list), [])))
@@ -405,7 +407,7 @@ export default function RekodScreen({ navigation }) {
                 {rows.map(r => (
                   <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
-                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, fontWeight: '700' }}>{LEVEL_LABEL[r.from]} → {LEVEL_LABEL[r.to]}</Text>
+                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, fontWeight: '700' }}>{r.from ? LEVEL_LABEL[r.from] : 'Not read'} → {r.to ? LEVEL_LABEL[r.to] : 'Not read'}</Text>
                   </View>
                 ))}
               </View>
@@ -468,8 +470,9 @@ export default function RekodScreen({ navigation }) {
   if (plan) {
     const goal = { ...goalOf(plan.goal), weeks: planWeeks(plan) }
     const week = Math.min(weekOf(plan), goal.weeks)
-    const pattern = weekPattern(plan)
-    const tonight = tonightNight(plan)
+    // Without Premium the routine is frozen: the week shown is the routine's own (audit 2).
+    const pattern = premium === false && routine?.evening ? patternFromRoutine(routine.evening) : weekPattern(plan)
+    const tonight = pattern[[1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())]
     const todayIdx = [1, 2, 3, 4, 5, 6, 0].indexOf(new Date().getDay())
     const due = checkInDue(plan)
     // A 7-day plan may pause the strong nights: say so instead of promising them.
@@ -523,7 +526,7 @@ export default function RekodScreen({ navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={[TYPE.bodyStrong, { color: C.text }]}>Your 7-day plan comes first</Text>
               <Text style={[TYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>
-                {[...pausedNights].map(n => (n === 'retinoid' ? 'Retinol' : 'Exfoliation')).join(' and ')} nights are paused for now{sos?.phase === 'return' ? ', and come back step by step' : ' (until day 7)'}, then Rekod picks up where it stopped.
+                {[...pausedNights].map(n => (n === 'retinoid' ? nightInfo(plan, 'retinoid').short : 'Exfoliation')).join(' and ')} nights are paused for now{sos?.phase === 'return' ? ', and come back step by step' : ' (until day 7)'}, then Rekod picks up where it stopped.
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={C.muted} />
@@ -572,7 +575,7 @@ export default function RekodScreen({ navigation }) {
                   <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
                     <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, fontWeight: '700' }}>
-                      {LEVEL_LABEL[r.from]} → {LEVEL_LABEL[r.to]}
+                      {r.from ? LEVEL_LABEL[r.from] : 'Not read'} → {r.to ? LEVEL_LABEL[r.to] : 'Not read'}
                     </Text>
                   </View>
                 ))}

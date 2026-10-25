@@ -108,6 +108,9 @@ export const scheduleJournalReminder = async (userId) =>
 const NIGHT_TEXT = {
   exfoliation: { en: 'Tonight: exfoliation night ✨', fr: 'Ce soir : soirée exfoliation ✨' },
   retinoid: { en: 'Tonight: retinol night 🌙', fr: 'Ce soir : soirée rétinol 🌙' },
+  // The treatment night's true name (Rekod audit 2): azelaic acid, or a gentle treatment in pregnancy.
+  azelaic: { en: 'Tonight: azelaic acid night 🌙', fr: 'Ce soir : soirée acide azélaïque 🌙' },
+  gentle: { en: 'Tonight: gentle treatment night 🌙', fr: 'Ce soir : soirée traitement doux 🌙' },
   repair: { en: 'Tonight: repair night 🩹', fr: 'Ce soir : soirée réparation 🩹' },
   reset: { en: 'Tonight: reset night, just cleanse and moisturize 🍃', fr: 'Ce soir : soirée repos, nettoyer et hydrater 🍃' },
 }
@@ -153,7 +156,7 @@ export const syncSmartReminders = async (userId) => {
     if (status !== 'granted') return
     const l = await lang()
     const prefs = await getReminderPrefs(userId)
-    const { getRekodPlan, weekPattern } = await import('./rekod')
+    const { getRekodPlan, weekPattern, treatmentOf } = await import('./rekod')
     const { getActivePlan } = await import('./emergency-state')
     const { getDekodResults } = await import('./dekod')
     const [rekod, sos, scans] = await Promise.all([
@@ -175,8 +178,10 @@ export const syncSmartReminders = async (userId) => {
     extras[0].push(EXTRA.recap[l])
     // Only for those who can scan again (Premium): the free scan is a one-off (Dekod audit 2).
     const { isPremiumUser } = await import('./premium')
-    if (scans?.length && await isPremiumUser(userId).catch(() => false)) extras[6].push(EXTRA.dekod[l])
-    if (rekod) extras[(new Date(rekod.startedAt).getDay() + 6) % 7].push(EXTRA.rekod[l])
+    const premium = await isPremiumUser(userId).catch(() => false)
+    if (scans?.length && premium) extras[6].push(EXTRA.dekod[l])
+    // The weekly Rekod review is a Premium step: no reminder without Premium (audit 2).
+    if (rekod && premium) extras[(new Date(rekod.startedAt).getDay() + 6) % 7].push(EXTRA.rekod[l])
     const at = (date, h, m) => { const d = new Date(date); d.setHours(h, m, 0, 0); return d }
     const once = (id, body, date, screen) => (date > new Date() ? Notifications.scheduleNotificationAsync({
       identifier: id, content: { title: 'Skynkod', body, sound: true, data: { screen } },
@@ -220,7 +225,9 @@ export const syncSmartReminders = async (userId) => {
     } else if (prefs.eveningReminder) {
       if (rekod) {
         const week = weekPattern(rekod)
-        for (let i = 0; i < 7; i += 1) await scheduleWeekly(`rekod-night-${i}-${userId}`, NIGHT_TEXT[week[i]][l], EXPO_WEEKDAY[i], 21, 0, 'Rekod')
+        const treatment = treatmentOf(rekod)
+        const text = night => NIGHT_TEXT[night === 'retinoid' && treatment !== 'retinol' ? treatment : night][l]
+        for (let i = 0; i < 7; i += 1) await scheduleWeekly(`rekod-night-${i}-${userId}`, text(week[i]), EXPO_WEEKDAY[i], 21, 0, 'Rekod')
       } else {
         await scheduleEveningReminder(userId)
       }

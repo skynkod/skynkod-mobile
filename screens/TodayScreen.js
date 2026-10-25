@@ -23,7 +23,7 @@ import SkinStateChips from '../components/SkinStateChips'
 import { logStep, syncTodayTicks, localDay, getDayProgress } from '../utils/routine-log'
 import { MOODS, MOOD_MESSAGES, saveDay, saveSleep, SLEEP_QUALITY, SLEEP_HOURS } from '../utils/journal-day'
 import { tipOfTheMoment } from '../utils/daily-tips'
-import { getRekodPlan, tonightNight, NIGHTS, nightInfo, goalsTitle, weekOf, planWeeks, rekodKey, refreshRekodRoutine } from '../utils/rekod'
+import { getRekodPlan, NIGHTS, nightInfo, goalsTitle, weekOf, planWeeks, rekodKey, refreshRekodRoutine, patternFromRoutine } from '../utils/rekod'
 import { getWeatherNow, getForecastWeather } from '../utils/skin-weather'
 import { getEnvironment } from '../utils/environment'
 import { buildForecast, personalSignals, rekodSignals, periodSignal } from '../utils/skin-forecast'
@@ -31,6 +31,8 @@ import { readHealth, nextPeriod } from '../utils/apple-health'
 import { getSkinPatterns } from '../utils/journal-day'
 import SkinForecast from '../components/SkinForecast'
 import { usePremium } from '../components/PremiumLock'
+import { isPremiumUser } from '../utils/premium'
+import { syncSmartReminders } from '../utils/notifications'
 import { spacingState, spaceActives, restoreActives, dismissSpacing } from '../utils/active-spacing'
 import { currentSeason, SEASONS } from '../utils/seasons'
 import * as Location from 'expo-location'
@@ -213,9 +215,10 @@ export default function TodayScreen({ navigation, route }) {
       setPlan(p)
       // A new week, level or the end of a rest week changes the Rekod nights:
       // the routine follows at once, without opening Rekod (audit 2026-10-25).
-      if (p && p.builtKey !== rekodKey(p) && rebuilding.current !== rekodKey(p)) {
+      // Premium only: without it, her routine stays as it is (Rekod audit 2).
+      if (p && p.builtKey !== rekodKey(p) && rebuilding.current !== rekodKey(p) && await isPremiumUser(user.id).catch(() => false)) {
         rebuilding.current = rekodKey(p)
-        refreshRekodRoutine(user.id, p).then(() => load()).catch(error => logError('Today_rekodRefresh', error, {}, 'warn'))
+        refreshRekodRoutine(user.id, p).then(() => { syncSmartReminders(user.id); load() }).catch(error => logError('Today_rekodRefresh', error, {}, 'warn'))
       }
       const ids = [...(morning?.steps || []), ...(evening?.steps || [])].map(x => x.product_id).filter(Boolean)
       const rows = ids.length ? await getProductsByIds(ids).catch(() => []) : []
@@ -372,7 +375,9 @@ export default function TodayScreen({ navigation, route }) {
   const swapAt = Math.max(40, topBottom - barHeight)
   const bigFade = scrollY.interpolate({ inputRange: [0, swapAt * 0.6], outputRange: [1, 0], extrapolate: 'clamp' })
   const smallFade = scrollY.interpolate({ inputRange: [swapAt * 0.5, swapAt], outputRange: [0, 1], extrapolate: 'clamp' })
-  const tonight = plan ? nightInfo(plan, tonightNight(plan)) : null
+  // Tonight as her saved routine has it, so Home never announces another night (Rekod audit 2).
+  const nightOn = (p, date = new Date()) => patternFromRoutine(routines.evening?.steps || [])[[1, 2, 3, 4, 5, 6, 0].indexOf(date.getDay())]
+  const tonight = plan ? nightInfo(plan, nightOn(plan)) : null
   const forecast = buildForecast({ days: forecastDays, profile })
   // Local weather is off: ask again, or open the phone's settings if iOS won't ask.
   const enableLocation = async () => {
@@ -385,7 +390,7 @@ export default function TodayScreen({ navigation, route }) {
   const forecastSignals = [
     periodSignal(period, patterns),
     ...personalSignals(patterns, { premium: !!premium }),
-    ...rekodSignals(plan, { nightOf: tonightNight, nights: NIGHTS, info: nightInfo }).map(s => ({ ...s, params: { ...s.params, when: whenNight(s.day) } })),
+    ...rekodSignals(plan, { nightOf: nightOn, nights: NIGHTS, info: nightInfo }).map(s => ({ ...s, params: { ...s.params, when: whenNight(s.day) } })),
   ].filter(Boolean)
 
   const Row = ({ period, icon, title, count }) => {

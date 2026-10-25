@@ -13,6 +13,8 @@ import { currentSeason, SEASONS } from '../utils/seasons'
 import { syncSoon } from '../utils/journey'
 import { healthAvailable, isHealthOn, connectHealth, disconnectHealth } from '../utils/apple-health'
 import { logError } from '../utils/errorLogger'
+import { refreshIfRekod } from '../utils/rekod'
+import { syncSmartReminders } from '../utils/notifications'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // "Your skin right now" (inspired by Flo's life stages, Lita 2026-10-23): the
@@ -62,6 +64,8 @@ export default function LifeModesScreen({ navigation }) {
       if (!ok) return Alert.alert(t('Error'), t("Couldn't save your answer. Try again."))
       setRow({ ...row, ...fields })
       syncSoon(user.id)
+      // Rekod follows her health answers at once (pregnancy, diagnosis, treatment).
+      refreshIfRekod(user.id).then(done => { if (done) syncSmartReminders(user.id) }).catch(error => logError('Rekod_safetyRefresh', error, {}, 'warn'))
       if (value === 'no' && pregnancy !== 'no') {
         Alert.alert(t('Welcome back to your full routine'), t('Bring strong actives back slowly: retinol 2 or 3 nights a week at first, and only more if your skin is comfortable.'))
       }

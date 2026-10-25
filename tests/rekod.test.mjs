@@ -48,3 +48,11 @@ assert.equal(rest.level, 1)
 const preg = projectRekod({ goal: 'spots', goals: ['spots'], experience: 'some', level: 1, pregnant: true, startedAt: new Date().toISOString() })
 assert.ok(preg.every(w => !w.changes.some(c => /retinol/i.test(c))))
 console.log(`rekod: ${checked} plans checked`)
+
+// Audit 2: retinol restarts at 2 nights after azelaic acid; the simple routine has no repair nights.
+const restart = nightCounts({ goal: 'antiaging', goals: ['antiaging'], experience: 'used', level: 3, sensitive: true, reactive: true, startedAt: new Date(Date.now() - 4 * 7 * 864e5 - 3600e3).toISOString() })
+assert.ok(restart.ret <= 2, 'retinol restarts gently in week 5')
+const simple = nightCounts({ goal: 'spots', goals: ['spots'], experience: 'used', level: 3, maintenance: true, maintenanceMode: 'simple', startedAt: new Date().toISOString() })
+assert.equal(simple.rep, 0)
+assert.equal(simple.ret + simple.ex, 2)
+console.log('rekod audit 2: checks passed')

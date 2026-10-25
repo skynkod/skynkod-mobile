@@ -200,9 +200,13 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   // Up to 3 goals: the first one sets the plan's pace, all of them choose the actives.
   const goals = plan.goals?.length ? plan.goals : [plan.goal]
   const union = lists => [...new Set(lists.flat().filter(Boolean))]
-  const amWant = union(goals.map(g => morningSerum[g]))
+  // Pure vitamin C stings sensitive and reactive skin: niacinamide or peptides instead (audit 2).
+  const amWant = plan.sensitive
+    ? union([...goals.map(g => morningSerum[g]).flat().filter(x => x !== 'vitaminc'), 'niacinamide'])
+    : union(goals.map(g => morningSerum[g]))
   const moistWant = goals.some(g => g === 'calm' || g === 'hydration') ? ['ceramides'] : []
-  const exWant = plan.sensitive ? ['mandelic', 'pha', 'lactic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
+  // Pregnancy: no salicylic acid; a gentle AHA instead, so acne still gets an exfoliation night (audit 2).
+  const exWant = plan.sensitive ? ['mandelic', 'pha', 'lactic'] : plan.pregnant ? ['mandelic', 'lactic', 'glycolic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
   const repairWant = union(goals.map(g => repairFor[g])).length ? union(goals.map(g => repairFor[g])) : ['ceramides', 'panthenol', 'centella', 'peptides']
   // SPF 50 from the name ("SPF 50", "50+", "SPF50"), never "150 ml".
   const spf50 = p => /spf\s?50|\b50\s?\+|\bspf\s?50\+?/i.test(p.name || '')
@@ -244,10 +248,12 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const week = weekPattern(plan)
   const daysFor = night => week.map((n, i) => (n === night ? JS_DAY[i] : null)).filter(d => d !== null)
 
-  const repair = await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, wantRequired: true, unique: true })
+  // A serum first: a second cream on the same night isn't a repair step (audit 2).
+  const simple = plan.maintenance && plan.maintenanceMode === 'simple'
+  const repair = simple ? null : await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, wantRequired: true, unique: true, prefer: p => p.category === 'serum' })
   // Eyes at night: a retinoid eye cream on the retinoid nights (never in pregnancy,
   // calm phase or reactive start), peptides on the other nights.
-  const eyeRetinoid = retinoidWant[0] === 'retinol' && !plan.sensitive
+  const eyeRetinoid = retinoidWant[0] === 'retinol' && !plan.sensitive && !simple
     ? await pick(['eye care'], { want: ['retinol'], wantRequired: true, unique: true, prefer: strength })
     : null
   const retinoidNights = daysFor('retinoid')
@@ -267,9 +273,10 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'] }, ['retinol']),
     eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'] }, PEPTIDES),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
-    isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'] }),
+    // No lip scrub on fragile lips (isotretinoin, a prescription cream) or in the simple routine.
+    !plan.fragile && !simple && isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'] }),
     lipBalm && stepFrom('lips', 'Lips', lipBalm, { cats: ['lip care'] }),
-    isMask(lipMask) && stepFrom('lipmask', 'Lip mask', lipMask, { days: [0, 4], night: 'lip-mask', cats: ['lip care'] }),
+    !simple && isMask(lipMask) && stepFrom('lipmask', 'Lip mask', lipMask, { days: [0, 4], night: 'lip-mask', cats: ['lip care'] }),
   ].filter(Boolean)
 
   // Her own decisions about flagged steps: removed ones stay out, accepted ones
@@ -391,6 +398,23 @@ export const refreshRekodRoutine = async (userId, plan) => {
   }
   return out
 }
+
+// A change to her health answers (pregnancy, a new diagnosis, a treatment like
+// isotretinoin) rebuilds her Rekod routine at once, Premium or not: safety
+// never waits for her to open Rekod (audit 2, 2026-10-25). Returns true when rebuilt.
+export const refreshIfRekod = async (userId) => {
+  const plan = await getRekodPlan(userId).catch(() => null)
+  if (!plan) return false
+  await refreshRekodRoutine(userId, plan)
+  return true
+}
+
+// The week as her saved routine has it (what Home and a frozen, non-Premium
+// plan show): Monday first, from the evening steps' days and nights.
+export const patternFromRoutine = (eveningSteps = []) => JS_DAY.map(day => {
+  const tonight = eveningSteps.filter(s => !Array.isArray(s.days) || !s.days.length || s.days.includes(day)).map(s => s.night)
+  return ['exfoliation', 'retinoid', 'repair'].find(n => tonight.includes(n)) || 'reset'
+})
 
 // ---------- Saving ----------
 
