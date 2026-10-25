@@ -74,7 +74,8 @@
     "test:rekod": "node --import ./tests/extensionless.mjs --test --no-warnings tests/rekod.test.mjs",
     "test:purge": "node --import ./tests/extensionless.mjs --test --no-warnings tests/purge.test.mjs",
     "test:patch": "node --import ./tests/extensionless.mjs --test --no-warnings tests/patch.test.mjs",
-    "test:trends": "node --import ./tests/extensionless.mjs --test --no-warnings tests/trends.test.mjs"
+    "test:trends": "node --import ./tests/extensionless.mjs --test --no-warnings tests/trends.test.mjs",
+    "test:short": "node --import ./tests/extensionless.mjs --test --no-warnings tests/short-evening.test.mjs"
   },
   "private": true
 }

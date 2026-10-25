@@ -2,6 +2,8 @@ import { todaySteps } from './routine-checks'
 import { getActivePlan, adjustForPlan } from './emergency-state'
 import { getProductsByIds, getNewestProductId } from './catalog'
 import { getPausedProducts } from './paused-products'
+import { isShortTonight } from './short-evening'
+import { shortSteps } from './short-evening-core'
 
 // The routine a period uses everywhere (Home, Routines, Journal, badges): the
 // newest one of that type. One without any product counts as no routine, so
@@ -43,5 +45,7 @@ export const todayStepsWithPauses = async (userId, routine) => {
     products = Object.fromEntries(rows.map(x => [x.id, x]))
     newest = latest
   }
-  return withPauses(steps, { plan, products, newest, pausedIds: (paused || []).map(p => p.id) }).steps
+  const out = withPauses(steps, { plan, products, newest, pausedIds: (paused || []).map(p => p.id) }).steps
+  // "Short version tonight": the Journal counts the same steps as Home.
+  return routine?.type === 'evening' && await isShortTonight(userId).catch(() => false) ? shortSteps(out) : out
 }

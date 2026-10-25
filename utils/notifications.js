@@ -186,6 +186,8 @@ export const syncSmartReminders = async (userId) => {
     const { getPurgeChecks } = await import('./purge-check')
     const { followUpDate } = await import('./purge-core')
     const { getPatchState } = await import('./patch-test')
+    const { isShortTonight } = await import('./short-evening')
+    const shortTonight = await isShortTonight(userId).catch(() => false)
     const { testMorning } = await import('./patch-core')
     const [rekod, sos, scans, premium, skin, routines, purges, patches] = await Promise.all([
       getRekodPlan(userId).catch(() => null),
@@ -272,6 +274,8 @@ export const syncSmartReminders = async (userId) => {
         body = d === 0 && strong && reactingToday ? COPY.reacting[l] : COPY[night === 'retinoid' && treatment !== 'retinol' ? treatment : night][l]
         screen = 'Rekod'
       } else if (prefs.eveningReminder) body = (d === 0 && reactingToday ? COPY.reacting : ramadanDay(date) ? COPY.eveningRamadan : COPY.evening)[l]
+      // "Short version tonight" already chosen: no reminder about tonight's actives.
+      if (d === 0 && shortTonight) body = null
       if (body) await once(`pm-${d}-${userId}`, body, at(date, hm(prefs.eveningTime)), screen)
     }
 

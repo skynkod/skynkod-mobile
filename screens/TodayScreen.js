@@ -42,7 +42,9 @@ import * as Location from 'expo-location'
 import { getActivePlan, RETURN_LABELS } from '../utils/emergency-state'
 import { currentRoutine, withPauses, withLipsStep } from '../utils/current-routine'
 import { takeNewThanks } from '../utils/contributions'
-import { skinDay, sunriseOn } from '../utils/skin-day'
+import { skinDay, sunriseOn, skinDayKey } from '../utils/skin-day'
+import { getShortState, startShortEvening, cancelShortEvening, markSimplifyOffered } from '../utils/short-evening'
+import { shortSteps, canGoShort, shouldSuggestSimplify } from '../utils/short-evening-core'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { getWeekRecap, recapWeekKey } from '../utils/progress'
@@ -174,6 +176,27 @@ export default function TodayScreen({ navigation, route }) {
   useFocusEffect(useCallback(() => { if (user?.id) getPausedProducts(user.id).then(setPausedProducts) }, [user?.id]))
   // "Purging or a reaction?" (Lita, 2026-10-25): spots after a new product.
   const purge = usePurgeCard(user?.id)
+  // "Short version tonight" (Lita, 2026-10-25): cleanser, cream and lips on a tired evening.
+  const [shortState, setShortState] = useState({})
+  useFocusEffect(useCallback(() => { if (user?.id) getShortState(user.id).then(setShortState).catch(() => {}) }, [user?.id]))
+  const shortTonight = !!shortState.dates?.includes(skinDayKey())
+  const [shortBusy, setShortBusy] = useState(false)
+  const onShort = async (on) => {
+    if (shortBusy) return
+    setShortBusy(true)
+    try {
+      setShortState(on ? await startShortEvening(user.id, { rekodPlan: plan, premium: premium === true }) : await cancelShortEvening(user.id))
+      // Rekod's pause changes its nights: Home rebuilds the routine, tonight's reminder follows.
+      load()
+      syncSmartReminders(user.id)
+    } catch (error) {
+      logError('Today_short', error)
+      Alert.alert(t('Error'), t("Couldn't save your routine. Try again."))
+    } finally {
+      setShortBusy(false)
+    }
+  }
+  const closeSimplify = () => { markSimplifyOffered(user.id).then(setShortState).catch(() => {}) }
   // "New product" mode: the patch test's question, the morning after.
   const patch = usePatchTestDue(user?.id)
   const onPatchChange = async () => { await patch.reload(); if (user?.id) getPausedProducts(user.id).then(setPausedProducts).catch(() => {}) }
@@ -288,6 +311,12 @@ export default function TodayScreen({ navigation, route }) {
 
   const reactive = isReactiveState(skinState?.states)
   const adjustedOf = period => {
+    const full = adjustedFullOf(period)
+    if (period !== 'evening' || !shortTonight) return full
+    const kept = shortSteps(full.steps)
+    return { steps: kept, paused: [...full.paused, ...full.steps.filter(st => !kept.includes(st)).map(step => ({ step, reason: 'short' }))] }
+  }
+  const adjustedFullOf = period => {
     const plain = withPauses(todaySteps(withLipsStep(routines[period]?.steps || [])), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
     // A product her profile says to avoid (pregnancy, breastfeeding, an allergy)
     // waits, even in a routine made before (integration audit, 2026-10-25).
@@ -543,6 +572,24 @@ export default function TodayScreen({ navigation, route }) {
           )}
         </View>
       ) : null),
+    keyed('simplify', shouldSuggestSimplify(shortState) ? (
+        <View style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Ionicons name="moon-outline" size={16} color={colors.primary} />
+            <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR EVENINGS')}</Text>
+            <Pressable onPress={closeSimplify} hitSlop={12} accessibilityLabel={t('Not now')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
+          </View>
+          <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('3 short evenings this week. Your evening routine may be too long for you right now. Shorten it?')}</Text>
+          <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
+            <Pressable onPress={() => { closeSimplify(); plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: 'evening' }) }} style={[styles.emptyBtn, { flex: 1, backgroundColor: colors.primary }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Shorten it')}</Text>
+            </Pressable>
+            <Pressable onPress={closeSimplify} style={[styles.emptyBtn, { flex: 1, borderWidth: 1, borderColor: colors.border }]}>
+              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Keep it')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null),
     keyed('patch', patch.test ? <PatchTestCard userId={user.id} test={patch.test} onChange={onPatchChange} /> : null),
     keyed('purge', purge.state ? <PurgeCard userId={user.id} state={purge.state} onChange={onPurgeChange} /> : null),
     keyed('review', checkIn ? (
@@ -694,7 +741,24 @@ export default function TodayScreen({ navigation, route }) {
       <Text style={[styles.section, { color: colors.muted }]}>{now === 'morning' ? t('This morning') : t('Tonight')}</Text>
       {now === 'morning'
         ? <Row period="morning" icon="sunny-outline" title={t('Morning routine')} count={morning} />
-        : <Row period="evening" icon="moon-outline" title={tonight ? t(tonight.label) : t('Evening routine')} count={evening} />}
+        : <Row period="evening" icon="moon-outline" title={shortTonight ? t('Short version tonight') : tonight ? t(tonight.label) : t('Evening routine')} count={evening} />}
+      {/* "Short version tonight": offered before anything is ticked, undone the same way */}
+      {now !== 'morning' && routines.evening && !Object.values(done.evening || {}).some(Boolean) && (shortTonight || canGoShort(adjustedFullOf('evening').steps)) ? (
+        shortTonight ? (
+          <View style={{ paddingTop: SPACING.sm, gap: 4 }}>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
+              {t('Tonight, just the essentials. If you wear makeup, take it off well first.')}{(shortState.shifted || []).includes(skinDayKey()) ? ` ${t('Rekod takes a one-night pause: everything moves one evening later.')}` : ''}
+            </Text>
+            <Pressable onPress={() => onShort(false)} disabled={shortBusy} hitSlop={6}>
+              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Back to my full routine')}</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={() => onShort(true)} disabled={shortBusy} hitSlop={6} style={{ paddingTop: SPACING.sm }}>
+            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Tired? Short version tonight')} ›</Text>
+          </Pressable>
+        )
+      ) : null}
       {sos.plan ? (
         <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.sosLine, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name={sos.plan.situation.icon} size={16} color={colors.primary} />

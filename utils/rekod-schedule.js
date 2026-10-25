@@ -219,7 +219,11 @@ export const weekPattern = (plan) => {
     const useRepair = rep > 0 && (afterStrong || !reset || rep >= reset)
     if (useRepair) { week[i] = 'repair'; rep -= 1 } else { week[i] = 'reset'; reset -= 1 }
   }
-  return week // index 0 = Monday … 6 = Sunday
+  // "Short version tonight" pauses Rekod one evening (short-evening-core.js):
+  // each pause moves the week one night later. The rules above go round the
+  // week (Sunday touches Monday), so they still hold.
+  const shift = ((plan.dayShift || 0) % 7 + 7) % 7
+  return shift ? week.map((_, i) => week[(i - shift + 7) % 7]) : week // index 0 = Monday … 6 = Sunday
 }
 
 export const JS_DAY = [1, 2, 3, 4, 5, 6, 0] // Monday-first index → Date.getDay()
