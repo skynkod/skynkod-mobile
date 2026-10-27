@@ -50,7 +50,8 @@ export const NIGHTS = {
 // What the "retinoid" night really holds (audit 2026-10-25: it was called
 // "Retinol night" even with azelaic acid or, in pregnancy, bakuchiol).
 // Reactive skin and the calm phase: azelaic acid; pregnancy: a gentle treatment.
-export const treatmentOf = (plan, now = new Date()) => (calmPhase(plan, now) || (plan.reactive && weekOf(plan, now) < 5) ? 'azelaic' : plan.pregnant ? 'gentle' : 'retinol')
+// 18–24 without an anti-ageing, clear-skin or spots goal: no retinol yet (Lita, 2026-10-27).
+export const treatmentOf = (plan, now = new Date()) => (calmPhase(plan, now) || (plan.reactive && weekOf(plan, now) < 5) ? 'azelaic' : plan.pregnant || plan.young ? 'gentle' : 'retinol')
 const TREATMENT_NIGHT = {
   azelaic: { label: 'Azelaic acid night', short: 'Azelaic acid', name: 'azelaic acid' },
   gentle: { label: 'Gentle treatment night', short: 'Treatment', name: 'a gentle treatment' },
@@ -316,3 +317,12 @@ export const shiftedTo = (plan, date, now = new Date()) => {
 }
 export const nightOnDate = (plan, date, now = new Date()) => weekPattern(shiftedTo(plan, date, now))[JS_DAY.indexOf(date.getDay())]
 export const treatmentOnDate = (plan, date, now = new Date()) => treatmentOf(shiftedTo(plan, date, now), now)
+
+// A cream that suits her skin: light for oily skin or sweat, rich for dry skin or menopause.
+const LIGHT = /\b(gel|fluid|water|aqua|light|lightweight|matte|mattifying|oil[- ]free)\b/i
+const RICH = /\b(cream|crème|creme|balm|baume|rich|riche|nourishing|nourrissant)\b/i
+export const textureFor = (profile = {}) => {
+  if (['Oily', 'Combination'].includes(profile.skin_type) || profile.sweat) return p => LIGHT.test(p.name || '')
+  if (profile.skin_type === 'Dry' || ['during', 'after'].includes(profile.menopause)) return p => RICH.test(p.name || '') && !LIGHT.test(p.name || '')
+  return null
+}

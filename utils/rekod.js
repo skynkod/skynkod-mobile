@@ -6,13 +6,14 @@
 
 import { supabase } from './supabase'
 import { findIngredients, productMatch, isUnsuitable, getIngredient } from './ingredients-guide'
-import { allProductsByCategory, getMyProducts } from './catalog'
+import { allProductsByCategory, getMyProducts, addToMyProducts } from './catalog'
 import { saveRoutine } from './routines-service'
 import { getUserProfile } from './supabase'
 import { engineProfile } from './skin-quiz'
 import { getPausedProducts } from './paused-products'
 import { getProductReactions } from './journal-day'
 import { isRemover, removerPrefer, REMOVER_ACTION } from './removers'
+import { textureFor } from './rekod-schedule'
 import { loadState } from './cloud-state'
 import { purgeRunning } from './purge-core'
 import {
@@ -158,6 +159,49 @@ const chooser = async (userId, profile, pref = 'own') => {
   }
 }
 
+// Eyes and lips: in every routine, but optional (Lita, 2026-10-27): not counted, easy to skip.
+const OPTIONAL_STEP = { optional: true, optionalNote: 'optional' }
+// The free basic routine (Lita, 2026-10-27): made for her at the end of sign-up,
+// no actives (those are Rekod). Morning: cleanser, cream, SPF. Evening:
+// makeup remover, cleanser, cream. Same safety rules as Rekod; her own products first.
+export const buildBasicRoutine = async (userId, givenProfile) => {
+  const profile = await loadProfile(userId).catch(() => givenProfile || {})
+  const pick = await chooser(userId, profile, 'own')
+  const gentle = { avoidHarsh: true, noStrong: true }
+  const spf50 = p => /spf\s?50|\b50\s?\+|\bspf\s?50\+?/i.test(p.name || '')
+  const cleanser = await pick(['cleanser'], { ...gentle, reject: isRemover })
+  const remover = await pick(['cleanser'], { ...gentle, unique: true, reject: p => !isRemover(p), prefer: removerPrefer(profile) })
+  const moisturizer = await pick(['moisturizer'], { ...gentle, unique: true, prefer: textureFor(profile) })
+  const sunscreen = await pick(['sunscreen'], { ...gentle, prefer: spf50 })
+  return {
+    morning: [
+      stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
+      stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
+      stepFrom('sunscreen', 'SPF', sunscreen, { cats: ['sunscreen'] }),
+    ],
+    evening: [
+      remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
+      stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
+      stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
+    ].filter(Boolean),
+    toBuy: [cleanser, remover, moisturizer, sunscreen].filter(c => c && !c.owned).map(c => c.product),
+  }
+}
+
+// Saves it only when she has no routine yet (replaying the sign-up never
+// replaces her routines); the products she doesn't own go to "To buy".
+export const startBasicRoutine = async (userId, givenProfile) => {
+  const { data: existing } = await supabase.from('routines').select('id').eq('user_id', userId).limit(1)
+  if (existing?.length) return null
+  const routine = await buildBasicRoutine(userId, givenProfile)
+  for (const type of ['morning', 'evening']) {
+    const res = await saveRoutine(userId, type, routine[type])
+    if (!res.success) throw new Error(res.error)
+  }
+  for (const product of routine.toBuy) await addToMyProducts(userId, product, 'to_buy').catch(() => {})
+  return routine
+}
+
 // Why each step is there, in plain words. Active steps explain their main
 // active from the ingredient guide instead.
 const ROLE_WHY = {
@@ -212,7 +256,14 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const profile = await loadProfile(userId).catch(() => givenProfile || {})
   // The latest skin profile decides the precautions (a new diagnosis, a new treatment).
   const pregnantNow = ['pregnant', 'breastfeeding'].includes(profile?.pregnancy)
-  const plan = { ...basePlan, reactive: !!basePlan.reactive || isReactive(profile), fragile: !!profile.fragile, sensitive: !!basePlan.sensitive || isReactive(profile) || !!profile.fragile, pregnant: pregnantNow }
+  const goalsIn = (basePlan.goals?.length ? basePlan.goals : [basePlan.goal])
+  const plan = {
+    ...basePlan, reactive: !!basePlan.reactive || isReactive(profile), fragile: !!profile.fragile, sensitive: !!basePlan.sensitive || isReactive(profile) || !!profile.fragile, pregnant: pregnantNow,
+    // The new sign-up answers (Lita, 2026-10-27): young skin, deeper tones, menopause.
+    young: profile.ageRange === 0 && !goalsIn.some(g => ['antiaging', 'clear', 'spots'].includes(g)),
+    deep: profile.tone != null && profile.tone >= 3,
+    menopause: ['during', 'after'].includes(profile.menopause),
+  }
   const pick = await chooser(userId, profile, plan.productPref)
   const pregnant = pregnantNow
   const gentle = { avoidHarsh: true, noStrong: true }
@@ -225,7 +276,7 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     : union(goals.map(g => morningSerum[g]))
   const moistWant = goals.some(g => g === 'calm' || g === 'hydration') ? ['ceramides'] : []
   // Pregnancy: no salicylic acid; a gentle AHA instead, so acne still gets an exfoliation night (audit 2).
-  const exWant = plan.sensitive ? ['mandelic', 'pha', 'lactic'] : plan.pregnant ? ['mandelic', 'lactic', 'glycolic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
+  const exWant = plan.sensitive || plan.deep || plan.menopause ? ['mandelic', 'pha', 'lactic'] : plan.pregnant ? ['mandelic', 'lactic', 'glycolic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
   const repairWant = union(goals.map(g => repairFor[g])).length ? union(goals.map(g => repairFor[g])) : ['ceramides', 'panthenol', 'centella', 'peptides']
   // SPF 50 from the name ("SPF 50", "50+", "SPF50"), never "150 ml".
   const spf50 = p => /spf\s?50|\b50\s?\+|\bspf\s?50\+?/i.test(p.name || '')
@@ -235,7 +286,7 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   // Rekod's mornings always end with sunscreen: a remover every evening (Lita, 2026-10-25).
   const remover = await pick(['cleanser'], { ...gentle, unique: true, reject: p => !isRemover(p), prefer: removerPrefer(profile) })
   // unique: the repair step never repeats the day cream.
-  const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant, unique: true })
+  const moisturizer = await pick(['moisturizer'], { ...gentle, want: moistWant, unique: true, prefer: textureFor(profile) })
   const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50 } : { ...gentle, prefer: spf50 })
   const amSerum = plan.maintenance && plan.maintenanceMode === 'simple' ? null : await pick(['serum', 'toner'], { ...gentle, want: amWant, wantRequired: true, unique: true })
   // Eyes (essential, Lita 2026-10-24): peptides every day; lips: an SPF balm by day.
@@ -247,16 +298,16 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const morning = [
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     amSerum && stepFrom('serum', 'Serum', amSerum, { cats: ['serum', 'toner'] }, amWant),
-    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'] }, PEPTIDES),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'], ...OPTIONAL_STEP }, PEPTIDES),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
     stepFrom('sunscreen', 'SPF 50', sunscreen, { cats: ['sunscreen'] }, ['zincoxide', 'titanium', 'chemicalspf']),
-    lipSpf && stepFrom('lips', 'Lips · SPF', lipSpf, { cats: ['lip care'] }, ['zincoxide', 'titanium', 'chemicalspf']),
+    lipSpf && stepFrom('lips', 'Lips · SPF', lipSpf, { cats: ['lip care'], ...OPTIONAL_STEP }, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
   // A peel or a high-strength acid only for a skin used to actives (audit 2026-10-25:
   // a 30% AHA peel came up for a skin with "some" experience).
   const tooStrongAcid = p => /peel/i.test(p.name || '') || Number((p.name || '').match(/(\d+(?:[.,]\d+)?)\s?%/)?.[1]?.replace(',', '.') || 0) >= 15
-  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, wantRequired: true, unique: true, prefer: p => p.category === 'exfoliant', reject: plan.experience === 'used' && !plan.sensitive ? null : tooStrongAcid })
+  const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, wantRequired: true, unique: true, prefer: p => p.category === 'exfoliant', reject: plan.experience === 'used' && !plan.sensitive && !plan.deep ? null : tooStrongAcid })
   // Reactive conditions start with azelaic acid; a retinoid only after 4 calm weeks.
   const retinoidWant = { azelaic: ['azelaic'], gentle: ['bakuchiol', 'peptides'], retinol: ['retinol'] }[treatmentOf(plan)]
   // Start low: a gentle strength for beginners and reactive skin (rules, section 3).
@@ -287,19 +338,24 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const isScrub = c => c && /scrub|exfoli|gommage/i.test(c.product.name || '')
   const isMask = c => c && /mask|masque|sleeping|overnight/i.test(c.product.name || '')
 
+  // Red, inflamed spots: benzoyl peroxide on the spots, the dermatologists' first choice (AAD).
+  const inflamed = (profile.acne_types || []).includes('Inflammatory') && !plan.fragile && !simple
+  const spotTreatment = inflamed ? await pick(['serum', 'exfoliant', 'moisturizer'], { want: ['benzoyl'], wantRequired: true, unique: true, strictOnly: true }) : null
+
   const evening = [
     remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exWant),
     daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
-    eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'] }, ['retinol']),
-    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'] }, PEPTIDES),
+    eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'], ...OPTIONAL_STEP }, ['retinol']),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'], ...OPTIONAL_STEP }, PEPTIDES),
+    spotTreatment && stepFrom('treatment', 'On red spots only', spotTreatment, { cats: ['serum', 'exfoliant', 'moisturizer'], optional: true, optionalNote: 'only on red spots' }, ['benzoyl']),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
     // No lip scrub on fragile lips (isotretinoin, a prescription cream) or in the simple routine.
-    !plan.fragile && !simple && isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'] }),
-    lipBalm && stepFrom('lips', 'Lips', lipBalm, { cats: ['lip care'] }),
-    !simple && isMask(lipMask) && stepFrom('lipmask', 'Lip mask', lipMask, { days: [0, 4], night: 'lip-mask', cats: ['lip care'] }),
+    !plan.fragile && !simple && isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'], ...OPTIONAL_STEP }),
+    lipBalm && stepFrom('lips', 'Lips', lipBalm, { cats: ['lip care'], ...OPTIONAL_STEP }),
+    !simple && isMask(lipMask) && stepFrom('lipmask', 'Lip mask', lipMask, { days: [0, 4], night: 'lip-mask', cats: ['lip care'], ...OPTIONAL_STEP }),
   ].filter(Boolean)
 
   // Her own decisions about flagged steps: removed ones stay out, accepted ones
@@ -308,7 +364,7 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     .filter(st => !(plan.removed || []).includes(stepId(period, st)))
     .map(st => ((plan.accepted || []).includes(stepId(period, st)) ? { ...st, accepted: true } : st))
   // `flags`: what the plan must remember so Home, Koda and the calendar say the same thing.
-  return { morning: decide('morning')(morning), evening: decide('evening')(evening), flags: { reactive: plan.reactive, fragile: plan.fragile, sensitive: plan.sensitive, pregnant: plan.pregnant, missing: plan.missing, builtKey: rekodKey(plan) } }
+  return { morning: decide('morning')(morning), evening: decide('evening')(evening), flags: { reactive: plan.reactive, fragile: plan.fragile, sensitive: plan.sensitive, pregnant: plan.pregnant, young: plan.young, deep: plan.deep, menopause: plan.menopause, missing: plan.missing, builtKey: rekodKey(plan) } }
 }
 
 // ---------- Changing one product ----------

@@ -9,6 +9,7 @@ import Svg, { Path, Circle, Ellipse, Defs, RadialGradient, Stop } from 'react-na
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { updateUserProfile } from '../utils/supabase'
 import { requestNotificationPermissions, DEFAULT_TIMES } from '../utils/notifications'
+import { startBasicRoutine } from '../utils/rekod'
 import { deleteAccount } from '../utils/account'
 import { articlesIn } from '../utils/encyclopedia'
 import ArticleBody from '../components/ArticleBody'
@@ -1455,6 +1456,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) 
             consent_offers: false,
           })
           if (!saved) await logError('OnboardingScreen_saveProfile', new Error('Profile not saved'), { userId }, 'warn')
+          // Her free basic routine, ready on Home from the first evening (Lita, 2026-10-27).
+          else await startBasicRoutine(userId).catch(error => logError('OnboardingScreen_basicRoutine', error, { userId }, 'warn'))
         }
       }
       await onComplete(options)

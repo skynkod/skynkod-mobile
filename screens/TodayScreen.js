@@ -497,7 +497,7 @@ export default function TodayScreen({ navigation, route }) {
                 {/* A step without a product (Lips in an older routine): pick one in the builder */}
                 <Pressable onPress={() => (s.product_id ? navigation.navigate('Product', { id: s.product_id })
                   : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withEssentials(period) }))} style={{ flex: 1 }}>
-                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}{s.optional ? ` · ${t('on evenings you wear makeup')}` : ''}</Text>
+                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}{s.optional ? ` · ${t(s.optionalNote || 'on evenings you wear makeup')}` : ''}</Text>
                   <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: done[period][i] ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
                 </Pressable>
               </View>
