@@ -11,7 +11,6 @@ import { logStep } from '../utils/routine-log';
 import { skinDay } from '../utils/skin-day';
 import { markOpenedIfNeeded } from '../utils/shelf-life';
 import { getUserProfile } from '../utils/supabase';
-import { buildRoutine } from '../utils/routine-builder';
 import { useAuth } from '../utils/AuthContext';
 import { useT } from '../utils/LanguageContext';
 import { useTheme } from '../utils/ThemeContext';
@@ -93,8 +92,8 @@ export default function RoutinesScreen({ route, navigation }) {
       .then(rows => setProductsById(Object.fromEntries(rows.map(p => [p.id, p]))))
       .catch(() => {});
   }, [savedIds]);
-  const generated = buildRoutine(skinType || 'Combination', []);
-  const steps = saved ? todaySteps(withLipsStep(saved.steps)) : generated[tab] || [];
+  // No routine yet: nothing to tick (the old generic template is gone, 2026-10-27).
+  const steps = saved ? todaySteps(withLipsStep(saved.steps)) : [];
   // An empty step (Lips in an older routine) can't be ticked: it doesn't count.
   const filled = saved ? steps.filter(s => s.product) : steps;
   const completed = steps.filter((s, idx) => done[idx] && (!saved || s.product)).length;
@@ -136,7 +135,7 @@ export default function RoutinesScreen({ route, navigation }) {
           <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Edit')}</Text>
         </Pressable>
       ) : null}
-      title={t('Routines')} subtitle={saved ? saved.name : skinType ? t('Built by Koda for {type} skin', { type: t(skinType).toLowerCase() }) : t('Built by Koda for you')}>
+      title={t('Routines')} subtitle={saved ? saved.name : t('Morning and evening')}>
       <SegmentedControl
         value={tab}
         onChange={setTab}
