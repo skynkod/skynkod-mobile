@@ -588,7 +588,6 @@ const Consent = () => {
           <Text style={small}>Skin conditions, allergies, pregnancy, treatments. Optional: without it, we skip those questions.</Text>
         </Switch>
       </Rise>
-      <Rise i={2}><Text style={[small, { marginTop: 16, textAlign: 'center' }]}>Koda, our AI, runs on Anthropic (USA): your messages and a summary of your week are sent to it to answer you.</Text></Rise>
       <Spacer />
       <Btn disabled={!terms} onPress={() => go('journey')} />
     </Page>
