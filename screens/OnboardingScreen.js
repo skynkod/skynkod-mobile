@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as WebBrowser from 'expo-web-browser'
 import * as Haptics from 'expo-haptics'
-import Svg, { Path, Circle, Rect, Ellipse, Defs, RadialGradient, Stop } from 'react-native-svg'
+import Svg, { Path, Circle, Ellipse, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { updateUserProfile } from '../utils/supabase'
 import { deleteAccount } from '../utils/account'
@@ -110,12 +110,12 @@ const pad = n => String(n).padStart(2, '0')
 const NEXT_LOOK = { face: 'your face', eyes: 'your eye area', lips: 'your lips', neck: 'your neck', life: 'your daily life', safety: 'your safety' }
 
 const GOALS = [
-  { v: 'clear', t: 'Clear skin', s: 'Breakouts, blackheads', ic: 'sparkles-outline' },
-  { v: 'hydration', t: 'Hydrated skin', s: 'Feels tight', ic: 'water-outline' },
-  { v: 'even_tone', t: 'Even tone', s: 'Spots, marks', ic: 'contrast-outline' },
-  { v: 'anti_aging', t: 'Firmer skin', s: 'Fine lines, firmness', ic: 'hourglass-outline' },
-  { v: 'pores', t: 'Smaller pores', s: 'Shine, texture', ic: 'apps-outline' },
-  { v: 'calm', t: 'Calm skin', s: 'Redness', ic: 'leaf-outline' },
+  { v: 'clear', t: 'Clear skin', s: 'Breakouts, blackheads', ic: 'sparkles' },
+  { v: 'hydration', t: 'Hydrated skin', s: 'Feels tight', ic: 'droplet' },
+  { v: 'even_tone', t: 'Even tone', s: 'Spots, marks', ic: 'tone' },
+  { v: 'anti_aging', t: 'Firmer skin', s: 'Fine lines, firmness', ic: 'hourglass' },
+  { v: 'pores', t: 'Smaller pores', s: 'Shine, texture', ic: 'pores' },
+  { v: 'calm', t: 'Calm skin', s: 'Redness', ic: 'leaf' },
 ]
 const SEX = [{ v: 'man', t: 'A man' }, { v: 'woman', t: 'A woman' }, { v: 'other', t: 'Non-binary' }]
 const AGES = ['18–24', '25–34', '35–44', '45–54', '55 and over']
@@ -207,28 +207,39 @@ const SKIN_SAYS = [['We\'ll go gently.', 'A resilient skin, great.'], ['Sunscree
 const LIFE_STATEMENTS = ['Feeling stressed lately?', 'Makeup or tinted products often?', 'Spending a lot of time outdoors?', 'Sweating a lot (sport, heat)?']
 const LIFE_SAYS = [['Stress shows on the skin, we\'ll follow it.', 'Great.'], ['We\'ll think about makeup removal.', 'Less removing, perfect.'], ['We\'ll boost your sun protection.', 'Noted.'], ['We\'ll pick light textures.', 'Noted.']]
 const SAFETY = [
-  { k: 'preg', t: 'Pregnancy or breastfeeding', i: 'heart-outline', q: 'Which one?', one: true, o: [['pregnant', 'I\'m pregnant'], ['breastfeeding', 'I\'m breastfeeding']] },
-  { k: 'avoid', t: 'An allergy to an ingredient', i: 'alert-circle-outline', q: 'Which ones?', o: [['Fragrance', 'Fragrance'], ['Essential oils', 'Essential oils'], ['Nuts', 'Nuts'], ['Lanolin', 'Lanolin'], ['Alcohol', 'Alcohol'], ['Other', 'Other']] },
-  { k: 'meds', t: 'A skin or hormonal treatment', i: 'medkit-outline', q: 'Which one?', o: [['isotretinoin', 'Isotretinoin (Roaccutane)'], ['topical_rx', 'Prescription cream (tretinoin, adapalene…)'], ['oral_antibiotic', 'Antibiotics'], ['hormonal', 'Hormonal treatment or the pill']] },
+  { k: 'preg', t: 'Pregnancy or breastfeeding', i: 'heart', q: 'Which one?', one: true, o: [['pregnant', 'I\'m pregnant'], ['breastfeeding', 'I\'m breastfeeding']] },
+  { k: 'avoid', t: 'An allergy to an ingredient', i: 'allergy', q: 'Which ones?', o: [['Fragrance', 'Fragrance'], ['Essential oils', 'Essential oils'], ['Nuts', 'Nuts'], ['Lanolin', 'Lanolin'], ['Alcohol', 'Alcohol'], ['Other', 'Other']] },
+  { k: 'meds', t: 'A skin or hormonal treatment', i: 'pill', q: 'Which one?', o: [['isotretinoin', 'Isotretinoin (Roaccutane)'], ['topical_rx', 'Prescription cream (tretinoin, adapalene…)'], ['oral_antibiotic', 'Antibiotics'], ['hormonal', 'Hormonal treatment or the pill']] },
 ]
 const SKIN_WHY = { Oily: 'It shines all over your face.', Combination: 'Shiny in the center, normal on the cheeks.', Dry: 'It lacks oil and feels tight.', Normal: 'Balanced: neither oily nor dry.' }
 
 // ---------- small pieces ----------
-// Thin line icons drawn to match the mockup: 2 px stroke, deep mauve, round ends.
-const LINE = {
-  eye: [<Path key="a" d="M2 12c2.6-4.4 6-6.6 10-6.6S19.4 7.6 22 12c-2.6 4.4-6 6.6-10 6.6S4.6 16.4 2 12Z" />, <Circle key="b" cx="12" cy="12" r="3.8" />, <Circle key="c" cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />],
-  lips: [<Path key="a" d="M12 8.2c-.9-1.5-2.6-2.3-4.2-1.9C5.3 7 3.8 9.4 4.1 12c.4 3.4 3.8 5.8 7.9 5.8s7.5-2.4 7.9-5.8c.3-2.6-1.2-5-3.7-5.7-1.6-.4-3.3.4-4.2 1.9Z" />, <Path key="b" d="M7.8 12.4c1.3.9 2.7 1.3 4.2 1.3s2.9-.4 4.2-1.3" />],
-  neck: [<Circle key="a" cx="12" cy="7.4" r="4.2" />, <Path key="b" d="M15.9 7.6c.6 0 1 .5 1 1.1s-.5 1.1-1.1 1.1" />, <Path key="c" d="M9.8 11.2v2.6c0 .8-.5 1.5-1.3 1.8l-2.9 1.1C4.4 17.2 3.6 18.3 3.6 19.6V21M14.2 11.2v2.6c0 .8.5 1.5 1.3 1.8l2.9 1.1c1.2.5 2 1.6 2 2.9V21" />],
-  face: [<Path key="a" d="M12 4.2c-3.6 0-6.4 3-6.4 7.3 0 4.6 2.9 8.3 6.4 8.3s6.4-3.7 6.4-8.3c0-4.3-2.8-7.3-6.4-7.3Z" />, <Circle key="b" cx="12" cy="2.6" r="1.6" />, <Path key="c" d="M5.8 10.4c2.4-.4 4.6-1.7 6.2-3.6 1.6 1.9 3.8 3.2 6.2 3.6" />, <Path key="d" d="M9 13.2q1 .7 2 0M13 13.2q1 .7 2 0M10.6 16.4q1.4.8 2.8 0" />],
-  leaf: [<Path key="a" d="M5 19C4 11 9 5 19.5 4.5 20 15 14 20 5 19Z" />, <Path key="b" d="M5 19 14.5 9.5" />],
-  shield: [<Path key="a" d="M12 3 19 5.8v5.6c0 4.6-3 8-7 9.6-4-1.6-7-5-7-9.6V5.8Z" />],
-  lock: [<Rect key="a" x="5" y="10.5" width="14" height="10" rx="2.5" />, <Path key="b" d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />, <Circle key="c" cx="12" cy="15" r="1.3" fill="currentColor" stroke="none" />, <Path key="d" d="M12 16.2v1.8" />],
-  unlock: [<Rect key="a" x="5" y="10.5" width="14" height="10" rx="2.5" />, <Path key="b" d="M8 10.5V6.8a4 4 0 0 1 7.6-1.7" />, <Circle key="c" cx="12" cy="15" r="1.3" fill="currentColor" stroke="none" />, <Path key="d" d="M12 16.2v1.8" />],
+// Lita's line icons (one ChatGPT sheet, 2026-10-27): same mauve stroke everywhere,
+// recoloured with tintColor when needed. Other names fall back to Ionicons.
+const ICON = {
+  'face': require('../assets/onboarding/icons/face.png'),
+  'eye': require('../assets/onboarding/icons/eye.png'),
+  'lips': require('../assets/onboarding/icons/lips.png'),
+  'neck': require('../assets/onboarding/icons/neck.png'),
+  'leaf': require('../assets/onboarding/icons/leaf.png'),
+  'shield': require('../assets/onboarding/icons/shield.png'),
+  'lock': require('../assets/onboarding/icons/lock.png'),
+  'unlock': require('../assets/onboarding/icons/unlock.png'),
+  'sparkles': require('../assets/onboarding/icons/sparkles.png'),
+  'droplet': require('../assets/onboarding/icons/droplet.png'),
+  'tone': require('../assets/onboarding/icons/tone.png'),
+  'hourglass': require('../assets/onboarding/icons/hourglass.png'),
+  'pores': require('../assets/onboarding/icons/pores.png'),
+  'heart': require('../assets/onboarding/icons/heart.png'),
+  'allergy': require('../assets/onboarding/icons/allergy.png'),
+  'pill': require('../assets/onboarding/icons/pill.png'),
+  'document': require('../assets/onboarding/icons/document.png'),
+  'shield-check': require('../assets/onboarding/icons/shield-check.png'),
 }
-const LineIcon = ({ name, size = 24, color = C.mauve2 }) => name === 'sun'
+const LineIcon = ({ name, size = 24, color = C.icon }) => name === 'sun'
   ? <Image source={IMG.sun} style={{ width: size * 1.15, height: size * 1.15 }} resizeMode="contain" />
-  : LINE[name]
-  ? <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} color={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">{LINE[name]}</Svg>
+  : ICON[name]
+  ? <Image source={ICON[name]} style={{ width: size, height: size, tintColor: color }} resizeMode="contain" />
   : <Ionicons name={name} size={size} color={color} />
 
 // One empty pearl bubble for every step; the symbol is added in code, so the
@@ -515,9 +526,9 @@ const Welcome = () => {
         <Float duration={4000}><Image source={IMG.orb} style={{ width: orb, height: orb }} resizeMode="contain" /></Float>
       </Rise>
       <Rise i={3} style={styles.feats}>
-        {[['sparkles-outline', 'Personal'], ['flask-outline', 'Ingredient-checked'], ['heart-outline', 'Made for you']].map(([i, label]) => (
+        {[['sparkles', 'Personal'], ['shield-check', 'Ingredient-checked'], ['heart', 'Made for you']].map(([i, label]) => (
           <View key={label} style={{ alignItems: 'center', gap: 6 }}>
-            <Ionicons name={i} size={22} color={C.mauve2} />
+            <LineIcon name={i} size={24} />
             <Text style={[F.s, { fontSize: 10, letterSpacing: 0.8, color: C.soft }]}>{label.toUpperCase()}</Text>
           </View>
         ))}
@@ -570,7 +581,7 @@ const Consent = () => {
   const small = { ...F.r, fontSize: 12.5, lineHeight: 17, color: C.mute, marginTop: 3 }
   const Switch = ({ on, onPress, icon, children }) => (
     <Pressable onPress={onPress} style={[styles.tg, styles.tgHd, on && { borderColor: C.mauve2 }]} accessibilityRole="switch" accessibilityState={{ checked: on }}>
-      <View style={[styles.gc, { width: 40, height: 40 }]}><Ionicons name={icon} size={19} color={C.mauve2} /></View>
+      <View style={[styles.gc, { width: 40, height: 40 }]}><LineIcon name={icon} size={21} /></View>
       <View style={{ flex: 1 }}>{children}</View>
       <View style={[styles.toggle, on && { backgroundColor: C.mauve2 }]}><View style={[styles.knob, on && { left: 21 }]} /></View>
     </Pressable>
@@ -584,13 +595,13 @@ const Consent = () => {
         <Text style={[t.hint, { textAlign: 'center' }]}>We never sell your personal data. You can change these choices anytime in Settings.</Text>
       </Rise>
       <Rise i={1} style={{ gap: 10, marginTop: 22 }}>
-        <Switch on={terms} onPress={() => setTerms(!terms)} icon="document-text-outline">
+        <Switch on={terms} onPress={() => setTerms(!terms)} icon="document">
           <Text style={body}>
             I accept the <Text style={[F.s, { color: C.mauve }]} onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)}>Terms of use</Text> and the <Text style={[F.s, { color: C.mauve }]} onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)}>Privacy policy</Text>
           </Text>
           <Text style={small}>Required</Text>
         </Switch>
-        <Switch on={health} onPress={() => setHealth(!health)} icon="shield-checkmark-outline">
+        <Switch on={health} onPress={() => setHealth(!health)} icon="shield-check">
           <View style={styles.reco}><Text style={[F.s, { fontSize: 10.5, letterSpacing: 0.6, color: C.mauve }]}>RECOMMENDED</Text></View>
           <Text style={body}>Let Skynkod keep my skin safe</Text>
           <Text style={small}>Allergies, pregnancy, treatments like Roaccutane: they change which products are safe for you. Without them, we can't warn you about a product that could harm your skin.</Text>
@@ -850,7 +861,7 @@ const Safety = () => {
             <Rise key={x.k} i={i + 1} style={styles.tg}>
               <Pressable onPress={() => { const on = !open[x.k]; setOpen({ ...open, [x.k]: on }); if (on) say('Thank you. Tell us which one, we\'ll be very careful.', 'calm') }}
                 style={styles.tgHd} accessibilityRole="switch" accessibilityState={{ checked: !!open[x.k] }}>
-                <View style={[styles.gc, { width: 40, height: 40 }]}><Ionicons name={x.i} size={19} color={C.mauve2} /></View>
+                <View style={[styles.gc, { width: 40, height: 40 }]}><LineIcon name={x.i} size={21} /></View>
                 <Text style={[F.m, { flex: 1, fontSize: 14.5, color: C.ink }]}>{x.t}</Text>
                 <View style={[styles.toggle, open[x.k] && { backgroundColor: C.mauve2 }]}><View style={[styles.knob, open[x.k] && { left: 21 }]} /></View>
               </Pressable>
@@ -916,7 +927,7 @@ const Last = () => {
           ))}
           <View style={[styles.it, { borderBottomWidth: 0 }]}>
             <Animated.View style={{ transform: [{ scale: spin.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }, { rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-12deg'] }) }] }}>
-              <LineIcon name={unlocked ? 'unlock' : 'lock'} size={17} color={unlocked ? C.mauve : C.mauve2} />
+              <LineIcon name={unlocked ? 'unlock' : 'lock'} size={20} color={unlocked ? C.mauve : C.mauve2} />
             </Animated.View>
             <Text style={[unlocked ? F.s : F.r, { flex: 1, fontSize: 13.5, color: unlocked ? C.mauve : C.ink }]}>Your Profile</Text>
             {unlocked ? <Ionicons name="checkmark" size={16} color={C.mauve2} /> : <View style={styles.oc} />}
@@ -977,11 +988,11 @@ const Final = () => {
     ...(P.tone >= 3 ? ['SPF with no white cast', 'Gentle care for dark spots'] : []),
   ]
   const sec = [
-    ['sparkles-outline', 'Your goals', P.goals.map(g => g.t)],
+    ['sparkles', 'Your goals', P.goals.map(g => g.t)],
     ['sun', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
-    ['eye-outline', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
+    ['eye', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
     ['ban-outline', 'What we avoid for you', a.avoid.map(x => `No ${low(x)}`)],
-    ['heart-outline', 'We take care with', care],
+    ['heart', 'We take care with', care],
     ['color-wand-outline', 'We choose for you', choose],
   ].filter(x => x[2].length)
   const share = () => Share.share({ message: `My Skyn Profile on Skynkod ✨\n${sec.map(([, k, v]) => `${k}: ${v.join(', ')}`).join('\n')}` }).catch(() => {})
