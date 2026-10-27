@@ -132,10 +132,10 @@ const PORES = [{ v: 'small', t: 'Barely' }, { v: 'nose', t: 'On the nose' }, { v
 const TONES = ['#F6E1D3', '#EBC8AE', '#D6A584', '#B07A55', '#7E5236', '#4A2E1F']
 // Face zones on the photo (x, y in the 1145 × 1374 image).
 const ZONES = [
-  { t: 'Forehead', v: 'forehead', x: 575, y: 300, e: [[575, 330, 250, 105]] },
-  { t: 'Cheeks', v: 'cheeks', x: 255, y: 900, e: [[340, 830, 120, 150], [810, 830, 120, 150]] },
-  { t: 'Nose', v: 'nose', x: 575, y: 690, e: [[575, 760, 72, 150]] },
-  { t: 'Chin', v: 'jaw', x: 575, y: 1240, e: [[575, 1175, 140, 80]] },
+  { t: 'Forehead', v: 'forehead', x: 575, y: 330, e: [[575, 330, 250, 105]] },
+  { t: 'Cheeks', v: 'cheeks', x: 340, y: 830, e: [[340, 830, 120, 150], [810, 830, 120, 150]] },
+  { t: 'Nose', v: 'nose', x: 575, y: 760, e: [[575, 760, 72, 150]] },
+  { t: 'Chin', v: 'jaw', x: 575, y: 1175, e: [[575, 1175, 140, 80]] },
 ]
 const FAMILIES = [
   { k: 'acne', t: 'Breakouts', s: 'Blackheads, cysts…', img: 'family-breakouts' },
@@ -717,21 +717,23 @@ const FaceZones = () => {
   }
   return (
     <Page>
-      <Head z="face" q="Where do you notice the most changes?" h="Up to 3 zones." />
+      <Head z="face" q="Where do you notice the most changes?" h="Tap the zones on the face." />
       <Rise i={1} style={[styles.fz, { width: fw, height: fh }]}>
         <Image source={IMG.faceZones} style={{ position: 'absolute', left: 0, top: 0, width: fw, height: fh }} resizeMode="cover" />
         <Svg style={StyleSheet.absoluteFill} width={fw} height={fh} viewBox="0 0 1145 1374">
-          <Defs><RadialGradient id="zg"><Stop offset="0" stopColor="#F7B6CB" stopOpacity="0.6" /><Stop offset="1" stopColor="#F7B6CB" stopOpacity="0" /></RadialGradient></Defs>
+          <Defs><RadialGradient id="zg"><Stop offset="0" stopColor="#F2A5C4" stopOpacity="0.75" /><Stop offset="0.6" stopColor="#F2A5C4" stopOpacity="0.45" /><Stop offset="1" stopColor="#F2A5C4" stopOpacity="0" /></RadialGradient></Defs>
           {ZONES.filter(z => on.includes(z)).flatMap(z => z.e.map(([cx, cy, rx, ry], i) => <Ellipse key={z.v + i} cx={cx} cy={cy} rx={rx * 1.2} ry={ry * 1.2} fill="url(#zg)" />))}
         </Svg>
-        {ZONES.map(z => {
-          const sel = on.includes(z)
-          return (
-            <Pressable key={z.v} onPress={() => tap(z)} style={[styles.zp, { left: z.x / 1145 * fw, top: z.y / 1374 * fh }, sel && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
-              <Text style={[F.s, { fontSize: 12.5, color: sel ? '#fff' : C.ink }]}>{z.t}</Text>
-            </Pressable>
-          )
-        })}
+        {/* Tap the face itself: each zone is a touch area; a picked zone glows and shows its name. */}
+        {ZONES.flatMap(z => z.e.map(([cx, cy, rx, ry], i) => (
+          <Pressable key={z.v + i} onPress={() => tap(z)} accessibilityLabel={z.t} accessibilityState={{ selected: on.includes(z) }}
+            style={{ position: 'absolute', left: (cx - rx) / 1145 * fw, top: (cy - ry) / 1374 * fh, width: 2 * rx / 1145 * fw, height: 2 * ry / 1374 * fh, borderRadius: 999 }} />
+        )))}
+        {ZONES.filter(z => on.includes(z)).map(z => (
+          <View key={z.v} pointerEvents="none" style={[styles.zp, { left: z.x / 1145 * fw, top: z.y / 1374 * fh, backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
+            <Text style={[F.s, { fontSize: 12.5, color: '#fff' }]}>{z.t}</Text>
+          </View>
+        ))}
       </Rise>
       <View style={{ height: 16 }} />
       <Btn disabled={!on.length} onPress={() => { set({ faceZones: on }); go('face') }} />
