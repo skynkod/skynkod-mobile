@@ -1079,7 +1079,7 @@ const Build = () => {
 }
 
 const Final = () => {
-  const { F, W, P, nm, answersOf, finish, saving } = useOb()
+  const { F, W, P, nm, answersOf, finish, saving, health } = useOb()
   const t = useType()
   const a = answersOf()
   const type = computeSkinType(a)
@@ -1091,9 +1091,12 @@ const Final = () => {
     ...a.meds.map(m => SAFETY.find(x => x.k === 'meds').o.find(o => o[0] === m)?.[1]).filter(Boolean),
   ]
   const choose = [
-    ...(P.age != null ? [['A simple routine', 'Prevention', 'Glow & fine lines', 'Firmness & comfort', 'Firmness & comfort'][P.age]] : []),
-    ...(['during', 'after'].includes(P.meno) ? ['Well-nourished skin'] : []),
+    // Each line matches a rule in the product verdicts (utils/ingredients-guide.js LIFE_BONUS).
+    ...(P.age != null ? [['Gentle essentials', 'Prevention', 'Glow & fine lines', 'Firmness & comfort', 'Firmness & comfort'][P.age]] : []),
+    ...(['during', 'after'].includes(P.meno) && health ? ['Well-nourished skin'] : []),
     ...(P.tone >= 3 ? ['SPF with no white cast', 'Gentle care for dark spots'] : []),
+    ...(P.lifeYes?.[2] ? ['High sun protection'] : []),
+    ...(P.lifeYes?.[3] ? ['Light textures'] : []),
   ]
   const sec = [
     ['sparkles', 'Your goals', P.goals.map(g => g.t)],

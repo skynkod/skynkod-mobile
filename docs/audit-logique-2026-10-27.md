@@ -26,7 +26,7 @@ Les tests automatiques passent tous (18 séries). Les problèmes ci-dessous sont
 
 ## 🟠 Important : promesses non tenues
 
-### 3. « We choose for you » et les petites phrases de Koda ne sont reliés à rien
+### 3. ✅ Corrigé (verdicts produits et Koda ; Rekod pas encore adapté à l'âge) : « We choose for you » et les petites phrases de Koda ne sont reliés à rien
 L'inscription demande désormais l'âge, la ménopause, la teinte de peau, le sommeil, le stress, le temps dehors et la transpiration. **Aucune de ces réponses n'est lue par le reste de l'app** : ni les verdicts produits, ni Rekod, ni les routines, ni Koda.
 
 Ce qui est promis sans être fait :
@@ -45,7 +45,7 @@ Je conseille **a**. C'est ce qui rend ces questions utiles, sinon elles allongen
 - **Conséquence :** cette « priorité » pilote beaucoup de choses : les verdicts produits, « Next best buy », le tri de l'étagère, Rekod et le bilan de la semaine. Elle est donc choisie au hasard de l'ordre des taps.
 - **Correction proposée :** ajouter la question « Which one matters most to you right now? » sur l'écran « What we spotted », en touchant une des photos. Ou bien la poser au début du constructeur de routine, comme promis.
 
-### 5. Les 3 sortes de cernes deviennent une seule
+### 5. ✅ Corrigé : les 3 sortes de cernes deviennent une seule
 - L'écran dit : « Dark circles don't all have the same cause, so not the same solution. »
 - **Dans les faits :** bleutés, bruns ou creusés sont tous enregistrés comme « Dark circles ». Le détail est gardé, mais rien ne le lit.
 - **Correction proposée :** relier chaque sorte à ses actifs (caféine et vitamine K pour les bleutés, vitamine C et niacinamide pour les bruns, hydratation et peptides pour les creusés) dans les verdicts des contours des yeux.

@@ -215,6 +215,12 @@ export default function ProductScreen({ navigation, route }) {
             <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}
+        {(match.notes || []).map((r, idx) => (
+          <View key={`n${idx}`} style={styles.reason}>
+            <Ionicons name="information-circle" size={16} color={colors.muted} />
+            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
+          </View>
+        ))}
         {match.unverified.map((r, idx) => (
           <View key={`u${idx}`} style={styles.reason}>
             <Ionicons name="help-circle" size={16} color={colors.muted} />

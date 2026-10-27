@@ -200,6 +200,16 @@ export const engineProfile = (row) => {
     sex: sp.sex || null,
     // Makeup or tinted products: rarely / some / daily (the makeup remover step).
     makeup: sp.makeup || null,
+    // From the new sign-up (2026-10-27): age range, skin tone (0-5), her days and
+    // her kinds of dark circles; menopause is health data (consent only).
+    ageRange: sp.ageRange ?? null,
+    menopause: row?.consent_health_at ? sp.menopause || null : null,
+    tone: sp.tone ?? null,
+    outdoors: sp.sunTime === 'high',
+    sweat: !!sp.sweat,
+    stress: sp.stress || null,
+    sleep: sp.sleep || null,
+    eyeDetails: sp.eyeDetails || [],
     meds,
     fragile,
     // Her main and secondary concern (they lead the product verdicts and Rekod).

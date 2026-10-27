@@ -185,8 +185,30 @@ const profileFacts = (profile) => {
     perioral: conditions.includes('Perioral dermatitis'),
     avoid,
     pregnant,
+    // From the new sign-up (2026-10-27): only bonuses, plus 2 alerts for deeper skin tones.
+    age: profile?.ageRange ?? null,
+    menopause: ['during', 'after'].includes(profile?.menopause),
+    deep: profile?.tone != null && profile.tone >= 3,
+    outdoors: !!profile?.outdoors,
+    sweat: !!profile?.sweat,
+    eyeKinds: profile?.eyeDetails || [],
   }
 }
+
+// What her age, menopause, skin tone, days and dark circles add (Lita, 2026-10-27):
+// good ingredients rank a little higher and say why. Never a warning.
+const LIFE_BONUS = [
+  { when: f => f.age === 0, ids: ['ceramides', 'niacinamide', 'hyaluronic', 'panthenol'], why: 'a gentle essential at your age' },
+  { when: f => f.age === 1, ids: ['vitaminc', 'vitamine', 'ferulic', 'niacinamide', 'greentea'], why: 'antioxidant prevention at your age' },
+  { when: f => f.age === 2, ids: ['vitaminc', 'retinol', 'bakuchiol', 'peptides', 'matrixyl', 'argireline'], why: 'glow and fine lines at your age' },
+  { when: f => f.age >= 3, ids: ['peptides', 'matrixyl', 'copperpeptides', 'ceramides', 'cholesterol', 'retinol', 'squalane'], why: 'firmness and comfort at your age' },
+  { when: f => f.menopause, ids: ['ceramides', 'cholesterol', 'hyaluronic', 'squalane', 'peptides', 'petrolatum'], why: 'nourishes skin through menopause' },
+  { when: f => f.deep, ids: ['azelaic', 'niacinamide', 'vitaminc', 'txa', 'licorice', 'arbutin'], why: 'evens tone gently on deeper skin' },
+  { when: f => f.outdoors, ids: ['vitaminc', 'vitamine', 'ferulic'], why: 'extra antioxidant shield for your time outdoors' },
+  { when: (f, zone) => zone === 'eyes' && f.eyeKinds.includes('blue'), ids: ['caffeine', 'peptides'], why: 'helps blue or purple dark circles' },
+  { when: (f, zone) => zone === 'eyes' && f.eyeKinds.includes('brown'), ids: ['vitaminc', 'niacinamide', 'licorice', 'arbutin'], why: 'helps brown dark circles' },
+  { when: (f, zone) => zone === 'eyes' && f.eyeKinds.includes('hollow'), ids: ['hyaluronic', 'peptides', 'matrixyl'], why: 'softens the shadow of hollow dark circles' },
+]
 
 // Why pregnancy rules exist, in plain words, and safer swaps (guide ids).
 export const PREGNANCY_DETAIL = {
@@ -381,6 +403,19 @@ export const productMatch = (product, profile) => {
   }
   const strength = Number((product?.name || '').match(/(\d+(?:\.\d+)?)\s?%/)?.[1] || 0)
   if (strength >= 5 && benefits.length) benefit *= 1.15
+  const zone = zoneOf(product)
+  for (const rule of LIFE_BONUS.filter(r => r.when(facts, zone))) {
+    for (const { entry, weight, pos } of found) {
+      if (!rule.ids.includes(entry.id) || pos > 15) continue
+      benefit += 5 * weight
+      benefits.push({ entry, weight, text: `${entry.name}: ${rule.why}` })
+    }
+  }
+  const sunscreen = product?.category === 'sunscreen'
+  const name = (product?.name || '').toLowerCase()
+  if (sunscreen && facts.outdoors && /spf\s?50|50\+/.test(name)) { benefit += 4; benefits.push({ weight: 1, text: 'High protection for your time outdoors' }) }
+  if (facts.sweat && /\b(gel|fluid|water|aqua|light|matte|mattifying)\b/.test(name)) { benefit += 3; benefits.push({ weight: 0.8, text: 'Light texture, good when you sweat' }) }
+  if (sunscreen && facts.sweat && /water[- ]?resistant|sport/.test(name)) { benefit += 3; benefits.push({ weight: 0.8, text: 'Water-resistant, good when you sweat' }) }
   benefits.sort((a, b) => b.weight - a.weight)
 
   // The user's own rules (allergies, pregnancy)
@@ -425,6 +460,13 @@ export const productMatch = (product, profile) => {
       if (partial) unverified.push({ check, text: `Full ingredient list missing, so we can't confirm it's ${check.safe.toLowerCase()}` })
       else safe.push({ check, text: check.safe })
     }
+  }
+  if (facts.deep) {
+    const toneCheck = { id: 'tone', label: 'deeper skin tones', badge: 'Keep an eye' }
+    const mineral = found.find(f => ['zincoxide', 'titanium'].includes(f.entry.id) && f.pos < 6)
+    if (sunscreen && mineral) triggers.push({ check: toneCheck, entry: mineral.entry, shown: mineral.entry.name, pos: mineral.pos, partial, rinseOff, level: 'watch', text: 'Can leave a white cast on deeper skin tones', detail: 'Mineral filters high in the list often leave a grey or white film on deeper skin. A tinted version or modern chemical filters blend in better.', about: mineral.entry.what })
+    const acid = found.find(f => ['glycolic', 'salicylic', 'lactic'].includes(f.entry.id) && (f.pos < 4 || strength >= 10))
+    if (acid && !rinseOff) triggers.push({ check: toneCheck, entry: acid.entry, shown: acid.entry.name, pos: acid.pos, partial, rinseOff, level: 'watch', text: 'Strong acids can leave dark marks on deeper skin tones', detail: 'On deeper skin, irritation easily turns into brown marks. Start every other evening, stop if it stings, and wear sunscreen every morning.', about: acid.entry.what })
   }
   triggers.sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level] || a.pos - b.pos)
 
@@ -471,6 +513,8 @@ export const productMatch = (product, profile) => {
     priority,
     // Good or not for her skin, maybe not today: from her current skin state.
     notNow: notRightNow(product, found, profile?.skinState),
+    // Honest notes, neither good nor bad.
+    notes: zone === 'eyes' && facts.eyeKinds.includes('hollow') ? [{ text: 'Hollow dark circles come from the shape of the face: creams can soften the shadow a little, not remove it.' }] : [],
   }
 }
 
