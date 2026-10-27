@@ -216,6 +216,8 @@ const LIFE_CARDS = [
 const SAFETY = [
   { k: 'preg', t: 'Pregnancy or breastfeeding', i: 'heart', q: 'Which one?', one: true, o: [['pregnant', 'I\'m pregnant'], ['breastfeeding', 'I\'m breastfeeding']] },
   { k: 'avoid', t: 'An allergy to an ingredient', i: 'allergy', q: 'Which ones?', o: [['Fragrance', 'Fragrance'], ['Essential oils', 'Essential oils'], ['Nuts', 'Nuts'], ['Lanolin', 'Lanolin'], ['Alcohol', 'Alcohol'], ['Other', 'Other']] },
+  // Diagnosed conditions switch on the product rules that protect these skins (logic audit, 2026-10-27).
+  { k: 'conditions', t: 'A skin condition diagnosed by a doctor', i: 'shield-check', q: 'Which ones?', o: [['Rosacea', 'Rosacea'], ['Eczema', 'Eczema or atopic skin'], ['Psoriasis', 'Psoriasis'], ['Perioral dermatitis', 'Perioral dermatitis'], ['Seborrheic dermatitis', 'Seborrheic dermatitis'], ['Melasma', 'Melasma']] },
   { k: 'meds', t: 'A skin or hormonal treatment', i: 'pill', q: 'Which one?', o: [['isotretinoin', 'Isotretinoin (Roaccutane)'], ['topical_rx', 'Prescription cream (tretinoin, adapalene…)'], ['oral_antibiotic', 'Antibiotics'], ['hormonal', 'Hormonal treatment or the pill']] },
 ]
 const SKIN_WHY = { Oily: 'It shines all over your face.', Combination: 'Shiny in the center, normal on the cheeks.', Dry: 'It lacks oil and feels tight.', Normal: 'Balanced: neither oily nor dry.' }
@@ -899,8 +901,8 @@ const Safety = () => {
   const { F, P, set, go, say, health, setHealth } = useOb()
   const t = useType()
   const items = SAFETY.filter(x => x.k !== 'preg' || P.sex !== 'man')
-  const [open, setOpen] = useState({ preg: !!P.preg?.length, avoid: !!P.avoid?.length, meds: !!P.meds?.length })
-  const [picked, setPicked] = useState({ preg: P.preg || [], avoid: P.avoid || [], meds: P.meds || [] })
+  const [open, setOpen] = useState({ preg: !!P.preg?.length, avoid: !!P.avoid?.length, conditions: !!P.conditions?.length, meds: !!P.meds?.length })
+  const [picked, setPicked] = useState({ preg: P.preg || [], avoid: P.avoid || [], conditions: P.conditions || [], meds: P.meds || [] })
   const [other, setOther] = useState(P.avoidOther || '')
   const [otherErr, setOtherErr] = useState(false)
   const toggle = (k, v, one) => {
@@ -914,7 +916,7 @@ const Safety = () => {
       setOtherErr(true)
       return say('Tell us which ingredient, or we can\'t avoid it.', 'curious')
     }
-    set({ preg: pick('preg'), avoid: pick('avoid'), meds: pick('meds'), avoidOther: other.trim() })
+    set({ preg: pick('preg'), avoid: pick('avoid'), conditions: pick('conditions'), meds: pick('meds'), avoidOther: other.trim() })
     go('last')
   }
   return (
@@ -924,7 +926,7 @@ const Safety = () => {
         <Rise i={1} style={[styles.tg, { marginTop: 18 }]}>
           <Pressable onPress={() => setHealth(true)} style={styles.tgHd} accessibilityRole="switch" accessibilityState={{ checked: false }}>
             <View style={[styles.gc, { width: 40, height: 40 }]}><LineIcon name="shield" size={20} /></View>
-            <Text style={[F.m, { flex: 1, fontSize: 14, lineHeight: 19, color: C.ink }]}>To ask about pregnancy, allergies and treatments, we need your OK to use this sensitive information.</Text>
+            <Text style={[F.m, { flex: 1, fontSize: 14, lineHeight: 19, color: C.ink }]}>To ask about pregnancy, allergies, skin conditions and treatments, we need your OK to use this sensitive information.</Text>
             <View style={styles.toggle}><View style={styles.knob} /></View>
           </Pressable>
         </Rise>
@@ -1053,7 +1055,8 @@ const Final = () => {
   const low = s => s.charAt(0).toLowerCase() + s.slice(1)
   const care = [
     ...(a.pregnancy && a.pregnancy !== 'no' ? [a.pregnancy === 'pregnant' ? 'Pregnancy' : 'Breastfeeding'] : []),
-    ...a.meds.map(m => SAFETY[2].o.find(o => o[0] === m)?.[1]).filter(Boolean),
+    ...a.conditions,
+    ...a.meds.map(m => SAFETY.find(x => x.k === 'meds').o.find(o => o[0] === m)?.[1]).filter(Boolean),
   ]
   const choose = [
     ...(P.age != null ? [['A simple routine', 'Prevention', 'Glow & fine lines', 'Firmness & comfort', 'Firmness & comfort'][P.age]] : []),
@@ -1220,6 +1223,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       sweat: P.lifeYes ? P.lifeYes[3] : null,
       pregnancy: health && P.sex !== 'man' ? (P.preg?.[0] || 'no') : null,
       avoid: health ? (P.avoid || []).map(a => (a === 'Other' ? otherAvoid : a)).filter(Boolean) : [],
+      conditions: health ? P.conditions || [] : [],
       meds: health ? P.meds || [] : [],
     }
   }

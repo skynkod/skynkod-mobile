@@ -393,6 +393,19 @@ export const productMatch = (product, profile) => {
     }
   }
 
+  // Ingredients she typed herself ("Other" at sign-up, 2026-10-27): looked for
+  // by name in the ingredient list and through the guide's own names for it.
+  const { full, key } = productList(product)
+  for (const term of facts.avoid.filter(a => !AVOID_TAGS[a])) {
+    const t = String(term).trim().toLowerCase()
+    if (t.length < 3) continue
+    const known = searchIngredients(t)
+    const hit = [...full, ...key].find(inci => inci.includes(t)) || found.find(f => known.includes(f.entry))?.inci
+    const label = t.charAt(0).toUpperCase() + t.slice(1)
+    if (hit) avoid.push({ entry: { id: `custom-${t}`, name: label }, text: `Contains ${t}, which you want to avoid`, detail: `You told us to avoid ${t}. We check every ingredient of every product for you, so you don't have to read the small print.`, alternatives: [] })
+    else if (partial) cares.push({ entry: { id: `custom-${t}`, name: label }, text: `Full ingredient list missing, so we can't check for ${t}`, detail: `You told us to avoid ${t}. Check the box before using it.`, level: 'patch' })
+  }
+
   // Each skin issue: graded triggers, safe, or can't confirm
   const triggers = []
   const safe = []

@@ -10,13 +10,13 @@ Les tests automatiques passent tous (18 séries). Les problèmes ci-dessous sont
 
 ## 🔴 Critique : sécurité
 
-### 1. Les maladies de peau diagnostiquées ne sont plus demandées
+### 1. ✅ Corrigé : les maladies de peau diagnostiquées ne sont plus demandées
 - **Avant :** « Has a doctor ever diagnosed one of these? » : rosacée, eczéma, psoriasis, dermatite périorale, dermatite séborrhéique, mélasma.
 - **Maintenant :** cette question n'existe plus. L'étape Sécurité demande seulement grossesse, allergies et traitements.
 - **Conséquence :** les règles produits liées à ces maladies (éviter les irritants pour la rosacée, les huiles pour la dermatite séborrhéique, les crèmes riches pour la dermatite périorale…) ne s'activent plus jamais pour une nouvelle utilisatrice.
 - **Correction proposée :** ajouter une 4e ligne à l'étape Sécurité, « A skin condition diagnosed by a doctor », avec les 6 choix. Même style que les autres lignes.
 
-### 2. L'allergie « Other » tapée à la main n'est jamais vérifiée
+### 2. ✅ Corrigé : l'allergie « Other » tapée à la main n'est jamais vérifiée
 - Koda dit : « Type the ingredient: we'll keep it out of all your advice. »
 - **Dans les faits :** l'app ne vérifie que 5 allergies (parfum, huiles essentielles, fruits à coque, lanoline, alcool). Ce qu'elle tape (par exemple « niacinamide ») est enregistré, mais aucun produit n'est jamais comparé à cet ingrédient.
 - **Conséquence :** on promet de la protéger d'un ingrédient sans le faire.

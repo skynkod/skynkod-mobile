@@ -77,7 +77,8 @@
     "test:patch": "node --import ./tests/extensionless.mjs --test --no-warnings tests/patch.test.mjs",
     "test:trends": "node --import ./tests/extensionless.mjs --test --no-warnings tests/trends.test.mjs",
     "test:short": "node --import ./tests/extensionless.mjs --test --no-warnings tests/short-evening.test.mjs",
-    "test:removers": "node --import ./tests/extensionless.mjs --test --no-warnings tests/removers.test.mjs"
+    "test:removers": "node --import ./tests/extensionless.mjs --test --no-warnings tests/removers.test.mjs",
+    "test:safety": "node --import ./tests/extensionless.mjs --test --no-warnings tests/safety.test.mjs"
   },
   "private": true
 }
