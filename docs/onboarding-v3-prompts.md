@@ -1,6 +1,6 @@
 # Prompts : refaire exactement la maquette d'inscription (v3)
 
-Ces prompts sont **complets** : chacun se suffit à lui-même. Copie-le **en entier**, une image à la fois. Il y a 59 images en tout.
+Ces prompts sont **complets** : chacun se suffit à lui-même. Copie-le **en entier**, une image à la fois. Il y a 58 images en tout. Le fond rose de la maquette est fait en code : pas d'image à générer.
 
 **Pour de meilleurs résultats :**
 - Utilise le générateur d'images de ChatGPT, et demande **« transparent background PNG »** pour les objets en verre (groupe A).
@@ -30,7 +30,9 @@ Bienvenue, profil final et bulles des étapes (« Your Skyn Journey » et les é
 
 **`bubble-lips.png`** · ✅ déjà reçue
 
-**`bubble-neck.png`** · ✅ déjà reçue
+**`bubble-neck.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line bust seen from the front, exactly like a simple user icon: the oval outline of a head with no facial features, a slim neck below it, and the curved line of both shoulders, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
 
 **`bubble-life.png`** · ✅ déjà reçue
 
@@ -38,7 +40,7 @@ Bienvenue, profil final et bulles des étapes (« Your Skyn Journey » et les é
 
 **`bubble-profile.png`**
 
-> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line faceted diamond, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line padlock: a rounded shackle on top and a soft rounded rectangular body with a small keyhole in the middle, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
 
 ---
 
@@ -255,14 +257,4 @@ Les 6 familles, puis le détail de chacune.
 **`card-neck-dark.png`**
 
 > A close-up of the side of a neck with a darker, velvety patch of skin, on tan skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
-
----
-
-## F. Le fond
-
-Derrière tous les écrans.
-
-**`bg-silk.png`**
-
-> Ultra-soft abstract background for a luxury skincare app. Flowing pale pink and pearl silk folds, very out of focus, with diffused morning light coming from the top right, a few large soft circular bokeh lights and a handful of tiny faint sparkles. Gradient from almost white pearl (#FBF4F8) at the top to powder pink (#F3E3EC) and light dusty mauve (#E7D2E0) at the bottom. Mostly empty and bright, no objects, no people, no text, no logo, no watermark. Vertical format 1290 x 2796. 
 
