@@ -39,6 +39,8 @@ const IMG = {
   faceZones: require('../assets/conditions/face-zones.jpg'),
   // Smooth gradients as images: they render the same on every phone.
   bg: require('../assets/onboarding/bg.jpg'),
+  bgDeep: require('../assets/onboarding/bg-deep.jpg'),
+  cardFade: require('../assets/onboarding/card-fade.png'),
   btn: require('../assets/onboarding/btn.png'),
   fadeIntro: require('../assets/onboarding/fade-intro.png'),
   fadeProfile: require('../assets/onboarding/fade-profile.png'),
@@ -204,8 +206,13 @@ const NECK = [
 ]
 const SKIN_STATEMENTS = ['Does your skin turn red or sting with a new product?', 'In the sun, do you burn before you tan?', 'Does your skin feel tight after a shower?']
 const SKIN_SAYS = [['We\'ll go gently.', 'A resilient skin, great.'], ['Sunscreen will be your best friend.', 'Sunscreen still matters, promise.'], ['We\'ll hydrate it well.', 'Perfect.']]
-const LIFE_STATEMENTS = ['Feeling stressed lately?', 'Makeup or tinted products often?', 'Spending a lot of time outdoors?', 'Sweating a lot (sport, heat)?']
-const LIFE_SAYS = [['Stress shows on the skin, we\'ll follow it.', 'Great.'], ['We\'ll think about makeup removal.', 'Less removing, perfect.'], ['We\'ll boost your sun protection.', 'Noted.'], ['We\'ll pick light textures.', 'Noted.']]
+const LIFE_CARDS = [
+  { t: 'Stress', s: 'Lately', ic: 'pulse-outline', say: 'Stress shows on the skin, we\'ll follow it.' },
+  { t: 'Makeup', s: 'Most days', ic: 'color-palette-outline', say: 'We\'ll think about makeup removal.' },
+  { t: 'Outdoors', s: 'A lot of time', ic: 'sun', say: 'We\'ll boost your sun protection.' },
+  { t: 'Sweat', s: 'Sport or heat', ic: 'droplet', say: 'We\'ll pick light textures.' },
+  { t: 'None', s: 'None of these', ic: 'leaf', none: true },
+]
 const SAFETY = [
   { k: 'preg', t: 'Pregnancy or breastfeeding', i: 'heart', q: 'Which one?', one: true, o: [['pregnant', 'I\'m pregnant'], ['breastfeeding', 'I\'m breastfeeding']] },
   { k: 'avoid', t: 'An allergy to an ingredient', i: 'allergy', q: 'Which ones?', o: [['Fragrance', 'Fragrance'], ['Essential oils', 'Essential oils'], ['Nuts', 'Nuts'], ['Lanolin', 'Lanolin'], ['Alcohol', 'Alcohol'], ['Other', 'Other']] },
@@ -256,7 +263,7 @@ const Bubble = ({ name, size }) => (
 )
 
 // The soft pink silk background with its two light halos.
-const Backdrop = () => <Image source={IMG.bg} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="cover" />
+const Backdrop = ({ deep }) => <Image source={deep ? IMG.bgDeep : IMG.bg} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="cover" />
 
 // Elements rise in one after the other when a screen opens.
 const Rise = ({ i = 0, children, style }) => {
@@ -326,15 +333,14 @@ const Bar = ({ z, noBack, skip, onPhoto }) => {
   const i = z ? SI(z) : -1
   return (
     <View style={styles.bar}>
-      {noBack ? null : <Pressable onPress={back} hitSlop={12} accessibilityLabel="Back"><Ionicons name="chevron-back" size={24} color={C.ink} /></Pressable>}
+      {noBack ? null : <Pressable onPress={back} hitSlop={12} accessibilityLabel="Back"><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable>}
       {i >= 0 ? (
         <>
-          <View style={styles.prog}><View style={[styles.progFill, { width: `${Math.round((i + 1) / 7 * 100)}%` }]} /></View>
-          <Text style={[F.m, styles.progN]}>{i + 1} / 7</Text>
+          <View style={styles.segs}>{STEPS.map((_, k) => <View key={k} style={[styles.seg, k <= i && styles.segOn]} />)}</View>
         </>
       ) : (
         <View style={{ flex: 1, alignItems: 'center' }}>
-          {onPhoto ? null : <Image source={IMG.logo} style={{ height: 20, width: 20 * 1306 / 333, opacity: 0.9 }} resizeMode="contain" />}
+          {onPhoto ? null : <Image source={IMG.logo} style={{ height: 24, width: 24 * 1306 / 333 }} resizeMode="contain" />}
         </View>
       )}
       {skip
@@ -369,14 +375,15 @@ const Tick = ({ on }) => (
     {on ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
   </View>
 )
+// What she picked in the step she just finished: one small, quiet glass line.
 const Summary = ({ label, items, d, empty = true }) => {
   const { F } = useOb()
   if (!items.length && !empty) return null
   return (
     <View style={styles.sum}>
-      <Text style={[F.s, styles.k]}>{label}</Text>
-      <Text style={[F.s, { fontSize: 14, lineHeight: 20, color: C.ink, marginTop: 4 }]}>{items.length ? items.join(' · ') : 'Nothing to report here, lovely!'}</Text>
-      {d ? <Text style={[F.r, { fontSize: 12.5, color: C.soft, marginTop: 2 }]}>{d}</Text> : null}
+      <Text style={[F.r, { fontSize: 12.5, lineHeight: 18, color: C.soft, textAlign: 'center' }]}>
+        <Text style={[F.s, { color: C.mauve }]}>{label}: </Text>{items.length ? items.join(' · ') : 'nothing to report, lovely!'}{d ? ` ${d}` : ''}
+      </Text>
     </View>
   )
 }
@@ -404,8 +411,11 @@ const PhotoPick = ({ z, q, h, opts, onDone, max = 0, one = false, initial = [] }
               <Pressable onPress={() => tap(o)} style={({ pressed }) => [styles.pc, { width: cardW }, on && styles.pcOn, pressed && { transform: [{ scale: 0.97 }] }]}>
                 {o.img ? (
                   <>
-                    <Image source={CARD[o.img]} style={{ width: '100%', height: cardW / 1.25 }} resizeMode="cover" />
-                    <View style={{ padding: 10, paddingTop: 8 }}>
+                    <View style={{ width: '100%', height: cardW / 1.1 }}>
+                      <Image source={CARD[o.img]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      <Image source={IMG.cardFade} style={{ position: 'absolute', left: 0, right: 0, bottom: -3, height: '62%', width: '100%' }} resizeMode="stretch" />
+                    </View>
+                    <View style={{ padding: 10, paddingTop: 0, marginTop: -30 }}>
                       <Text style={[F.s, styles.pcT]}>{o.t}</Text>
                       {o.s ? <Text style={[F.r, styles.pcS]}>{o.s}</Text> : null}
                     </View>
@@ -519,19 +529,19 @@ const Hero = ({ source, height, fade }) => {
 const Welcome = () => {
   const { F, W, go } = useOb()
   const t = useType()
-  const orb = Math.min(290, W - 30)
+  const orb = Math.min(340, W - 20)
   return (
     <Page>
       <Bar noBack />
       <Rise><Text style={[t.h1, { fontSize: 32, lineHeight: 37 }]}>Let's get to know your skin</Text></Rise>
       <Rise i={1}><Text style={t.p}>A few personal questions to understand your skin, your products and your lifestyle.</Text></Rise>
-      <Rise i={2} style={{ alignItems: 'center', marginTop: 14 }}>
+      <Rise i={2} style={{ alignItems: 'center', marginTop: 4, marginHorizontal: -12 }}>
         <Float duration={4000}><Image source={IMG.orb} style={{ width: orb, height: orb }} resizeMode="contain" /></Float>
       </Rise>
       <Rise i={3} style={styles.feats}>
         {[['sparkles', 'Personal'], ['shield-check', 'Ingredient-checked'], ['heart', 'Made for you']].map(([i, label]) => (
-          <View key={label} style={{ alignItems: 'center', gap: 6 }}>
-            <LineIcon name={i} size={24} />
+          <View key={label} style={{ alignItems: 'center', gap: 8 }}>
+            <View style={styles.gc}><LineIcon name={i} size={24} /></View>
             <Text style={[F.s, { fontSize: 10, letterSpacing: 0.8, color: C.soft }]}>{label.toUpperCase()}</Text>
           </View>
         ))}
@@ -617,40 +627,43 @@ const Consent = () => {
 }
 
 const Journey = () => {
-  const { F, W, P, go } = useOb()
+  const { F, W, H, insets, P, go } = useOb()
   const t = useType()
-  const w = Math.min(W - 44, 340)
-  const k = w / 308
-  const X = [34, 70, 92, 74, 44, 30, 52, 86].map(x => x * k)
-  const Y = [30, 92, 154, 216, 278, 340, 402, 464].map(y => y * k)
+  // Like the mockup: big pearl bubbles zigzagging down a glowing ribbon, Koda halfway.
+  const w = W - 44
+  const gap = Math.max(58, Math.min(84, (H - insets.top - insets.bottom - 250) / 8))
+  const b = Math.min(66, gap * 0.86)
+  const X = [0, 1, 0, 1, 0, 1, 0, 1].map(r => (r ? 0.4 : 0.17) * w + b / 2 - 0.08 * w)
+  const Y = X.map((_, i) => b / 2 + 4 + i * gap)
   let d = `M${X[0]} ${Y[0]}`
-  for (let i = 1; i < X.length; i++) d += ` C ${X[i - 1]} ${Y[i - 1] + 30 * k}, ${X[i]} ${Y[i] - 30 * k}, ${X[i]} ${Y[i]}`
+  for (let i = 1; i < X.length; i++) d += ` C ${X[i - 1]} ${Y[i - 1] + gap * 0.55}, ${X[i]} ${Y[i] - gap * 0.55}, ${X[i]} ${Y[i]}`
   const all = [...STEPS, { t: 'Your Profile', s: 'Your personalized routine', i: 'lock' }]
-  const b = 54 * k
+  const height = Y[7] + b / 2 + 6
   return (
     <Page>
       <Bar />
       <Rise>
-        <Text style={[t.h1, { textAlign: 'center' }]}>Your Skyn Journey</Text>
+        <Text style={[t.h1, { textAlign: 'center', fontSize: 30, lineHeight: 36 }]}>Your Skyn Journey</Text>
         <Text style={[t.p, { textAlign: 'center', marginTop: 6 }]}>{P.name ? `${P.name}, 7` : '7'} steps to create your personalized routine.</Text>
       </Rise>
-      <View style={{ width: w, height: 496 * k, marginTop: 14, alignSelf: 'center' }}>
-        <Svg style={StyleSheet.absoluteFill} width={w} height={496 * k}>
-          <Path d={d} fill="none" stroke="#FFFFFF" strokeWidth={6} opacity={0.8} />
-          <Path d={d} fill="none" stroke="#B57FA6" strokeWidth={2.4} strokeLinecap="round" strokeDasharray="5 4" />
+      <View style={{ width: w, height, marginTop: 16 }}>
+        <Svg style={StyleSheet.absoluteFill} width={w} height={height}>
+          <Path d={d} fill="none" stroke="#FFFFFF" strokeWidth={9} opacity={0.55} strokeLinecap="round" />
+          <Path d={d} fill="none" stroke="#D7A3C4" strokeWidth={3} opacity={0.9} strokeLinecap="round" />
+          <Path d={d} fill="none" stroke="#FFFFFF" strokeWidth={1} opacity={0.8} strokeLinecap="round" />
         </Svg>
         {all.map((s, i) => (
-          <Rise key={s.t} i={i + 1} style={{ position: 'absolute', left: X[i] - b / 2, top: Y[i] - b / 2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Rise key={s.t} i={i + 1} style={{ position: 'absolute', left: X[i] - b / 2, top: Y[i] - b / 2, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={i === 0 ? styles.cur : null}><Bubble name={s.i} size={b} /></View>
             <View>
-              {i < 7 ? <Text style={[F.s, { fontSize: 10, color: C.mute }]}>{pad(i + 1)}</Text> : null}
-              <Text style={[F.s, { fontSize: 14, color: C.ink }]}>{s.t}</Text>
-              <Text style={[F.r, { fontSize: 11, color: C.mute }]}>{s.s}</Text>
+              {i < 7 ? <Text style={[F.s, { fontSize: 11, color: C.soft }]}>{pad(i + 1)}</Text> : null}
+              <Text style={[F.s, { fontSize: 16, lineHeight: 20, color: C.ink }]}>{s.t}</Text>
+              <Text style={[F.r, { fontSize: 12, color: C.soft }]}>{s.s}</Text>
             </View>
           </Rise>
         ))}
-        <Float style={{ position: 'absolute', left: X[0] + 170 * k - 29, top: Y[0] - 31 }}>
-          <Image source={KODA.happy} style={{ width: 58, height: 58 }} resizeMode="contain" />
+        <Float style={{ position: 'absolute', left: w - 66, top: Y[4] - 34 }}>
+          <Image source={KODA.happy} style={{ width: 64, height: 64 }} resizeMode="contain" />
         </Float>
       </View>
       <Spacer />
@@ -659,37 +672,54 @@ const Journey = () => {
   )
 }
 
-// The first chapter's intro, with the big photo and the thin circle.
+// The first chapter's intro, with the big photo and the thin circle; the text
+// sits right under the photo, like the mockup.
 const Intro = () => {
-  const { F, W, H, go } = useOb()
+  const { F, W, H, insets, go } = useOb()
   const t = useType()
   const st = STEPS[0]
-  const h = 0.6 * H
+  const h = 0.56 * H
   return (
     <View style={{ flex: 1 }}>
       <Hero source={IMG.introSkin} height={h} fade={IMG.fadeIntro} />
-      <Pop delay={300} style={[styles.lens, { left: W * 0.14, top: h * 0.12, width: W * 0.8, height: W * 0.8, borderRadius: W * 0.4 }]} />
+      <Pop delay={300} style={[styles.lens, { left: W * 0.14, top: h * 0.1, width: W * 0.78, height: W * 0.78, borderRadius: W * 0.39 }]} />
       <Page>
         <Bar onPhoto />
-        <Spacer />
-        <Rise><Text style={t.step}>01 / 07</Text><Text style={t.h1}>{st.t}</Text><Text style={t.p}>{st.d}</Text></Rise>
+        <View style={{ height: Math.max(0, h * 0.96 - insets.top - 58) }} />
+        <Rise><Text style={t.step}>01 / 07</Text><Text style={[t.h1, { fontSize: 32, lineHeight: 38 }]}>{st.t}</Text><Text style={t.p}>{st.d}</Text></Rise>
         <Rise i={1} style={styles.info}>
           <Image source={IMG.sun} style={{ width: 30, height: 30 }} resizeMode="contain" />
           <Text style={[F.r, { flex: 1, fontSize: 12.5, lineHeight: 18, color: C.soft }]}>This helps us understand your unique skin and create a routine that actually fits you.</Text>
         </Rise>
+        <Spacer />
         <Btn title="Start" onPress={() => go('goals')} />
       </Page>
     </View>
   )
 }
 
-// Between two steps: "Great!", Koda, the next step's bubble and what she picked.
+// Little four-point sparkles of light, as on the mockup.
+const Sparkles = ({ points, width, height }) => (
+  <Svg style={StyleSheet.absoluteFill} width={width} height={height} pointerEvents="none">
+    {points.map(([x, y, r], i) => (
+      <Path key={i} d={`M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r}Z`} fill="#FFFFFF" opacity={0.9} />
+    ))}
+  </Svg>
+)
+
+// Between two steps: "Great!", Koda, a ribbon of light around the next
+// step's bubble, sparkles, and a small line with what she picked.
 const Between = ({ from, next, onGo, summary }) => {
   const { W, nm } = useOb()
   const t = useType()
   const st = STEPS[SI(next)]
   const words = ['Great', 'Lovely', 'Nice work', 'Perfect', 'Beautiful', 'Almost there']
   const sw = W - 44
+  const sh = 340
+  const bub = Math.min(220, sw * 0.62)
+  const cx = sw / 2 + 10
+  const cy = 200
+  const ribbon = `M${sw * 0.72} -10 C ${sw * 0.8} 40, ${sw * 0.45} 55, ${sw * 0.3} 80 S ${cx - bub * 0.62} ${cy - 20}, ${cx - bub * 0.45} ${cy + bub * 0.4} S ${sw * 0.3} ${sh - 10}, -20 ${sh - 40}`
   return (
     <Page>
       <Bar />
@@ -697,22 +727,24 @@ const Between = ({ from, next, onGo, summary }) => {
         <Text style={[t.h1, { textAlign: 'center' }]}>{words[SI(from) % words.length]}{nm} ✨</Text>
         <Text style={[t.p, { textAlign: 'center', marginTop: 6 }]}>Now let's look at {NEXT_LOOK[next]}.</Text>
       </Rise>
-      <View style={{ height: 270, width: sw, alignSelf: 'center' }}>
-        <Svg style={StyleSheet.absoluteFill} width={sw} height={270} viewBox="0 0 300 300" preserveAspectRatio="none">
-          <Path d="M70 70 C 150 20, 250 90, 190 140 S 120 230, 210 280" fill="none" stroke="#FFFFFF" strokeWidth={6} opacity={0.9} />
-          <Path d="M70 70 C 150 20, 250 90, 190 140 S 120 230, 210 280" fill="none" stroke="#E9B9D4" strokeWidth={1.6} />
+      <View style={{ height: sh, width: sw }}>
+        <Svg style={StyleSheet.absoluteFill} width={sw} height={sh}>
+          <Path d={ribbon} fill="none" stroke="#FFFFFF" strokeWidth={8} opacity={0.5} strokeLinecap="round" />
+          <Path d={ribbon} fill="none" stroke="#C99BBB" strokeWidth={2.6} opacity={0.85} strokeLinecap="round" />
+          <Path d={ribbon} fill="none" stroke="#FFFFFF" strokeWidth={0.9} opacity={0.9} strokeLinecap="round" />
         </Svg>
-        <Float style={{ position: 'absolute', left: sw * 0.12, top: 30 }} duration={3400}>
-          <Image source={KODA.wink} style={{ width: 84, height: 84 }} resizeMode="contain" />
+        <Pop delay={200} style={{ position: 'absolute', left: cx - bub / 2, top: cy - bub / 2 }}><Bubble name={st.i} size={bub} /></Pop>
+        <Float style={{ position: 'absolute', left: sw * 0.04, top: 22 }} duration={3400}>
+          <Image source={KODA.wink} style={{ width: 92, height: 92 }} resizeMode="contain" />
         </Float>
-        <Pop delay={200} style={{ position: 'absolute', left: sw / 2 - 80, top: 80 }}><Bubble name={st.i} size={180} /></Pop>
+        <Sparkles width={sw} height={sh} points={[[sw * 0.86, 70, 7], [sw * 0.93, 230, 9], [sw * 0.06, 170, 6], [sw * 0.18, 290, 8], [sw * 0.75, 310, 5], [sw * 0.55, 40, 4]]} />
       </View>
-      {summary ? <Rise i={2}>{summary}</Rise> : null}
-      <Rise i={3} style={{ alignItems: 'center', marginTop: 6 }}>
+      <Rise i={3} style={{ alignItems: 'center', marginTop: 4 }}>
         <Text style={t.step}>{pad(SI(next) + 1)} / 07</Text>
-        <Text style={t.h2}>{st.t}</Text>
-        <Text style={[t.p, { marginTop: 4, marginBottom: 14 }]}>{st.s}.</Text>
+        <Text style={[t.h1, { fontSize: 28 }]}>{st.t}</Text>
+        <Text style={[t.p, { marginTop: 4, textAlign: 'center' }]}>{st.s}.</Text>
       </Rise>
+      {summary ? <Rise i={4} style={{ marginTop: 10 }}>{summary}</Rise> : null}
       <Spacer />
       <Btn onPress={onGo} />
     </Page>
@@ -772,6 +804,44 @@ const Tone = () => {
         ))}
       </View>
       <Spacer />
+    </Page>
+  )
+}
+
+// Lifestyle as glass cards with an icon, like the mockup: tap the ones that fit.
+const LifeCards = () => {
+  const { F, W, P, set, go, say } = useOb()
+  const [on, setOn] = useState(P.lifeYes ? LIFE_CARDS.filter((c, i) => c.none ? !P.lifeYes.some(Boolean) : P.lifeYes[i]) : [])
+  const cw = (W - 44 - 12) / 2
+  const tap = c => {
+    Haptics.selectionAsync().catch(() => {})
+    if (c.none) return setOn(on.includes(c) ? [] : [c])
+    const next = on.includes(c) ? on.filter(x => x !== c) : [...on.filter(x => !x.none), c]
+    if (!on.includes(c) && c.say) say(c.say)
+    setOn(next)
+  }
+  return (
+    <Page>
+      <Head z="life" q="How would you describe your days?" h="Tap all that apply." />
+      <View style={styles.grid}>
+        {LIFE_CARDS.map((c, i) => {
+          const sel = on.includes(c)
+          return (
+            <Rise key={c.t} i={i + 1}>
+              <Pressable onPress={() => tap(c)} style={[styles.lifeCard, { width: cw }, sel && styles.pcOn]}>
+                <View style={[styles.gc, { width: 38, height: 38 }]}><LineIcon name={c.ic} size={20} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[F.s, { fontSize: 14, color: C.ink }]}>{c.t}</Text>
+                  <Text style={[F.r, { fontSize: 11.5, lineHeight: 15, color: C.soft }]}>{c.s}</Text>
+                </View>
+                <Tick on={sel} />
+              </Pressable>
+            </Rise>
+          )
+        })}
+      </View>
+      <Spacer />
+      <Btn disabled={!on.length} onPress={() => { set({ lifeYes: LIFE_CARDS.filter(c => !c.none).map(c => on.includes(c)) }); go('lifeDone') }} />
     </Page>
   )
 }
@@ -975,7 +1045,7 @@ const Build = () => {
 }
 
 const Final = () => {
-  const { F, P, nm, answersOf, finish, saving } = useOb()
+  const { F, W, P, nm, answersOf, finish, saving } = useOb()
   const t = useType()
   const a = answersOf()
   const type = computeSkinType(a)
@@ -999,7 +1069,7 @@ const Final = () => {
     ['color-wand-outline', 'We choose for you', choose],
   ].filter(x => x[2].length)
   const share = () => Share.share({ message: `My Skyn Profile on Skynkod ✨\n${sec.map(([, k, v]) => `${k}: ${v.join(', ')}`).join('\n')}` }).catch(() => {})
-  const cw = 230
+  const cw = Math.min(W - 70, 290)
   return (
     <Page>
       <Bar />
@@ -1010,19 +1080,19 @@ const Final = () => {
       <Pop delay={100} style={{ width: cw, height: cw, alignSelf: 'center', marginTop: 14, marginBottom: 4 }}>
         <Image source={IMG.cards} style={{ width: cw, height: cw }} resizeMode="contain" />
         <Text style={[F.s, styles.cardLabel, { left: cw * 0.31, right: cw * 0.03, top: cw * 0.69 }]}>YOUR SKYN PROFILE</Text>
-        <Pop delay={600} style={styles.unl}><LineIcon name="unlock" size={22} color="#fff" /></Pop>
       </Pop>
-      {sec.map(([icon, label, list], i) => (
-        <Rise key={label} i={i + 3} style={styles.sec}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <LineIcon name={icon} size={15} />
-            <Text style={[F.s, styles.k]}>{label}</Text>
+      {/* One glass card with a line per section, like the mockup, filled with her answers. */}
+      <Rise i={3} style={styles.list}>
+        {sec.map(([icon, label, list], i) => (
+          <View key={label} style={[styles.listRow, i === sec.length - 1 && { borderBottomWidth: 0 }]}>
+            <LineIcon name={icon} size={22} />
+            <View style={{ flex: 1 }}>
+              <Text style={[F.s, { fontSize: 14.5, color: C.ink }]}>{label}</Text>
+              <Text style={[F.r, { fontSize: 12.5, lineHeight: 17, color: C.soft, marginTop: 1 }]}>{list.join(' · ')}</Text>
+            </View>
           </View>
-          <View style={styles.chips}>
-            {list.map(c => <View key={c} style={styles.chipRo}><Text style={[F.m, { fontSize: 12.5, color: C.ink }]}>{c}</Text></View>)}
-          </View>
-        </Rise>
-      ))}
+        ))}
+      </Rise>
       <View style={{ height: 16 }} />
       <Btn title="See my results" onPress={() => finish(true, { offerPremium: true })} disabled={saving} />
       <Ghost title="Share my profile" icon="share-outline" onPress={share} />
@@ -1040,7 +1110,7 @@ const Minor = ({ onLeave }) => {
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }}>
       <View style={styles.bar}>
-        {open ? <Pressable onPress={() => setArticle(null)} hitSlop={12}><Ionicons name="chevron-back" size={24} color={C.ink} /></Pressable> : null}
+        {open ? <Pressable onPress={() => setArticle(null)} hitSlop={12}><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable> : null}
         <View style={{ flex: 1 }} />
         <Pressable onPress={() => onLeave?.()} hitSlop={12}><Text style={[F.s, { color: C.mauve2 }]}>Close</Text></Pressable>
       </View>
@@ -1254,7 +1324,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     ); break
     case 'spotted': content = <Spotted />; break
     case 'sleep': content = <Sleep />; break
-    case 'life': content = <Statements z="life" q="Your days" h="Yes or no." items={LIFE_STATEMENTS} reacts={LIFE_SAYS} initial={P.lifeYes} onDone={a => { set({ lifeYes: a }); go('lifeDone') }} />; break
+    case 'life': content = <LifeCards />; break
     case 'lifeDone': content = <Between from="life" next="safety" onGo={() => go('safety')} />; break
     case 'safety': content = <Safety />; break
     case 'last': content = <Last />; break
@@ -1266,7 +1336,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   return (
     <Ob.Provider value={ctx}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <Backdrop />
+        <Backdrop deep={['skinDone', 'faceDone', 'eyesDone', 'lipsDone', 'neckDone', 'lifeDone', 'final'].includes(cur.id)} />
         {minor ? <Minor onLeave={onLeave} /> : <View key={cur.id + (cur.k || '')} style={{ flex: 1 }}>{content}</View>}
         {koda ? (
           <Animated.View pointerEvents="none" style={[styles.kd, { bottom: insets.bottom + 84, opacity: kodaV, transform: [{ translateY: kodaV.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }]}>
@@ -1285,9 +1355,9 @@ const glass = { backgroundColor: C.glass, borderWidth: 1.5, borderColor: C.glass
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: C.bg1 },
   bar: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 22, minHeight: 28 },
-  prog: { flex: 1, height: 4, borderRadius: 4, backgroundColor: C.line, overflow: 'hidden' },
-  progFill: { height: 4, borderRadius: 4, backgroundColor: C.mauve2 },
-  progN: { fontSize: 12, color: C.soft, minWidth: 30, textAlign: 'right' },
+  segs: { flex: 1, flexDirection: 'row', gap: 5 },
+  seg: { flex: 1, height: 4, borderRadius: 4, backgroundColor: C.line },
+  segOn: { backgroundColor: C.mauve2 },
   btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: '#86607F', shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
   btnText: { color: '#fff', fontSize: 15.5 },
   btnArrow: { position: 'absolute', right: 22 },
@@ -1295,7 +1365,7 @@ const styles = StyleSheet.create({
   gc: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(250,236,244,0.85)', borderWidth: 1, borderColor: C.glassLine, ...shadow },
   feats: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 18, marginBottom: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 18 },
-  pc: { backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden', ...shadow },
+  pc: { backgroundColor: '#FDF7FA', borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden', ...shadow },
   pcOn: { borderColor: C.mauve2, shadowOpacity: 0.25 },
   pcT: { fontSize: 13, lineHeight: 16, color: C.ink },
   pcS: { fontSize: 11, lineHeight: 14, color: C.mute, marginTop: 2 },
@@ -1314,7 +1384,7 @@ const styles = StyleSheet.create({
   hero: { position: 'absolute', left: 0, right: 0, top: 0, overflow: 'hidden' },
   lens: { position: 'absolute', borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.75)', shadowColor: '#fff', shadowOpacity: 0.35, shadowRadius: 9 },
   info: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 18, marginBottom: 14 },
-  sum: { ...glass, alignSelf: 'stretch', paddingVertical: 12, paddingHorizontal: 14, marginTop: 12, marginBottom: 4 },
+  sum: { ...glass, alignSelf: 'stretch', paddingVertical: 8, paddingHorizontal: 14, marginTop: 6, borderRadius: 14 },
   k: { fontSize: 11, color: C.mute, letterSpacing: 0.5, textTransform: 'uppercase' },
   fz: { borderRadius: 20, overflow: 'hidden', marginTop: 16, ...shadow },
   zp: { position: 'absolute', transform: [{ translateX: -40 }, { translateY: -16 }], minWidth: 80, alignItems: 'center', paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.95)', backgroundColor: 'rgba(255,255,255,0.78)' },
@@ -1325,6 +1395,7 @@ const styles = StyleSheet.create({
   hours: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 26 },
   hour: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
   tg: { ...glass, padding: 14 },
+  lifeCard: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingLeft: 12, paddingRight: 22, minHeight: 72 },
   tgHd: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   reco: { alignSelf: 'flex-start', backgroundColor: 'rgba(246,226,238,0.95)', borderRadius: 999, paddingVertical: 3, paddingHorizontal: 8, marginBottom: 5 },
   toggle: { width: 44, height: 26, borderRadius: 13, backgroundColor: '#E6D8E1' },
@@ -1336,9 +1407,8 @@ const styles = StyleSheet.create({
   it: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },
   oc: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: '#D9C6D3' },
   cardLabel: { position: 'absolute', textAlign: 'center', fontSize: 9.5, letterSpacing: 1.1, color: C.mauve },
-  unl: { position: 'absolute', right: -4, top: -6, width: 42, height: 42, borderRadius: 21, backgroundColor: '#916B8B', alignItems: 'center', justifyContent: 'center', shadowColor: '#86607F', shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 8 } },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 7 },
-  chipRo: { backgroundColor: 'rgba(246,226,238,0.9)', borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10 },
+  list: { ...glass, borderRadius: 20, paddingVertical: 4, paddingHorizontal: 16, marginTop: 6 },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },
   kd: { position: 'absolute', left: 18, right: 18, flexDirection: 'row', alignItems: 'center', gap: 8 },
   kdb: { flexShrink: 1, backgroundColor: 'rgba(255,255,255,0.85)', borderWidth: 1, borderColor: C.glassLine, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, ...shadow },
 })
