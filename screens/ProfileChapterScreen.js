@@ -8,7 +8,7 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { fromRow, toColumns } from '../utils/skin-quiz'
 import { syncSoon } from '../utils/journey'
 import { logError } from '../utils/errorLogger'
-import { refreshIfRekod } from '../utils/rekod'
+import { refreshIfRekod, refreshBasicRoutine } from '../utils/rekod'
 import { syncSmartReminders } from '../utils/notifications'
 
 // My Skyn Profile and "My skin issues" (Lita, 2026-10-27): she redoes one or
@@ -38,7 +38,11 @@ export default function ProfileChapterScreen({ route, navigation }) {
     if (!ok) return Alert.alert(t('Error'), t("Couldn't save your answer. Try again."))
     syncSoon(user.id)
     // Rekod follows her health answers at once (pregnancy, diagnosis, treatment).
-    refreshIfRekod(user.id).then(done => { if (done) syncSmartReminders(user.id) }).catch(error => logError('Rekod_safetyRefresh', error, {}, 'warn'))
+    // Rekod rebuilds itself; otherwise the basic routine's own picks are chosen again.
+    refreshIfRekod(user.id)
+      .then(done => (done ? true : refreshBasicRoutine(user.id)))
+      .then(changed => { if (changed) syncSmartReminders(user.id) })
+      .catch(error => logError('Routine_profileRefresh', error, {}, 'warn'))
     navigation.goBack()
   }
 

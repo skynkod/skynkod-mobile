@@ -175,14 +175,14 @@ export const buildBasicRoutine = async (userId, givenProfile) => {
   const sunscreen = await pick(['sunscreen'], { ...gentle, prefer: spf50 })
   return {
     morning: [
-      stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
-      stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
-      stepFrom('sunscreen', 'SPF', sunscreen, { cats: ['sunscreen'] }),
+      stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'], basic: true }),
+      stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'], basic: true }),
+      stepFrom('sunscreen', 'SPF', sunscreen, { cats: ['sunscreen'], basic: true }),
     ],
     evening: [
-      remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
-      stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
-      stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }),
+      remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'], basic: true }),
+      stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'], basic: true }),
+      stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'], basic: true }),
     ].filter(Boolean),
     toBuy: [cleanser, remover, moisturizer, sunscreen].filter(c => c && !c.owned).map(c => c.product),
   }
@@ -200,6 +200,29 @@ export const startBasicRoutine = async (userId, givenProfile) => {
   }
   for (const product of routine.toBuy) await addToMyProducts(userId, product, 'to_buy').catch(() => {})
   return routine
+}
+
+// Her profile changed (a new allergy, a new skin type…): the steps Skynkod
+// chose for her basic routine are chosen again with the same rules. The ones
+// she picked herself (edited in the builder) stay as they are. Not with Rekod,
+// which has its own refresh.
+export const refreshBasicRoutine = async (userId, givenProfile) => {
+  if (await getRekodPlan(userId).catch(() => null)) return false
+  const { data: rows } = await supabase.from('routines').select('type, steps, created_at').eq('user_id', userId).order('created_at', { ascending: false })
+  const fresh = await buildBasicRoutine(userId, givenProfile)
+  let changed = false
+  for (const type of ['morning', 'evening']) {
+    const steps = (rows || []).find(r => r.type === type)?.steps || []
+    if (!steps.some(st => st.basic)) continue
+    const next = steps.map(st => (st.basic ? fresh[type].find(n => n.key === st.key) || st : st))
+    if (next.some((st, i) => st.product_id !== steps[i].product_id)) {
+      const res = await saveRoutine(userId, type, next)
+      if (!res.success) throw new Error(res.error)
+      changed = true
+    }
+  }
+  if (changed) for (const product of fresh.toBuy) await addToMyProducts(userId, product, 'to_buy').catch(() => {})
+  return changed
 }
 
 // Why each step is there, in plain words. Active steps explain their main
@@ -339,7 +362,8 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
 
   // Red, inflamed spots: benzoyl peroxide on the spots, the dermatologists' first choice (AAD).
   const inflamed = (profile.acne_types || []).includes('Inflammatory') && !plan.fragile && !simple
-  const spotTreatment = inflamed ? await pick(['serum', 'exfoliant', 'moisturizer'], { want: ['benzoyl'], wantRequired: true, unique: true, strictOnly: true }) : null
+  const spotNights = [...daysFor('repair'), ...daysFor('reset')].sort()
+  const spotTreatment = inflamed && spotNights.length ? await pick(['serum', 'exfoliant', 'moisturizer'], { want: ['benzoyl'], wantRequired: true, unique: true, strictOnly: true }) : null
 
   const evening = [
     remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
@@ -349,7 +373,8 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
     eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'], ...OPTIONAL_STEP }, ['retinol']),
     eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'], ...OPTIONAL_STEP }, PEPTIDES),
-    spotTreatment && stepFrom('treatment', 'On red spots only', spotTreatment, { cats: ['serum', 'exfoliant', 'moisturizer'], optional: true, optionalNote: 'only on red spots' }, ['benzoyl']),
+    // Only on repair and reset nights: never the same evening as an acid or a retinoid.
+    spotTreatment && spotNights.length && stepFrom('treatment', 'On red spots only', spotTreatment, { days: spotNights, cats: ['serum', 'exfoliant', 'moisturizer'], optional: true, optionalNote: 'only on red spots' }, ['benzoyl']),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'] }, moistWant),
     // No lip scrub on fragile lips (isotretinoin, a prescription cream) or in the simple routine.
     !plan.fragile && !simple && isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'], ...OPTIONAL_STEP }),
