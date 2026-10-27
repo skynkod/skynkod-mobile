@@ -192,6 +192,7 @@ const profileFacts = (profile) => {
     outdoors: !!profile?.outdoors,
     sweat: !!profile?.sweat,
     eyeKinds: profile?.eyeDetails || [],
+    prefs: profile?.prefs || [],
   }
 }
 
@@ -220,6 +221,8 @@ export const PREGNANCY_ALTERNATIVES = {
   hydroquinone: ['azelaic', 'vitaminc', 'niacinamide'],
 }
 
+// Animal-derived ingredients, by their INCI names.
+const VEGAN_NO = /lanolin|cera alba|beeswax|\bcera flava|carmine|ci 75470|snail|mucin|\bmel\b|honey|propolis|royal jelly|collagen|elastin|keratin|\bsilk|sericin|lactis|\bmilk|lactose|whey|casein|guanine|squalene|shellac|tallow|\begg\b|ovum/
 const AVOID_TAGS = { Fragrance: ['fragrance'], 'Essential oils': ['essential-oil'], Nuts: ['nut'], Lanolin: ['lanolin'], Alcohol: ['drying-alcohol'] }
 
 // Rules from the user's own answers: ingredients to avoid and pregnancy.
@@ -426,6 +429,16 @@ export const productMatch = (product, profile) => {
       if (f.level === 'avoid') avoid.push({ entry, text: f.text, detail: f.detail, alternatives: f.alternatives || [] })
       else cares.push({ entry, text: f.text, detail: f.detail, level: 'patch' })
     }
+  }
+
+  // Her product preferences (Lita, 2026-10-27): fragrance-free and vegan are hard no's for her.
+  if (facts.prefs.includes('fragrance_free')) {
+    const scent = found.find(f => ['fragrance', 'allergens', 'essentialoils'].includes(f.entry.id))
+    if (scent && !avoid.some(x => x.entry === scent.entry)) avoid.push({ entry: scent.entry, text: `Contains ${scent.entry.name.toLowerCase()}, and you prefer fragrance-free`, detail: 'You asked for fragrance-free products. We check the whole ingredient list for perfume, essential oils and scent allergens.', alternatives: [] })
+  }
+  if (facts.prefs.includes('vegan')) {
+    const animal = [...productList(product).full, ...productList(product).key].find(inci => VEGAN_NO.test(inci))
+    if (animal) avoid.push({ entry: { id: 'not-vegan', name: animal }, text: `Contains ${animal}, which isn't vegan`, detail: 'You asked for vegan products. This ingredient comes from animals (bees, sheep\'s wool, snails, milk…).', alternatives: [] })
   }
 
   // Ingredients she typed herself ("Other" at sign-up, 2026-10-27): looked for

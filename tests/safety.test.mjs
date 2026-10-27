@@ -20,3 +20,10 @@ assert.deepEqual(toColumns(answers, true).skin_conditions, ['Rosacea'])
 assert.deepEqual(toColumns(answers, false).skin_conditions, [])
 const prof = engineProfile({ ...toColumns(answers, true), consent_health_at: 'now' })
 assert.ok(productMatch(product(['aqua', 'glycolic acid']), prof).triggered.some(t => t.text.includes('rosacea')))
+
+// Product preferences: fragrance-free and vegan.
+const prefOf = prefs => engineProfile({ ...toColumns({ feel: 'normal', issues: [], prefs }, true), consent_health_at: 'now' })
+assert.ok(productMatch(product(['aqua', 'parfum']), prefOf(['fragrance_free'])).avoid.some(a => a.text.includes('fragrance-free')))
+assert.equal(productMatch(product(['aqua', 'parfum']), prefOf([])).avoid.length, 0)
+assert.ok(productMatch(product(['aqua', 'cera alba', 'glycerin']), prefOf(['vegan'])).avoid.some(a => a.text.includes("isn't vegan")))
+assert.equal(productMatch(product(['aqua', 'squalane', 'glycerin']), prefOf(['vegan'])).avoid.length, 0)

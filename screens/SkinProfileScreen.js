@@ -1,168 +1,136 @@
 import React, { useCallback, useState } from 'react'
-import { syncSoon } from '../utils/journey'
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Alert } from 'react-native'
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Screen, LoadingView, Button, useColors } from '../components/ui'
-import QuizQuestion from '../components/QuizQuestion'
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter'
+import { LoadingView } from '../components/ui'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
-import { getUserProfile, updateUserProfile } from '../utils/supabase'
-import { currentSkinState, stateLabel } from '../utils/skin-state'
+import { getUserProfile } from '../utils/supabase'
 import { getCondition, CONCERN_CONDITIONS, SUSPICION_CONDITION } from '../utils/encyclopedia/conditions'
-import { CHAPTERS, QUESTIONS, fromRow, toColumns, answerLabel, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, resolveQuestion, prioritiesOf, withIssues } from '../utils/skin-quiz'
+import { fromRow, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, prioritiesOf } from '../utils/skin-quiz'
 import { logError } from '../utils/errorLogger'
-import { refreshIfRekod } from '../utils/rekod'
-import { syncSmartReminders } from '../utils/notifications'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { fromAnswers, Backdrop, Bubble, LineIcon, GLOSSY as C, STEPS, CONCERN_LABEL, AGES, SAFETY, LIFE_CARDS } from './OnboardingScreen'
 
-// Every sign-up answer, editable anytime: a new diagnosis, a new treatment,
-// a change of mind. Saved straight away.
+// My Skyn Profile (Lita, 2026-10-27): the 7 steps of the sign-up, in the same
+// glossy style, each with what she answered. Tapping a step replays it with
+// the sign-up's own screens (ProfileChapterScreen), already filled in.
+const PREFS = { fragrance_free: 'Fragrance-free', vegan: 'Vegan' }
+
 export default function SkinProfileScreen({ navigation }) {
-  const colors = useColors()
   const t = useT()
   const insets = useSafeAreaInsets()
   const { user } = useAuth()
   const [row, setRow] = useState(null)
-  const [answers, setAnswers] = useState(null)
-  const [editing, setEditing] = useState(null) // question id
-  const [draft, setDraft] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [skinState, setSkinState] = useState(null)
-  useFocusEffect(useCallback(() => { if (user?.id) currentSkinState(user.id).then(setSkinState).catch(() => {}) }, [user?.id]))
+  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold })
+  const F = fontsLoaded
+    ? { r: { fontFamily: 'Inter_400Regular' }, m: { fontFamily: 'Inter_500Medium' }, s: { fontFamily: 'Inter_600SemiBold' } }
+    : { r: {}, m: { fontWeight: '500' }, s: { fontWeight: '600' } }
 
   useFocusEffect(useCallback(() => {
     if (!user?.id) return
-    getUserProfile(user.id).then(r => { setRow(r); setAnswers(fromRow(r)) }).catch(error => logError('SkinProfile_load', error))
+    getUserProfile(user.id).then(setRow).catch(error => logError('SkinProfile_load', error))
   }, [user?.id]))
+  if (!row) return <LoadingView />
 
-  if (!answers) return <LoadingView />
-  const health = !!row?.consent_health_at
+  const a = fromRow(row)
+  const P = fromAnswers(a, row)
+  const health = !!row.consent_health_at
+  const type = computeSkinType(a) || row.skin_type
+  const { main, second } = prioritiesOf(a)
+  const concerns = a.concerns || []
+  const suspected = health ? suspicionsFrom(a) : []
+  const open = chapters => navigation.navigate('ProfileChapter', { chapters })
+  const list = items => items.filter(Boolean).join(' · ')
+  const titles = picks => picks.map(o => t(o.t))
 
-  const save = async () => {
-    const next = { ...answers, [editing]: draft }
-    setSaving(true)
-    const ok = await updateUserProfile(user.id, toColumns(next, health))
-    setSaving(false)
-    if (!ok) return Alert.alert(t('Error'), t("Couldn't save your answer. Try again."))
-    setAnswers(withIssues(next, health))
-    setEditing(null)
-    syncSoon(user.id)
-    // Rekod follows her health answers at once (pregnancy, diagnosis, treatment).
-    refreshIfRekod(user.id).then(done => { if (done) syncSmartReminders(user.id) }).catch(error => logError('Rekod_safetyRefresh', error, {}, 'warn'))
+  // What she answered, step by step (empty = nothing to report).
+  const summary = {
+    skin: list([type ? `${t(type)}${a.reactivity === 'often' ? ` · ${t('Sensitive')}` : ''}` : null, P.age != null ? AGES[P.age] : null, ...P.goals.map(g => t(g.t))]),
+    face: list([...P.faceZones.map(z => t(z.t)), ...titles(P.face)]),
+    eyes: list(titles(P.eyes)),
+    lips: list(titles(P.lips)),
+    neck: list(titles(P.neck)),
+    life: list([P.sleep != null ? t('{n} h of sleep', { n: P.sleep }) : null, ...(P.lifeYes || []).map((yes, i) => (yes ? t(LIFE_CARDS[i].t) : null))]),
+    safety: list([
+      ...(health ? [...P.preg.map(x => t(SAFETY[0].o.find(o => o[0] === x)?.[1] || x)), ...(a.avoid || []).map(x => t('No {x}', { x: x.toLowerCase() })), ...(a.conditions || []).map(x => t(x)), ...(a.meds || []).map(m => t(SAFETY.find(s => s.k === 'meds').o.find(o => o[0] === m)?.[1] || m))] : [t('Sensitive information not shared')]),
+      ...P.prefs.map(x => t(PREFS[x] || x)),
+    ]),
   }
-
-  const open = (q) => { setDraft(answers[q.id] ?? (q.type === 'multi' ? [] : null)); setEditing(q.id) }
-  const q = QUESTIONS.find(x => x.id === editing)
-  const suspected = health ? suspicionsFrom(answers) : []
+  const label = c => t(CONCERN_LABEL[c] || c)
 
   return (
-    <Screen back title={t('My Skyn Profile')} subtitle={t('Change any answer, anytime.')}>
-      <View style={[styles.summary, { backgroundColor: colors.primarySoft }]}>
-        <Text style={[TYPE.overline, { color: colors.primary }]}>{t('Your skin type')}</Text>
-        <Text style={[TYPE.heading, { color: colors.text, marginTop: 2 }]}>
-          {computeSkinType(answers) ? t(computeSkinType(answers)) : row?.skin_type ? t(row.skin_type) : t('To discover')}
-          {answers.reactivity === 'often' ? ` · ${t('Sensitive')}` : ''}
-        </Text>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Calculated from your skin test.')}</Text>
-      </View>
-
-      {/* 🎯 Your skin priorities (Lita, 2026-10-24): what to work on first, and how the skin is today */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR SKIN PRIORITIES')}</Text>
-        {[
-          ['1', t('Main concern'), prioritiesOf(answers).main ? t(prioritiesOf(answers).main) : t('Not chosen yet'), 'priority'],
-          ['2', t('Secondary concern'), prioritiesOf(answers).second ? t(prioritiesOf(answers).second) : t('None'), 'secondary'],
-          ['3', t('Skin type'), [computeSkinType(answers) || row?.skin_type, answers.reactivity === 'often' ? 'Sensitive' : null].filter(Boolean).map(x => t(x)).join(' · ') || t('To discover'), null],
-          ['4', t('Your skin today'), skinState?.states?.length ? skinState.states.map(x => t(stateLabel(x))).join(' · ') : t('Tell us in your morning check-in'), null],
-        ].map(([n, label, value, edit]) => (
-          <Pressable key={n} disabled={!edit || (edit === 'secondary' && (answers.concerns || []).length < 3) || (edit === 'priority' && (answers.concerns || []).length < 2)}
-            onPress={() => open(QUESTIONS.find(x => x.id === edit))} style={styles.priorityRow}>
-            <Text style={[styles.priorityNum, { color: colors.primary }]}>{n}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[TYPE.caption, { color: colors.muted }]}>{label}</Text>
-              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 1 }]}>{value}</Text>
-            </View>
-          </Pressable>
-        ))}
-        {prioritiesOf(answers).main && CONCERN_CONDITIONS[prioritiesOf(answers).main] ? (
-          <View style={styles.issueChips}>
-            {CONCERN_CONDITIONS[prioritiesOf(answers).main].map(id => (
-              <Pressable key={id} onPress={() => navigation.navigate('Condition', { id })} style={[styles.issueChip, { backgroundColor: colors.primarySoft }]}>
-                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(getCondition(id).title)} ›</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-      </View>
-
-      {suspected.map(id => (
-        <View key={id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(SUSPICIONS[id].title)}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(DOCTOR_NOTE)}</Text>
-          {SUSPICION_CONDITION[id] ? (
-            <Pressable onPress={() => navigation.navigate('Condition', { id: SUSPICION_CONDITION[id] })} hitSlop={6}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700', marginTop: 6 }]}>{t('What it is, what helps and the treatments')} ›</Text>
-            </Pressable>
-          ) : null}
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4, lineHeight: 18 }]}>{t('Seen a doctor? Update your answers below: diagnosed conditions, or remove the sign if it was something else.')}</Text>
+    <View style={{ flex: 1 }}>
+      <Backdrop />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.bar}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityLabel={t('Back')}><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable>
         </View>
-      ))}
+        <Text style={[F.s, styles.h1]}>{t('My Skyn Profile')}</Text>
+        <Text style={[F.r, styles.hint]}>{t('Tap a step to update your answers.')}</Text>
 
-      {CHAPTERS.map(chapter => {
-        const list = QUESTIONS.filter(x => x.chapter === chapter.id && (!x.showIf || x.showIf(answers)))
-        if (!list.length) return null
-        const locked = list.every(x => x.sensitive) && !health
-        return (
-          <View key={chapter.id} style={{ marginTop: SPACING.xl }}>
-            <Text style={[TYPE.overline, { color: colors.muted, marginBottom: SPACING.sm }]}>{t(chapter.label)}</Text>
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, paddingVertical: 0 }]}>
-              {locked ? (
-                <Pressable onPress={() => navigation.navigate('Privacy')} style={styles.row}>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t('Turn on “Sensitive skin information” in Privacy to answer these questions.')}</Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-                </Pressable>
-              ) : list.filter(x => health || !x.sensitive).map((x, i, arr) => (
-                <Pressable key={x.id} onPress={() => open(x)} style={[styles.row, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[TYPE.caption, { color: colors.muted }]}>{t(x.title)}</Text>
-                    <Text style={[TYPE.bodyStrong, { color: answerLabel(x, answers[x.id]) ? colors.text : colors.muted, marginTop: 2 }]}>
-                      {answerLabel(x, answers[x.id]) ? answerLabel(x, answers[x.id]).split(' · ').map(l => t(l)).join(' · ') : t('Not answered')}
-                    </Text>
-                  </View>
-                  <Ionicons name="create-outline" size={18} color={colors.primary} />
+        {/* Her priorities: they lead every recommendation. */}
+        <Pressable disabled={concerns.length < 2} onPress={() => open(['priority'])} style={[styles.glass, { marginTop: 18 }]}>
+          <View style={styles.rowHead}>
+            <LineIcon name="sparkles" size={20} />
+            <Text style={[F.s, styles.k]}>{t('Your priority')}</Text>
+            {concerns.length >= 2 ? <Ionicons name="chevron-forward" size={18} color={C.mauve2} /> : null}
+          </View>
+          <Text style={[F.s, styles.value]}>{main ? `1. ${label(main)}${second ? `   2. ${label(second)}` : ''}` : t('Nothing to work on yet')}</Text>
+          {main && CONCERN_CONDITIONS[main] ? (
+            <View style={styles.chips}>
+              {CONCERN_CONDITIONS[main].map(id => (
+                <Pressable key={id} onPress={() => navigation.navigate('Condition', { id })} style={styles.chip}>
+                  <Text style={[F.m, { fontSize: 12, color: C.mauve }]}>{t(getCondition(id).title)} ›</Text>
                 </Pressable>
               ))}
             </View>
-          </View>
-        )
-      })}
+          ) : null}
+        </Pressable>
 
-      <Modal visible={!!q} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditing(null)}>
-        <View style={{ flex: 1, backgroundColor: colors.bg, paddingBottom: insets.bottom + SPACING.md }}>
-          <View style={styles.modalBar}>
-            <Pressable onPress={() => setEditing(null)} hitSlop={12}><Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Cancel')}</Text></Pressable>
+        {/* What might be behind some photos: never a diagnosis. */}
+        {suspected.map(id => (
+          <View key={id} style={[styles.glass, { marginTop: 10 }]}>
+            <Text style={[F.s, { fontSize: 14.5, color: C.ink }]}>{t(SUSPICIONS[id].title)}</Text>
+            <Text style={[F.r, styles.small]}>{t(DOCTOR_NOTE)}</Text>
+            {SUSPICION_CONDITION[id] ? (
+              <Pressable onPress={() => navigation.navigate('Condition', { id: SUSPICION_CONDITION[id] })} hitSlop={6}>
+                <Text style={[F.s, { fontSize: 12.5, color: C.mauve, marginTop: 6 }]}>{t('What it is, what helps and the treatments')} ›</Text>
+              </Pressable>
+            ) : null}
           </View>
-          <ScrollView contentContainerStyle={{ padding: SPACING.xl }}>
-            {q ? <QuizQuestion question={resolveQuestion(q, answers)} value={draft} onChange={setDraft} compact health={health} /> : null}
-          </ScrollView>
-          <View style={{ paddingHorizontal: SPACING.xl }}>
-            <Button title={t('Save')} onPress={save} loading={saving} />
-          </View>
+        ))}
+
+        {/* The 7 steps, like the journey map. */}
+        <View style={[styles.glass, { marginTop: 14, paddingVertical: 4 }]}>
+          {STEPS.map((s, i) => (
+            <Pressable key={s.z} onPress={() => open([s.z])} style={[styles.step, i === STEPS.length - 1 && { borderBottomWidth: 0 }]} accessibilityRole="button">
+              <Bubble name={s.i} size={50} />
+              <View style={{ flex: 1 }}>
+                <Text style={[F.s, { fontSize: 15, color: C.ink }]}>{t(s.t)}</Text>
+                <Text style={[F.r, styles.small, { marginTop: 1 }]} numberOfLines={2}>{summary[s.z] || t('Nothing to report')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.mauve2} />
+            </Pressable>
+          ))}
         </View>
-      </Modal>
-    </Screen>
+      </ScrollView>
+    </View>
   )
 }
 
+const glass = { backgroundColor: 'rgba(255,255,255,0.62)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.9)', borderRadius: 18, shadowColor: '#AA789B', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
 const styles = StyleSheet.create({
-  issueChips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
-  issueChip: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-  priorityRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.sm },
-  priorityNum: { fontSize: 18, fontWeight: '700', width: 18, textAlign: 'center' },
-  summary: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.sm },
-  card: { borderRadius: RADIUS.lg, borderWidth: 1, padding: SPACING.lg, marginTop: SPACING.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
-  modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg },
+  bar: { height: 36, justifyContent: 'center', marginBottom: 6 },
+  h1: { fontSize: 28, lineHeight: 33, letterSpacing: -0.6, color: '#2F2230' },
+  hint: { fontSize: 13.5, lineHeight: 19, color: '#6E5F6B', marginTop: 4 },
+  glass: { ...glass, padding: 14 },
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  k: { flex: 1, fontSize: 11, color: '#A0909B', letterSpacing: 0.5, textTransform: 'uppercase' },
+  value: { fontSize: 16, color: '#2F2230', marginTop: 6 },
+  small: { fontSize: 12.5, lineHeight: 17, color: '#6E5F6B', marginTop: 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  chip: { backgroundColor: 'rgba(246,226,238,0.95)', borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10 },
+  step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },
 })

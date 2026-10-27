@@ -58,7 +58,7 @@ L'ancien parcours avait un écran « A gentle reminder, morning and evening? ».
 
 ## 🟡 Moyen : incohérences
 
-### 7. My Skyn Profile pose encore l'ancien questionnaire
+### 7. ✅ Corrigé : My Skyn Profile pose encore l'ancien questionnaire
 - On y trouve encore les questions supprimées : routine actuelle, actifs, temps, budget, préférences (vegan, sans parfum…), diagnostics.
 - On n'y trouve pas les nouvelles : âge, ménopause, teinte, zones du visage, mode de vie.
 - Il y a donc deux versions du profil, qui ne se ressemblent pas.
@@ -73,7 +73,7 @@ Le rapport lisait la date de naissance, qu'on ne demande plus. Il faut qu'il lis
 ### 10. Certaines cartes n'ont aucun effet
 « Darker lips » et « Lines around the lips » sont enregistrées, mais aucun conseil n'en dépend. Ce n'est pas grave, mais il faut le savoir.
 
-### 11. Les photos des problèmes ne sont pas les mêmes partout
+### 11. ✅ Corrigé : les photos des problèmes ne sont pas les mêmes partout
 L'inscription utilise tes nouvelles macros de peau. « My skin issues » (dans le profil et depuis le journal) montre encore les anciennes illustrations (visage entier avec une loupe), que tu trouvais flippantes.
 
 ---

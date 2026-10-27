@@ -210,6 +210,8 @@ export const engineProfile = (row) => {
     stress: sp.stress || null,
     sleep: sp.sleep || null,
     eyeDetails: sp.eyeDetails || [],
+    // Product preferences: fragrance_free, vegan.
+    prefs: (sp.prefs || []).filter(x => x !== 'None'),
     meds,
     fragile,
     // Her main and secondary concern (they lead the product verdicts and Rekod).

@@ -224,6 +224,50 @@ const SAFETY = [
 ]
 const SKIN_WHY = { Oily: 'It shines all over your face.', Combination: 'Shiny in the center, normal on the cheeks.', Dry: 'It lacks oil and feels tight.', Normal: 'Balanced: neither oily nor dry.' }
 
+// ---------- My Skyn Profile: replay one step (Lita, 2026-10-27) ----------
+// Saved answers → the sign-up's picks, so a step opens already filled in.
+const AVOID_FIXED = ['Fragrance', 'Essential oils', 'Nuts', 'Lanolin', 'Alcohol']
+export const fromAnswers = (a = {}, row = {}) => {
+  const ids = a.issues || []
+  const allFace = Object.values(DETAILS).flatMap(([, list]) => list)
+  const face = []
+  for (const id of ids) { const o = allFace.find(x => x.id === id); if (o && !face.includes(o)) face.push(o) }
+  const kinds = a.eyeDetails || []
+  const avoid = a.avoid || []
+  const custom = avoid.filter(x => !AVOID_FIXED.includes(x))
+  return {
+    name: row?.first_name || null,
+    goals: GOALS.filter(g => (a.goals || []).includes(g.v)),
+    sex: a.sex || null, age: a.ageRange ?? null, meno: a.menopause || null,
+    feel: a.feel || null, shine: a.shine || null, pores: a.pores || null,
+    skinYes: a.reactivity ? [a.reactivity === 'often', ['burn', 'burntan'].includes(a.sun), !!a.tightAfterShower] : undefined,
+    tone: a.tone ?? null,
+    faceZones: ZONES.filter(z => (a.faceZones || []).includes(z.v)),
+    face,
+    eyes: EYES.filter(o => ids.includes(o.id) && (!o.d || kinds.includes(o.d) || (!kinds.length && o.d === 'blue'))),
+    lips: LIPS.filter(o => ids.includes(o.id)),
+    neck: NECK.filter(o => ids.includes(o.id)),
+    priority: a.priority || null, secondary: a.secondary || null,
+    sleep: a.sleepHours ?? ({ short: 5, ok: 7, long: 9 }[a.sleep]),
+    lifeYes: a.stress || a.makeup || a.sunTime ? [a.stress === 'high', a.makeup === 'daily', a.sunTime === 'high', !!a.sweat] : undefined,
+    preg: ['pregnant', 'breastfeeding'].includes(a.pregnancy) ? [a.pregnancy] : [],
+    avoid: [...avoid.filter(x => AVOID_FIXED.includes(x)), ...(custom.length ? ['Other'] : [])],
+    avoidOther: custom.join(', '),
+    conditions: a.conditions || [], meds: a.meds || [], prefs: a.prefs || [],
+  }
+}
+// Where each step starts, which screen ends it, and the answers it owns.
+const CHAPTER_START = { skin: 'goals', face: 'faceZones', eyes: 'eyes', lips: 'lips', neck: 'neck', life: 'sleep', safety: 'safety', priority: 'spotted' }
+const CHAPTER_END = { skinDone: 'skin', faceDone: 'face', eyesDone: 'eyes', lipsDone: 'lips', neckDone: 'neck', lifeDone: 'life', last: 'safety' }
+const ISSUE_KEYS = ['issues', 'eyeDetails', 'priority', 'secondary']
+const CHAPTER_KEYS = {
+  skin: ['goals', 'sex', 'ageRange', 'menopause', 'feel', 'shine', 'pores', 'reactivity', 'sun', 'tightAfterShower', 'tone'],
+  face: ['faceZones', 'acneWhere', ...ISSUE_KEYS], eyes: ISSUE_KEYS, lips: ISSUE_KEYS, neck: ISSUE_KEYS,
+  life: ['sleepHours', 'sleep', 'stress', 'makeup', 'sunTime', 'sweat', 'priority', 'secondary'],
+  safety: ['pregnancy', 'avoid', 'conditions', 'meds', 'prefs'],
+  priority: ['priority', 'secondary'],
+}
+
 // ---------- small pieces ----------
 // Lita's line icons (one ChatGPT sheet, 2026-10-27): same mauve stroke everywhere,
 // recoloured with tintColor when needed. Other names fall back to Ionicons.
@@ -931,13 +975,16 @@ const Sleep = () => {
 }
 
 const Safety = () => {
-  const { F, P, set, go, say, health, setHealth } = useOb()
+  const { F, P, set, go, say, health, setHealth, mode } = useOb()
   const t = useType()
   const items = SAFETY.filter(x => x.k !== 'preg' || P.sex !== 'man')
   const [open, setOpen] = useState({ preg: !!P.preg?.length, avoid: !!P.avoid?.length, conditions: !!P.conditions?.length, meds: !!P.meds?.length })
   const [picked, setPicked] = useState({ preg: P.preg || [], avoid: P.avoid || [], conditions: P.conditions || [], meds: P.meds || [] })
   const [other, setOther] = useState(P.avoidOther || '')
   const [otherErr, setOtherErr] = useState(false)
+  // Product preferences: not health data, so always here (Lita, 2026-10-27).
+  const [prefsOn, setPrefsOn] = useState(!!P.prefs?.length)
+  const [prefs, setPrefs] = useState(P.prefs || [])
   const toggle = (k, v, one) => {
     const list = picked[k]
     setPicked({ ...picked, [k]: list.includes(v) ? list.filter(x => x !== v) : one ? [v] : [...list, v] })
@@ -949,7 +996,7 @@ const Safety = () => {
       setOtherErr(true)
       return say('Tell us which ingredient, or we can\'t avoid it.', 'curious')
     }
-    set({ preg: pick('preg'), avoid: pick('avoid'), conditions: pick('conditions'), meds: pick('meds'), avoidOther: other.trim() })
+    set({ preg: pick('preg'), avoid: pick('avoid'), conditions: pick('conditions'), meds: pick('meds'), avoidOther: other.trim(), prefs: prefsOn ? prefs : [] })
     go('last')
   }
   return (
@@ -996,8 +1043,27 @@ const Safety = () => {
           ))}
         </View>
       )}
+      <Rise i={6} style={[styles.tg, { marginTop: 10 }]}>
+        <Pressable onPress={() => setPrefsOn(!prefsOn)} style={styles.tgHd} accessibilityRole="switch" accessibilityState={{ checked: prefsOn }}>
+          <View style={[styles.gc, { width: 40, height: 40 }]}><LineIcon name="leaf" size={21} /></View>
+          <Text style={[F.m, { flex: 1, fontSize: 14.5, color: C.ink }]}>Product preferences</Text>
+          <View style={[styles.toggle, prefsOn && { backgroundColor: C.mauve2 }]}><View style={[styles.knob, prefsOn && { left: 21 }]} /></View>
+        </Pressable>
+        {prefsOn ? (
+          <View style={[styles.chipsel, { marginTop: 12 }]}>
+            {[['fragrance_free', 'Fragrance-free'], ['vegan', 'Vegan']].map(([v, label]) => {
+              const on = prefs.includes(v)
+              return (
+                <Pressable key={v} onPress={() => setPrefs(on ? prefs.filter(x => x !== v) : [...prefs, v])} style={[styles.chip, on && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
+                  <Text style={[F.m, { fontSize: 12.5, color: on ? '#fff' : C.ink }]}>{label}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        ) : null}
+      </Rise>
       <Spacer />
-      <Btn title="Build my profile" onPress={done} />
+      <Btn title={mode ? 'Save' : 'Build my profile'} onPress={done} />
     </Page>
   )
 }
@@ -1104,7 +1170,7 @@ const Final = () => {
     ['sun', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
     ['sparkles', 'Your priority', [P.priority, P.secondary].filter(Boolean).map((c, n) => `${n + 1}. ${CONCERN_LABEL[c] || c}`)],
     ['eye', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
-    ['ban-outline', 'What we avoid for you', a.avoid.map(x => `No ${low(x)}`)],
+    ['ban-outline', 'What we avoid for you', [...a.avoid.map(x => `No ${low(x)}`), ...a.prefs.map(x => ({ fragrance_free: 'Fragrance-free', vegan: 'Vegan only' })[x])]],
     ['heart', 'We take care with', care],
     ['color-wand-outline', 'We choose for you', choose],
   ].filter(x => x[2].length)
@@ -1248,7 +1314,8 @@ const Minor = ({ onLeave }) => {
   )
 }
 
-export default function OnboardingScreen({ userId, onComplete, onLeave }) {
+// mode (My Skyn Profile): { chapters, answers, row, onDone(answers, health), onCancel }
+export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) {
   const insets = useSafeAreaInsets()
   const { width: W, height: H } = useWindowDimensions()
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold })
@@ -1258,18 +1325,33 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
 
   // The screen shown, with a back stack.
   const devStart = __DEV__ && Platform.OS === 'web' ? new URLSearchParams(globalThis.location?.search || '').get('onboarding') : null
-  const [cur, setCur] = useState(devStart && devStart !== '1' ? { id: devStart, ...(devStart === 'family' ? { k: 'acne', queue: ['acne'] } : {}) } : { id: 'welcome' })
+  const startOf = (chapter, picks) => (chapter === 'life' && concernsOf([...picks.face, ...picks.eyes, ...picks.lips, ...picks.neck]).length >= 2 ? 'spotted' : CHAPTER_START[chapter])
+  const [cur, setCur] = useState(() => (mode
+    ? { id: startOf(mode.chapters[0], { face: [], eyes: [], lips: [], neck: [], ...fromAnswers(mode.answers, mode.row) }) }
+    : devStart && devStart !== '1' ? { id: devStart, ...(devStart === 'family' ? { k: 'acne', queue: ['acne'] } : {}) } : { id: 'welcome' }))
   const curRef = useRef(cur)
   curRef.current = cur
   const hist = useRef([])
-  const go = (id, params = {}, { push = true } = {}) => {
+  const step = (id, params = {}, { push = true } = {}) => {
     if (push) hist.current.push(curRef.current)
     setCur({ id, ...params })
     track('onboarding_step', { step: id })
   }
+  // In My Skyn Profile, the end of a step opens the next chosen one, or saves.
+  const [done, setDone] = useState(false)
+  const endOnSleep = useRef(false)
+  const go = (id, params = {}, opts) => {
+    if (!mode) return step(id, params, opts)
+    const ended = CHAPTER_END[id] || (id === 'sleep' && (mode.chapters[0] === 'priority' || endOnSleep.current) ? 'priority' : null)
+    if (!ended) return step(id, params, opts)
+    const i = mode.chapters.indexOf(ended)
+    if (i >= 0 && i < mode.chapters.length - 1) return step(startOf(mode.chapters[i + 1], P))
+    setDone(true)
+  }
   const back = () => {
     const prev = hist.current.pop()
     if (prev) setCur(prev)
+    else if (mode) mode.onCancel?.()
   }
 
   // Her answers (saved with the app's keys at the end).
@@ -1278,10 +1360,10 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     name: 'Lina', goals: [GOALS[0], GOALS[1]], sex: 'woman', age: 1, feel: 'combo', shine: 'tzone', pores: 'nose', skinYes: [true, false, false], tone: 2,
     faceZones: [ZONES[0], ZONES[1]], face: [DETAILS.acne[1][0], DETAILS.acne[1][1], DETAILS.spots[1][0]], eyes: [EYES[0], EYES[3]], lips: [LIPS[0]], neck: [], sleep: 6, lifeYes: [true, true, false, false],
   } : {}
-  const [P, setP] = useState({ goals: [], faceZones: [], face: [], eyes: [], lips: [], neck: [], ...demo })
+  const [P, setP] = useState(() => ({ goals: [], faceZones: [], face: [], eyes: [], lips: [], neck: [], ...(mode ? fromAnswers(mode.answers, mode.row) : demo) }))
   const set = patch => setP(prev => ({ ...prev, ...patch }))
   const [terms, setTerms] = useState(false)
-  const [health, setHealth] = useState(false)
+  const [health, setHealth] = useState(!!mode?.row?.consent_health_at)
   const [minor, setMinor] = useState(false)
   const [saving, setSaving] = useState(false)
   const nm = P.name ? `, ${P.name}` : ''
@@ -1330,11 +1412,25 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       sunTime: P.lifeYes ? (P.lifeYes[2] ? 'high' : 'low') : null,
       sweat: P.lifeYes ? P.lifeYes[3] : null,
       pregnancy: health && P.sex !== 'man' ? (P.preg?.[0] || 'no') : null,
-      avoid: health ? (P.avoid || []).map(a => (a === 'Other' ? otherAvoid : a)).filter(Boolean) : [],
+      avoid: health ? (P.avoid || []).flatMap(a => (a === 'Other' ? otherAvoid.split(',').map(x => x.trim()) : [a])).filter(Boolean) : [],
+      prefs: P.prefs || [],
       conditions: health ? P.conditions || [] : [],
       meds: health ? P.meds || [] : [],
     }
   }
+
+  useEffect(() => {
+    if (!done || !mode) return
+    setDone(false)
+    const concerns = concernsOf([...P.face, ...P.eyes, ...P.lips, ...P.neck])
+    if (!endOnSleep.current && concerns.length >= 2 && !concerns.some(x => x.c === P.priority)) {
+      endOnSleep.current = true
+      return step('spotted')
+    }
+    const fresh = { ...answersOf(), ...(concerns.length < 2 ? { priority: concerns[0]?.c || null, secondary: null } : {}) }
+    const keys = [...new Set([...mode.chapters, ...(endOnSleep.current ? ['priority'] : [])].flatMap(c => CHAPTER_KEYS[c] || []))]
+    mode.onDone({ ...mode.answers, ...Object.fromEntries(keys.map(k => [k, fresh[k]])) }, health)
+  }, [done, P])
 
   // Answers are saved to the profile so routines and Koda can use them; a
   // failed save never blocks the user from getting into the app.
@@ -1368,7 +1464,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     }
   }
 
-  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId }
+  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId, mode }
 
   let content
   switch (cur.id) {
@@ -1530,3 +1626,6 @@ const styles = StyleSheet.create({
   kd: { position: 'absolute', left: 18, right: 18, flexDirection: 'row', alignItems: 'center', gap: 8 },
   kdb: { flexShrink: 1, backgroundColor: 'rgba(255,255,255,0.85)', borderWidth: 1, borderColor: C.glassLine, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, ...shadow },
 })
+
+// Shared with My Skyn Profile, so it looks and reads like the sign-up.
+export { Backdrop, Bubble, LineIcon, C as GLOSSY, STEPS, CONCERN_LABEL, AGES, SAFETY, ZONES, LIFE_CARDS }

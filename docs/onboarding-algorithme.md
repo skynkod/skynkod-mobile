@@ -61,6 +61,8 @@ Ce document décrit **le fond** : les questions, leur ordre, les choix possibles
 ### 7. Sécurité (« Ça te concerne ? »)
 - **Grossesse ou allaitement** (pas pour « Un homme ») → Je suis enceinte / J'allaite (un seul choix).
 - **Une allergie à un ingrédient** → Parfum · Huiles essentielles · Fruits à coque · Lanoline · Alcool · Autre. Avec « Autre », **il faut écrire l'ingrédient**, sinon on ne peut pas continuer.
+- **Une maladie de peau diagnostiquée** → Rosacée · Eczéma · Psoriasis · Dermatite périorale · Dermatite séborrhéique · Mélasma.
+- **Préférences produits** (toujours, même sans l'accord pour les infos sensibles) → Sans parfum · Vegan.
 - **Un traitement pour la peau ou hormonal** → Roaccutane (isotrétinoïne) · Crème sur ordonnance (trétinoïne, adapalène…) · Antibiotiques · Traitement hormonal ou pilule.
 
 ## Ce qui accompagne le parcours
