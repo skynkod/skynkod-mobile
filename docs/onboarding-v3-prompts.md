@@ -81,6 +81,8 @@ Extreme macro crop of real skin that fills the whole frame edge to edge (no back
 
 ## D. Les cartes du visage
 
+Pas besoin de refaire les photos qui existent déjà : Enlarged pores, Oily skin, Dry, Dehydrated et Fine lines réutilisent les cartes du type de peau et des familles.
+
 **`card-family-breakouts.png`**
 
 ```
@@ -189,46 +191,16 @@ Extreme macro crop of real skin that fills the whole frame edge to edge (no back
 Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): a cheek with tired, dull, slightly greyish uneven skin tone. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores and a few natural freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
 ```
 
-**`card-enlarged-pores.png`**
-
-```
-Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): a cheek with clearly enlarged round pores. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
 **`card-nose-dots.png`**
 
 ```
 Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): the side of a nose with small grey dots in the pores. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
 ```
 
-**`card-oily.png`**
-
-```
-Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): a forehead with an oily shine and visible pores. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
 **`card-uneven-texture.png`**
 
 ```
 Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): a cheek with an uneven, slightly bumpy texture. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`card-dry.png`**
-
-```
-Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): a cheek with very dry flaky skin. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`card-dehydrated.png`**
-
-```
-Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): a cheek with fine criss-cross dehydration lines, slightly dull, not flaky. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`card-fine-lines.png`**
-
-```
-Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): the forehead of a woman around 35, with a few very fine, faint horizontal lines (no eyes, no eyebrows). Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
 ```
 
 **`card-deep-wrinkles.png`**
