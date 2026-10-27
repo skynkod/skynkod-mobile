@@ -557,8 +557,16 @@ const NameScreen = () => {
 // The legal consents stay (terms required; sensitive skin data optional),
 // drawn like the rest of the journey: a pearl bubble and glass switches.
 const Consent = () => {
-  const { F, terms, setTerms, health, setHealth, go } = useOb()
+  const { F, terms, setTerms, health, setHealth, go, say } = useOb()
   const t = useType()
+  const [nudged, setNudged] = useState(false)
+  const next = () => {
+    if (!health && !nudged) {
+      setNudged(true)
+      return say('Are you sure? Without it, we can\'t warn you about allergies, pregnancy or treatments. Tap Continue again to go on.', 'calm')
+    }
+    go('journey')
+  }
   const body = { ...F.m, fontSize: 14.5, lineHeight: 20, color: C.ink }
   const small = { ...F.r, fontSize: 12.5, lineHeight: 17, color: C.mute, marginTop: 3 }
   const Switch = ({ on, onPress, icon, children }) => (
@@ -583,13 +591,14 @@ const Consent = () => {
           </Text>
           <Text style={small}>Required</Text>
         </Switch>
-        <Switch on={health} onPress={() => setHealth(!health)} icon="heart-outline">
-          <Text style={body}>Use my sensitive skin information to personalise my advice</Text>
-          <Text style={small}>Skin conditions, allergies, pregnancy, treatments. Optional: without it, we skip those questions.</Text>
+        <Switch on={health} onPress={() => setHealth(!health)} icon="shield-checkmark-outline">
+          <View style={styles.reco}><Text style={[F.s, { fontSize: 10.5, letterSpacing: 0.6, color: C.mauve }]}>RECOMMENDED</Text></View>
+          <Text style={body}>Let Skynkod keep my skin safe</Text>
+          <Text style={small}>Allergies, pregnancy, treatments like Roaccutane: they change which products are safe for you. Without them, we can't warn you about a product that could harm your skin.</Text>
         </Switch>
       </Rise>
       <Spacer />
-      <Btn disabled={!terms} onPress={() => go('journey')} />
+      <Btn disabled={!terms} onPress={next} />
     </Page>
   )
 }
@@ -1090,7 +1099,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     setKoda({ text, mood })
     kodaV.setValue(0)
     Animated.timing(kodaV, { toValue: 1, duration: 300, useNativeDriver: true }).start()
-    kodaTimer.current = setTimeout(() => Animated.timing(kodaV, { toValue: 0, duration: 300, useNativeDriver: true }).start(), 2600)
+    kodaTimer.current = setTimeout(() => Animated.timing(kodaV, { toValue: 0, duration: 300, useNativeDriver: true }).start(), Math.max(2600, text.length * 55))
   }
   useEffect(() => () => clearTimeout(kodaTimer.current), [])
 
@@ -1300,6 +1309,7 @@ const styles = StyleSheet.create({
   hour: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
   tg: { ...glass, padding: 14 },
   tgHd: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reco: { alignSelf: 'flex-start', backgroundColor: 'rgba(246,226,238,0.95)', borderRadius: 999, paddingVertical: 3, paddingHorizontal: 8, marginBottom: 5 },
   toggle: { width: 44, height: 26, borderRadius: 13, backgroundColor: '#E6D8E1' },
   knob: { position: 'absolute', top: 3, left: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
   chipsel: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
