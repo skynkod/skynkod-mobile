@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as WebBrowser from 'expo-web-browser'
 import * as Haptics from 'expo-haptics'
-import Svg, { Path, Circle, Rect, Ellipse, Defs, LinearGradient, RadialGradient, Stop } from 'react-native-svg'
+import Svg, { Path, Circle, Rect, Ellipse, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { updateUserProfile } from '../utils/supabase'
 import { deleteAccount } from '../utils/account'
@@ -37,6 +37,11 @@ const IMG = {
   introSkin: require('../assets/onboarding/intro-skin.jpg'),
   introProfile: require('../assets/onboarding/intro-profile.jpg'),
   faceZones: require('../assets/conditions/face-zones.jpg'),
+  // Smooth gradients as images: they render the same on every phone.
+  bg: require('../assets/onboarding/bg.jpg'),
+  btn: require('../assets/onboarding/btn.png'),
+  fadeIntro: require('../assets/onboarding/fade-intro.png'),
+  fadeProfile: require('../assets/onboarding/fade-profile.png'),
 }
 const KODA = {
   happy: require('../assets/koda/koda-happy.png'),
@@ -220,48 +225,27 @@ const LINE = {
   lock: [<Rect key="a" x="5" y="10.5" width="14" height="10" rx="2.5" />, <Path key="b" d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />, <Circle key="c" cx="12" cy="15" r="1.3" fill="currentColor" stroke="none" />, <Path key="d" d="M12 16.2v1.8" />],
   unlock: [<Rect key="a" x="5" y="10.5" width="14" height="10" rx="2.5" />, <Path key="b" d="M8 10.5V6.8a4 4 0 0 1 7.6-1.7" />, <Circle key="c" cx="12" cy="15" r="1.3" fill="currentColor" stroke="none" />, <Path key="d" d="M12 16.2v1.8" />],
 }
-const LineIcon = ({ name, size = 24, color = C.mauve2 }) => LINE[name]
+const LineIcon = ({ name, size = 24, color = C.mauve2 }) => name === 'sun'
+  ? <Image source={IMG.sun} style={{ width: size * 1.15, height: size * 1.15 }} resizeMode="contain" />
+  : LINE[name]
   ? <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} color={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">{LINE[name]}</Svg>
-  : <Ionicons name={name === 'sun' ? 'sunny-outline' : name} size={size} color={color} />
+  : <Ionicons name={name} size={size} color={color} />
 
 // One empty pearl bubble for every step; the symbol is added in code, so the
 // sun is always the welcome orb's sun and the line icons always match.
 const Bubble = ({ name, size }) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-    <Image source={IMG.bubble} style={StyleSheet.absoluteFill} resizeMode="contain" />
-    {name === 'sun'
-      ? <Image source={IMG.sun} style={{ width: size * 0.58, height: size * 0.58 }} resizeMode="contain" />
-      : <LineIcon name={name} size={size * 0.46} color={C.icon} />}
+    <Image source={IMG.bubble} style={{ position: 'absolute', left: 0, top: 0, width: size, height: size }} resizeMode="contain" />
+    <View style={{ zIndex: 1 }}>
+      {name === 'sun'
+        ? <Image source={IMG.sun} style={{ width: size * 0.58, height: size * 0.58 }} resizeMode="contain" />
+        : <LineIcon name={name} size={size * 0.46} color={C.icon} />}
+    </View>
   </View>
 )
 
 // The soft pink silk background with its two light halos.
-const Backdrop = () => (
-  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
-    <Defs>
-      <LinearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={C.bg1} /><Stop offset="1" stopColor={C.bg2} /></LinearGradient>
-      <RadialGradient id="h1" cx="85%" cy="8%" rx="70%" ry="40%"><Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.9" /><Stop offset="0.7" stopColor="#FFFFFF" stopOpacity="0" /></RadialGradient>
-      <RadialGradient id="h2" cx="0%" cy="100%" rx="80%" ry="45%"><Stop offset="0" stopColor="#ECCDE0" stopOpacity="0.7" /><Stop offset="0.7" stopColor="#ECCDE0" stopOpacity="0" /></RadialGradient>
-    </Defs>
-    <Rect x="0" y="0" width="100%" height="100%" fill="url(#bg)" />
-    <Rect x="0" y="0" width="100%" height="100%" fill="url(#h1)" />
-    <Rect x="0" y="0" width="100%" height="100%" fill="url(#h2)" />
-  </Svg>
-)
-
-// Fades a photo into the page, like the mockup's chapter intros.
-const PhotoFade = ({ from = 0.62, to = 1 }) => (
-  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
-    <Defs>
-      <LinearGradient id="pf" x1="0" y1="0" x2="0" y2="1">
-        <Stop offset="0" stopColor="#F8EEF4" stopOpacity="0" />
-        <Stop offset={String(from)} stopColor="#F8EEF4" stopOpacity="0" />
-        <Stop offset={String(to)} stopColor="#F8EEF4" stopOpacity="1" />
-      </LinearGradient>
-    </Defs>
-    <Rect x="0" y="0" width="100%" height="100%" fill="url(#pf)" />
-  </Svg>
-)
+const Backdrop = () => <Image source={IMG.bg} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="cover" />
 
 // Elements rise in one after the other when a screen opens.
 const Rise = ({ i = 0, children, style }) => {
@@ -303,18 +287,15 @@ const useType = () => {
 }
 
 // ---------- building blocks ----------
-const GradientFill = ({ id, r }) => (
-  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
-    <Defs><LinearGradient id={id} x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor="#9C7596" /><Stop offset="1" stopColor="#86607F" /></LinearGradient></Defs>
-    <Rect x="0" y="0" width="100%" height="100%" rx={r} fill={`url(#${id})`} />
-  </Svg>
+const GradientFill = ({ r }) => (
+  <Image source={IMG.btn} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', borderRadius: r }]} resizeMode="stretch" />
 )
 const Btn = ({ title = 'Continue', onPress, disabled, style }) => {
   const { F } = useOb()
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button"
       style={({ pressed }) => [styles.btn, { opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }, style]}>
-      <GradientFill id="btn" r={26} />
+      <GradientFill r={26} />
       <Text style={[F.s, styles.btnText]}>{title}</Text>
       <Ionicons name="arrow-forward" size={18} color="#fff" style={styles.btnArrow} />
     </Pressable>
@@ -377,8 +358,9 @@ const Tick = ({ on }) => (
     {on ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
   </View>
 )
-const Summary = ({ label, items, d }) => {
+const Summary = ({ label, items, d, empty = true }) => {
   const { F } = useOb()
+  if (!items.length && !empty) return null
   return (
     <View style={styles.sum}>
       <Text style={[F.s, styles.k]}>{label}</Text>
@@ -466,11 +448,13 @@ const YesNo = ({ z, q, h, onDone }) => {
   return (
     <Page>
       <Head z={z} q={q} h={h} />
-      <Spacer />
+      <View style={{ flex: 1, minHeight: 200, alignItems: 'center', justifyContent: 'center' }}>
+        <Pop delay={150}><Float><Bubble name={STEPS[SI(z)].i} size={170} /></Float></Pop>
+      </View>
       <Rise i={2} style={styles.yes2}>
         <Pressable onPress={() => onDone(false)} style={styles.no}><Text style={[F.s, { fontSize: 15, color: C.ink }]}>No</Text></Pressable>
         <Pressable onPress={() => onDone(true)} style={styles.yes}>
-          <GradientFill id="yes" r={18} />
+          <GradientFill r={18} />
           <Text style={[F.s, { fontSize: 15, color: '#fff' }]}>Yes</Text>
         </Pressable>
       </Rise>
@@ -505,14 +489,14 @@ const Statements = ({ z, q, h, items, reacts, initial, onDone }) => {
 }
 
 // A chapter photo, slowly settling, faded into the page like the mockup.
-const Hero = ({ source, height, from, to }) => {
+const Hero = ({ source, height, fade }) => {
   const zoom = useRef(new Animated.Value(1.12)).current
   useEffect(() => { Animated.timing(zoom, { toValue: 1, duration: 9000, easing: Easing.out(Easing.quad), useNativeDriver: true }).start() }, [])
   return (
     <View style={[styles.hero, { height }]}>
       <Animated.Image source={source} style={{ width: '100%', height: '100%', transform: [{ scale: zoom }] }} resizeMode="cover" />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(246,214,228,0.10)' }]} />
-      <PhotoFade from={from} to={to} />
+      <Image source={fade} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="stretch" />
     </View>
   )
 }
@@ -570,37 +554,41 @@ const NameScreen = () => {
   )
 }
 
-// The legal consents stay (terms required; sensitive skin data optional).
+// The legal consents stay (terms required; sensitive skin data optional),
+// drawn like the rest of the journey: a pearl bubble and glass switches.
 const Consent = () => {
   const { F, terms, setTerms, health, setHealth, go } = useOb()
   const t = useType()
-  const body = { ...F.r, fontSize: 14.5, lineHeight: 21, color: C.ink }
-  const small = { ...F.r, fontSize: 12.5, lineHeight: 18, color: C.mute, marginTop: 3 }
-  const Check = ({ value, onChange, children }) => (
-    <Pressable onPress={() => onChange(!value)} style={styles.check} accessibilityRole="checkbox" accessibilityState={{ checked: value }}>
-      <View style={[styles.checkBox, value && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
-        {value ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
-      </View>
+  const body = { ...F.m, fontSize: 14.5, lineHeight: 20, color: C.ink }
+  const small = { ...F.r, fontSize: 12.5, lineHeight: 17, color: C.mute, marginTop: 3 }
+  const Switch = ({ on, onPress, icon, children }) => (
+    <Pressable onPress={onPress} style={[styles.tg, styles.tgHd, on && { borderColor: C.mauve2 }]} accessibilityRole="switch" accessibilityState={{ checked: on }}>
+      <View style={[styles.gc, { width: 40, height: 40 }]}><Ionicons name={icon} size={19} color={C.mauve2} /></View>
       <View style={{ flex: 1 }}>{children}</View>
+      <View style={[styles.toggle, on && { backgroundColor: C.mauve2 }]}><View style={[styles.knob, on && { left: 21 }]} /></View>
     </Pressable>
   )
   return (
     <Page>
       <Bar />
-      <Rise><Text style={t.h2}>Your data, your choice</Text><Text style={t.hint}>We never sell your personal data. You can change these choices anytime in Settings.</Text></Rise>
-      <Rise i={1} style={{ gap: 10, marginTop: 20 }}>
-        <Check value={terms} onChange={setTerms}>
+      <Pop style={{ alignSelf: 'center', marginTop: 4 }}><Bubble name="shield" size={120} /></Pop>
+      <Rise style={{ alignItems: 'center', marginTop: 10 }}>
+        <Text style={[t.h2, { textAlign: 'center' }]}>Your data, your choice</Text>
+        <Text style={[t.hint, { textAlign: 'center' }]}>We never sell your personal data. You can change these choices anytime in Settings.</Text>
+      </Rise>
+      <Rise i={1} style={{ gap: 10, marginTop: 22 }}>
+        <Switch on={terms} onPress={() => setTerms(!terms)} icon="document-text-outline">
           <Text style={body}>
             I accept the <Text style={[F.s, { color: C.mauve }]} onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)}>Terms of use</Text> and the <Text style={[F.s, { color: C.mauve }]} onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)}>Privacy policy</Text>
           </Text>
           <Text style={small}>Required</Text>
-        </Check>
-        <Check value={health} onChange={setHealth}>
-          <Text style={body}>Use my sensitive skin information (skin conditions, allergies, pregnancy, treatments) to personalise my advice</Text>
-          <Text style={small}>Optional. Without it, we skip those questions.</Text>
-        </Check>
+        </Switch>
+        <Switch on={health} onPress={() => setHealth(!health)} icon="heart-outline">
+          <Text style={body}>Use my sensitive skin information to personalise my advice</Text>
+          <Text style={small}>Skin conditions, allergies, pregnancy, treatments. Optional: without it, we skip those questions.</Text>
+        </Switch>
       </Rise>
-      <Rise i={2}><Text style={[small, { marginTop: 14 }]}>Koda, our AI, runs on Anthropic (USA): your messages and a summary of your week are sent to it to answer you.</Text></Rise>
+      <Rise i={2}><Text style={[small, { marginTop: 16, textAlign: 'center' }]}>Koda, our AI, runs on Anthropic (USA): your messages and a summary of your week are sent to it to answer you.</Text></Rise>
       <Spacer />
       <Btn disabled={!terms} onPress={() => go('journey')} />
     </Page>
@@ -613,11 +601,11 @@ const Journey = () => {
   const w = Math.min(W - 44, 340)
   const k = w / 308
   const X = [34, 70, 92, 74, 44, 30, 52, 86].map(x => x * k)
-  const Y = [30, 86, 142, 198, 254, 310, 366, 422].map(y => y * k)
+  const Y = [30, 92, 154, 216, 278, 340, 402, 464].map(y => y * k)
   let d = `M${X[0]} ${Y[0]}`
   for (let i = 1; i < X.length; i++) d += ` C ${X[i - 1]} ${Y[i - 1] + 30 * k}, ${X[i]} ${Y[i] - 30 * k}, ${X[i]} ${Y[i]}`
   const all = [...STEPS, { t: 'Your Profile', s: 'Your personalized routine', i: 'lock' }]
-  const b = 64 * k
+  const b = 54 * k
   return (
     <Page>
       <Bar />
@@ -625,8 +613,8 @@ const Journey = () => {
         <Text style={[t.h1, { textAlign: 'center' }]}>Your Skyn Journey</Text>
         <Text style={[t.p, { textAlign: 'center', marginTop: 6 }]}>{P.name ? `${P.name}, 7` : '7'} steps to create your personalized routine.</Text>
       </Rise>
-      <View style={{ width: w, height: 452 * k, marginTop: 14, alignSelf: 'center' }}>
-        <Svg style={StyleSheet.absoluteFill} width={w} height={452 * k}>
+      <View style={{ width: w, height: 496 * k, marginTop: 14, alignSelf: 'center' }}>
+        <Svg style={StyleSheet.absoluteFill} width={w} height={496 * k}>
           <Path d={d} fill="none" stroke="#FFFFFF" strokeWidth={6} opacity={0.8} />
           <Path d={d} fill="none" stroke="#B57FA6" strokeWidth={2.4} strokeLinecap="round" strokeDasharray="5 4" />
         </Svg>
@@ -658,14 +646,14 @@ const Intro = () => {
   const h = 0.6 * H
   return (
     <View style={{ flex: 1 }}>
-      <Hero source={IMG.introSkin} height={h} from={0.62} to={1} />
+      <Hero source={IMG.introSkin} height={h} fade={IMG.fadeIntro} />
       <Pop delay={300} style={[styles.lens, { left: W * 0.14, top: h * 0.12, width: W * 0.8, height: W * 0.8, borderRadius: W * 0.4 }]} />
       <Page>
         <Bar onPhoto />
         <Spacer />
         <Rise><Text style={t.step}>01 / 07</Text><Text style={t.h1}>{st.t}</Text><Text style={t.p}>{st.d}</Text></Rise>
         <Rise i={1} style={styles.info}>
-          <Ionicons name="sunny-outline" size={24} color={C.mauve2} />
+          <Image source={IMG.sun} style={{ width: 30, height: 30 }} resizeMode="contain" />
           <Text style={[F.r, { flex: 1, fontSize: 12.5, lineHeight: 18, color: C.soft }]}>This helps us understand your unique skin and create a routine that actually fits you.</Text>
         </Rise>
         <Btn title="Start" onPress={() => go('goals')} />
@@ -724,7 +712,7 @@ const FaceZones = () => {
     <Page>
       <Head z="face" q="Where do you notice the most changes?" h="Up to 3 zones." />
       <Rise i={1} style={[styles.fz, { width: fw, height: fh }]}>
-        <Image source={IMG.faceZones} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={IMG.faceZones} style={{ position: 'absolute', left: 0, top: 0, width: fw, height: fh }} resizeMode="cover" />
         <Svg style={StyleSheet.absoluteFill} width={fw} height={fh} viewBox="0 0 1145 1374">
           <Defs><RadialGradient id="zg"><Stop offset="0" stopColor="#F7B6CB" stopOpacity="0.6" /><Stop offset="1" stopColor="#F7B6CB" stopOpacity="0" /></RadialGradient></Defs>
           {ZONES.filter(z => on.includes(z)).flatMap(z => z.e.map(([cx, cy, rx, ry], i) => <Ellipse key={z.v + i} cx={cx} cy={cy} rx={rx * 1.2} ry={ry * 1.2} fill="url(#zg)" />))}
@@ -907,7 +895,7 @@ const Last = () => {
   }
   return (
     <View style={{ flex: 1 }}>
-      <Hero source={IMG.introProfile} height={h} from={0.3} to={0.72} />
+      <Hero source={IMG.introProfile} height={h} fade={IMG.fadeProfile} />
       <Page>
         <Bar onPhoto />
         <View style={{ height: h * 0.42 }} />
@@ -984,7 +972,7 @@ const Final = () => {
   ]
   const sec = [
     ['sparkles-outline', 'Your goals', P.goals.map(g => g.t)],
-    ['sunny-outline', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
+    ['sun', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
     ['eye-outline', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
     ['ban-outline', 'What we avoid for you', a.avoid.map(x => `No ${low(x)}`)],
     ['heart-outline', 'We take care with', care],
@@ -1007,7 +995,7 @@ const Final = () => {
       {sec.map(([icon, label, list], i) => (
         <Rise key={label} i={i + 3} style={styles.sec}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name={icon} size={15} color={C.mauve2} />
+            <LineIcon name={icon} size={15} />
             <Text style={[F.s, styles.k]}>{label}</Text>
           </View>
           <View style={styles.chips}>
@@ -1070,7 +1058,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     : { r: {}, m: { fontWeight: '500' }, s: { fontWeight: '600' }, b: { fontWeight: '700' } }
 
   // The screen shown, with a back stack.
-  const [cur, setCur] = useState({ id: 'welcome' })
+  const devStart = __DEV__ && Platform.OS === 'web' ? new URLSearchParams(globalThis.location?.search || '').get('onboarding') : null
+  const [cur, setCur] = useState(devStart && devStart !== '1' ? { id: devStart, ...(devStart === 'family' ? { k: 'acne', queue: ['acne'] } : {}) } : { id: 'welcome' })
   const curRef = useRef(cur)
   curRef.current = cur
   const hist = useRef([])
@@ -1199,8 +1188,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       content = (
         <Between from="skin" next="face" onGo={() => go('faceZones')} summary={
           <>
-            <Summary label="Your skin type" items={type ? [`${type}${P.skinYes?.[0] ? ', sensitive' : ''}`] : []} d={SKIN_WHY[type]} />
-            <Summary label="Your goals" items={P.goals.map(g => g.t)} />
+            <Summary label="Your skin type" items={type ? [`${type}${P.skinYes?.[0] ? ', sensitive' : ''}`] : []} d={SKIN_WHY[type]} empty={false} />
+            <Summary label="Your goals" items={P.goals.map(g => g.t)} empty={false} />
           </>
         } />
       )
@@ -1296,8 +1285,6 @@ const styles = StyleSheet.create({
   yni: { ...glass, padding: 14, paddingBottom: 12 },
   ynb: { flex: 1, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
   inp: { ...glass, marginTop: 22, height: 56, paddingHorizontal: 18, fontSize: 17, color: C.ink },
-  check: { ...glass, flexDirection: 'row', gap: 12, padding: 14 },
-  checkBox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: '#D9C6D3', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   cur: { borderRadius: 999, shadowColor: '#E8AACD', shadowOpacity: 0.9, shadowRadius: 13, shadowOffset: { width: 0, height: 0 } },
   hero: { position: 'absolute', left: 0, right: 0, top: 0, overflow: 'hidden' },
   lens: { position: 'absolute', borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.75)', shadowColor: '#fff', shadowOpacity: 0.35, shadowRadius: 9 },
