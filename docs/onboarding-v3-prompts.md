@@ -16,10 +16,12 @@ Ces prompts décrivent **exactement ce qu'on voit sur ta maquette** (`design/onb
 
 **`orb-welcome.png`** : ✅ déjà reçue, conforme à la maquette.
 
+Le soleil n'est **pas** dans le prompt : je pose dessus le soleil de ton orbe de bienvenue, pour qu'il n'y ait qu'un seul logo partout.
+
 **`profile-cards.png`**
 
 ```
-Clean minimal 3D render for a premium iOS beauty app. Subject: three thin rounded-rectangle cards of frosted glass stacked on top of each other, slightly fanned: the back card rotated about -10 degrees, the middle card about +6 degrees, the front card straight and in front. Glass: frosted, milky, light pink-white (#F6EAF1), thin bright edges with a slight bevel, soft and calm. In the upper middle of the front card: a pearl sun made of a small glossy pearl-pink sphere (#D9A3BE) surrounded by 8 short rounded capsule-shaped rays of the same pearl pink, with a very soft pink glow behind it. The lower third of the front card is empty and smooth (a label will be added later). Soft pink shadow under the stack. Centered, front view, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+Clean minimal 3D render for a premium iOS beauty app. Subject: three thin rounded-rectangle cards of frosted glass stacked on top of each other, slightly fanned: the back card rotated about -10 degrees, the middle card about +6 degrees, the front card straight and in front. Glass: frosted, milky, light pink-white (#F6EAF1), thin bright edges with a slight bevel, soft and calm. All three cards are completely EMPTY and blank: no symbol, no sun, no logo, no icon, no drawing, nothing on them. Soft pink shadow under the stack. Centered, front view, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
 ```
 
 
