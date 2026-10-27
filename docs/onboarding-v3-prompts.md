@@ -1,123 +1,282 @@
 # Prompts : refaire exactement la maquette d'inscription (v3)
 
-La maquette (`design/onboarding-flow-mockup-v3.webp`) tient surtout à ses **images** : l'orbe en verre, les bulles brillantes, les gros plans de peau très doux et les fonds en soie rose. Le code ne peut pas les dessiner. Avec ces images, je refais les écrans **à l'identique** autour.
+Ces prompts sont **complets** : chacun se suffit à lui-même. Copie-le **en entier**, une image à la fois. Il y a 59 images en tout.
 
-**Comment faire :**
-1. Dans ChatGPT, colle d'abord le **style commun** du groupe, puis les prompts **un par un**.
-2. Nomme chaque image exactement comme indiqué.
-3. Envoie-les-moi par petits groupes : je les recadre et les mets en place.
+**Pour de meilleurs résultats :**
+- Utilise le générateur d'images de ChatGPT, et demande **« transparent background PNG »** pour les objets en verre (groupe A).
+- Si l'image ne va pas, réponds dans la même conversation, par exemple : « same image, but brighter / less saturated / more glass / sphere bigger ». Ne repars pas de zéro.
+- Garde **la même conversation** pour tout un groupe : les images resteront cohérentes entre elles.
+- Nomme chaque image exactement comme indiqué, puis envoie-les-moi par petits groupes.
 
-Les cartes de réponses de ta maquette sont des **gros plans de peau propres, sans visage entier et sans cercle de zoom**. C'est pour ça que les photos des groupes C à F sont refaites dans ce style.
-
----
-
-## A. Les objets en verre brillant (fond transparent, PNG, 1024 × 1024)
-
-**Style commun A**
-> I am going to ask you for a series of 3D objects for a premium skincare app, all in exactly the same style. Style: soft dreamy 3D render, glossy translucent glass and jelly material in pearl white, powder pink and dusty mauve (#FBF4F8, #F3E3EC, #C5A8BB, #A57B9C) with a hint of warm peach (#FCD5C8), soft highlights on the top left, tiny sparkles, gentle pink glow, very clean and elegant, like a luxury beauty brand. Transparent background (PNG), centered, no text, no letters, no watermark. Reply "ready" and wait for each prompt.
-
-1. `orb-welcome.png` → A large glossy translucent glass sphere floating, with a soft pink glowing sun inside it (a round glossy center with 8 short rounded rays), surrounded by one thin luminous glass ring orbiting around it at an angle, a few sparkles.
-2. `profile-cards.png` → Three stacked frosted-glass cards, slightly fanned and rotated, the front card showing a glossy soft-pink sun (round center with short rounded rays) in its middle, empty space below the sun for a label, sparkles around.
-
-**Les bulles des étapes** (une sphère de verre brillante, avec un symbole gravé au trait fin mauve à l'intérieur, comme dans la maquette) :
-
-3. `bubble-skin.png` → … with a thin-line sun symbol inside.
-4. `bubble-face.png` → … with a thin-line serene female face outline (closed eyes) inside.
-5. `bubble-eyes.png` → … with a thin-line eye symbol inside.
-6. `bubble-lips.png` → … with a thin-line lips symbol inside.
-7. `bubble-neck.png` → … with a thin-line neck and collarbones outline inside.
-8. `bubble-life.png` → … with a thin-line leaf symbol inside.
-9. `bubble-safety.png` → … with a thin-line shield with a small heart inside.
-10. `bubble-profile.png` → … with a thin-line diamond symbol inside.
-
-Pour 3 à 10, commence chaque prompt par : *A glossy translucent pink glass sphere, softly glowing, …*
+Les cartes de réponses de ta maquette sont des **gros plans de peau propres, sans visage entier et sans cercle de zoom** : c'est le style des groupes C, D et E.
 
 ---
 
-## B. Les grandes photos (format portrait 1080 × 1350)
+## A. Les objets en verre brillant (fond transparent)
 
-**Style commun B (photos)**
-> I am going to ask you for beauty close-up photos for a premium skincare app, all in exactly the same style. Style: real photographic macro of natural skin, soft dewy glow, visible fine pores and a few light freckles, no retouching, no makeup look, diffused soft pink morning light, pastel pink and mauve color grading, shallow depth of field, calm and luminous, editorial luxury skincare look. Woman. No text, no logo, no watermark, no zoom circle. Reply "ready" and wait for each prompt.
+Bienvenue, profil final et bulles des étapes (« Your Skyn Journey » et les écrans entre deux étapes).
 
-11. `intro-skin.png` → Extreme close-up of a woman's cheek and closed eye, from the side of the nose to the temple, dewy glowing skin, light freckles, soft pink light (as in the "Skin" chapter screen).
-12. `intro-profile.png` → Extreme close-up of a woman's lips and chin, slightly parted soft pink glossy lips, dewy skin, soft pink light (as in the "Your Profile" screen).
+**`orb-welcome.png`** · ✅ déjà reçue
 
----
+**`profile-cards.png`**
 
-## C. Les cartes du type de peau (carré 1 × 1, même style commun B)
+> Three thin rounded-rectangle cards made of frosted glass, stacked and fanned like playing cards: the back card rotated -10 degrees, the middle card +7 degrees, the front card straight. The front card is clearer and brighter; in its upper center sits a glossy soft-pink 3D sun (a round glossy sphere with 8 short rounded capsule rays around it), slightly embossed. The lower third of the front card is empty and smooth, ready for a label. Soft glow and sparkles around the stack. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
 
-Ce sont des gros plans de peau, sans visage entier.
-13. `card-skin-tight.png` → Macro of dry, slightly tight skin on a cheek, a few fine flakes, matte, no shine.
-14. `card-skin-comfortable.png` → Macro of smooth, balanced, comfortable skin on a cheek, soft natural glow, even texture.
-15. `card-skin-tzone.png` → Macro of a nose and the center of the forehead with visible shine, while the cheek edge stays matte.
-16. `card-skin-oily.png` → Macro of oily shiny skin on a cheek, visible enlarged pores and a glossy reflection.
+**`bubble-skin.png`**
 
----
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line sun (a small circle with 8 short rays), drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
 
-## D. Les cartes du visage (carré 1 × 1, même style commun B)
+**`bubble-face.png`**
 
-**Les familles :**
-17. `card-family-breakouts.png` → Macro of skin with a few red spots and small blemishes.
-18. `card-family-redness.png` → Macro of skin with diffuse redness on the cheek.
-19. `card-family-spots.png` → Macro of skin with brown pigmented spots.
-20. `card-family-pores.png` → Macro of skin with visible pores and a little shine.
-21. `card-family-dryness.png` → Macro of dry skin with fine flakes.
-22. `card-family-lines.png` → Macro of the corner of an eye and cheek with fine lines.
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line serene female face seen from the front, eyes closed, hair tied up, minimal lines, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
 
-**Le détail :**
-23. `card-blackheads.png` → Macro of a nose with blackheads and small whiteheads.
-24. `card-red-spots.png` → Macro of skin with a few red inflamed spots.
-25. `card-deep-spots.png` → Macro of skin with one deep, swollen, painful-looking spot.
-26. `card-hormonal.png` → Macro of a chin and jawline with a few red spots.
-27. `card-fungal.png` → Macro of a forehead with many small identical skin-coloured bumps.
-28. `card-scars.png` → Macro of skin with small atrophic acne scars.
-29. `card-red-marks.png` → Macro of skin with flat pink-red marks left after spots.
-30. `card-vessels.png` → Macro of a cheek with fine visible red vessels.
-31. `card-reactive.png` → Macro of a cheek with light blotchy redness, sensitive skin.
-32. `card-brown-marks.png` → Macro of skin with flat brown marks left after spots.
-33. `card-sun-spots.png` → Macro of a cheekbone with small brown sun spots.
-34. `card-dull.png` → Macro of tired dull skin with a greyish uneven tone.
-35. `card-enlarged-pores.png` → Macro of a cheek with enlarged pores.
-36. `card-nose-dots.png` → Macro of a nose with small grey dots in the pores (sebaceous filaments).
-37. `card-oily.png` → Macro of an oily shiny forehead.
-38. `card-uneven-texture.png` → Macro of skin with an uneven, slightly bumpy texture.
-39. `card-dry.png` → Macro of dry flaky skin.
-40. `card-dehydrated.png` → Macro of dehydrated skin with fine criss-cross lines, a little dull.
-41. `card-fine-lines.png` → Macro of fine lines at the corner of the eye.
-42. `card-deep-wrinkles.png` → Macro of deeper forehead wrinkles.
-43. `card-sagging.png` → Close-up of the jawline with slightly loose skin.
+**`bubble-eyes.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line almond eye with an iris circle and a few lashes, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
+
+**`bubble-lips.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats delicate thin-line soft full lips, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
+
+**`bubble-neck.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line neck and collarbones outline, no face, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
+
+**`bubble-life.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line leaf with a central vein, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
+
+**`bubble-safety.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line rounded shield with a small heart in its center, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
+
+**`bubble-profile.png`**
+
+> A single perfect sphere of clear glossy glass, softly glowing from inside with a pale pink light, like a big soap bubble made of glass. Inside the sphere, slightly behind the front surface, floats a delicate thin-line faceted diamond, drawn as a raised mauve line about 3% of the sphere's width thick, as if engraved in light, colour #A57B9C with a soft glow. Around the sphere: a faint luminous halo and a few tiny sparkles. The sphere fills 70% of the frame. Ultra-detailed premium 3D render in the style of a luxury beauty brand campaign. Material: polished translucent glass and soft jelly, with internal refraction, a thin bright rim light on the edges, a creamy specular highlight on the top left, and a subtle iridescent pink-to-lilac sheen. Colour palette strictly limited to pearl white (#FBF4F8), powder pink (#F3E3EC), dusty mauve (#C5A8BB, #A57B9C) and a hint of warm peach glow (#FCD5C8); no blue, no saturated magenta, no gold. Lighting: soft diffused studio light from the top left, a gentle pink bloom around the object, 6 to 10 tiny four-point star sparkles of different sizes near the edges. Camera: front view, very slight top-down angle, object centered, filling about 75% of the frame, sharp focus everywhere. Background: fully transparent PNG (real alpha channel, no checkerboard pattern, no white, no shadow on the floor). Square 2048 x 2048. Do not add any text, letters, numbers, logo or watermark. Clean, calm, elegant, never cartoonish, never plastic toy-like. 
 
 ---
 
-## E. Les cartes des yeux, des lèvres et du cou (carré 1 × 1, même style commun B)
+## B. Les grandes photos (haut des écrans)
 
-**Yeux** (en gros plan, l'œil ouvert, comme dans la maquette) :
-44. `card-eye-blue-circles.png` → Macro of an open eye with blue-purple dark circles under it.
-45. `card-eye-brown-circles.png` → Macro of an open eye with brown pigmented dark circles.
-46. `card-eye-hollow.png` → Macro of an open eye with a hollow shadow under it.
-47. `card-eye-puffy.png` → Macro of an open eye with morning puffiness under it.
-48. `card-eye-lines.png` → Macro of an open eye with fine lines at the outer corner.
-49. `card-eye-milia.png` → Macro of the under-eye area with a few tiny white bumps.
+L'intro « Skin » et l'écran « Your Profile ».
 
-**Lèvres** :
-50. `card-lips-dry.png` → Macro of dry chapped lips.
-51. `card-lips-corners.png` → Macro of the corner of the mouth, slightly cracked.
-52. `card-lips-dark.png` → Macro of naturally darker pigmented lips.
-53. `card-lips-lines.png` → Macro of fine vertical lines above and on the upper lip.
-54. `card-lips-peeling.png` → Macro of lips with small peeling flakes.
+**`intro-skin.png`**
 
-**Cou** :
-55. `card-neck-lines.png` → Macro of horizontal neck lines.
-56. `card-neck-sagging.png` → Close-up of slightly loose skin under the jaw.
-57. `card-neck-dry.png` → Macro of dry, slightly rough skin on the neck and décolleté.
-58. `card-neck-dark.png` → Macro of a darker velvety patch on the side of the neck.
+> An extreme close-up of a young woman's face seen from the side at three-quarters: her closed eye with long natural lashes at the top, the cheekbone and cheek filling most of the frame, the side of the nose entering from the left edge. Light freckles across the nose and cheek, dewy glow on the cheekbone, a few tiny water droplets catching the light. The bottom 35% of the image fades softly into the pink haze (empty space for text). Vertical format 1080 x 1350. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`intro-profile.png`**
+
+> An extreme close-up of a young woman's lower face seen slightly from the side: soft full lips, slightly parted, natural pink with a glossy balm shine, the chin and the edge of the jaw, dewy skin. The lips sit in the upper half of the frame; the bottom 45% fades softly into the pink haze (empty space for text). Vertical format 1080 x 1350. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
 
 ---
 
-## F. Le fond (format portrait 1080 × 1920)
+## C. Les cartes du type de peau
 
-59. `bg-silk.png` → *(style commun A, sans fond transparent)* A very soft abstract background of pale pink and pearl silk with gentle light, blurred glowing bokeh, a few faint sparkles, mostly empty and bright, pastel pink to light mauve gradient from top to bottom.
+Le test « 2 hours after washing, your skin… ».
+
+**`card-skin-tight.png`**
+
+> A close-up of a cheek with dry, slightly tight skin: matte, no shine at all, a few very fine flakes and a slightly rough texture, rosy undertone. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-skin-comfortable.png`**
+
+> A close-up of a cheek with smooth, balanced skin: even texture, small pores, a soft natural satin glow, neither shiny nor dry. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-skin-tzone.png`**
+
+> A close-up of the nose and the lower forehead with a visible oily shine on the nose and forehead, while the edge of the cheek in the corner stays matte. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-skin-oily.png`**
+
+> A close-up of a cheek with oily skin: a clear glossy reflection, visible enlarged pores, a slightly uneven surface. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
 
 ---
 
-**Quand tu les as**, envoie-les : je reconstruis chaque écran exactement comme la maquette, avec les mêmes marges, les mêmes tailles de texte, la barre de progression, « Skip », les cartes photo à coche, les lignes de verre et le fil lumineux.
+## D. Les cartes du visage
+
+Les 6 familles, puis le détail de chacune.
+
+**`card-family-breakouts.png`**
+
+> A close-up of a cheek with three small red spots and a couple of tiny closed bumps, realistic, not gross. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-family-redness.png`**
+
+> A close-up of a cheek with soft diffuse redness and a light blotchy flush. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-family-spots.png`**
+
+> A close-up of a cheekbone with a few flat brown pigment spots of different sizes. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-family-pores.png`**
+
+> A close-up of the side of the nose and the cheek with visible pores and a light shine. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-family-dryness.png`**
+
+> A close-up of a cheek with dry skin and fine white flakes lifting at the surface. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-family-lines.png`**
+
+> A close-up of the outer corner of a closed eye and the upper cheek with fine expression lines. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-blackheads.png`**
+
+> A close-up of the side of a nose with small blackheads and a few tiny whiteheads. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-red-spots.png`**
+
+> A close-up of a cheek with a few red, inflamed spots of different sizes. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-deep-spots.png`**
+
+> A close-up of a jawline with one large, deep, swollen red spot under the skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-hormonal.png`**
+
+> A close-up of a chin and the lower jaw with a few red spots clustered on the chin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-fungal.png`**
+
+> A close-up of a forehead with many small, identical, skin-coloured bumps evenly scattered. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-scars.png`**
+
+> A close-up of a cheek with small shallow atrophic acne scars. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-red-marks.png`**
+
+> A close-up of a cheek with flat pink-red marks left after old spots, no active spots. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-vessels.png`**
+
+> A close-up of the side of the nose and the cheek with fine visible red capillaries. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-reactive.png`**
+
+> A close-up of a cheek with light irritated blotchy redness, delicate sensitive skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-brown-marks.png`**
+
+> A close-up of a cheek with flat brown marks left after old spots, on medium-brown skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-sun-spots.png`**
+
+> A close-up of a cheekbone with a few small brown sun spots on fair skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-dull.png`**
+
+> A close-up of a cheek with tired, dull, slightly greyish and uneven skin tone, no glow. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-enlarged-pores.png`**
+
+> A close-up of a cheek with clearly enlarged round pores. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-nose-dots.png`**
+
+> A close-up of the tip and side of a nose with small grey dots in the pores (sebaceous filaments). Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-oily.png`**
+
+> A close-up of a forehead with an oily shine and visible pores. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-uneven-texture.png`**
+
+> A close-up of a cheek with an uneven, slightly bumpy texture catching the side light. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-dry.png`**
+
+> A close-up of a cheek with very dry flaky skin and fine cracks. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-dehydrated.png`**
+
+> A close-up of a cheek with dehydrated skin: fine criss-cross lines, slightly dull, but not flaky. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-fine-lines.png`**
+
+> A close-up of the outer corner of an open eye with fine lines fanning out. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-deep-wrinkles.png`**
+
+> A close-up of a forehead with deeper horizontal wrinkles, woman around 55. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-sagging.png`**
+
+> A close-up of a jawline seen from the side with slightly loose, sagging skin, woman around 55. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+---
+
+## E. Les cartes des yeux, des lèvres et du cou
+
+
+
+**`card-eye-blue-circles.png`**
+
+> A close-up of one open eye looking at the camera with blue-purple dark circles under it, thin skin where tiny veins show. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-eye-brown-circles.png`**
+
+> A close-up of one open eye looking at the camera with brown pigmented dark circles under it, on medium-brown skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-eye-hollow.png`**
+
+> A close-up of one open eye with a visible hollow and shadow between the lower lid and the cheek. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-eye-puffy.png`**
+
+> A close-up of one open eye with soft morning puffiness under it. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-eye-lines.png`**
+
+> A close-up of one open eye with fine lines at the outer corner, woman around 45. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-eye-milia.png`**
+
+> A close-up of the under-eye area with three or four tiny white pearly bumps. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-lips-dry.png`**
+
+> A close-up of slightly parted lips that are dry and chapped, with fine cracks. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-lips-corners.png`**
+
+> A close-up of the corner of a mouth, slightly cracked and red. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-lips-dark.png`**
+
+> A close-up of slightly parted lips with naturally darker, evenly pigmented colour, healthy and smooth. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-lips-lines.png`**
+
+> A close-up of the upper lip with fine vertical lines on and above it, woman around 50. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-lips-peeling.png`**
+
+> A close-up of slightly parted lips with small dry flakes lifting on the surface. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-neck-lines.png`**
+
+> A close-up of the front of a neck with two or three soft horizontal lines. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-neck-sagging.png`**
+
+> A side close-up of the skin under the jaw and the upper neck, slightly loose, woman around 60. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-neck-dry.png`**
+
+> A close-up of the neck and upper décolleté with dry, slightly rough skin and a few fine flakes. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+**`card-neck-dark.png`**
+
+> A close-up of the side of a neck with a darker, velvety patch of skin, on tan skin. Square format 2048 x 2048, the subject centered and filling the frame. Photorealistic editorial beauty macro photograph for a luxury skincare brand. Real human skin with true texture: visible fine pores, soft peach fuzz, a few natural light freckles, a healthy dewy glow, absolutely no retouching, no airbrushing, no makeup look, no filter. Lighting: very soft diffused window light from the left, a pale pink reflector on the right, gentle highlights on the high points of the skin. Lens: 100 mm macro, f/4, very shallow depth of field, the subject sharp and the edges melting into a soft blur. Colour grade: pastel pink and dusty mauve tones, lifted soft shadows, creamy highlights, pearl-pink background haze (#F3E3EC). Calm, luminous, intimate. No text, no logo, no watermark, no zoom circle, no frame, no hands unless asked, no jewellery. 
+
+---
+
+## F. Le fond
+
+Derrière tous les écrans.
+
+**`bg-silk.png`**
+
+> Ultra-soft abstract background for a luxury skincare app. Flowing pale pink and pearl silk folds, very out of focus, with diffused morning light coming from the top right, a few large soft circular bokeh lights and a handful of tiny faint sparkles. Gradient from almost white pearl (#FBF4F8) at the top to powder pink (#F3E3EC) and light dusty mauve (#E7D2E0) at the bottom. Mostly empty and bright, no objects, no people, no text, no logo, no watermark. Vertical format 1290 x 2796. 
+
