@@ -415,7 +415,7 @@ const PhotoPick = ({ z, q, h, opts, onDone, max = 0, one = false, initial = [] }
         })}
       </View>
       <Spacer />
-      {one ? null : <Btn onPress={() => onDone(sel)} />}
+      {one ? null : <Btn disabled={!sel.length} onPress={() => onDone(sel)} />}
     </Page>
   )
 }
@@ -508,7 +508,7 @@ const Welcome = () => {
   const orb = Math.min(290, W - 30)
   return (
     <Page>
-      <Bar noBack skip={() => go('name')} />
+      <Bar noBack />
       <Rise><Text style={[t.h1, { fontSize: 32, lineHeight: 37 }]}>Let's get to know your skin</Text></Rise>
       <Rise i={1}><Text style={t.p}>A few personal questions to understand your skin, your products and your lifestyle.</Text></Rise>
       <Rise i={2} style={{ alignItems: 'center', marginTop: 14 }}>
@@ -549,7 +549,6 @@ const NameScreen = () => {
       </Rise>
       <Spacer />
       <Btn disabled={!v.trim()} onPress={next} />
-      <Ghost title="I'd rather not say" onPress={() => { set({ name: null }); go('consent') }} />
     </Page>
   )
 }
@@ -735,7 +734,7 @@ const FaceZones = () => {
         })}
       </Rise>
       <View style={{ height: 16 }} />
-      <Btn onPress={() => { set({ faceZones: on }); go('face') }} />
+      <Btn disabled={!on.length} onPress={() => { set({ faceZones: on }); go('face') }} />
     </Page>
   )
 }
@@ -759,7 +758,6 @@ const Tone = () => {
         ))}
       </View>
       <Spacer />
-      <Ghost title="I'd rather not say" onPress={() => { set({ tone: null }); go('skinDone') }} />
     </Page>
   )
 }
@@ -1185,7 +1183,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
         onDone={(o, i) => { say(AGE_SAY[i]); setTimeout(() => { set({ age: i }); go(i >= 3 && P.sex !== 'man' ? 'meno' : 'wash') }, 900) }}
         extra={<Ghost title="I'm under 18" onPress={() => { setMinor(true); deleteAccount().catch(error => logError('Onboarding_minorDelete', error, {}, 'warn')) }} />} />
     ); break
-    case 'meno': content = <RowPick z="skin" q="Where are you with menopause?" h="Optional. It changes the skin a lot: drier, thinner, less firm. We adapt your care." opts={MENO} onDone={o => { set({ meno: o.v }); go('wash') }} />; break
+    case 'meno': content = <RowPick z="skin" q="Where are you with menopause?" h="It changes the skin a lot: drier, thinner, less firm. We adapt your care." opts={MENO} onDone={o => { set({ meno: o.v }); go('wash') }} />; break
     case 'wash': content = <PhotoPick z="skin" q="2 hours after washing, your skin…" h="Think of a normal day." opts={WASH} one onDone={o => { set({ feel: o.v }); go('shine') }} />; break
     case 'shine': content = <RowPick z="skin" q="At midday, your skin shines…" opts={SHINE} onDone={o => { set({ shine: o.v }); go('pores') }} />; break
     case 'pores': content = <RowPick z="skin" q="Your pores, you see them…" opts={PORES} onDone={o => { set({ pores: o.v }); go('react') }} />; break
