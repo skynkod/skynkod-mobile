@@ -14,7 +14,7 @@ Lita a choisi cet univers pour l'inscription, la landing page puis toute la marq
 6. **Le fil.** Une ligne lumineuse, fine et ondulée, relie les étapes : le parcours, le « connecte les points ». Elle sert à raconter une progression.
 
 ## Typographie
-- Une seule famille, sans empattement, moderne et douce : **DM Sans**, déjà utilisée sur le site, ou **Inter**, utilisée dans le prototype. Il faut en garder une seule pour toute la marque.
+- **Inter**, pour toute la marque : l'app, le site et les visuels (choix de Lita, 2026-10-27). Elle remplace DM Sans sur le site.
 - **Titres :** gros, poids moyen (500–600), lettres un peu serrées, couleur prune très foncée. Un mot clé peut passer en mauve (« Decoded **soon.** », « A **smarter** way »).
 - **Textes :** poids normal, gris prune, interligne aéré.
 - **Petits titres :** majuscules, très espacés, petits (« COMING SOON », « 01 / 07 »).
@@ -36,7 +36,7 @@ Lita a choisi cet univers pour l'inscription, la landing page puis toute la marq
 
 **Deux points à trancher pour la landing page actuelle :**
 - Le site a aujourd'hui un héros **mauve plein** avec le logo blanc et un bouton **« Notify me » noir**. Dans le nouvel univers, le fond est clair et glossy, et le bouton est **mauve** comme dans l'app.
-- La police : DM Sans (site) ou Inter (prototype). Il faut en choisir une pour tout.
+- La police passe de DM Sans à **Inter** (décidé).
 
 ## Ce qu'on évite
 - Les aplats saturés, le noir pur et les dégradés criards.
