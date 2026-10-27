@@ -33,7 +33,7 @@ Ce document décrit **le fond** : les questions, leur ordre, les choix possibles
 - **Fin d'étape** : le type de peau, et ses choix.
 
 ### 2. Visage
-- **Zones** (jusqu'à 3, sur une photo de visage) : Front · Joues · Nez · Menton.
+- **Zones** (autant qu'on veut, en touchant le visage sur la photo) : Front · Joues · Nez · Menton.
 - **Quelque chose te gêne sur ton visage ?** Oui / Non.
 - Si oui, les **familles** (plusieurs) : Boutons · Rougeurs · Taches · Pores et brillance · Sécheresse · Rides et fermeté. Puis le détail en photos pour chaque famille choisie :
   - Boutons : points noirs et blancs · boutons rouges · gros boutons profonds · boutons au menton, au rythme des règles ou des hormones · petits boutons identiques qui grattent · cicatrices ;

@@ -706,14 +706,12 @@ const Between = ({ from, next, onGo, summary }) => {
 }
 
 const FaceZones = () => {
-  const { F, W, P, set, go, say } = useOb()
+  const { F, W, P, set, go } = useOb()
   const [on, setOn] = useState(P.faceZones)
   const fw = W - 44
   const fh = fw * 1374 / 1145
   const tap = z => {
-    if (on.includes(z)) return setOn(on.filter(x => x !== z))
-    if (on.length >= 3) return say('3 zones at most, one step at a time.', 'curious')
-    setOn([...on, z])
+    setOn(on.includes(z) ? on.filter(x => x !== z) : [...on, z])
   }
   return (
     <Page>
