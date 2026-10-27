@@ -117,7 +117,7 @@ const GOALS = [
   { v: 'pores', t: 'Smaller pores', s: 'Shine, texture', ic: 'pores' },
   { v: 'calm', t: 'Calm skin', s: 'Redness', ic: 'leaf' },
 ]
-const SEX = [{ v: 'man', t: 'A man' }, { v: 'woman', t: 'A woman' }, { v: 'other', t: 'Non-binary' }]
+const SEX = [{ v: 'woman', t: 'A woman' }, { v: 'man', t: 'A man' }]
 const AGES = ['18–24', '25–34', '35–44', '45–54', '55 and over']
 const AGE_SAY = ['A great time for good habits.', 'A great time to prevent.', 'We\'ll take care of your glow.', 'We\'ll take care of firmness and comfort.', 'We\'ll take care of firmness and comfort.']
 const MENO = [{ v: 'not_yet', t: 'Not yet' }, { v: 'during', t: 'Going through it', s: 'Irregular periods, hot flushes' }, { v: 'after', t: 'After menopause' }]

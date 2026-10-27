@@ -17,7 +17,7 @@ Ce document décrit **le fond** : les questions, leur ordre, les choix possibles
 
 ### 1. Ta peau
 - **Objectif** (jusqu'à 3) : Peau nette (boutons, points noirs) · Peau hydratée (peau qui tire) · Teint uniforme (taches, marques) · Peau plus ferme (ridules, fermeté) · Moins de pores (brillance, texture) · Peau calme (rougeurs).
-- **Tu es…** : Un homme · Une femme · Non-binaire · Je préfère ne pas dire.
+- **Tu es…** : Une femme · Un homme.
 - **Tu as…** : 18–24 · 25–34 · 35–44 · 45–54 · 55 et plus · « Moins de 18 ans » ouvre l'écran « Skynkod est pour les 18 ans et plus », avec les soins de base et le conseil de voir un médecin pour l'acné.
 - **Ménopause** (facultatif, seulement pour les femmes de 45 ans et plus) : Pas encore · En cours · Après · Je préfère ne pas dire.
 - **Test 1 · 2 h après le lavage, ta peau…** (avec photos) : Elle tiraille (sèche) · Confortable (normale) · Brille au centre (mixte) · Brille partout (grasse).
