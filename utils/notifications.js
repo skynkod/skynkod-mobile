@@ -59,6 +59,11 @@ const COPY = {
     en: { title: 'Evening routine', body: 'Cleanse, then your evening routine.' },
     fr: { title: 'Routine du soir', body: 'Démaquillage, puis ta routine du soir.' },
   },
+  // 21:00, only if no evening step is ticked yet (Lita, 2026-10-27).
+  eveningNudge: {
+    en: { title: 'Evening routine', body: 'Not done yet? Two minutes before bed is enough.' },
+    fr: { title: 'Routine du soir', body: 'Pas encore faite ? Deux minutes avant de dormir suffisent.' },
+  },
   eveningRamadan: {
     en: { title: 'Evening routine', body: 'Your evening routine, and enough water before bed.' },
     fr: { title: 'Routine du soir', body: 'Ta routine du soir, et pense à bien boire avant de dormir.' },
@@ -162,13 +167,20 @@ const cancel = id => Notifications.cancelScheduledNotificationAsync(id).catch(()
 // at the times she chose. Re-planned at each app start and whenever something
 // changes; after 4 weeks without opening the app, they stop rather than guess.
 const DAYS_AHEAD = 28
-export const DEFAULT_TIMES = { morningTime: '08:00', eveningTime: '21:00' }
+export const DEFAULT_TIMES = { morningTime: '08:00', eveningTime: '19:30' }
 export const getReminderPrefs = async (userId) => ({
   morningReminder: true, eveningReminder: true, waterReminder: true, waterExtra: false, ...DEFAULT_TIMES,
   ...JSON.parse((await AsyncStorage.getItem(`notifications_${userId}`).catch(() => null)) || '{}'),
 })
 const hm = text => { const [h, m] = String(text || '').split(':').map(Number); return [Number.isFinite(h) ? h : 8, Number.isFinite(m) ? m : 0] }
 const dayIds = userId => Array.from({ length: DAYS_AHEAD }, (_, d) => [`am-${d}-${userId}`, `pm-${d}-${userId}`]).flat()
+// The 21:00 nudge is named by its date, so ticking a step can cancel tonight's.
+const NUDGE_AT = [21, 0]
+const dayKey = date => `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+const nudgeId = (userId, date) => `pmf-${dayKey(date)}-${userId}`
+export const cancelEveningNudge = async (userId, date = new Date()) => {
+  await Notifications.cancelScheduledNotificationAsync(nudgeId(userId, date)).catch(() => {})
+}
 
 export const syncSmartReminders = async (userId) => {
   if (!userId) return
@@ -186,6 +198,8 @@ export const syncSmartReminders = async (userId) => {
     const { getPurgeChecks } = await import('./purge-check')
     const { followUpDate } = await import('./purge-core')
     const { getPatchState } = await import('./patch-test')
+    const { getDayProgress } = await import('./routine-log')
+    const eveningDone = await getDayProgress(userId).then(p => p.evening.size > 0).catch(() => false)
     const { isShortTonight } = await import('./short-evening')
     const shortTonight = await isShortTonight(userId).catch(() => false)
     const { testMorning } = await import('./patch-core')
@@ -205,6 +219,7 @@ export const syncSmartReminders = async (userId) => {
     for (let i = 0; i < 7; i += 1) ids.push(`morning-${i}-${userId}`, `rekod-night-${i}-${userId}`)
     for (let d = 0; d < 21; d += 1) ids.push(`sos-day-${d}-${userId}`, `sos-evening-${d}-${userId}`)
     for (const id of ['mask', 'fragrance', 'vitaminC', 'scrub', 'exfoliant', 'acid', 'retinoid']) ids.push(`sos-back-${id}-${userId}`)
+    for (let d = -1; d <= DAYS_AHEAD; d += 1) ids.push(nudgeId(userId, new Date(Date.now() + d * 86400000)))
     for (const id of ids) await cancel(id)
     await cancelWaterReminders(userId)
 
@@ -277,6 +292,9 @@ export const syncSmartReminders = async (userId) => {
       // "Short version tonight" already chosen: no reminder about tonight's actives.
       if (d === 0 && shortTonight) body = null
       if (body) await once(`pm-${d}-${userId}`, body, at(date, hm(prefs.eveningTime)), screen)
+      // The nudge: only after an earlier reminder, and not if tonight is already ticked.
+      const [eh, em] = hm(prefs.eveningTime)
+      if (body && prefs.eveningReminder && eh * 60 + em < NUDGE_AT[0] * 60 && !(d === 0 && eveningDone)) await once(nudgeId(userId, date), COPY.eveningNudge[l], at(date, NUDGE_AT), screen)
     }
 
     // Water: one at 15:00, the other two only if she asked for them.

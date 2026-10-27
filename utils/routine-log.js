@@ -33,6 +33,8 @@ export const logStep = async ({ userId, routineId, type, stepIndex, done }) => {
       completed_at: new Date().toISOString(),
     })
     if (error) throw error
+    // An evening step ticked: no 21:00 nudge tonight.
+    if (type === 'evening') import('./notifications').then(m => m.cancelEveningNudge(userId)).catch(() => {})
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }

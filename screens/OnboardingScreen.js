@@ -1178,7 +1178,7 @@ const Notify = () => {
               <Text style={[F.s, { fontSize: 11, letterSpacing: 0.6, color: C.soft }]}>SKYNKOD</Text>
               <Text style={[F.r, { fontSize: 11, color: C.mute }]}>now</Text>
             </View>
-            <Text style={[F.s, { fontSize: 14, color: C.ink, marginTop: 2 }]}>Time for your evening routine 🌙</Text>
+            <Text style={[F.s, { fontSize: 14, color: C.ink, marginTop: 2 }]}>Evening routine</Text>
             <Text style={[F.r, { fontSize: 13, color: C.soft }]}>Cleanse, then your evening routine.</Text>
           </View>
         </Rise>
@@ -1201,7 +1201,7 @@ const Notify = () => {
           </View>
         ))}
       </Rise>
-      <Rise i={4}><Text style={[t.hint, { textAlign: 'center', marginTop: 12 }]}>Plus one gentle water reminder in the afternoon. You can change everything in Settings.</Text></Rise>
+      <Rise i={4}><Text style={[t.hint, { textAlign: 'center', marginTop: 12 }]}>If your evening routine isn't ticked by 21:00, one gentle nudge. Plus a water reminder in the afternoon. You can change everything in Settings.</Text></Rise>
       <Spacer />
       <Btn title="Turn on reminders" disabled={saving} onPress={() => save(true)} />
       <Ghost title="Not now" onPress={() => save(false)} />
