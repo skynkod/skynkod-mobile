@@ -58,9 +58,14 @@ export const ISSUES = [
   I('dark-circles', 'eyes', 'Dark circles', { concern: 'Dark circles' }),
   I('puffy-eyes', 'eyes', 'Puffy eyes', { concern: 'Puffy eyes' }),
   I('milia', 'eyes', 'Milia (tiny white bumps)', { concern: 'Milia' }),
+  // From the sign-up cards (2026-10-27): eye-corner lines judge eye products only.
+  I('eye-lines', 'eyes', 'Fine lines at the corners', { concern: 'Fine lines', icon: 'remove-outline' }),
   // Lips
   I('chapped-lips', 'lips', 'Dry, chapped lips', { concern: 'Chapped lips' }),
   I('angular-cheilitis', 'lips', 'Cracked lip corners', { concern: 'Cracked lip corners', doctor: true }),
+  I('lips-peeling', 'lips', 'Peeling lips', { concern: 'Chapped lips', icon: 'leaf-outline' }),
+  I('lips-dark', 'lips', 'Darker lips', { icon: 'ellipse-outline' }),
+  I('lips-lines', 'lips', 'Lines around the lips', { icon: 'reorder-three-outline' }),
   // Neck: no photos yet (Lita will send them); an icon meanwhile.
   I('neck-lines', 'neck', 'Neck lines', { concern: 'Fine lines', icon: 'reorder-three-outline' }),
   I('neck-sagging', 'neck', 'Sagging neck', { concern: 'Fine lines', icon: 'trending-down-outline' }),
