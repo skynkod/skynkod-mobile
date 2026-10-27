@@ -381,6 +381,41 @@ Extreme macro crop of real skin that fills the whole frame edge to edge (no back
 
 ---
 
+## F. Koda comme sur la maquette (rayons pointus)
+
+Même conversation pour les 5, pour qu'il soit identique partout.
+
+**`koda-happy.png`**
+
+```
+Clean minimal 3D character render for a premium iOS beauty app. Subject: Koda, a small cute sun mascot: a round, soft, glossy body in light peach-pink (#F7D6D2 to #EFC2C6), with 8 short pointed triangular rays around it (soft cone shapes with slightly rounded tips, same peach-pink, a little darker at the base), no arms, no legs. Face: two big round dark brown glossy eyes with one white highlight each, light pink blush on the cheeks, a small open happy smile. Soft studio light from the top left, one soft highlight on the top of the body, very soft pink shadow. Front view, centered, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+```
+
+**`koda-wink.png`**
+
+```
+Clean minimal 3D character render for a premium iOS beauty app. Subject: Koda, a small cute sun mascot: a round, soft, glossy body in light peach-pink (#F7D6D2 to #EFC2C6), with 8 short pointed triangular rays around it (soft cone shapes with slightly rounded tips, same peach-pink, a little darker at the base), no arms, no legs. Face: two big round dark brown glossy eyes with one white highlight each, light pink blush on the cheeks, the right eye closed in a wink (a curved line) and a happy open smile. Soft studio light from the top left, one soft highlight on the top of the body, very soft pink shadow. Front view, centered, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+```
+
+**`koda-joy.png`**
+
+```
+Clean minimal 3D character render for a premium iOS beauty app. Subject: Koda, a small cute sun mascot: a round, soft, glossy body in light peach-pink (#F7D6D2 to #EFC2C6), with 8 short pointed triangular rays around it (soft cone shapes with slightly rounded tips, same peach-pink, a little darker at the base), no arms, no legs. Face: two big round dark brown glossy eyes with one white highlight each, light pink blush on the cheeks, both eyes closed in happy upward curves and a big open laughing smile. Soft studio light from the top left, one soft highlight on the top of the body, very soft pink shadow. Front view, centered, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+```
+
+**`koda-calm.png`**
+
+```
+Clean minimal 3D character render for a premium iOS beauty app. Subject: Koda, a small cute sun mascot: a round, soft, glossy body in light peach-pink (#F7D6D2 to #EFC2C6), with 8 short pointed triangular rays around it (soft cone shapes with slightly rounded tips, same peach-pink, a little darker at the base), no arms, no legs. Face: two big round dark brown glossy eyes with one white highlight each, light pink blush on the cheeks, both eyes gently closed in downward curves and a soft small smile. Soft studio light from the top left, one soft highlight on the top of the body, very soft pink shadow. Front view, centered, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+```
+
+**`koda-curious.png`**
+
+```
+Clean minimal 3D character render for a premium iOS beauty app. Subject: Koda, a small cute sun mascot: a round, soft, glossy body in light peach-pink (#F7D6D2 to #EFC2C6), with 8 short pointed triangular rays around it (soft cone shapes with slightly rounded tips, same peach-pink, a little darker at the base), no arms, no legs. Face: two big round dark brown glossy eyes with one white highlight each, light pink blush on the cheeks, both eyes open, a small round open mouth, and a small pink question mark floating next to the head. Soft studio light from the top left, one soft highlight on the top of the body, very soft pink shadow. Front view, centered, fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+```
+
+---
+
 ## Ce qui reste comme sur ta maquette, sans image à générer
-- **Koda** : tu as déjà ses 5 expressions. Sur la maquette, ses rayons sont un peu pointus ; les tiens sont arrondis. On garde les tiens, sauf si tu veux qu'on le refasse.
 - La grande bulle transparente de « Great! », le fil, le cercle fin sur la joue, le fond rose et toutes les icônes au trait des listes : je les fais en code, comme sur la maquette.
