@@ -11,9 +11,9 @@ export const SITUATIONS = [
     days: [
       { icon: 'hand-left-outline', title: 'Hands off', focus: "Don't pick or squeeze: it spreads bacteria and leaves marks. A hydrocolloid patch on any whitehead tonight.", avoid: 'Scrubs and harsh cleansers.' , needs: ['patch'] },
       { icon: 'water-outline', title: 'Gentle cleanse', focus: 'Cleanse twice with a gentle, non-foaming cleanser. Keep your moisturizer: dry skin makes more oil.', avoid: 'Rich oils on the face.' , needs: ['gentleCleanser'] },
-      { icon: 'flask-outline', title: 'Target spots', focus: 'Salicylic acid or benzoyl peroxide on spots only, at night.', avoid: 'Layering several strong actives.' , needs: ['spot'] },
+      { icon: 'flask-outline', title: 'Target spots', focus: 'Benzoyl peroxide (or salicylic acid) in a thin layer on the whole breakout area, at night.', avoid: 'Layering several strong actives.' , needs: ['spot'] },
       { icon: 'leaf-outline', title: 'Soothe', focus: 'Niacinamide or centella to calm redness around spots.', avoid: 'Touching your face during the day.' , needs: ['soothe'] },
-      { icon: 'flask-outline', title: 'Target again', focus: 'Spot treatment tonight if new spots appeared.', avoid: 'Over-treating: less is more.' , needs: ['spot'] },
+      { icon: 'flask-outline', title: 'Target again', focus: 'Your benzoyl peroxide or salicylic acid again tonight, on the whole breakout area.', avoid: 'Over-treating: less is more.' , needs: ['spot'] },
       { icon: 'shirt-outline', title: 'Clean habits', focus: 'Change your pillowcase, clean your phone screen and makeup brushes.', avoid: 'Sleeping in makeup.' },
       { icon: 'checkmark-done-outline', title: 'Review', focus: 'Look at how your skin changed this week. If deep painful spots keep coming, see a dermatologist.', avoid: 'Jumping to new products straight away.' },
     ],

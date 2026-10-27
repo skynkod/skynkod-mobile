@@ -27,7 +27,7 @@ export const RULES = [
   { id: 'retinoid-pea', text: 'A pea-sized amount of retinoid is enough for the whole face, on fully dry skin, with moisturizer on top. Start every 2nd or 3rd night and increase only as your skin tolerates it.', sources: ['aadRetinoid'] },
   { id: 'vitc-morning', text: 'Vitamin C works best in the morning, before sunscreen: it reinforces your sunscreen, it doesn’t replace it.', sources: ['clevelandOrder', 'vitC'] },
   { id: 'no-acid-with-vitc', text: 'Don’t use vitamin C together with exfoliating acids (AHA): use them at different times.', sources: ['clevelandOrder'] },
-  { id: 'spot-after-cleanse', text: 'Spot treatments (salicylic acid, benzoyl peroxide) go on the spots right after cleansing; wear sunscreen as they can make skin more sun-sensitive.', sources: ['clevelandOrder'] },
+  { id: 'spot-after-cleanse', text: 'Acne treatments (benzoyl peroxide, salicylic acid) go on right after cleansing, in a thin layer on the whole area where you break out; wear sunscreen as they can make skin more sun-sensitive.', sources: ['clevelandOrder'] },
   { id: 'neck-too', text: 'Your neck ages like your face: bring your cleanser, serums, moisturizer and sunscreen down to it. With retinol, start on the neck once your face tolerates it well.', sources: ['aadOrder'] },
   { id: 'lips-spf', text: 'Lips burn too: in the sun, use a lip balm with SPF and reapply it often.', sources: ['aadSunscreen'] },
   { id: 'not-too-many', text: 'Too many anti-aging products at once can irritate the skin: one strong active per evening is plenty.', sources: ['aadOrder'] },

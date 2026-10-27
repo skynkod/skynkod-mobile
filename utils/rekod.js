@@ -13,7 +13,7 @@ import { engineProfile } from './skin-quiz'
 import { getPausedProducts } from './paused-products'
 import { getProductReactions } from './journal-day'
 import { isRemover, removerPrefer, REMOVER_ACTION } from './removers'
-import { textureFor, planPrecautions, morningCleanse, isThermal } from './rekod-schedule'
+import { textureFor, planPrecautions, morningCleanse, isThermal, isRich } from './rekod-schedule'
 import { sunscreenOk, tintTip, TINT_TIP } from './sunscreen'
 import { loadState } from './cloud-state'
 import { purgeRunning } from './purge-core'
@@ -46,6 +46,8 @@ const strongVitC = p => has(p, ['vitaminc'], 5) || /vitamin\s?c\b|vit\.?\s?c\b|a
 // Actives that shouldn't come twice in one routine (vitamin C in the morning
 // and again at night, two acids…): each one has a single step.
 const ONCE = ['vitaminc', 'retinol', 'glycolic', 'salicylic', 'lactic', 'mandelic', 'azelaic', 'bakuchiol', 'arbutin', 'txa', 'kojic', 'benzoyl']
+// L-ascorbic acid itself, not a derivative (3-O-ethyl ascorbic acid is one).
+const pureVitC = p => /ascorbic acid/i.test((p?.ingredients_text || '').replace(/(3-o-)?ethyl ascorbic acid/gi, ''))
 // Basics every product has: never the reason a product is "similar".
 const BASICS = ['glycerin', 'hyaluronic', 'dimethicone', 'petrolatum', 'squalane', 'shea', 'aloe', 'vitamine', 'allantoin', 'jojoba']
 const harsh = p => has(p, ['sls', 'scrub', 'alcohol', 'fragrance', 'essentialoils']) || /scrub|exfoli|peel/i.test(p?.name || '')
@@ -172,11 +174,17 @@ const thermalStep = (choice, extra = {}) => (choice
   : { key: 'thermal', action: 'Thermal water', product: 'Thermal water or lukewarm water', product_id: null, image_url: null, owned: false, days: null, acks: null, issues: [], want: [], why: THERMAL_WHY, keys: [], cats: ['toner'], ...extra })
 const BENZOYL_WHY = 'A thin layer on the whole area where you break out, not only on the spots: that is what stops the next ones. It can bleach fabrics: a white pillowcase helps.'
 const creamExtra = profile => (profile.isotretinoin ? { why: ISO_CREAM_WHY } : {})
-// The sunscreen's why: her antibiotic first, then the tinted tip (rulebook X6, T2).
+// The sunscreen's why: her antibiotic first, then the tinted tip and heat with melasma (rulebook X6, T2, T5).
+const MELASMA_HEAT = 'Heat (sauna, hammam, hot sport) can darken melasma too.'
 const spfExtra = (profile) => {
-  const why = [profile.photosensitive && PHOTO_SPF_WHY, tintTip(profile) && TINT_TIP].filter(Boolean)
-  return why.length ? { why: profile.photosensitive ? why.join(' ') : `${ROLE_WHY.sunscreen} ${TINT_TIP}` } : {}
+  const extra = [tintTip(profile) && TINT_TIP, (profile.skin_conditions || []).includes('Melasma') && MELASMA_HEAT].filter(Boolean)
+  if (!profile.photosensitive && !extra.length) return {}
+  return { why: [profile.photosensitive ? PHOTO_SPF_WHY : ROLE_WHY.sunscreen, ...extra].join(' ') }
 }
+// Combination skin: salicylic acid where it's needed (dermatologists' practice, rulebook C4).
+const ZONE_T_TIP = 'Combination skin: only on your T-zone and where you break out, not on dry cheeks.'
+// Milia: light eye care only (dermatologists' practice, rulebook Y5).
+const MILIA_TIP = 'With milia, a light eye cream only: no rich balm around the eyes.'
 // The free basic routine (Lita, 2026-10-27): made for her at the end of sign-up,
 // no actives (those are Rekod). Morning: cleanser, cream, SPF. Evening:
 // makeup remover, cleanser, cream. Same safety rules as Rekod; her own products first.
@@ -321,15 +329,19 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   // Up to 3 goals: the first one sets the plan's pace, all of them choose the actives.
   const goals = plan.goals?.length ? plan.goals : [plan.goal]
   const union = lists => [...new Set(lists.flat().filter(Boolean))]
-  // Pure vitamin C stings sensitive and reactive skin: niacinamide or peptides instead (audit 2).
+  // Pure vitamin C (ascorbic acid) stings sensitive and reactive skin: a gentler
+  // derivative (ascorbyl glucoside, tetrahexyldecyl ascorbate…) or niacinamide
+  // instead (systematic review, JCAD 2025; Lita, 2026-10-27).
   const amWant = plan.sensitive
-    ? union([...goals.map(g => morningSerum[g]).flat().filter(x => x !== 'vitaminc'), 'niacinamide'])
+    ? union([...goals.map(g => morningSerum[g]).flat(), 'niacinamide'])
     : union(goals.map(g => morningSerum[g]))
   const moistWant = goals.some(g => g === 'calm' || g === 'hydration') ? ['ceramides'] : []
   // Pregnancy: no salicylic acid; a gentle AHA instead, so acne still gets an exfoliation night (audit 2).
   // Antibiotics by mouth make the skin burn faster: gentle acids only (rulebook X6).
   const exWant = plan.sensitive || plan.deep || plan.menopause || plan.photosensitive ? ['mandelic', 'pha', 'lactic'] : plan.pregnant ? ['mandelic', 'lactic', 'glycolic'] : goals.some(g => g === 'clear' || g === 'pores') ? ['salicylic'] : ['glycolic', 'lactic']
-  const repairWant = union(goals.map(g => repairFor[g])).length ? union(goals.map(g => repairFor[g])) : ['ceramides', 'panthenol', 'centella', 'peptides']
+  const repairBase = union(goals.map(g => repairFor[g])).length ? union(goals.map(g => repairFor[g])) : ['ceramides', 'panthenol', 'centella', 'peptides']
+  // Red marks after spots: tranexamic acid first (systematic review 2022; Lita, 2026-10-27).
+  const repairWant = profile.redMarks ? union([['txa'], repairBase]) : repairBase
   // SPF 50 from the name ("SPF 50", "50+", "SPF50"), never "150 ml".
   const spf50 = p => /spf\s?50|\b50\s?\+|\bspf\s?50\+?/i.test(p.name || '')
 
@@ -343,8 +355,11 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const sunscreen = await pick(['sunscreen'], plan.sensitive ? { ...gentle, want: ['zincoxide', 'titanium'], prefer: spf50, reject: p => !sunscreenOk(p) } : { ...gentle, prefer: spf50, reject: p => !sunscreenOk(p) })
   // Eyes (essential, Lita 2026-10-24): peptides every day; lips: an SPF balm by day.
   const PEPTIDES = ['argireline', 'matrixyl', 'copperpeptides', 'peptides']
-  const eyePeptide = plan.perioral ? null : await pick(['eye care'], { ...gentle, want: PEPTIDES, wantRequired: true, unique: true })
-    || await pick(['eye care'], { ...gentle, unique: true })
+  const milia = (profile.skin_concerns || []).includes('Milia')
+  const eyeReject = milia ? isRich : null
+  const eyePeptide = plan.perioral ? null : await pick(['eye care'], { ...gentle, want: PEPTIDES, wantRequired: true, unique: true, reject: eyeReject })
+    || await pick(['eye care'], { ...gentle, unique: true, reject: eyeReject })
+  const eyeTip = milia ? { tip: MILIA_TIP } : {}
   const lipSpf = plan.perioral ? null : await pick(['lip care'], { want: ['zincoxide', 'titanium', 'chemicalspf'], wantRequired: true, unique: true })
   // Isotretinoin: lips are never optional (rulebook X1).
   const lipsStep = plan.isotretinoin ? { why: ISO_LIPS_WHY } : OPTIONAL_STEP
@@ -380,12 +395,12 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const gentleAm = amWant.filter(x => x !== 'vitaminc')
   const amWantNow = !plan.vitc || nowWeek >= intro.vitc ? amWant : gentleAm.length ? gentleAm : ['hyaluronic', 'niacinamide']
   // Perioral dermatitis: only cleanser, a light cream and SPF (rulebook M3).
-  const amSerum = plan.perioral || simple ? null : await pick(['serum', 'toner'], { ...gentle, want: amWantNow, wantRequired: true, unique: true, reject: isThermal })
+  const amSerum = plan.perioral || simple ? null : await pick(['serum', 'toner'], { ...gentle, want: amWantNow, wantRequired: true, unique: true, reject: p => isThermal(p) || (plan.sensitive && pureVitC(p)) })
   const thermal = morningCleanse(profile) ? null : await pick(['toner'], { ...gentle, reject: p => !isThermal(p) })
   const morning = [
     morningCleanse(profile) ? stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }) : thermalStep(thermal),
     amSerum && stepFrom('serum', 'Serum', amSerum, { cats: ['serum', 'toner'] }, amWantNow),
-    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'], ...OPTIONAL_STEP }, PEPTIDES),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, PEPTIDES),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'], ...creamExtra(plan) }, moistWant),
     stepFrom('sunscreen', 'SPF 50', sunscreen, { cats: ['sunscreen'], ...spfExtra(profile) }, ['zincoxide', 'titanium', 'chemicalspf']),
     lipSpf && stepFrom('lips', 'Lips · SPF', lipSpf, { cats: ['lip care'], ...lipsStep }, ['zincoxide', 'titanium', 'chemicalspf']),
@@ -396,7 +411,7 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   // Eyes at night: a retinoid eye cream on the retinoid nights (never in pregnancy,
   // calm phase or reactive start), peptides on the other nights.
   const eyeRetinoid = retinoidWant[0] === 'retinol' && !plan.sensitive && !simple
-    ? await pick(['eye care'], { want: ['retinol'], wantRequired: true, unique: true, prefer: strength })
+    ? await pick(['eye care'], { want: ['retinol'], wantRequired: true, unique: true, prefer: strength, reject: eyeReject })
     : null
   const retinoidNights = daysFor('retinoid')
   const peptideNights = eyeRetinoid && retinoidNights.length ? JS_DAY.filter(d => !retinoidNights.includes(d)) : null
@@ -415,11 +430,11 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const evening = [
     remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
-    daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exWant),
+    daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'], ...(profile.skin_type === 'Combination' && exWant.includes('salicylic') ? { tip: ZONE_T_TIP } : {}) }, exWant),
     daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : retinoidWant[0] === 'retinol' ? 'Retinol' : 'Gentle treatment', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
-    eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'], ...OPTIONAL_STEP }, ['retinol']),
-    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'], ...OPTIONAL_STEP }, PEPTIDES),
+    eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, ['retinol']),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, PEPTIDES),
     // Only on repair and reset nights: never the same evening as an acid or a retinoid.
     // A real step, on the whole area where she breaks out (AAD; Lita, 2026-10-27).
     spotTreatment && spotNights.length && stepFrom('treatment', 'On your breakout areas', spotTreatment, { days: spotNights, cats: ['serum', 'exfoliant', 'moisturizer'], why: BENZOYL_WHY }, ['benzoyl']),

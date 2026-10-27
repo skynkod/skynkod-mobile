@@ -226,6 +226,8 @@ export const engineProfile = (row) => {
     retinolOk: !!(row?.consent_health_at && sp.retinolOk && (conditions.includes('Rosacea') || conditions.includes('Eczema'))),
     // Deep, painful spots: a dermatologist first, a gentle routine meanwhile (rulebook A6).
     cystic: (row?.acne_types || []).includes('Cystic') || (sp.issues || []).includes('cystic-acne'),
+    // Red marks left by spots: tranexamic acid on repair nights (rulebook T6).
+    redMarks: (sp.issues || []).includes('post-acne-redness'),
     // Her main and secondary concern (they lead the product verdicts and Rekod).
     ...(() => { const p = prioritiesOf({ concerns: sp.concerns || row?.skin_concerns || [], priority: sp.priority, secondary: sp.secondary }); return { priority: p.main, secondary: p.second } })(),
   }

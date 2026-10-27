@@ -221,11 +221,11 @@ export const CONDITIONS = [
     id: 'post-acne-redness', group: 'redness', title: 'Red marks after spots',
     notice: ['Pink or red flat marks where spots used to be'],
     zones: ['cheeks', 'chin', 'jaw'],
-    can: ['Sunscreen every day so they fade faster', 'Niacinamide, azelaic acid and centella', 'Patience: they often fade over months'],
-    cant: ['Exfoliating harder doesn’t speed them up: they’re small vessels, not pigment'],
+    can: ['Sunscreen every day so they fade faster', 'Tranexamic acid or azelaic acid: the best-studied creams for red marks', 'Niacinamide and centella to calm them', 'Patience: they often fade over months'],
+    cant: ['Exfoliating harder doesn’t speed them up: they’re small vessels, not pigment', 'Marks that last for months fade best with a vascular laser, done by a dermatologist'],
     rx: [], clinic: [CLINIC('Vascular laser or IPL', 'Fades lasting red marks', '2 to 7 days')],
     derm: null,
-    ingredients: ['niacinamide', 'azelaic', 'centella'], sources: [DN('acne-scarring')],
+    ingredients: ['txa', 'azelaic', 'niacinamide', 'centella'], sources: [DN('acne-scarring'), { label: 'Post-acne erythema treatment: a systematic review, J Cosmet Dermatol 2022', url: 'https://pubmed.ncbi.nlm.nih.gov/35076997/' }],
   },
 
   // ---------- Dark spots ----------

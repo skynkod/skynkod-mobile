@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { introWeeks, introStage, nightCounts, treatmentOf, isReactive, planPrecautions, retinolChoice, applyCheckIn, morningCleanse, isThermal, weekPattern } from '../utils/rekod-schedule.js'
 import { spfOf, sunscreenOk, tintTip } from '../utils/sunscreen.js'
+import { isRich } from '../utils/rekod-schedule.js'
+import { buildSosPlan, questionsFor } from '../utils/sos-plan.js'
 
 // Evidence gaps E7–E13 (docs/routines/livre-des-regles.md, section 9).
 const weeksAgo = w => new Date(Date.now() - (w - 1) * 7 * 864e5 - 3600e3).toISOString()
@@ -94,5 +96,21 @@ assert.ok(!morningCleanse({ skin_type: 'Dry', skin_concerns: ['Dark spots'] }))
 assert.ok(isThermal({ name: 'Eau Thermale Avène' }))
 assert.ok(isThermal({ name: 'Thermal Spring Water' }))
 assert.ok(!isThermal({ name: 'Thermal Micellar Water' }))
+
+// Milia: rich eye balms stay out.
+assert.ok(isRich({ name: 'Rich Eye Balm' }))
+assert.ok(!isRich({ name: 'Eye Gel Cream' }))
+
+// After a peel, a laser or microneedling: no actives in the SOS plan, mineral SPF, the practitioner first.
+const laser = buildSosPlan(['procedure'], { procedure: 'laser' })
+for (const p of ['retinoid', 'acid', 'exfoliant', 'vitaminC', 'scrub']) assert.ok(laser.pause.includes(p), p)
+assert.ok(laser.notes.some(n => /practitioner/.test(n)))
+assert.ok(laser.notes.some(n => /2 weeks/.test(n)))
+assert.ok(questionsFor(['procedure'], {}, null).some(q => q.id === 'procedure'))
+const withSpots = buildSosPlan(['procedure', 'breakout'], { procedure: 'peel' })
+assert.ok(withSpots.days.every(d => !d.evening.some(st => /benzoyl|salicylic|azelaic/i.test(st.text))), 'no spot active after a treatment')
+// Breakout plan: benzoyl peroxide on the whole area, not on spots only.
+const spots = buildSosPlan(['breakout'], {})
+assert.ok(spots.days.some(d => d.evening.some(st => /whole breakout area/.test(st.text))))
 
 console.log('evidence: all good')

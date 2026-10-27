@@ -79,6 +79,9 @@ Et un état dans le code :
   - Le peroxyde dégrade la trétinoïne classique (50 % en 2 heures quand on mélange les deux).
   - L'adapalène et certaines nouvelles formules résistent. [JCAD](https://jcadonline.com/absence-of-degradation-of-tretinoin-when-benzoyl-peroxide-is-combined-with-an-optimized-formulation-of-tretinoin-gel-0-05-2/)
 
+- **Vitamine C** : une revue systématique ([J Clin Aesthet Dermatol](https://jcadonline.com/clinical-applications-of-vitamin-c-in-dermatology-a-systematic-review/)) montre que l'acide ascorbique pur est la forme la plus prouvée, et que l'ascorbyl glucoside et le tétrahexyldécyl ascorbate sont mieux tolérés.
+- **Marques rouges après les boutons** : une revue systématique ([PubMed 35076997](https://pubmed.ncbi.nlm.nih.gov/35076997/)) et un essai comparant acide azélaïque 20 % et acide tranexamique 5 % ([PMC10199364](https://pmc.ncbi.nlm.nih.gov/articles/PMC10199364/)).
+
 ### Pratique des dermatologues 🟡
 - **Rétinoïdes** : commencer 2 soirs par semaine, puis un soir sur deux, puis tous les soirs si la peau le tolère. Une noisette pour tout le visage, sur peau sèche, et de la crème. Si la peau s'irrite, on arrête, on hydrate, puis on reprend lentement (fiches patients de l'AAD).
 - **Skin cycling (Dr Whitney Bowe)** : alterner les soirs actifs et les soirs de récupération.
@@ -173,7 +176,8 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | T2 | Taches, marques, mélasma ou peau foncée : **le SPF teinté aux oxydes de fer est conseillé, jamais imposé** (il protège aussi de la lumière visible). Le conseil est écrit sur l'étape SPF. | 🔵 synthèse 2024 | ✅ |
 | T3 | Actifs : acide azélaïque, rétinoïde, niacinamide, vitamine C, acide tranexamique, arbutine. | 🔵 Kircik, Taraz, Navarrete-Solís | ✅ |
 | T4 | Éviter l'irritation : sur peau foncée, l'irritation crée de nouvelles taches. | 🔵 synthèse JCAD | ✅ (acides doux) |
-| T5 | Mélasma : avis médical conseillé (la contraception hormonale peut le déclencher). | 🟡 | ✅ (fiche) |
+| T5 | Mélasma : avis médical conseillé (la contraception hormonale peut le déclencher). La chaleur (sauna, hammam, sport à forte chaleur) peut aussi le foncer : c'est écrit sur l'étape SPF. | 🟡 (chaleur : avis de cliniciens, pas d'étude) | ✅ |
+| T6 | Marques rouges après les boutons : acide tranexamique les soirs Réparation, acide azélaïque possible. Pour les marques qui durent des mois, le laser vasculaire chez une dermatologue est le plus efficace : on le dit honnêtement. | 🔵 revue systématique 2022 (PubMed 35076997), essai 2023 (PMC10199364) | ✅ |
 
 ### Rides, fermeté
 | # | Règle | Preuve | Code |
@@ -188,6 +192,7 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | C1 | Éclat : AHA (glycolique ou lactique) le soir, vitamine C le matin. Une débutante qui ne veut que de l'éclat commence sans rétinoïde. | 🔵 | ✅ |
 | C2 | Pores : on ne peut pas les « fermer ». BHA, rétinoïde et niacinamide les rendent moins visibles. | 🔵 | ✅ |
 | C3 | AHA : SPF obligatoire pendant l'utilisation et une semaine après. | 🟢 FDA | ✅ (SPF chaque matin) |
+| C4 | Peau mixte : l'acide salicylique seulement sur la zone T et là où sortent les boutons, pas sur les joues sèches. | 🟡 dermatologues dans la presse | ✅ (conseil sur l'étape) |
 
 ### Rougeurs, peau sensible, peau sèche ou déshydratée
 | # | Règle | Preuve | Code |
@@ -195,7 +200,7 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | P1 | La barrière d'abord : céramides, glycérine, panthénol ; pas d'acides les 4 premières semaines. | 🟢 AAD eczéma · 🔵 Draelos 2018 | ✅ |
 | P2 | Sans parfum, sans alcool asséchant, sans huiles essentielles ni menthol. | 🟢 NRS | ✅ (moteur) |
 | P3 | SPF minéral (oxyde de zinc) de préférence. | 🟡 | ✅ |
-| P4 | Pas de vitamine C pure ; niacinamide à la place. | ⚪ | ✅ |
+| P4 | Pas de vitamine C pure (acide ascorbique) : un dérivé plus doux (ascorbyl glucoside, tétrahexyldécyl ascorbate…) ou de la niacinamide à la place. | 🔵 revue systématique, J Clin Aesthet Dermatol 2025 | ✅ |
 | P5 | Peau sèche ou déshydratée : sérum hydratant sur peau humide, crème riche, couche occlusive le soir sur les zones sèches. | 🔵 Purnamawati | ✅ |
 
 ### Yeux, lèvres, cou
@@ -205,6 +210,7 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | Y2 | Cernes : le type compte (bleutés, bruns, creusés). Pour les cernes creusés, une crème ne change presque rien : on le dit honnêtement. | 🔵 · ⚪ | ✅ |
 | Y3 | Lèvres : baume avec SPF le jour, baume nourrissant le soir. | 🟢 AAD | ✅ (facultatif) |
 | Y4 | Cou : les mêmes produits que le visage, descendus jusqu'au cou ; le rétinol seulement quand le visage le tolère. | 🟡 | ✅ (guide d'application) |
+| Y5 | Grains de milium : une crème pour les yeux légère, jamais un baume riche autour des yeux. | 🟡 explication logique, pas d'étude | ✅ |
 
 ---
 
@@ -241,6 +247,11 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | M4 | **Dermatite séborrhéique** : douceur, pas d'alcool. L'antifongique (kétoconazole, zinc pyrithione) est un traitement : sur avis médical. | 🔵 (preuve faible pour les huiles) | ✅ en partie |
 | M5 | **Psoriasis du visage** : traité comme une peau sensible (pas d'acides forts, barrière d'abord), avis médical. | 🟡 | ✅ |
 | M6 | **Acné fongique suspectée** : on évite certains ingrédients (preuve faible, surtout des essais en laboratoire) et on conseille un avis médical. | 🔵 faible | ✅ |
+
+### Après un soin en institut (peeling, laser, microneedling)
+| # | Règle | Preuve | Code |
+|---|---|---|---|
+| I1 | Plan SOS « Après un soin » : les consignes du praticien d'abord. 7 jours sans rétinol, acides, vitamine C ni gommage ; nettoyant doux, soin apaisant, crème, SPF minéral ; le moins de soleil et de chaleur possible. Après un laser : actifs en pause environ 2 semaines. Reprise un actif à la fois, la niacinamide d'abord. | 🟡 consignes de cliniques, pas de recommandation officielle | ✅ |
 
 ### Traitements
 Principe ⚪ : **son traitement prescrit est l'actif principal.** Skynkod n'ajoute pas un autre actif fort de même effet. Il construit autour une base douce et met son traitement dans la routine, aux moments prescrits. Skynkod ne change jamais une dose ni un rythme prescrits.

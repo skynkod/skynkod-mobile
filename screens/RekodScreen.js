@@ -1148,6 +1148,7 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
           ) : null}
           <Text style={[styles.sheetTitle, { color: C.text }]}>{s.product || 'No product yet'}</Text>
           {s.why ? <Text style={[TYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{s.why}</Text> : null}
+          {s.tip ? <Text style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18, marginTop: SPACING.xs }]}>{s.tip}</Text> : null}
           {s.issues?.length ? (
             <View style={[styles.issueBox, { borderColor: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422' }]}>
               <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422', fontWeight: '700' }]}>

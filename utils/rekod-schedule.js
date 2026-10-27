@@ -400,6 +400,8 @@ export const planPrecautions = (profile = {}) => {
 }
 const LIGHT = /\b(gel|fluid|water|aqua|light|lightweight|matte|mattifying|oil[- ]free)\b/i
 const RICH = /\b(cream|crème|creme|balm|baume|rich|riche|nourishing|nourrissant)\b/i
+// A rich cream or balm (not a light texture): never around eyes prone to milia.
+export const isRich = p => RICH.test(p?.name || '') && !LIGHT.test(p?.name || '')
 export const textureFor = (profile = {}) => {
   // Isotretinoin dries every skin: a richer cream (rulebook X1). Perioral dermatitis: light only (M3).
   if (profile.isotretinoin) return p => RICH.test(p.name || '') && !LIGHT.test(p.name || '')

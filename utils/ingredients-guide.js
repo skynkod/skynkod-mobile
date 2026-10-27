@@ -72,7 +72,7 @@ export const INGREDIENTS = [
   I('benzoyl', 'Benzoyl peroxide', ['benzoyl peroxide'], 'Kills acne bacteria; strong but effective on inflamed breakouts.', ['Acne', 'Inflammatory', 'Oily'], { irritancy: 3, tags: ['drying'] }),
   I('vitaminc', 'Vitamin C', ['ascorbic acid', 'ascorbyl', 'ascorbic', 'ascorbate'], 'Antioxidant that brightens, fades dark spots and protects from pollution.', ['Dullness', 'Dark spots', 'Fine lines', 'Normal', 'Combination', 'Melasma', 'Dark circles'], { irritancy: 1 }),
   I('arbutin', 'Alpha-arbutin', ['arbutin'], 'Fades dark spots and evens skin tone.', ['Dark spots', 'Melasma']),
-  I('txa', 'Tranexamic acid', ['tranexamic acid'], 'Targets stubborn dark spots and melasma.', ['Dark spots', 'Melasma']),
+  I('txa', 'Tranexamic acid', ['tranexamic acid'], 'Targets stubborn dark spots, melasma and red marks left by spots.', ['Dark spots', 'Melasma']),
   I('kojic', 'Kojic acid', ['kojic acid'], 'Brightens and fades dark spots.', ['Dark spots', 'Melasma'], { irritancy: 2 }),
   I('hydroquinone', 'Hydroquinone', ['hydroquinone'], 'Strong skin lightener, usually on prescription.', ['Melasma', 'Dark spots'], { irritancy: 3, tags: ['pregnancy-avoid'] }),
   I('peptides', 'Peptides', ['peptide', 'palmitoyl', 'acetyl hexapeptide', 'matrixyl', 'copper tripeptide'], 'Help skin look firmer and smoother.', ['Fine lines', 'Normal', 'Dry']),
