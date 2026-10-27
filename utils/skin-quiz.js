@@ -53,7 +53,7 @@ export const QUESTIONS = [
   { id: 'goals', chapter: 'goal', type: 'multi', max: 3, title: 'What would you like to change first?', subtitle: 'Pick up to 3.',
     options: [o('clear', 'Clearer skin'), o('hydration', 'Deep hydration'), o('even_tone', 'An even skin tone'), o('anti_aging', 'Smoother, firmer skin'), o('simple', 'A routine I actually stick to')] },
   { id: 'sex', chapter: 'you', type: 'single', title: 'You are…', subtitle: 'Skin differs a little between men and women (oil, shaving, hormones).',
-    options: [o('woman', 'A woman'), o('man', 'A man'), o('other', 'Non-binary'), o('unsaid', 'I’d rather not say')] },
+    options: [o('woman', 'A woman'), o('man', 'A man')] },
 
   { id: 'feel', chapter: 'test', type: 'single', title: 'Two hours after washing your face, with nothing on, it feels…',
     options: [o('dry', 'Tight or a bit rough'), o('normal', 'Comfortable'), o('combo', 'Shiny on the forehead and nose only'), o('oily', 'Shiny all over')] },
