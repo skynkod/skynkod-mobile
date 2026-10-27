@@ -13,7 +13,8 @@ import { articlesIn } from '../utils/encyclopedia'
 import ArticleBody from '../components/ArticleBody'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
-import { toColumns, computeSkinType } from '../utils/skin-quiz'
+import { toColumns, computeSkinType, QUESTIONS } from '../utils/skin-quiz'
+import { getIssue } from '../utils/skin-issues'
 
 // Sign-up v8 (Lita's mockup v3, 2026-10-27): soft pink glass, real skin photos,
 // thin mauve line icons, one calm question per screen. The questions and their
@@ -848,26 +849,57 @@ const LifeCards = () => {
   )
 }
 
+// The concerns behind her picks, each with the photo she tapped first.
+const CONCERN_LABEL = { ...Object.fromEntries(QUESTIONS.find(q => q.id === 'priority').options.map(o => [o.value, o.label])), Acne: 'Breakouts' }
+const concernsOf = picks => {
+  const out = []
+  for (const o of picks) {
+    const c = getIssue(o.id)?.concern
+    if (c && !out.some(x => x.c === c)) out.push({ c, t: CONCERN_LABEL[c] || c, img: o.img })
+  }
+  return out
+}
+
+// What we spotted, and what matters most (Lita, 2026-10-27): she ranks her
+// main concern (and a second one when she has 3 or more). They lead the
+// product verdicts, Rekod, the next buy and the week review.
 const Spotted = () => {
-  const { F, P, go } = useOb()
-  const t = useType()
-  const Z = [['Face', P.face], ['Eyes', P.eyes], ['Lips', P.lips], ['Neck', P.neck]].filter(z => z[1].length)
+  const { F, W, P, set, go } = useOb()
+  const concerns = concernsOf([...P.face, ...P.eyes, ...P.lips, ...P.neck])
+  const needs = concerns.length >= 3 ? 2 : 1
+  const [rank, setRank] = useState([P.priority, P.secondary].filter(c => concerns.some(x => x.c === c)))
+  const cw = (W - 44 - 12) / 2
+  const tap = c => {
+    Haptics.selectionAsync().catch(() => {})
+    if (rank.includes(c)) return setRank(rank.filter(x => x !== c))
+    if (rank.length < needs) setRank([...rank, c])
+    else setRank([...rank.slice(0, needs - 1), c])
+  }
+  const q = rank.length === 0 || needs === 1 ? 'What matters most to you right now?' : 'And second?'
   return (
     <Page>
-      <Head z="life" q="What we spotted" h={`${Z.reduce((a, z) => a + z[1].length, 0)} things to track.`} />
-      <View style={{ marginTop: 8 }}>
-        {Z.map(([label, list], i) => (
-          <Rise key={label} i={i + 1} style={styles.sec}>
-            <Text style={[F.s, styles.k]}>{label}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-              {list.map(o => <Image key={o.t} source={CARD[o.img]} style={{ width: 46, height: 46, borderRadius: 12 }} />)}
-            </View>
-          </Rise>
-        ))}
+      <Head z="life" q={q} h={`We spotted ${concerns.length} things to track. Your choice leads every recommendation, and you can change it anytime.`} />
+      <View style={styles.grid}>
+        {concerns.map((x, i) => {
+          const n = rank.indexOf(x.c)
+          return (
+            <Rise key={x.c} i={i + 1}>
+              <Pressable onPress={() => tap(x.c)} style={({ pressed }) => [styles.pc, { width: cw }, n >= 0 && styles.pcOn, pressed && { transform: [{ scale: 0.97 }] }]}>
+                <View style={{ width: '100%', height: cw / 1.3 }}>
+                  <Image source={CARD[x.img]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  <Image source={IMG.cardFade} style={{ position: 'absolute', left: 0, right: 0, bottom: -3, height: '62%', width: '100%' }} resizeMode="stretch" />
+                </View>
+                <View style={{ padding: 10, paddingTop: 0, marginTop: -26 }}>
+                  <Text style={[F.s, styles.pcT]}>{x.t}</Text>
+                </View>
+                {n >= 0 ? <View style={styles.rankBadge}><Text style={[F.b, { color: '#fff', fontSize: 13 }]}>{n + 1}</Text></View> : <Tick on={false} />}
+              </Pressable>
+            </Rise>
+          )
+        })}
       </View>
-      <Rise i={Z.length + 1}><Text style={t.p}>Where to start? We'll choose together when we build your routine.</Text></Rise>
       <Spacer />
-      <Btn onPress={() => go('sleep')} />
+      <Btn disabled={rank.length < needs} onPress={() => { set({ priority: rank[0], secondary: rank[1] || null }); go('sleep') }} />
     </Page>
   )
 }
@@ -1066,6 +1098,7 @@ const Final = () => {
   const sec = [
     ['sparkles', 'Your goals', P.goals.map(g => g.t)],
     ['sun', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
+    ['sparkles', 'Your priority', [P.priority, P.secondary].filter(Boolean).map((c, n) => `${n + 1}. ${CONCERN_LABEL[c] || c}`)],
     ['eye', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
     ['ban-outline', 'What we avoid for you', a.avoid.map(x => `No ${low(x)}`)],
     ['heart', 'We take care with', care],
@@ -1214,6 +1247,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
       faceZones: zones,
       acneWhere: hasAcne ? zones.filter(z => z !== 'nose') : [],
       issues,
+      priority: P.priority || null,
+      secondary: P.secondary || null,
       eyeDetails: P.eyes.filter(o => o.d).map(o => o.d),
       sleepHours: P.sleep ?? null,
       sleep: P.sleep == null ? null : P.sleep < 6 ? 'short' : P.sleep <= 8 ? 'ok' : 'long',
@@ -1321,8 +1356,10 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     case 'neckDone': content = (
       <Between from="neck" next="life" summary={<Summary label="You identified" items={P.neck.map(o => o.t)} />}
         onGo={() => {
-          if ([...P.face, ...P.eyes, ...P.lips, ...P.neck].length) return go('spotted')
-          say('Nothing to report: your skin is doing well!')
+          const concerns = concernsOf([...P.face, ...P.eyes, ...P.lips, ...P.neck])
+          if (concerns.length >= 2) return go('spotted')
+          set({ priority: concerns[0]?.c || null, secondary: null })
+          if (!concerns.length) say('Nothing to report: your skin is doing well!')
           go('sleep')
         }} />
     ); break
@@ -1373,6 +1410,7 @@ const styles = StyleSheet.create({
   pcOn: { borderColor: C.mauve2, shadowOpacity: 0.25 },
   pcT: { fontSize: 13, lineHeight: 16, color: C.ink },
   pcS: { fontSize: 11, lineHeight: 14, color: C.mute, marginTop: 2 },
+  rankBadge: { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12, backgroundColor: C.mauve2, borderWidth: 1.5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   tick: { position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.85)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.95)', alignItems: 'center', justifyContent: 'center' },
   rows: { marginTop: 18, gap: 10 },
   row: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },

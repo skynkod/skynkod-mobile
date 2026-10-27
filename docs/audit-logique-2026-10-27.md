@@ -39,7 +39,7 @@ Ce qui est promis sans être fait :
 
 Je conseille **a**. C'est ce qui rend ces questions utiles, sinon elles allongent l'inscription pour rien.
 
-### 4. La préoccupation principale n'est jamais choisie
+### 4. ✅ Corrigé : la préoccupation principale n'est jamais choisie
 - L'écran « What we spotted » dit : « Where to start? We'll choose together when we build your routine. »
 - **Dans les faits :** ce choix n'existe nulle part au moment de construire la routine. Sans choix, l'app prend automatiquement **le premier problème touché sur les photos**.
 - **Conséquence :** cette « priorité » pilote beaucoup de choses : les verdicts produits, « Next best buy », le tri de l'étagère, Rekod et le bilan de la semaine. Elle est donc choisie au hasard de l'ordre des taps.

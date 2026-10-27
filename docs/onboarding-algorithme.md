@@ -53,7 +53,7 @@ Ce document décrit **le fond** : les questions, leur ordre, les choix possibles
 - **Tu remarques quelque chose sur ton cou ?** Oui / Non. Si oui (plusieurs, en photos) : rides du cou · peau qui se relâche · peau sèche · taches plus foncées.
 
 ### 6. Ta vie
-- **Récap « Ce qu'on a repéré »** : tout ce qui a été choisi, zone par zone. « Par lequel commencer ? On le choisira ensemble, au moment de construire ta routine. » Il n'y a pas de question de priorité à l'inscription.
+- **« What matters most to you right now? »** (si elle a au moins 2 préoccupations) : les photos de ses préoccupations, elle touche la principale, puis une 2e si elle en a 3 ou plus. Elles guident les verdicts produits, Rekod, le prochain achat et le bilan de la semaine. Avec une seule, elle devient la principale automatiquement.
 - **Tu dors combien d'heures ?** De 4 à 10 h. Moins de 6 h : « Ta peau se répare surtout la nuit ».
 - **Au quotidien, oui ou non** : stressée en ce moment ? · maquillage ou produit teinté souvent ? (sert à l'étape démaquillant) · beaucoup de temps dehors ? · tu transpires beaucoup ?
 
