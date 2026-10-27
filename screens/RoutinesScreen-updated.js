@@ -95,8 +95,9 @@ export default function RoutinesScreen({ route, navigation }) {
   // No routine yet: nothing to tick (the old generic template is gone, 2026-10-27).
   const steps = saved ? todaySteps(withLipsStep(saved.steps)) : [];
   // An empty step (Lips in an older routine) can't be ticked: it doesn't count.
-  const filled = saved ? steps.filter(s => s.product) : steps;
-  const completed = steps.filter((s, idx) => done[idx] && (!saved || s.product)).length;
+  // Optional steps (eyes and lips in Rekod, a spot treatment) don't count, as on Home.
+  const filled = saved ? steps.filter(s => s.product && !s.optional) : steps;
+  const completed = steps.filter((s, idx) => done[idx] && (!saved || (s.product && !s.optional))).length;
   const progress = filled.length ? completed / filled.length : 0;
 
   const toggleStep = async (idx) => {

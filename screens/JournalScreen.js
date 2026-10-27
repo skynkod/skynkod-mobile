@@ -177,7 +177,9 @@ export default function JournalScreen({ route, navigation }) {
       const rows = (await Promise.all(['morning', 'evening'].map(async type => {
         const routine = currentRoutine(list, type);
         const steps = isToday ? await todayStepsWithPauses(user.id, routine, { morning: currentRoutine(list, 'morning') }) : todaySteps(routine?.steps || [], selected);
-        return steps.length ? { type, total: steps.length, done: Math.min(progress[type].size, steps.length) } : null;
+        // Optional steps don't count, as on Home.
+        const counted = steps.filter(s => !s.optional)
+        return counted.length ? { type, total: counted.length, done: Math.min(progress[type].size, counted.length) } : null;
       }))).filter(Boolean);
       setRoutineLog({ rows, regularity });
     } catch (error) {

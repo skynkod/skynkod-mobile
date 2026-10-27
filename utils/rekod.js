@@ -265,7 +265,6 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     menopause: ['during', 'after'].includes(profile.menopause),
   }
   const pick = await chooser(userId, profile, plan.productPref)
-  const pregnant = pregnantNow
   const gentle = { avoidHarsh: true, noStrong: true }
   // Up to 3 goals: the first one sets the plan's pace, all of them choose the actives.
   const goals = plan.goals?.length ? plan.goals : [plan.goal]
@@ -346,7 +345,7 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'] }, exWant),
-    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : pregnant ? 'Gentle treatment' : 'Retinol', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
+    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : retinoidWant[0] === 'retinol' ? 'Retinol' : 'Gentle treatment', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
     eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'], ...OPTIONAL_STEP }, ['retinol']),
     eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'], ...OPTIONAL_STEP }, PEPTIDES),
