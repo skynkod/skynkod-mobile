@@ -51,7 +51,10 @@ export const NIGHTS = {
 // "Retinol night" even with azelaic acid or, in pregnancy, bakuchiol).
 // Reactive skin and the calm phase: azelaic acid; pregnancy: a gentle treatment.
 // 18–24 without an anti-ageing, clear-skin or spots goal: no retinol yet (Lita, 2026-10-27).
-export const treatmentOf = (plan, now = new Date()) => (calmPhase(plan, now) || (plan.reactive && weekOf(plan, now) < 5) ? 'azelaic' : plan.pregnant || plan.young ? 'gentle' : 'retinol')
+// Rosacea: azelaic acid for the whole plan, retinol only if her dermatologist agreed (rulebook M1).
+// Pregnancy: azelaic acid, the best-studied active then (G2). A deeper skin tone
+// with breakouts or marks: azelaic acid for 4 weeks, then retinol (D2).
+export const treatmentOf = (plan, now = new Date()) => (calmPhase(plan, now) || ((plan.reactive || plan.deepStart) && weekOf(plan, now) < 5) || (plan.rosacea && !plan.retinolOk) || plan.pregnant ? 'azelaic' : plan.young ? 'gentle' : 'retinol')
 const TREATMENT_NIGHT = {
   azelaic: { label: 'Azelaic acid night', short: 'Azelaic acid', name: 'azelaic acid' },
   gentle: { label: 'Gentle treatment night', short: 'Treatment', name: 'a gentle treatment' },
@@ -62,7 +65,8 @@ export const nightInfo = (plan, night, now = new Date()) => (night === 'retinoid
 // What the saved routine was built for: when it changes (a new week, a new
 // level, a rest week ending), the routine is rebuilt.
 // r2: the makeup remover step (2026-10-25) rebuilds routines made before it.
-export const rekodKey = (plan, now = new Date()) => `${weekPattern(plan).join(',')}|${treatmentOf(plan, now)}|${resting(plan, now) ? 'rest' : ''}|r2`
+// r3: one new active every 2 weeks (2026-10-27): each new one rebuilds it.
+export const rekodKey = (plan, now = new Date()) => `${weekPattern(plan).join(',')}|${treatmentOf(plan, now)}|${resting(plan, now) ? 'rest' : ''}|i${introStage(plan, now)}|r3`
 
 // Nights per week, from the rules (exfoliation, retinoid, repair, reset).
 const LEVELS = [
@@ -76,12 +80,13 @@ const PRIORITY = {
   exfoliation: { ex: 3, ret: 2, rep: 1, reset: 1 },
 }
 export const START = { none: 0, some: 1, used: 2 }
-const REACTIVE_CONDITIONS = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Seborrheic dermatitis']
+// Psoriasis too: a sensitive skin, no exfoliating acids (rulebook M5).
+const REACTIVE_CONDITIONS = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Seborrheic dermatitis', 'Psoriasis']
 export const isReactive = profile => (profile?.skin_conditions || []).some(c => REACTIVE_CONDITIONS.includes(c))
 const TARGET = { none: 2, some: 2, used: 3 }
 
 // The counts for a plan's current level, adapted to the goal and the skin.
-export const nightCounts = (plan) => {
+const baseCounts = (plan) => {
   const top = plan.experience === 'used' && plan.level >= 3
   let c = { ...(top && plan.priority && PRIORITY[plan.priority] ? PRIORITY[plan.priority] : LEVELS[Math.min(plan.level, 3)]) }
   if (plan.sensitive) {
@@ -92,9 +97,14 @@ export const nightCounts = (plan) => {
     // Rosacea, eczema, perioral or seborrheic dermatitis: no exfoliating acids.
     c.rep += c.ex; c.ex = 0
   }
-  if (plan.fragile) {
-    // Isotretinoin or a prescription skin cream: no acids, no retinoid, only gentle care.
+  if (plan.fragile || plan.cystic) {
+    // Isotretinoin or a prescribed cream (her treatment is her active), or deep,
+    // painful spots waiting for a dermatologist: no acids, no retinoid, only gentle care.
     c.rep += c.ex + c.ret; c.ex = 0; c.ret = 0
+  }
+  if (plan.eczema && (!plan.retinolOk || treatmentOf(plan) !== 'retinol')) {
+    // Eczema: no treatment night, the moisturizer is the care (rulebook M2).
+    c.rep += c.ret; c.ret = 0
   }
   if (calmPhase(plan)) {
     // No acids; the "retinoid" night becomes azelaic acid from week 3.
@@ -110,9 +120,11 @@ export const nightCounts = (plan) => {
   // Nothing safe in the catalogue for a strong step: that night becomes a repair night.
   if ((plan.missing || []).includes('retinoid')) { c.rep += c.ret; c.ret = 0 }
   if ((plan.missing || []).includes('exfoliation')) { c.rep += c.ex; c.ex = 0 }
+  // Rosacea or eczema with her dermatologist's OK: retinol 2 nights a week at most (rulebook M1–M2).
+  if (plan.retinolOk && (plan.rosacea || plan.eczema) && treatmentOf(plan) === 'retinol' && c.ret > 2) { c.rep += c.ret - 2; c.ret = 2 }
   // Retinol after azelaic acid (reactive skin, or the end of the calm phase):
   // it restarts at 2 nights for 2 weeks (audit 2, 2026-10-25).
-  if (treatmentOf(plan) === 'retinol' && (plan.reactive || goalsOf(plan).includes('calm')) && [5, 6].includes(weekOf(plan)) && c.ret > 2) { c.rep += c.ret - 2; c.ret = 2 }
+  if (treatmentOf(plan) === 'retinol' && (plan.reactive || plan.deepStart || goalsOf(plan).includes('calm')) && [5, 6].includes(weekOf(plan)) && c.ret > 2) { c.rep += c.ret - 2; c.ret = 2 }
   if (plan.extraReset) {
     // Last check-in said the skin reacted: one active night becomes a reset night.
     if (c.ret > 0) { c.ret -= 1; c.reset += 1 } else if (c.ex > 0) { c.ex -= 1; c.reset += 1 }
@@ -147,8 +159,10 @@ export const nightCounts = (plan) => {
   if (c.ex + c.ret === 4 && c.ex > 1) {
     if (plan.priority === 'exfoliation') { c.ret -= 1; c.rep += 1 } else { c.rep += c.ex - 1; c.ex = 1 }
   }
+  // Perioral dermatitis: as few products as possible, every night a reset night (rulebook M3).
+  if (plan.perioral) c = { ex: 0, ret: 0, rep: 0, reset: 7 }
   // A strong reaction: a week of rest, repair and reset nights only.
-  if (resting(plan)) c = { ex: 0, ret: 0, rep: 4, reset: 3 }
+  else if (resting(plan)) c = { ex: 0, ret: 0, rep: 4, reset: 3 }
   // Two weeks back after a rest week (audit 3): first no acids and 2 strong
   // nights at most, then 3 strong nights at most with one acid night.
   else if (plan.restUntil) {
@@ -164,6 +178,48 @@ export const nightCounts = (plan) => {
   return c
 }
 export const resting = (plan, now = new Date()) => !!plan.restUntil && now < new Date(plan.restUntil)
+// Her last check-in said the skin reacted, or she came back from a rest week less than 2 weeks ago.
+const reacting = (plan, now = new Date()) => !!plan.extraReset || (!!plan.restUntil && now - new Date(plan.restUntil) < 14 * 86400000)
+
+// One new strong active every 2 weeks, the most useful first (rulebook R1, Lita
+// 2026-10-27): the treatment night, then benzoyl peroxide (red spots), then
+// vitamin C, then exfoliation. Gentle actives (niacinamide, peptides,
+// hyaluronic acid) don't count. → { treatment, benzoyl, vitc, exfoliation }: the week each may start.
+export const introWeeks = (plan) => {
+  // Does this plan ever have a treatment night? The same plan at full strength.
+  const full = baseCounts({ ...plan, level: 3, levelSince: 1, startedAt: new Date(Date.now() - 9 * 7 * 86400000).toISOString(), restUntil: null, extraReset: false, maintenance: false })
+  const order = [full.ret > 0 && 'treatment', plan.inflamed && 'benzoyl', plan.vitc && 'vitc', 'exfoliation'].filter(Boolean)
+  return Object.fromEntries(order.map((k, i) => [k, 1 + 2 * i]))
+}
+// How many of them have started: a new one rebuilds the routine.
+export const introStage = (plan, now = new Date()) => Object.values(introWeeks(plan)).filter(w => weekOf(plan, now) >= w).length
+
+export const nightCounts = (plan, now = new Date()) => {
+  const c = baseCounts(plan)
+  // Exfoliation waits its turn; its first 2 weeks, one night that takes a
+  // treatment night's place, so the week never jumps up at once.
+  const since = weekOf(plan, now) - introWeeks(plan).exfoliation
+  if (c.ex && since < 0) { c.rep += c.ex; c.ex = 0 }
+  if (c.ex && since >= 0 && since < 2) {
+    if (c.ex > 1) { c.rep += c.ex - 1; c.ex = 1 }
+    if (c.ret > 1) { c.ret -= 1; c.rep += 1 }
+  }
+  // 3 strong actives at most; 2 for a sensitive skin or after a reaction (rulebook
+  // R10): with red spots, retinoid and benzoyl peroxide stay (the proven pair).
+  if (c.ex && c.ret && plan.inflamed && (plan.sensitive || reacting(plan, now))) { c.rep += c.ex; c.ex = 0 }
+  // Her own choice (Lita, 2026-10-27, rulebook S3): more retinol nights than the 4
+  // we advise, up to 7. Not for a sensitive skin (never two strong nights in a row
+  // there), and never while her skin reacts.
+  if (plan.extraRet && retinolChoice(plan, now) && c.ret > 0) {
+    let add = Math.min(plan.extraRet, 7 - c.ret - c.ex)
+    while (add > 0) { if (c.reset > 0) c.reset -= 1; else c.rep -= 1; c.ret += 1; add -= 1 }
+    // An exfoliation night needs a free night on each side: it steps back when there's no room.
+    while (c.ex && c.ret + c.ex * 3 > 7) { c.ex -= 1; c.rep += 1 }
+  }
+  return c
+}
+// Whether she can add retinol nights herself right now.
+export const retinolChoice = (plan, now = new Date()) => treatmentOf(plan, now) === 'retinol' && !plan.sensitive && !plan.pregnant && !resting(plan, now) && !reacting(plan, now)
 
 // Seven nights, Monday first (audit 2026-10-25). Hard rules, checked on
 // every combination by tests/rekod.test.mjs:
@@ -261,6 +317,9 @@ export const applyCheckIn = (plan, answer, now = new Date(), { hold = false } = 
     level,
     levelSince,
     extraReset: answer !== 'good',
+    // Her skin reacted: back to the retinol nights we advise, and we tell her why.
+    extraRet: answer === 'good' ? plan.extraRet || 0 : 0,
+    extraRetDropped: answer !== 'good' && !!plan.extraRet,
     restUntil: answer === 'lot' ? new Date(now.getTime() + 7 * 86400000).toISOString() : plan.restUntil || null,
     checkins: [...(plan.checkins || []), { week, answer, at: now.toISOString() }],
   }
@@ -318,10 +377,33 @@ export const shiftedTo = (plan, date, now = new Date()) => {
 export const nightOnDate = (plan, date, now = new Date()) => weekPattern(shiftedTo(plan, date, now))[JS_DAY.indexOf(date.getDay())]
 export const treatmentOnDate = (plan, date, now = new Date()) => treatmentOf(shiftedTo(plan, date, now), now)
 
+// The morning (Lita, 2026-10-27, rulebook B4): no cleanser, a mist of thermal water,
+// except for oily or breakout-prone skin (NICE: a gentle cleanser twice a day).
+export const morningCleanse = profile => profile.skin_type === 'Oily' || (profile.skin_concerns || []).includes('Acne') || (profile.acne_types || []).length > 0
+export const isThermal = p => /eau thermale|thermal (spring )?water/i.test(p?.name || '')
+
 // A cream that suits her skin: light for oily skin or sweat, rich for dry skin or menopause.
+// The plan's precautions, from her profile (rulebook section 6): pure, so the tests read it too.
+export const planPrecautions = (profile = {}) => {
+  const conditions = profile.skin_conditions || []
+  return {
+    rosacea: conditions.includes('Rosacea'),
+    eczema: conditions.includes('Eczema'),
+    perioral: conditions.includes('Perioral dermatitis'),
+    retinolOk: !!profile.retinolOk,
+    cystic: !!profile.cystic,
+    photosensitive: !!profile.photosensitive,
+    isotretinoin: !!profile.isotretinoin,
+    // A deeper skin tone (swatches 4 to 6) with breakouts or marks: azelaic acid first (rulebook D2).
+    deepStart: profile.tone != null && profile.tone >= 3 && (profile.skin_concerns || []).some(c => c === 'Acne' || c === 'Dark spots'),
+  }
+}
 const LIGHT = /\b(gel|fluid|water|aqua|light|lightweight|matte|mattifying|oil[- ]free)\b/i
 const RICH = /\b(cream|crème|creme|balm|baume|rich|riche|nourishing|nourrissant)\b/i
 export const textureFor = (profile = {}) => {
+  // Isotretinoin dries every skin: a richer cream (rulebook X1). Perioral dermatitis: light only (M3).
+  if (profile.isotretinoin) return p => RICH.test(p.name || '') && !LIGHT.test(p.name || '')
+  if ((profile.skin_conditions || []).includes('Perioral dermatitis')) return p => LIGHT.test(p.name || '')
   if (['Oily', 'Combination'].includes(profile.skin_type) || profile.sweat) return p => LIGHT.test(p.name || '')
   if (profile.skin_type === 'Dry' || ['during', 'after'].includes(profile.menopause)) return p => RICH.test(p.name || '') && !LIGHT.test(p.name || '')
   return null

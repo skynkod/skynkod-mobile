@@ -32,6 +32,7 @@ import {
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
   decideStep, stepId, saveRekodPlan, projectRekod, programmeFinished, startMaintenance,
   conflictWith, planWeeks, planWhy, extendRekod, restorePreviousRoutine, regularityOf, endAdvice, optionsForStep,
+  nightCounts, retinolChoice,
 } from '../utils/rekod'
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -167,6 +168,28 @@ export default function RekodScreen({ navigation }) {
   }
 
   // A flagged step: keep it (and patch test) or take it out of the routine.
+  // Her own retinol nights (Lita, 2026-10-27): we advise, she decides.
+  const setRetinolNights = async (extraRet) => {
+    tap()
+    try {
+      const next = { ...plan, extraRet, extraRetDropped: false }
+      await saveRekodPlan(user.id, next)
+      setPlan(next)
+      setRoutine(await refreshRekodRoutine(user.id, next))
+      syncSmartReminders(user.id)
+    } catch (error) {
+      logError('Rekod_retinolNights', error)
+    }
+  }
+  const moreRetinol = () => {
+    const advised = nightCounts({ ...plan, extraRet: 0 }).ret
+    if (plan.extraRet) return setRetinolNights(plan.extraRet + 1)
+    Alert.alert('More retinol nights?', `We advise ${advised} a week. More can irritate your skin (redness, peeling) and doesn’t bring results faster. It’s your choice.`, [
+      { text: `Keep ${advised}`, style: 'cancel' },
+      { text: 'Add a night', onPress: () => setRetinolNights(1) },
+    ])
+  }
+
   const decide = async (period, idx, decision) => {
     const target = currentStep(period, idx)
     setSheet(null)
@@ -552,6 +575,38 @@ export default function RekodScreen({ navigation }) {
         </Pressable>
         <FullPlan visible={fullOpen} onClose={() => setFullOpen(false)} plan={plan} routine={routine} />
 
+        {/* Retinol nights: the pace we advise, more only if she decides (rulebook S3) */}
+        {premium !== false && (retinolChoice(plan) || plan.extraRet || plan.extraRetDropped) ? (() => {
+          const nights = nightCounts(plan).ret
+          const advised = nightCounts({ ...plan, extraRet: 0 }).ret
+          return (
+            <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <Ionicons name="moon-outline" size={18} color={C.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[TYPE.bodyStrong, { color: C.text }]}>Retinol nights</Text>
+                  <Text style={[TYPE.caption, { color: C.muted }]}>{nights} a week{nights === advised ? ' · the pace we advise' : ` · we advise ${advised}`}</Text>
+                </View>
+                {retinolChoice(plan) ? (
+                  <>
+                    <Pressable onPress={() => setRetinolNights(Math.max(0, (plan.extraRet || 0) - 1))} disabled={!plan.extraRet} hitSlop={8} accessibilityLabel="One retinol night less"
+                      style={[styles.stepBtn, { borderColor: C.border, opacity: plan.extraRet ? 1 : 0.35 }]}>
+                      <Ionicons name="remove" size={16} color={C.primary} />
+                    </Pressable>
+                    <Pressable onPress={moreRetinol} disabled={nights >= 7} hitSlop={8} accessibilityLabel="One retinol night more"
+                      style={[styles.stepBtn, { borderColor: C.border, opacity: nights >= 7 ? 0.35 : 1 }]}>
+                      <Ionicons name="add" size={16} color={C.primary} />
+                    </Pressable>
+                  </>
+                ) : null}
+              </View>
+              {plan.extraRetDropped ? (
+                <Text style={[TYPE.caption, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>Your skin reacted: we went back to the pace we advise. You can add nights again once it’s calm.</Text>
+              ) : null}
+            </View>
+          )
+        })() : null}
+
         {premium === false ? (
           // Without Premium she keeps her routine as it is today; it no longer adapts.
           <Pressable onPress={() => { tap(); navigation.navigate('Premium') }} style={[styles.card, { backgroundColor: C.card, borderColor: C.primary, borderStyle: 'dashed', flexDirection: 'row', alignItems: 'center' }]}>
@@ -750,6 +805,13 @@ export default function RekodScreen({ navigation }) {
         <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700', marginTop: SPACING.md }]}>Your plan · {goalsTitle(answers)}</Text>
         <Text style={[styles.title, { color: C.text }]}>{total} weeks</Text>
         <Text style={[TYPE.body, { color: C.textSecondary, marginTop: SPACING.xs, lineHeight: 22 }]}>{draft ? planWhy(draft) : goalOf(answers.goal).why}</Text>
+        {/* Her health comes first (rulebook section 6): one honest line on what Rekod holds back. */}
+        {precautionOf(draft) ? (
+          <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border, marginTop: SPACING.md, flexDirection: 'row', gap: SPACING.sm }]}>
+            <Ionicons name="medkit-outline" size={17} color={C.primary} style={{ marginTop: 2 }} />
+            <Text style={[TYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>{precautionOf(draft)}</Text>
+          </View>
+        ) : null}
 
         <Text style={[styles.section, { color: C.muted }]}>WHAT YOU'LL DO</Text>
         <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border }]}>
@@ -881,15 +943,23 @@ export default function RekodScreen({ navigation }) {
 
 const tap = () => { Haptics.selectionAsync().catch(() => {}) }
 
-const MORNING_WORDS = { cleanser: 'Cleanser', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'SPF 50' }
+const MORNING_WORDS = { cleanser: 'Cleanser', thermal: 'Thermal water', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'SPF 50' }
 const NIGHT_WORDS = {
   exfoliation: 'an acid gently clears pores and dead cells.',
   retinol: 'retinol renews your skin; it starts low and increases slowly.',
   azelaic: 'azelaic acid calms redness and evens the tone, gently.',
-  gentle: 'a pregnancy-safe treatment (bakuchiol or peptides) works gently on your goal.',
+  // Young skin without a retinol goal (pregnancy now gets azelaic acid, 2026-10-27).
+  gentle: 'a gentle treatment (bakuchiol or peptides) works softly on your goal.',
   repair: 'soothing care, your skin rests and rebuilds.',
   reset: 'just cleanser and cream: a night off.',
 }
+// What Rekod holds back for her health, in one line (rulebook section 6).
+const precautionOf = plan => (!plan ? null
+  : plan.fragile ? 'Your treatment is your main active: Rekod adds no other strong active on top, only gentle care around it.'
+  : plan.cystic ? 'Deep, painful spots heal best with a dermatologist: they can prescribe what skincare can’t. Meanwhile, your Rekod stays gentle, with no new strong active.'
+  : plan.perioral ? 'With perioral dermatitis, doctors advise as few products as possible: your Rekod keeps only a cleanser, a light cream and SPF.'
+  : (plan.rosacea || plan.eczema) && !plan.retinolOk ? 'With rosacea or eczema, Rekod uses no retinol unless your dermatologist agrees. You can tell us in My Skyn Profile.'
+  : null)
 // The treatment night's true name (Rekod audit 2026-10-25).
 const TREATMENT_LABEL = { retinol: 'Retinol night', azelaic: 'Azelaic acid night', gentle: 'Gentle treatment night' }
 const GOAL_END = { clear: 'Clearer skin, fewer breakouts', antiaging: 'Smoother skin, softer fine lines', spots: 'Visibly faded spots, a more even tone', glow: 'Brighter, smoother skin', pores: 'Less visible pores, less shine', calm: 'Calmer, more comfortable skin', hydration: 'Comfortable, hydrated skin' }
@@ -1139,6 +1209,7 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
 }
 
 const styles = liveStyles(() => StyleSheet.create({
+  stepBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dash: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md },
   dashTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 26, lineHeight: 30 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { currentRoutine, withLipsStep } from '../utils/current-routine';
+import { withTreatmentSteps } from '../utils/treatments';
 import { getRekodPlan } from '../utils/rekod';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
@@ -93,7 +94,7 @@ export default function RoutinesScreen({ route, navigation }) {
       .catch(() => {});
   }, [savedIds]);
   // No routine yet: nothing to tick (the old generic template is gone, 2026-10-27).
-  const steps = saved ? todaySteps(withLipsStep(saved.steps)) : [];
+  const steps = saved ? todaySteps(withTreatmentSteps(withLipsStep(saved.steps), tab, profile)) : [];
   // An empty step (Lips in an older routine) can't be ticked: it doesn't count.
   // Optional steps (eyes and lips in Rekod, a spot treatment) don't count, as on Home.
   const filled = saved ? steps.filter(s => s.product && !s.optional) : steps;
@@ -265,6 +266,16 @@ export default function RoutinesScreen({ route, navigation }) {
                     kodaPrefill={Array.isArray(step.days) && step.days.length && step.days.length < 7
                       ? t('Why do I use {product} only on these days ({days})?', { product: productsById[step.product_id].name, days: t(describeDays(step.days)) })
                       : t('How do I get the most out of {product} in my {period} routine?', { product: productsById[step.product_id].name, period: t(tab === 'morning' ? 'morning' : 'evening') })} />
+                ) : null}
+                {/* Her prescribed treatment: her doctor's times, and any alert (rulebook section 6). */}
+                {step.rx ? (
+                  <View style={{ marginTop: SPACING.xs, gap: 4 }}>
+                    {Array.isArray(step.days) && step.days.length ? <Text style={[TYPE.caption, { color: colors.muted }]}>{t(describeDays(step.days))}</Text> : null}
+                    {(step.issues || []).map(issue => (
+                      <Text key={issue.text} style={[TYPE.caption, { color: issue.level === 'avoid' ? colors.warning : colors.textSecondary }]}>{t(issue.text)}. {t(issue.detail)}</Text>
+                    ))}
+                    <Text style={[TYPE.caption, { color: colors.muted }]}>{t(step.why)}</Text>
+                  </View>
                 ) : null}
                 {step.tip ? (
                   <View style={styles.tipRow}>

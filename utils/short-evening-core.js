@@ -10,7 +10,8 @@ const DAY = 86400000
 const KEEP_KEYS = ['remover', 'cleanser', 'moisturizer', 'lips']
 
 // The essentials of tonight's steps: never a strong night's step.
-export const shortSteps = (steps = []) => steps.filter(st => !st.night && KEEP_KEYS.includes(st.key))
+// Her prescribed treatment stays on a short evening: Skynkod never skips it for her.
+export const shortSteps = (steps = []) => steps.filter(st => st.rx || (!st.night && KEEP_KEYS.includes(st.key)))
 
 // Worth offering only when it really makes the evening shorter.
 export const canGoShort = (steps = []) => {

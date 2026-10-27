@@ -80,7 +80,9 @@
     "test:removers": "node --import ./tests/extensionless.mjs --test --no-warnings tests/removers.test.mjs",
     "test:safety": "node --import ./tests/extensionless.mjs --test --no-warnings tests/safety.test.mjs",
     "test:life": "node --import ./tests/extensionless.mjs --test --no-warnings tests/life-bonus.test.mjs",
-    "test:routines": "node --import ./tests/extensionless.mjs --test --no-warnings tests/routines.test.mjs"
+    "test:routines": "node --import ./tests/extensionless.mjs --test --no-warnings tests/routines.test.mjs",
+    "test:treatments": "node --import ./tests/extensionless.mjs --test --no-warnings tests/treatments.test.mjs",
+    "test:evidence": "node --import ./tests/extensionless.mjs --test --no-warnings tests/evidence.test.mjs"
   },
   "private": true
 }

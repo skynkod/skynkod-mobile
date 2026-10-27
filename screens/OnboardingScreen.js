@@ -17,6 +17,7 @@ import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { toColumns, computeSkinType, QUESTIONS } from '../utils/skin-quiz'
 import { getIssue } from '../utils/skin-issues'
+import { TOPICAL_RX, OTHER_RX, WEEK, planDone, isTopicalRx, isRetinoidRx } from '../utils/treatments'
 
 // Sign-up v8 (Lita's mockup v3, 2026-10-27): soft pink glass, real skin photos,
 // thin mauve line icons, one calm question per screen. The questions and their
@@ -221,8 +222,12 @@ const SAFETY = [
   { k: 'avoid', t: 'An allergy to an ingredient', i: 'allergy', q: 'Which ones?', o: [['Fragrance', 'Fragrance'], ['Essential oils', 'Essential oils'], ['Nuts', 'Nuts'], ['Lanolin', 'Lanolin'], ['Alcohol', 'Alcohol'], ['Other', 'Other']] },
   // Diagnosed conditions switch on the product rules that protect these skins (logic audit, 2026-10-27).
   { k: 'conditions', t: 'A skin condition diagnosed by a doctor', i: 'shield-check', q: 'Which ones?', o: [['Rosacea', 'Rosacea'], ['Eczema', 'Eczema or atopic skin'], ['Psoriasis', 'Psoriasis'], ['Perioral dermatitis', 'Perioral dermatitis'], ['Seborrheic dermatitis', 'Seborrheic dermatitis'], ['Melasma', 'Melasma']] },
-  { k: 'meds', t: 'A skin or hormonal treatment', i: 'pill', q: 'Which one?', o: [['isotretinoin', 'Isotretinoin (Roaccutane)'], ['topical_rx', 'Prescription cream (tretinoin, adapalene…)'], ['oral_antibiotic', 'Antibiotics'], ['hormonal', 'Hormonal treatment or the pill']] },
+  // The exact treatment (Lita, 2026-10-27): each one has its own rules, and each cream becomes a step of her routine.
+  { k: 'meds', t: 'A skin or hormonal treatment', i: 'pill', q: 'Which ones?', o: [...TOPICAL_RX, ...OTHER_RX].map(x => [x.id, x.label]),
+    groups: [['On the skin', TOPICAL_RX.map(x => x.id)], ['By mouth or other', OTHER_RX.map(x => x.id)]] },
 ]
+// Rosacea or eczema: retinol only if her dermatologist agreed (rulebook M1–M2).
+const RETINOL_ASK = ['Rosacea', 'Eczema']
 const SKIN_WHY = { Oily: 'It shines all over your face.', Combination: 'Shiny in the center, normal on the cheeks.', Dry: 'It lacks oil and feels tight.', Normal: 'Balanced: neither oily nor dry.' }
 
 // ---------- My Skyn Profile: replay one step (Lita, 2026-10-27) ----------
@@ -255,6 +260,7 @@ export const fromAnswers = (a = {}, row = {}) => {
     avoid: [...avoid.filter(x => AVOID_FIXED.includes(x)), ...(custom.length ? ['Other'] : [])],
     avoidOther: custom.join(', '),
     conditions: a.conditions || [], meds: a.meds || [], prefs: a.prefs || [],
+    rxPlan: a.rxPlan || {}, medsOther: a.medsOther || '', retinolOk: !!a.retinolOk,
   }
 }
 // Where each step starts, which screen ends it, and the answers it owns.
@@ -265,7 +271,7 @@ const CHAPTER_KEYS = {
   skin: ['goals', 'sex', 'ageRange', 'menopause', 'feel', 'shine', 'pores', 'reactivity', 'sun', 'tightAfterShower', 'tone'],
   face: ['faceZones', 'acneWhere', ...ISSUE_KEYS], eyes: ISSUE_KEYS, lips: ISSUE_KEYS, neck: ISSUE_KEYS,
   life: ['sleepHours', 'sleep', 'stress', 'makeup', 'sunTime', 'sweat', 'priority', 'secondary'],
-  safety: ['pregnancy', 'avoid', 'conditions', 'meds', 'prefs'],
+  safety: ['pregnancy', 'avoid', 'conditions', 'meds', 'prefs', 'rxPlan', 'medsOther', 'retinolOk'],
   priority: ['priority', 'secondary'],
 }
 
@@ -983,6 +989,13 @@ const Safety = () => {
   const [picked, setPicked] = useState({ preg: P.preg || [], avoid: P.avoid || [], conditions: P.conditions || [], meds: P.meds || [] })
   const [other, setOther] = useState(P.avoidOther || '')
   const [otherErr, setOtherErr] = useState(false)
+  // When she uses each prescribed cream, as her doctor said: it becomes a step of her routine.
+  const [rxPlan, setRxPlan] = useState(P.rxPlan || {})
+  const [medsOther, setMedsOther] = useState(P.medsOther || '')
+  const [rxErr, setRxErr] = useState(false)
+  const [retinolOk, setRetinolOk] = useState(!!P.retinolOk)
+  const planOf = id => rxPlan[id] || {}
+  const setPlan = (id, change) => { setRxPlan({ ...rxPlan, [id]: { ...planOf(id), ...change } }); setRxErr(false) }
   // Product preferences: not health data, so always here (Lita, 2026-10-27).
   const [prefsOn, setPrefsOn] = useState(!!P.prefs?.length)
   const [prefs, setPrefs] = useState(P.prefs || [])
@@ -990,6 +1003,7 @@ const Safety = () => {
     const list = picked[k]
     setPicked({ ...picked, [k]: list.includes(v) ? list.filter(x => x !== v) : one ? [v] : [...list, v] })
     if (v === 'Other' && !list.includes(v)) say('Type the ingredient: we\'ll keep it out of all your advice.')
+    if (k === 'meds' && isTopicalRx(v) && !list.includes(v)) say('Tell us when your doctor said to use it: it goes in your routine.', 'calm')
   }
   const done = () => {
     const pick = k => (health && open[k] ? picked[k] : [])
@@ -997,7 +1011,17 @@ const Safety = () => {
       setOtherErr(true)
       return say('Tell us which ingredient, or we can\'t avoid it.', 'curious')
     }
-    set({ preg: pick('preg'), avoid: pick('avoid'), conditions: pick('conditions'), meds: pick('meds'), avoidOther: other.trim(), prefs: prefsOn ? prefs : [] })
+    const creams = pick('meds').filter(isTopicalRx)
+    if (creams.some(id => !planDone(rxPlan[id])) || (creams.includes('rx_other') && !medsOther.trim())) {
+      setRxErr(true)
+      return say('Tell us when you use your treatment, so it fits in your routine.', 'curious')
+    }
+    set({
+      preg: pick('preg'), avoid: pick('avoid'), conditions: pick('conditions'), meds: pick('meds'), avoidOther: other.trim(), prefs: prefsOn ? prefs : [],
+      rxPlan: Object.fromEntries(creams.map(id => [id, rxPlan[id]])),
+      medsOther: creams.includes('rx_other') ? medsOther.trim() : '',
+      retinolOk: pick('conditions').some(c => RETINOL_ASK.includes(c)) && retinolOk,
+    })
     go('last')
   }
   return (
@@ -1024,16 +1048,64 @@ const Safety = () => {
               {open[x.k] ? (
                 <View style={{ marginTop: 12 }}>
                   <Text style={t.hint}>{x.q}</Text>
-                  <View style={styles.chipsel}>
-                    {x.o.map(([v, label]) => {
-                      const on = picked[x.k].includes(v)
-                      return (
-                        <Pressable key={v} onPress={() => toggle(x.k, v, x.one)} style={[styles.chip, on && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
-                          <Text style={[F.m, { fontSize: 12.5, color: on ? '#fff' : C.ink }]}>{label}</Text>
-                        </Pressable>
-                      )
-                    })}
-                  </View>
+                  {(x.groups || [[null, x.o.map(([v]) => v)]]).map(([title, ids]) => (
+                    <View key={title || 'all'}>
+                      {title ? <Text style={[F.m, styles.rxGroup]}>{title}</Text> : null}
+                      <View style={styles.chipsel}>
+                        {x.o.filter(([v]) => ids.includes(v)).map(([v, label]) => {
+                          const on = picked[x.k].includes(v)
+                          return (
+                            <Pressable key={v} onPress={() => toggle(x.k, v, x.one)} style={[styles.chip, on && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
+                              <Text style={[F.m, { fontSize: 12.5, color: on ? '#fff' : C.ink }]}>{label}</Text>
+                            </Pressable>
+                          )
+                        })}
+                      </View>
+                    </View>
+                  ))}
+                  {x.k === 'conditions' && picked.conditions.some(c => RETINOL_ASK.includes(c)) ? (
+                    <Pressable onPress={() => setRetinolOk(!retinolOk)} style={[styles.rxOk]} accessibilityRole="checkbox" accessibilityState={{ checked: retinolOk }}>
+                      <View style={[styles.rxBox, retinolOk && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>{retinolOk ? <Ionicons name="checkmark" size={12} color="#fff" /> : null}</View>
+                      <Text style={[F.r, { flex: 1, fontSize: 12.5, lineHeight: 17, color: C.ink }]}>My dermatologist said retinol is OK for my skin</Text>
+                    </Pressable>
+                  ) : null}
+                  {x.k === 'meds' ? picked.meds.filter(isTopicalRx).map(id => {
+                    const p = planOf(id)
+                    const missing = rxErr && (!planDone(p) || (id === 'rx_other' && !medsOther.trim()))
+                    const chip = (key, on, label, onPress) => (
+                      <Pressable key={key} onPress={onPress} style={[styles.chip, styles.rxChip, on && { backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
+                        <Text style={[F.m, { fontSize: 12, color: on ? '#fff' : C.ink }]}>{label}</Text>
+                      </Pressable>
+                    )
+                    return (
+                      <View key={id} style={[styles.rxCard, missing && { borderColor: '#C0577A' }]}>
+                        <Text style={[F.s, { fontSize: 13, color: C.ink }]}>{x.o.find(o => o[0] === id)?.[1]}</Text>
+                        {id === 'rx_other' ? (
+                          <TextInput value={medsOther} onChangeText={v => { setMedsOther(v); setRxErr(false) }} placeholder="Its name (e.g. a cortisone cream)" placeholderTextColor={C.mute}
+                            style={[F.r, styles.other, { marginTop: 8 }]} />
+                        ) : null}
+                        <Text style={[t.hint, { marginTop: 8 }]}>When do you use it?</Text>
+                        <View style={styles.chipsel}>
+                          {[['morning', 'Morning'], ['evening', 'Evening'], ['both', 'Morning and evening']].map(([v, label]) => chip(v, p.when === v, label, () => setPlan(id, { when: v })))}
+                        </View>
+                        <View style={[styles.chipsel, { marginTop: 6 }]}>
+                          {chip('every', !!p.every, 'Every day', () => setPlan(id, { every: true, days: [] }))}
+                          {chip('some', p.every === false, 'Some days', () => setPlan(id, { every: false }))}
+                        </View>
+                        {p.every === false ? (
+                          <View style={[styles.chipsel, { marginTop: 6 }]}>
+                            {WEEK.map(([d, letter]) => {
+                              const on = (p.days || []).includes(d)
+                              return chip(d, on, letter, () => setPlan(id, { days: on ? p.days.filter(x => x !== d) : [...(p.days || []), d] }))
+                            })}
+                          </View>
+                        ) : null}
+                      </View>
+                    )
+                  }) : null}
+                  {x.k === 'meds' && picked.preg.length && open.preg && picked.meds.some(isRetinoidRx) ? (
+                    <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: '#C0577A', marginTop: 10 }]}>Retinoid treatments aren't recommended during pregnancy or breastfeeding: talk to your doctor as soon as you can.</Text>
+                  ) : null}
                   {x.k === 'avoid' && picked.avoid.includes('Other') ? (
                     <TextInput value={other} onChangeText={v => { setOther(v); setOtherErr(false) }} placeholder="Which ingredient? (e.g. niacinamide)" placeholderTextColor={C.mute} autoFocus
                       style={[F.r, styles.other, otherErr && { borderColor: '#C0577A' }]} />
@@ -1156,7 +1228,7 @@ const Final = () => {
   const care = [
     ...(a.pregnancy && a.pregnancy !== 'no' ? [a.pregnancy === 'pregnant' ? 'Pregnancy' : 'Breastfeeding'] : []),
     ...a.conditions,
-    ...a.meds.map(m => SAFETY.find(x => x.k === 'meds').o.find(o => o[0] === m)?.[1]).filter(Boolean),
+    ...a.meds.map(m => (m === 'rx_other' && a.medsOther ? a.medsOther : SAFETY.find(x => x.k === 'meds').o.find(o => o[0] === m)?.[1])).filter(Boolean),
   ]
   const choose = [
     // Each line matches a rule in the product verdicts (utils/ingredients-guide.js LIFE_BONUS).
@@ -1417,6 +1489,9 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) 
       prefs: P.prefs || [],
       conditions: health ? P.conditions || [] : [],
       meds: health ? P.meds || [] : [],
+      rxPlan: health ? P.rxPlan || {} : {},
+      medsOther: health ? P.medsOther || '' : '',
+      retinolOk: health && (P.conditions || []).some(c => RETINOL_ASK.includes(c)) ? !!P.retinolOk : false,
     }
   }
 
@@ -1619,6 +1694,11 @@ const styles = StyleSheet.create({
   knob: { position: 'absolute', top: 3, left: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
   chipsel: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   chip: { borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12 },
+  rxGroup: { fontSize: 11.5, color: C.mute, marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.6 },
+  rxCard: { marginTop: 10, padding: 12, borderRadius: 16, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.7)' },
+  rxChip: { paddingVertical: 6, paddingHorizontal: 11 },
+  rxOk: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+  rxBox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   other: { marginTop: 8, height: 42, borderRadius: 12, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', paddingHorizontal: 12, fontSize: 13.5, color: C.ink },
   cl: { ...glass, borderRadius: 18, paddingVertical: 6, paddingHorizontal: 14, marginTop: 16, marginBottom: 14 },
   it: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },

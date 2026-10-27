@@ -12,6 +12,7 @@ import { getCondition, CONCERN_CONDITIONS, SUSPICION_CONDITION } from '../utils/
 import { fromRow, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, prioritiesOf } from '../utils/skin-quiz'
 import { logError } from '../utils/errorLogger'
 import { fromAnswers, Backdrop, Bubble, LineIcon, GLOSSY as C, STEPS, CONCERN_LABEL, AGES, SAFETY, LIFE_CARDS } from './OnboardingScreen'
+import { rxName } from '../utils/treatments'
 
 // My Skyn Profile (Lita, 2026-10-27): the 7 steps of the sign-up, in the same
 // glossy style, each with what she answered. Tapping a step replays it with
@@ -54,7 +55,7 @@ export default function SkinProfileScreen({ navigation }) {
     neck: list(titles(P.neck)),
     life: list([P.sleep != null ? t('{n} h of sleep', { n: P.sleep }) : null, ...(P.lifeYes || []).map((yes, i) => (yes ? t(LIFE_CARDS[i].t) : null))]),
     safety: list([
-      ...(health ? [...P.preg.map(x => t(SAFETY[0].o.find(o => o[0] === x)?.[1] || x)), ...(a.avoid || []).map(x => t('No {x}', { x: x.toLowerCase() })), ...(a.conditions || []).map(x => t(x)), ...(a.meds || []).map(m => t(SAFETY.find(s => s.k === 'meds').o.find(o => o[0] === m)?.[1] || m))] : [t('Sensitive information not shared')]),
+      ...(health ? [...P.preg.map(x => t(SAFETY[0].o.find(o => o[0] === x)?.[1] || x)), ...(a.avoid || []).map(x => t('No {x}', { x: x.toLowerCase() })), ...(a.conditions || []).map(x => t(x)), ...(a.meds || []).map(m => t(rxName(m, a.medsOther || '')))] : [t('Sensitive information not shared')]),
       ...P.prefs.map(x => t(PREFS[x] || x)),
     ]),
   }

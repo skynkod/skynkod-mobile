@@ -46,6 +46,7 @@ import { skinDay, sunriseOn, skinDayKey } from '../utils/skin-day'
 import { getShortState, startShortEvening, cancelShortEvening, markSimplifyOffered } from '../utils/short-evening'
 import { shortSteps, canGoShort, shouldSuggestSimplify } from '../utils/short-evening-core'
 import { removerNeed, withRemoverStep, hasSunscreen } from '../utils/removers'
+import { withTreatmentSteps } from '../utils/treatments'
 import { getProductsByIds, getNewestProductId } from '../utils/catalog'
 import { logError } from '../utils/errorLogger'
 import { getWeekRecap, recapWeekKey } from '../utils/progress'
@@ -321,7 +322,8 @@ export default function TodayScreen({ navigation, route }) {
   const removerNow = removerNeed({ makeup: profile?.makeup, hasSpf: hasSunscreen(routines.morning?.steps || [], routineProducts) })
   const withEssentials = period => (period === 'evening' ? withRemoverStep(withLipsStep(routines.evening?.steps || []), removerNow) : withLipsStep(routines[period]?.steps || []))
   const adjustedFullOf = period => {
-    const plain = withPauses(todaySteps(withEssentials(period)), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    // Her prescribed creams show as "Your treatment" in whatever routine she has (rulebook section 6).
+    const plain = withPauses(todaySteps(withTreatmentSteps(withEssentials(period), period, profile)), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
     // A product her profile says to avoid (pregnancy, breastfeeding, an allergy)
     // waits, even in a routine made before (integration audit, 2026-10-25).
     const avoid = plain.steps.filter(st => routineProducts[st.product_id] && profile && productMatch(routineProducts[st.product_id], profile).avoid.length)
@@ -499,6 +501,7 @@ export default function TodayScreen({ navigation, route }) {
                   : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withEssentials(period) }))} style={{ flex: 1 }}>
                   <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}{s.optional ? ` · ${t(s.optionalNote || 'on evenings you wear makeup')}` : ''}</Text>
                   <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: done[period][i] ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
+                  {s.rx && s.issues?.length ? <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? colors.warning : colors.muted }]}>{t(s.issues[0].text)}</Text> : null}
                 </Pressable>
               </View>
             ))}

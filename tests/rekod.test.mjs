@@ -28,7 +28,8 @@ for (const goal of GOALS.map(g => g.id)) for (const experience of ['none', 'some
       // The treatment night says what it really is.
       if (c.ret) {
         const t = treatmentOf(plan)
-        if (pregnant && t !== 'azelaic') assert.equal(t, 'gentle', `retinol in pregnancy ${tag}`)
+        // Pregnancy: azelaic acid, the best-studied active then (rulebook G2).
+        if (pregnant) assert.equal(t, 'azelaic', `retinol in pregnancy ${tag}`)
         assert.ok(!/retinol/i.test(nightInfo(plan, 'retinoid').label) || t === 'retinol', tag)
       }
       checked++

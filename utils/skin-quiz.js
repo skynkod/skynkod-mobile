@@ -7,6 +7,7 @@
 // skin_goals). Health questions are only asked with the health consent.
 
 import { fromIssues, getIssue } from './skin-issues'
+import { isTopicalRx, rxList } from './treatments'
 
 export const CHAPTERS = [
   { id: 'goal', label: 'Your goal', cheer: 'Everything that follows is shaped around this.' },
@@ -188,7 +189,9 @@ export const engineProfile = (row) => {
   const sp = row?.skin_profile || {}
   const suspected = row?.consent_health_at ? sp.suspected || [] : []
   const meds = row?.consent_health_at ? clean(sp.meds) : []
-  const fragile = meds.includes('isotretinoin') || meds.includes('topical_rx')
+  // Isotretinoin or any prescribed cream: Skynkod adds no strong active on top (rulebook X1–X5).
+  const fragile = meds.includes('isotretinoin') || meds.includes('topical_rx') || meds.some(isTopicalRx)
+  const conditions = row?.skin_conditions || []
   return {
     skin_type: row?.skin_type || null,
     skin_concerns: [...new Set([...(row?.skin_concerns || []), ...(fragile || sp.reactivity === 'often' ? ['Sensitivity'] : [])])],
@@ -214,6 +217,15 @@ export const engineProfile = (row) => {
     prefs: (sp.prefs || []).filter(x => x !== 'None'),
     meds,
     fragile,
+    // Her prescribed creams with her times, each one a "Your treatment" step.
+    rx: row?.consent_health_at ? rxList({ meds, rxPlan: sp.rxPlan || {}, medsOther: sp.medsOther || '' }) : [],
+    // Antibiotics by mouth make the skin burn faster (rulebook X6).
+    photosensitive: meds.includes('oral_antibiotic'),
+    isotretinoin: meds.includes('isotretinoin'),
+    // Rosacea or eczema: retinol only when her dermatologist agreed (rulebook M1–M2).
+    retinolOk: !!(row?.consent_health_at && sp.retinolOk && (conditions.includes('Rosacea') || conditions.includes('Eczema'))),
+    // Deep, painful spots: a dermatologist first, a gentle routine meanwhile (rulebook A6).
+    cystic: (row?.acne_types || []).includes('Cystic') || (sp.issues || []).includes('cystic-acne'),
     // Her main and secondary concern (they lead the product verdicts and Rekod).
     ...(() => { const p = prioritiesOf({ concerns: sp.concerns || row?.skin_concerns || [], priority: sp.priority, secondary: sp.secondary }); return { priority: p.main, secondary: p.second } })(),
   }

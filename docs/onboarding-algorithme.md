@@ -63,7 +63,11 @@ Ce document décrit **le fond** : les questions, leur ordre, les choix possibles
 - **Une allergie à un ingrédient** → Parfum · Huiles essentielles · Fruits à coque · Lanoline · Alcool · Autre. Avec « Autre », **il faut écrire l'ingrédient**, sinon on ne peut pas continuer.
 - **Une maladie de peau diagnostiquée** → Rosacée · Eczéma · Psoriasis · Dermatite périorale · Dermatite séborrhéique · Mélasma.
 - **Préférences produits** (toujours, même sans l'accord pour les infos sensibles) → Sans parfum · Vegan.
-- **Un traitement pour la peau ou hormonal** → Roaccutane (isotrétinoïne) · Crème sur ordonnance (trétinoïne, adapalène…) · Antibiotiques · Traitement hormonal ou pilule.
+- **Un traitement pour la peau ou hormonal** (27 octobre 2026), plusieurs choix possibles :
+  - **Sur la peau :** trétinoïne · adapalène · peroxyde de benzoyle · crème antibiotique (clindamycine…) · métronidazole · acide azélaïque · ivermectine · kétoconazole · autre crème (nom à taper).
+  - **Par la bouche ou autre :** isotrétinoïne (Roaccutane) · antibiotiques par la bouche · traitement hormonal ou pilule.
+  - Pour chaque crème, on demande **quand** : matin, soir ou les deux, puis tous les jours ou certains jours (à choisir). La réponse est obligatoire, et la crème devient l'étape « Your treatment » de sa routine.
+  - **Rosacée ou eczéma :** une case « Ma dermatologue est d'accord pour le rétinol » (règles M1 et M2 du livre de règles).
 
 ## Ce qui accompagne le parcours
 - **Koda** (le soleil, sans mains) accompagne et réagit aux réponses. Expressions : heureux, clin d'œil, joie, calme, curieux.
