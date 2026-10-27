@@ -505,7 +505,10 @@ const Hero = ({ source, height, fade }) => {
   useEffect(() => { Animated.timing(zoom, { toValue: 1, duration: 9000, easing: Easing.out(Easing.quad), useNativeDriver: true }).start() }, [])
   return (
     <View style={[styles.hero, { height }]}>
-      <Animated.Image source={source} style={{ width: '100%', height: '100%', transform: [{ scale: zoom }] }} resizeMode="cover" />
+      {/* The photo stops a little before the edge (it is fully faded there), so no line shows. */}
+      <View style={{ height: height - 6, overflow: 'hidden' }}>
+        <Animated.Image source={source} style={{ width: '100%', height: '100%', transform: [{ scale: zoom }] }} resizeMode="cover" />
+      </View>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(246,214,228,0.10)' }]} />
       <Image source={fade} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="stretch" />
     </View>
@@ -1091,7 +1094,12 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
   }
 
   // Her answers (saved with the app's keys at the end).
-  const [P, setP] = useState({ goals: [], faceZones: [], face: [], eyes: [], lips: [], neck: [] })
+  // Dev web preview only: ?onboarding=<screen> opens it filled with sample answers.
+  const demo = devStart && devStart !== '1' ? {
+    name: 'Lina', goals: [GOALS[0], GOALS[1]], sex: 'woman', age: 1, feel: 'combo', shine: 'tzone', pores: 'nose', skinYes: [true, false, false], tone: 2,
+    faceZones: [ZONES[0], ZONES[1]], face: [DETAILS.acne[1][0], DETAILS.acne[1][1], DETAILS.spots[1][0]], eyes: [EYES[0], EYES[3]], lips: [LIPS[0]], neck: [], sleep: 6, lifeYes: [true, true, false, false],
+  } : {}
+  const [P, setP] = useState({ goals: [], faceZones: [], face: [], eyes: [], lips: [], neck: [], ...demo })
   const set = patch => setP(prev => ({ ...prev, ...patch }))
   const [terms, setTerms] = useState(false)
   const [health, setHealth] = useState(false)
