@@ -50,7 +50,7 @@ Je conseille **a**. C'est ce qui rend ces questions utiles, sinon elles allongen
 - **Dans les faits :** bleutés, bruns ou creusés sont tous enregistrés comme « Dark circles ». Le détail est gardé, mais rien ne le lit.
 - **Correction proposée :** relier chaque sorte à ses actifs (caféine et vitamine K pour les bleutés, vitamine C et niacinamide pour les bruns, hydratation et peptides pour les creusés) dans les verdicts des contours des yeux.
 
-### 6. Les rappels sont demandés sans explication
+### 6. ✅ Corrigé : les rappels sont demandés sans explication
 L'ancien parcours avait un écran « A gentle reminder, morning and evening? ». Maintenant, la fenêtre d'autorisation de l'iPhone apparaît d'un coup, à la première ouverture de l'app, sans aucun contexte. Beaucoup de gens refusent quand ils ne savent pas à quoi ça sert.
 - **Correction proposée :** remettre un petit écran dans le style de l'inscription, juste avant « See my results ».
 

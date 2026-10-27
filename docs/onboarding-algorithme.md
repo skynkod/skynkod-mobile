@@ -12,6 +12,7 @@ Ce document décrit **le fond** : les questions, leur ordre, les choix possibles
 4. Les 7 étapes, chacune avec une intro et une fin
 5. « On prépare tout » (chargement)
 6. Le Skyn Profile final
+7. Les rappels : Koda, une fausse notification, ses 2 heures (matin 5h–11h, soir 18h–23h30, par pas de 30 min), « Turn on reminders » ou « Not now »
 
 ## Les 7 étapes
 

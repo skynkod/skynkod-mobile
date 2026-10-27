@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics'
 import Svg, { Path, Circle, Ellipse, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { updateUserProfile } from '../utils/supabase'
+import { requestNotificationPermissions, DEFAULT_TIMES } from '../utils/notifications'
 import { deleteAccount } from '../utils/account'
 import { articlesIn } from '../utils/encyclopedia'
 import ArticleBody from '../components/ArticleBody'
@@ -1079,7 +1080,7 @@ const Build = () => {
 }
 
 const Final = () => {
-  const { F, W, P, nm, answersOf, finish, saving, health } = useOb()
+  const { F, W, P, nm, answersOf, health, go } = useOb()
   const t = useType()
   const a = answersOf()
   const type = computeSkinType(a)
@@ -1133,8 +1134,77 @@ const Final = () => {
         ))}
       </Rise>
       <View style={{ height: 16 }} />
-      <Btn title="See my results" onPress={() => finish(true, { offerPremium: true })} disabled={saving} />
+      <Btn title="See my results" onPress={() => go('notify')} />
       <Ghost title="Share my profile" icon="share-outline" onPress={share} />
+    </Page>
+  )
+}
+
+// Reminders, right after her profile (Lita, 2026-10-27): Koda, what a reminder
+// looks like, her two times (same steps and ranges as Settings), then iOS asks.
+const TIME_ROWS = [
+  { key: 'morningTime', title: 'Morning check-in', s: 'How is your skin today? Then your routine.', icon: 'sun', range: [5 * 60, 11 * 60] },
+  { key: 'eveningTime', title: 'Evening routine', s: 'Cleanse, then your evening routine.', icon: 'moon-outline', range: [18 * 60, 23 * 60 + 30] },
+]
+const toMin = text => { const [h, m] = String(text).split(':').map(Number); return h * 60 + m }
+const toText = min => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+const Notify = () => {
+  const { F, W, userId, finish, saving } = useOb()
+  const t = useType()
+  const [times, setTimes] = useState(DEFAULT_TIMES)
+  const shift = (row, step) => {
+    Haptics.selectionAsync().catch(() => {})
+    setTimes({ ...times, [row.key]: toText(Math.min(row.range[1], Math.max(row.range[0], toMin(times[row.key]) + step))) })
+  }
+  const save = async (on) => {
+    if (userId) {
+      const key = `notifications_${userId}`
+      const prev = JSON.parse((await AsyncStorage.getItem(key).catch(() => null)) || '{}')
+      await AsyncStorage.setItem(key, JSON.stringify({ ...prev, ...times })).catch(() => {})
+      if (!on) await AsyncStorage.setItem(`skynkod_notif_later_${userId}`, '1').catch(() => {})
+    }
+    if (on) await requestNotificationPermissions().catch(() => {})
+    finish(true, { offerPremium: true })
+  }
+  return (
+    <Page>
+      <Bar noBack />
+      <View style={{ alignItems: 'center', marginTop: 6 }}>
+        <Float><Image source={KODA.happy} style={{ width: 84, height: 84 }} resizeMode="contain" /></Float>
+        <Rise i={1} style={[styles.notif, { width: W - 44 }]}>
+          <View style={styles.notifIcon}><Image source={IMG.sun} style={{ width: 24, height: 24 }} resizeMode="contain" /></View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={[F.s, { fontSize: 11, letterSpacing: 0.6, color: C.soft }]}>SKYNKOD</Text>
+              <Text style={[F.r, { fontSize: 11, color: C.mute }]}>now</Text>
+            </View>
+            <Text style={[F.s, { fontSize: 14, color: C.ink, marginTop: 2 }]}>Time for your evening routine 🌙</Text>
+            <Text style={[F.r, { fontSize: 13, color: C.soft }]}>Cleanse, then your evening routine.</Text>
+          </View>
+        </Rise>
+      </View>
+      <Rise i={2} style={{ marginTop: 22 }}>
+        <Text style={[t.h2, { textAlign: 'center' }]}>A gentle reminder, morning and evening?</Text>
+        <Text style={[t.hint, { textAlign: 'center' }]}>Tap the times that fit your day.</Text>
+      </Rise>
+      <Rise i={3} style={[styles.list, { marginTop: 16 }]}>
+        {TIME_ROWS.map((row, i) => (
+          <View key={row.key} style={[styles.listRow, i === TIME_ROWS.length - 1 && { borderBottomWidth: 0 }]}>
+            <LineIcon name={row.icon} size={22} />
+            <View style={{ flex: 1 }}>
+              <Text style={[F.s, { fontSize: 14.5, color: C.ink }]}>{row.title}</Text>
+              <Text style={[F.r, { fontSize: 12, color: C.soft }]}>{row.s}</Text>
+            </View>
+            <Pressable onPress={() => shift(row, -30)} hitSlop={8} accessibilityLabel="Earlier"><Ionicons name="chevron-back" size={18} color={C.mauve2} /></Pressable>
+            <Text style={[F.s, { fontSize: 15, color: C.ink, minWidth: 48, textAlign: 'center' }]}>{times[row.key]}</Text>
+            <Pressable onPress={() => shift(row, 30)} hitSlop={8} accessibilityLabel="Later"><Ionicons name="chevron-forward" size={18} color={C.mauve2} /></Pressable>
+          </View>
+        ))}
+      </Rise>
+      <Rise i={4}><Text style={[t.hint, { textAlign: 'center', marginTop: 12 }]}>Plus one gentle water reminder in the afternoon. You can change everything in Settings.</Text></Rise>
+      <Spacer />
+      <Btn title="Turn on reminders" disabled={saving} onPress={() => save(true)} />
+      <Ghost title="Not now" onPress={() => save(false)} />
     </Page>
   )
 }
@@ -1298,7 +1368,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     }
   }
 
-  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving }
+  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId }
 
   let content
   switch (cur.id) {
@@ -1374,6 +1444,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave }) {
     case 'last': content = <Last />; break
     case 'build': content = <Build />; break
     case 'final': content = <Final />; break
+    case 'notify': content = <Notify />; break
     default: content = <Welcome />
   }
 
@@ -1440,6 +1511,8 @@ const styles = StyleSheet.create({
   hours: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 26 },
   hour: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
   tg: { ...glass, padding: 14 },
+  notif: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, marginTop: 8, borderRadius: 20 },
+  notifIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   lifeCard: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingLeft: 12, paddingRight: 22, minHeight: 72 },
   tgHd: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   reco: { alignSelf: 'flex-start', backgroundColor: 'rgba(246,226,238,0.95)', borderRadius: 999, paddingVertical: 3, paddingHorizontal: 8, marginBottom: 5 },
