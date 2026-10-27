@@ -117,7 +117,7 @@ const COPY = {
   // Added to the morning reminder on their day.
   rekodReview: { en: 'Your Rekod review is ready.', fr: 'Ton bilan Rekod est prêt.' },
   dekodDay: { en: 'Time for your weekly Dekod scan.', fr: 'C’est le moment de ton scan Dekod de la semaine.' },
-  patchTest: { en: 'Your patch test from yesterday: tell us how it went.', fr: 'Ton test d’hier : dis-nous comment ça s’est passé.' },
+  patchTest: { en: 'Your 7-day patch test is done: tell us how it went.', fr: 'Ton test de 7 jours est terminé : dis-nous comment ça s’est passé.' },
   purgeCheck: { en: 'Your spots after a new product: tell us how it’s going.', fr: 'Tes boutons après un nouveau produit : dis-nous comment ça va.' },
 }
 

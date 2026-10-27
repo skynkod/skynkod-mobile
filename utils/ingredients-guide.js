@@ -338,7 +338,7 @@ const amountWords = (pos, partial, rinseOff) => {
 const explainLevel = (level, item) => {
   const amount = amountWords(item.pos, item.partial, item.rinseOff)
   if (level === 'avoid') return `${amount}, so it's likely to ${item.check.effect.replace(/^can /, '')}. We'd skip this one.`
-  if (level === 'patch') return `${amount}. Many people with ${item.check.label} tolerate it, so patch test first: apply a little on your jaw or behind your ear for 3–5 days before using it all over.`
+  if (level === 'patch') return `${amount}. Many people with ${item.check.label} tolerate it, so test it first: a little on the inside of your elbow, morning and evening, for 7 days, before using it on your face.`
   return `${amount}, so it's usually fine. Just keep an eye on how your skin reacts.`
 }
 

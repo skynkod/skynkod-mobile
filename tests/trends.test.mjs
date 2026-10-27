@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { TRENDS, findTrend, trendNote } from '../utils/trends.js'
 
-assert.equal(TRENDS.length, 42, 'the 42 trends Lita approved')
-assert.equal(new Set(TRENDS.map(t => t.id)).size, 42, 'no duplicate')
+// 42, then 2 more on 2026-10-27 (every new product purges, drinking collagen).
+assert.equal(TRENDS.length, 44, 'the 44 trends Lita approved')
+assert.equal(new Set(TRENDS.map(t => t.id)).size, 44, 'no duplicate')
 for (const t of TRENDS) {
   assert.ok(['false', 'depends', 'true'].includes(t.verdict), t.id)
   assert.ok(t.title && t.why && t.instead && t.keys.length, t.id)

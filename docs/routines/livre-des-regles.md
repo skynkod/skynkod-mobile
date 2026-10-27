@@ -139,6 +139,9 @@ Matin : nettoyant → crème → SPF. Soir : démaquillant → nettoyant → cr�
 | R8 | Bilan chaque semaine. « Un peu » : on reste au même palier et un soir actif devient un soir Reset. « Beaucoup » : une semaine de repos, puis un palier plus bas. Gonflement, plaques qui suintent ou réaction qui s'étend : on arrête et on consulte. | 🟡 fiches AAD | ✅ |
 | R9 | Les premières semaines d'un rétinoïde, la peau peut sembler pire (purge). Avant 8 à 12 semaines, on ne conclut pas que ça ne marche pas. | 🟡 | ✅ |
 | R10 | 3 actifs forts au maximum (rétinoïde, acide, peroxyde de benzoyle), chacun sur ses soirs. **2 pour une peau sensible ou après une réaction** (bilan « un peu » ou « beaucoup », et 2 semaines après une semaine de repos) : avec des boutons rouges, on garde le rétinoïde et le peroxyde, la paire la plus prouvée, et l'exfoliation s'arrête. | ⚪ à décider | ✅ |
+| R11 | Test de tolérance : la quantité habituelle sur une zone de la taille d'une pièce, au pli du coude, matin et soir, pendant 7 à 10 jours (un nettoyant : 5 minutes puis rincer). Puis sur le visage un soir sur deux la première semaine. Une allergie peut mettre plusieurs jours à apparaître. | 🟢 AAD | ✅ (l'app demande le résultat au 7e jour) |
+| R12 | Délais honnêtes : acné, premier changement en 4 à 6 semaines et plus net vers 12 (AAD) ; rides, premier changement vers 12 semaines et résultat net vers 6 mois (essais sur les rétinoïdes) ; taches, 8 à 12 semaines. Jamais de promesse plus rapide. | 🟢 AAD · 🔵 études | ✅ |
+| R13 | Acné toujours là après 12 semaines régulières : on propose une seule fois, sans l'imposer, un essai de 6 à 8 semaines avec moins de lait et de sucres rapides, à noter dans le journal. On ne l'interdit jamais. | 🔵 méta-analyse sur le lait (Nutrients 2018) ; essai randomisé sur les sucres rapides (Smith 2007) ; lien modeste, sans preuve de cause | ✅ (fin de Rekod, Koda) |
 
 ---
 
@@ -252,6 +255,8 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | # | Règle | Preuve | Code |
 |---|---|---|---|
 | I1 | Plan SOS « Après un soin » : les consignes du praticien d'abord. 7 jours sans rétinol, acides, vitamine C ni gommage ; nettoyant doux, soin apaisant, crème, SPF minéral ; le moins de soleil et de chaleur possible. Après un laser : actifs en pause environ 2 semaines. Reprise un actif à la fois, la niacinamide d'abord. | 🟡 consignes de cliniques, pas de recommandation officielle | ✅ |
+| I2 | Plan SOS « Coup de soleil » : douches fraîches, crème à l'aloe ou au soja sur peau humide, boire plus, ibuprofène ou aspirine si besoin (avis du pharmacien), ne jamais percer les cloques (vaseline dessus). Aucun actif ; reprise quand la peau ne pèle plus. Médecin le jour même si fièvre, frissons, nausées ou grandes cloques. | 🟢 AAD | ✅ |
+| I3 | Plan SOS « Après une épilation à la cire » : 48 à 72 heures sans actifs, sans soleil, sauna ni sport intense ; compresse fraîche, soin apaisant, SPF minéral. Jamais de cire sur une peau sous rétinoïde, trétinoïne ou isotrétinoïne, ni dans la semaine après un peeling. | 🟡 pratique ; notices des rétinoïdes | ✅ |
 
 ### Traitements
 Principe ⚪ : **son traitement prescrit est l'actif principal.** Skynkod n'ajoute pas un autre actif fort de même effet. Il construit autour une base douce et met son traitement dans la routine, aux moments prescrits. Skynkod ne change jamais une dose ni un rythme prescrits.
@@ -269,6 +274,19 @@ Principe ⚪ : **son traitement prescrit est l'actif principal.** Skynkod n'ajou
 ---
 
 ## 7. Signes d'alerte : Skynkod conseille un médecin
+
+La fiche « When to see a doctor » de l'encyclopédie et Koda suivent cette liste (sources : AAD, NHS, HSE).
+
+**Tout de suite (urgence) :**
+- gonflement des lèvres, de la langue ou de la gorge, difficulté à respirer, urticaire qui s'étend ;
+- douleur intense, peau qui blanchit ou brunit, ou cloques après un acide ou un peeling : rincer abondamment, puis urgences ;
+- rougeur chaude qui s'étend vite, avec douleur ou fièvre (infection) ;
+- coup de soleil avec fièvre, frissons, nausées ou grandes cloques.
+
+**Dans les semaines qui viennent (dermatologue) :**
+- la règle ABCDE pour un grain de beauté (Asymétrie, Bords, Couleurs, Diamètre de plus de 6 mm, Évolution), et le grain de beauté qui ne ressemble pas aux autres ;
+- une plaie ou une croûte qui ne guérit pas en 4 semaines.
+
 
 - Acné kystique ou nodulaire, cicatrices qui se creusent.
 - Une tache qui change de forme ou de couleur, ou une lésion qui saigne.

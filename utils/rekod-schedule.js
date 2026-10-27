@@ -6,8 +6,9 @@
 // Length = the realistic time for a visible result (rules, sections 5–11):
 // skin renews itself about every 4 weeks (Lita, 2026-10-23).
 export const GOALS = [
-  { id: 'clear', title: 'Clear skin', subtitle: 'Breakouts, blackheads', weeks: 12, results: 'First change around week 6 to 8', why: 'Breakouts usually improve after 6 to 8 weeks of steady care, and look clear around week 12.' },
-  { id: 'antiaging', title: 'Anti-aging', subtitle: 'Lines, firmness', weeks: 12, results: 'First change around week 8 to 12', why: 'Retinol needs 8 to 12 weeks to smooth fine lines visibly; firmness keeps improving after that.' },
+  // Honest timings (AAD; retinoid trials, rulebook section 1 bis, 2026-10-27).
+  { id: 'clear', title: 'Clear skin', subtitle: 'Breakouts, blackheads', weeks: 12, results: 'First change around week 4 to 6', why: 'Breakouts usually start to improve after 4 to 6 weeks of steady care, and look clearer around week 12.' },
+  { id: 'antiaging', title: 'Anti-aging', subtitle: 'Lines, firmness', weeks: 12, results: 'First change around week 12', why: 'Retinol works slowly: a first change around week 12, and fuller results after about 6 months of steady use.' },
   { id: 'spots', title: 'Dark spots', subtitle: 'Marks, uneven tone', weeks: 12, results: 'First change around week 8 to 12', why: 'Dark spots fade slowly, layer by layer: 8 to 12 weeks, with sunscreen every morning.' },
   { id: 'glow', title: 'Glow', subtitle: 'Dull, tired skin', weeks: 6, results: 'First change around week 3 or 4', why: 'Skin renews itself about every 4 weeks: in 6 weeks its surface looks smoother and brighter.' },
   { id: 'pores', title: 'Smaller pores', subtitle: 'Shine, texture', weeks: 12, results: 'First change around week 8', why: 'Pores look smaller once they stay unclogged, which takes 8 to 12 weeks.' },

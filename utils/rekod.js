@@ -700,7 +700,10 @@ export const endAdvice = (plan, answer, regularity) => {
   if (answer === 'yes') return { choice: gentleGoals ? 'asis' : 'gentle', why: gentleGoals ? 'Your routine has no strong actives: you can keep it as it is for the long term.' : 'To keep your results, dermatologists advise going on with your actives, a little less often: without them, breakouts and spots tend to come back.' }
   if (answer === 'little') return { choice: 'extend', why: 'That’s normal: many skins need longer, especially for dark spots and fine lines (often 3 to 6 months). 4 more weeks at the same pace, then a new check.' }
   if (regularity < 0.6) return { choice: 'extend', why: `You did your routine on ${Math.round(regularity * 100)}% of the days. Actives need regular use: 4 more weeks, as regularly as you can, should make a difference.` }
-  return { choice: 'newgoal', why: 'You were regular, so your skin may need something else. Try a new goal or ask Koda; for breakouts or spots that won’t go, a dermatologist can help.' }
+  // Acne still there after 12 regular weeks (Lita, 2026-10-27): the food trial, offered once, never imposed
+  // (dairy meta-analysis, Nutrients 2018; low-glycemic diet trial, Smith 2007).
+  const food = goalsOf(plan).includes('clear') ? ' You could also try 6 to 8 weeks with less milk and fewer fast sugars, and note it in your journal: studies link them a little to acne, without proof they cause it.' : ''
+  return { choice: 'newgoal', why: `You were regular, so your skin may need something else. Try a new goal or ask Koda; for breakouts or spots that won’t go, a dermatologist can help.${food}` }
 }
 
 export const leaveRekod = async (userId) => {

@@ -19,6 +19,9 @@ export const ISSUES = [
   { id: 'event', label: 'Big event coming up', short: 'Event glow', icon: 'diamond-outline' },
   // Lita, 2026-10-27 (rulebook, section 6): the barrier is open for days after these.
   { id: 'procedure', label: 'After a skin treatment (peel, laser, microneedling)', short: 'After a treatment', icon: 'bandage-outline' },
+  // Lita, 2026-10-27: sunburn (AAD) and facial waxing (dermatologists' practice).
+  { id: 'sunburn', label: 'Sunburn', short: 'Sunburn', icon: 'sunny-outline' },
+  { id: 'waxing', label: 'After facial waxing', short: 'After waxing', icon: 'cut-outline' },
 ]
 export const issueOf = id => ISSUES.find(i => i.id === id) || null
 
@@ -63,6 +66,8 @@ export const SOS_QUESTIONS = [
     options: [o('yes', 'Yes'), o('no', 'No')] },
   { id: 'procedure', type: 'single', title: 'Which treatment did you have?', showIf: issues => issues.includes('procedure'),
     options: [o('peel', 'A peel'), o('microneedling', 'Microneedling'), o('laser', 'A laser')] },
+  { id: 'burnSigns', type: 'multi', title: 'Do you have any of these?', subtitle: 'Select all that apply', showIf: issues => issues.includes('sunburn'),
+    options: [o('blisters', 'Blisters'), o('fever', 'Fever, chills or nausea'), o('none', 'None of these')] },
   { id: 'pregnancy', type: 'single', title: 'Are you pregnant or breastfeeding?', subtitle: 'Some ingredients are best avoided then.',
     showIf: (issues, a, profile) => !profile?.pregnancy && profile?.sex !== 'man',
     options: [o('no', 'No'), o('pregnant', 'I’m pregnant'), o('breastfeeding', 'I’m breastfeeding')] },
@@ -92,7 +97,11 @@ export const buildSosPlan = (issues, answers = {}, profile = null) => {
   const dry = has('dry') || has('peeling')
   // After a peel, a laser or microneedling: no actives at all (clinic aftercare; the practitioner's word first).
   const procedure = has('procedure')
-  const irritated = has('redness') || has('peeling') || reaction || procedure || answers.sting === 'yes' || !!profile?.fragile
+  // Sunburn (AAD) and facial waxing: the skin is hurt, no actives at all for now.
+  const sunburn = has('sunburn')
+  const waxing = has('waxing')
+  const burnSigns = answers.burnSigns || []
+  const irritated = has('redness') || has('peeling') || reaction || procedure || sunburn || waxing || answers.sting === 'yes' || !!profile?.fragile
   const gentle = irritated || dry || pregnant
   const sensitive = irritated || (profile?.skin_concerns || []).includes('Sensitivity')
 
@@ -123,6 +132,10 @@ export const buildSosPlan = (issues, answers = {}, profile = null) => {
   if (changes.includes('meds')) notes.push('A new medication can affect your skin. Ask your doctor or pharmacist if it started around the same time.')
   if (pregnant) notes.push('Pregnancy-safe: no retinol, and only gentle spot care.')
   if (procedure) notes.push('Your practitioner’s aftercare comes first. Meanwhile: no retinol, acids, vitamin C or scrubs, and as little sun and heat as you can.')
+  if (sunburn && burnSigns.includes('fever')) notes.push('Fever, chills or nausea with a sunburn: see a doctor today.')
+  if (sunburn && burnSigns.includes('blisters')) notes.push('Blisters mean a deeper burn: don’t pop them, keep them clean with a thin layer of petroleum jelly. Large blistered areas: see a doctor.')
+  if (sunburn) notes.push('Cool showers, an aloe or soy moisturizer on damp skin, and drink more water. Ibuprofen or aspirin can ease the pain (ask your pharmacist). Stay out of the sun.')
+  if (waxing) notes.push('Never wax skin that uses retinol, tretinoin or isotretinoin, or within a week of a peel: the skin can tear. Tell the beautician what you use.')
   if (procedure && answers.procedure === 'laser') notes.push('After a laser, keep your actives paused for about 2 weeks, or as long as your practitioner says, even after this plan ends.')
 
   // The products each part of the routine calls for.
@@ -142,12 +155,12 @@ export const buildSosPlan = (issues, answers = {}, profile = null) => {
     ? step(has('breakout') ? 'Thin layer of balm on dry patches only, never on spots' : 'Thin layer of a rich balm on dry patches', 'occlusive')
     : null
 
-  const baseMorning = [cleanser, ...(has('redness') || reaction || procedure ? [soothe] : dry ? [hydrate] : []), moisturizer, spf]
+  const baseMorning = [cleanser, ...(has('redness') || reaction || procedure || sunburn || waxing ? [soothe] : dry ? [hydrate] : []), moisturizer, spf]
   const baseEvening = [cleanser, ...(dry ? [hydrate] : []), moisturizer]
 
   // Evening active on treatment days: one at most, never with another.
   const activeNight = i => {
-    if (!has('breakout') || procedure || (reaction && i < 4)) return null
+    if (!has('breakout') || procedure || sunburn || (waxing && i < 3) || (reaction && i < 4)) return null
     if (gentle || fungal) return i === 2 || i === 4 ? step(spotText, spotNeed) : null
     return i >= 2 && i <= 4 ? step(spotText, spotNeed) : null
   }
@@ -166,7 +179,7 @@ export const buildSosPlan = (issues, answers = {}, profile = null) => {
     const active = activeNight(i)
     if (active) evening.splice(evening.length - 1, 0, active)
     if (p !== 'calm' && occlusive) evening.push(occlusive)
-    if (p === 'treat' && !active && (has('redness') || reaction || procedure)) evening.splice(1, 0, soothe)
+    if (p === 'treat' && !active && (has('redness') || reaction || procedure || sunburn)) evening.splice(1, 0, soothe)
     if (has('breakout') && i === 0 && !fungal) evening.push(step('Hydrocolloid patch on any whitehead', 'patch'))
     if (has('event') && i === 3 && !irritated) evening.push(step('Hydrating mask', 'hydratingMask'))
 
@@ -178,7 +191,9 @@ export const buildSosPlan = (issues, answers = {}, profile = null) => {
     if (i === 3 && habitTips[1]) tips.push(habitTips[1])
     if (i === 4 && habitTips[2]) tips.push(habitTips[2])
     if (i === 5) tips.push('Check in: note in your journal how your skin looks today.')
-    if (i === 6 && procedure) tips.push('If your skin no longer peels or feels tight, bring your actives back one at a time, niacinamide first. After a laser, wait the 2 weeks.')
+    if (i === 6 && sunburn) tips.push('Once your skin no longer peels, bring your actives back one at a time.')
+    else if (i === 3 && waxing) tips.push('No redness left? Your actives can come back tonight, one at a time. Ingrown hairs later: salicylic acid helps.')
+    else if (i === 6 && procedure) tips.push('If your skin no longer peels or feels tight, bring your actives back one at a time, niacinamide first. After a laser, wait the 2 weeks.')
     else if (i === 6) tips.push(irritated
       ? 'If calm, bring back one paused product every other night. Still red or burning? See a dermatologist.'
       : 'Bring back your paused products one at a time, a few days apart.')
@@ -186,7 +201,8 @@ export const buildSosPlan = (issues, answers = {}, profile = null) => {
     const avoid = [
       ...(i < 3 && reaction ? ['Any new product'] : []),
       ...(irritated ? ['Hot water on your face'] : []),
-      ...(procedure && i < 3 ? ['Sun, sauna and intense sport'] : []),
+      ...((procedure || waxing) && i < 3 ? ['Sun, sauna and intense sport'] : []),
+      ...(sunburn ? ['Sun, hot baths and popping blisters'] : []),
       ...(has('breakout') ? ['Picking or squeezing'] : []),
       ...(fungal ? ['Oils and rich butters'] : []),
       ...(p === 'check' ? ['Restarting everything at once'] : []),

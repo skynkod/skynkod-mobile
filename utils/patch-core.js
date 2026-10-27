@@ -1,13 +1,16 @@
-// "New product" mode (Lita, 2026-10-25): test a new product on a small area
-// for 24 hours, and one new product at a time. Light on purpose:
+// "New product" mode (Lita, 2026-10-25): test a new product on a small area,
+// and one new product at a time. The AAD's method (2026-10-27, rulebook R11):
+// the inside of the elbow, morning and evening, for 7 days, because an allergy
+// can take days to show. Light on purpose:
 //   - offered only to sensitive skin, allergies, or for a strong active;
 //   - offered once, right when she adds or opens the product;
 //   - after 2 "No thanks", never offered again;
-//   - asked the next morning; left unanswered for a week, it's dropped.
+//   - asked on day 7; left unanswered for another week, it's dropped.
 // Pure rules (no app imports), so the tests can run them.
 
 const DAY = 86400000
 export const NEW_PRODUCT_WAIT_DAYS = 7
+export const PATCH_DAYS = 7
 const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Seborrheic dermatitis']
 
 // Does this person need the test for this product?
@@ -24,13 +27,13 @@ export const canOffer = ({ state, productId, profile, active }) =>
 
 const dayStart = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime() }
 
-// The test waiting for its answer: from the next morning, for a week.
+// The test waiting for its answer: from the morning of day 7, for a week.
 export const testDue = (state, now = new Date()) => Object.values(state?.tests || {})
-  .filter(t => !t.result && dayStart(now) > dayStart(t.at) && now - new Date(t.at) < 7 * DAY)
+  .filter(t => !t.result && dayStart(now) >= dayStart(t.at) + PATCH_DAYS * DAY && now - new Date(t.at) < (PATCH_DAYS + 7) * DAY)
   .sort((a, b) => new Date(a.at) - new Date(b.at))[0] || null
 
-// The morning after a test (for the reminder).
-export const testMorning = test => new Date(dayStart(test.at) + DAY)
+// The morning the test ends (for the reminder).
+export const testMorning = test => new Date(dayStart(test.at) + PATCH_DAYS * DAY)
 
 // Another product started less than a week ago: one at a time.
 // started: [{ id, name, date }]

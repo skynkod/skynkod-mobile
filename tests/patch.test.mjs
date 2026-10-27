@@ -19,10 +19,13 @@ assert.equal(canOffer({ state: { tests: { 1: { at: '2026-10-01' } } }, productId
 const at = new Date(2026, 9, 10, 21).toISOString()
 const state = { tests: { 1: { id: 1, name: 'Serum', at, result: null } } }
 assert.equal(testDue(state, new Date(2026, 9, 10, 23)), null, 'not the same evening')
-assert.equal(testDue(state, new Date(2026, 9, 11, 8)).id, 1, 'the next morning')
-assert.equal(testDue(state, new Date(2026, 9, 18, 8)), null, 'dropped after a week')
-assert.equal(testDue({ tests: { 1: { ...state.tests[1], result: 'ok' } } }, new Date(2026, 9, 11, 8)), null, 'answered')
-assert.equal(testMorning(state.tests[1]).getDate(), 11)
+// The AAD's 7 days (2026-10-27): asked on day 7, dropped a week later.
+assert.equal(testDue(state, new Date(2026, 9, 11, 8)), null, 'not the next morning')
+assert.equal(testDue(state, new Date(2026, 9, 16, 8)), null, 'not before day 7')
+assert.equal(testDue(state, new Date(2026, 9, 17, 8)).id, 1, 'on day 7')
+assert.equal(testDue(state, new Date(2026, 9, 25, 8)), null, 'dropped a week later')
+assert.equal(testDue({ tests: { 1: { ...state.tests[1], result: 'ok' } } }, new Date(2026, 9, 17, 8)), null, 'answered')
+assert.equal(testMorning(state.tests[1]).getDate(), 17)
 
 // One new product at a time.
 const started = [{ id: 2, name: 'Cream', date: new Date(2026, 9, 8).toISOString() }]

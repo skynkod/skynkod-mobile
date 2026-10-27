@@ -1164,7 +1164,7 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
                 No product for this step is 100% safe for your skin yet (because of the points above), so this is the closest match.
               </Text>
               <Text style={[TYPE.caption, { color: C.primary, lineHeight: 18, fontWeight: '600' }]}>
-                Patch test it first: apply a little on your jawline for 3 evenings. If it stings, itches or you break out, stop and remove it.
+                Test it first: a little on the inside of your elbow, morning and evening, for 7 days. Redness, itching or swelling? Stop and remove it. Then start on your face every other evening for the first week.
               </Text>
               {!s.accepted ? (
                 <View style={{ gap: SPACING.sm, marginTop: SPACING.sm }}>

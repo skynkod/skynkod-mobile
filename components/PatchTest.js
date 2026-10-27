@@ -9,7 +9,7 @@ import { logError } from '../utils/errorLogger'
 import { SPACING, TYPE } from '../utils/theme'
 
 // "New product" mode (Lita, 2026-10-25): one discreet line when she adds a
-// product, and one question the next morning on Home. Nothing else.
+// product, and one question on Home when the 7-day test ends. Nothing else.
 
 // The line under a product she just added.
 export function PatchTestOffer({ userId, product, profile, style }) {
@@ -29,7 +29,7 @@ export function PatchTestOffer({ userId, product, profile, style }) {
       <Ionicons name="flask-outline" size={18} color={colors.primary} style={{ marginTop: 1 }} />
       <View style={{ flex: 1 }}>
         {done === 'yes' ? (
-          <Text style={[TYPE.caption, { color: colors.text, lineHeight: 18 }]}>{t('Put a little under your jaw tonight. Tomorrow morning, we’ll ask you how it went.')}</Text>
+          <Text style={[TYPE.caption, { color: colors.text, lineHeight: 18 }]}>{t('Put a little on the inside of your elbow, morning and evening, for 7 days. Redness or itching before then? Stop it. In 7 days, we’ll ask you how it went.')}</Text>
         ) : <>
           <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('New for your skin? Test it first on a small area.')}</Text>
           {offer.other ? (
@@ -51,7 +51,7 @@ export function PatchTestOffer({ userId, product, profile, style }) {
   )
 }
 
-// Home, the morning after: "Your test: all good?"
+// Home, on day 7: "Your test: all good?"
 export const usePatchTestDue = (userId) => {
   const [test, setTest] = useState(null)
   const reload = useCallback(() => {

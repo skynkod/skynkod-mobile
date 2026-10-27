@@ -113,4 +113,21 @@ assert.ok(withSpots.days.every(d => !d.evening.some(st => /benzoyl|salicylic|aze
 const spots = buildSosPlan(['breakout'], {})
 assert.ok(spots.days.some(d => d.evening.some(st => /whole breakout area/.test(st.text))))
 
+// Sunburn (AAD): no actives, a doctor the same day with fever; never pop blisters.
+const burn = buildSosPlan(['sunburn'], { burnSigns: ['blisters', 'fever'] })
+for (const p of ['retinoid', 'acid', 'exfoliant', 'vitaminC']) assert.ok(burn.pause.includes(p), p)
+assert.ok(burn.notes.some(n => /doctor today/.test(n)))
+assert.ok(burn.notes.some(n => /don’t pop/.test(n)))
+assert.ok(questionsFor(['sunburn'], {}, null).some(q => q.id === 'burnSigns'))
+// After facial waxing: actives paused, the warning about retinoids and peels.
+const wax = buildSosPlan(['waxing'], {})
+assert.ok(wax.pause.includes('retinoid') && wax.pause.includes('acid'))
+assert.ok(wax.notes.some(n => /Never wax/.test(n)))
+
+// Honest timings.
+import('../utils/rekod-schedule.js').then(({ goalOf }) => {
+  assert.match(goalOf('clear').results, /4 to 6/)
+  assert.match(goalOf('antiaging').why, /6 months/)
+})
+
 console.log('evidence: all good')
