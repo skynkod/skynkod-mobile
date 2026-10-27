@@ -25,54 +25,12 @@ Clean minimal 3D render for a premium iOS beauty app. Subject: three thin rounde
 ```
 
 
-**Les 8 bulles du parcours** (même conversation pour les 8, pour qu'elles soient identiques) :
+**Une seule bulle, vide.** Je pose moi-même les symboles dessus en code (le soleil de ton orbe pour Skin, des icônes au trait mauve pour les autres) : un seul logo, un seul style, partout.
 
-**`bubble-skin.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: a sun made of a small filled circle in the center with 8 short straight rays around it. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-face.png`**
+**`bubble-empty.png`**
 
 ```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: a simple female face outline seen from the front: an oval face, a hair line with a small bun on top, two closed-eye curves and a small mouth. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-eyes.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: an eye: an almond-shaped outline, a circle for the iris and a small filled circle for the pupil. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-lips.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: lips: a simple outline of full lips with the line between them. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-neck.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: a bust seen from the front: an oval head outline with no face details, a slim neck and the curved line of both shoulders, like a user icon. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-life.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: a leaf with one central vein. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-safety.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: a rounded shield outline, empty inside. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
-**`bubble-profile.png`**
-
-```
-Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one small sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, NOT mirror-shiny, with one soft diffuse highlight on the top left, a faint pinkish rim on the edge, and a very soft pink shadow under it. On the front of the sphere, a flat 2D line icon printed on its surface (not raised, not 3D, not glowing), in dusty mauve #9E6B8F, line thickness about 4% of the sphere width, rounded line ends, simple and clean like an Apple SF Symbol: a padlock: a rounded shackle on top and a rounded rectangular body with a small keyhole. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
+Clean minimal 3D app icon render, like a premium iOS beauty app. Subject: one sphere with a satin pearl finish: milky, softly translucent white-pink (#F8EDF3 to #EBD3E1), soft and smooth, not mirror-shiny, with one soft diffuse highlight on the top left, a gentle pearly iridescence on the edges, a faint pinkish rim, and a very soft pink shadow under it. The sphere is completely EMPTY: no symbol, no icon, no sun, no drawing, no logo, nothing inside or on it. Centered, front view, the sphere fills 80% of the frame. Background: fully transparent PNG (real alpha channel, no black, no white, no checkerboard). Square 1024 x 1024. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
 ```
 
 ---
