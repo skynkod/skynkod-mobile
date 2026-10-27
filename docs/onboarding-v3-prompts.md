@@ -245,12 +245,6 @@ Extreme macro crop of real skin that fills the whole frame edge to edge (no back
 Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): one open eye looking at the camera, with soft puffiness under it. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
 ```
 
-**`card-eye-lines.png`**
-
-```
-Extreme macro crop of real skin that fills the whole frame edge to edge (no background visible, no full face): one open eye looking at the camera, with fine lines at the outer corner, woman around 45. Landscape format 1600 x 1000. Clean editorial skincare photography, like a premium dermatology-inspired beauty brand. Real human skin, extreme macro, true texture with visible pores, even skin tone with no freckles, fresh and slightly dewy, no makeup, no retouching. Soft natural daylight, very soft shadows, warm peach-pink skin tones, a light pinkish-white overall tone, true-to-life colours (not saturated, not purple). Sharp focus. Not fantasy, not magical, not dreamy: no glitter, no star sparkles, no bokeh, no light rays, no neon, no rainbow, no fairy dust. No text, no letters, no logo, no watermark.
-```
-
 **`card-eye-milia.png`**
 
 ```
