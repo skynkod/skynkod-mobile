@@ -604,7 +604,7 @@ const Consent = () => {
         <Switch on={health} onPress={() => setHealth(!health)} icon="shield-check">
           <View style={styles.reco}><Text style={[F.s, { fontSize: 10.5, letterSpacing: 0.6, color: C.mauve }]}>RECOMMENDED</Text></View>
           <Text style={body}>Let Skynkod keep my skin safe</Text>
-          <Text style={small}>Allergies, pregnancy, treatments like Roaccutane: they change which products are safe for you. Without them, we can't warn you about a product that could harm your skin.</Text>
+          <Text style={small}>I allow Skynkod to collect and save my sensitive health information (allergies, pregnancy, skin conditions, treatments like Roaccutane) in my private profile. It's only used to check which products are safe for me, and never sold or shared. Without it, Skynkod can't warn me about a product that could harm my skin.</Text>
         </Switch>
       </Rise>
       <Spacer />
