@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { introWeeks, introStage, nightCounts, treatmentOf, isReactive, planPrecautions, retinolChoice, applyCheckIn, morningCleanse, isThermal, weekPattern } from '../utils/rekod-schedule.js'
 import { spfOf, sunscreenOk, tintTip } from '../utils/sunscreen.js'
 import { isRich } from '../utils/rekod-schedule.js'
+import { activesOf } from '../utils/routine-checks.js'
+import { findIngredients, productMatch } from '../utils/ingredients-guide.js'
 import { buildSosPlan, questionsFor } from '../utils/sos-plan.js'
 
 // Evidence gaps E7–E13 (docs/routines/livre-des-regles.md, section 9).
@@ -129,5 +131,20 @@ import('../utils/rekod-schedule.js').then(({ goalOf }) => {
   assert.match(goalOf('clear').results, /4 to 6/)
   assert.match(goalOf('antiaging').why, /6 months/)
 })
+
+// Audit 2026-10-28: a trace at the end of a sunscreen is not an exfoliation,
+// and a UV filter called "dicamphor" is not menthol.
+const garnierList = 'aqua / water, c12-15 alkyl benzoate, glycerin, octocrylene, niacinamide, butyl methoxydibenzoylmethane, dimethicone, ethylhexyl triazone, silica, aluminum starch octenylsuccinate, vinyl dimethicone/methicone silsesquioxane crosspolymer, terephthalylidene dicamphor sulfonic acid, potassium cetyl phosphate, drometrizole trisiloxane, peg-100 stearate, stearyl alcohol, glyceryl stearate, tocopherol, hydroxyacetophenone, hydrolyzed hyaluronic acid, phenylethyl resorcinol, triethanolamine, trisodium ethylenediamine disuccinate, poloxamer 338, ammonium polyacryloyldimethyl taurate, xanthan gum, caprylyl glycol, capryloyl salicylic acid'
+const garnier = { name: 'Ambre Solaire Anti-Age Super UV SPF 50', category: 'sunscreen', ingredients_text: garnierList, ingredients: garnierList.split(', ') }
+assert.equal(activesOf(garnier).exfoliant, false)
+assert.ok(!findIngredients(garnier).some(f => f.entry.id === 'menthol'))
+assert.ok(!productMatch(garnier, { skin_type: 'Combination', skin_concerns: ['Acne'] }).good.some(g => /Salicylic/.test(g.text || g)))
+const camphor = { name: 'Balm', ingredients_text: 'Aqua, Camphor', ingredients: ['aqua', 'camphor'] }
+assert.ok(findIngredients(camphor).some(f => f.entry.id === 'menthol'))
+// A real exfoliant still counts; a retinoid counts wherever it sits.
+const bha = { name: 'Clarifying Toner', ingredients_text: 'Aqua, Salicylic Acid', ingredients: ['aqua', 'salicylic acid'] }
+assert.ok(activesOf(bha).exfoliant)
+const lateRetinol = { name: 'Night Cream', ingredients_text: garnierList + ', retinol', ingredients: [...garnierList.split(', '), 'retinol'] }
+assert.ok(activesOf(lateRetinol).retinoid)
 
 console.log('evidence: all good')

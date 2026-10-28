@@ -94,7 +94,8 @@ export const INGREDIENTS = [
   I('fragrance', 'Fragrance', ['parfum', 'fragrance', 'aroma'], 'Adds scent. Not needed by the skin and a common cause of irritation.', [], { irritancy: 3, tags: ['fragrance', 'rosacea-trigger', 'eczema-trigger', 'perioral-trigger'] }),
   I('allergens', 'Fragrance allergens', ['limonene', 'linalool', 'citral', 'citronellol', 'geraniol', 'eugenol', 'isoeugenol', 'coumarin', 'farnesol', 'benzyl salicylate', 'benzyl benzoate', 'benzyl cinnamate', 'cinnamal', 'cinnamyl alcohol', 'hexyl cinnamal', 'amyl cinnamal', 'hydroxycitronellal', 'alpha-isomethyl ionone', 'butylphenyl methylpropional', 'anise alcohol', 'evernia', 'methyl 2-octynoate'], 'Scent molecules on the EU list of common allergens.', [], { irritancy: 2, tags: ['eu-allergen', 'rosacea-trigger', 'eczema-trigger'] }),
   I('essentialoils', 'Essential oils', ['lavandula', 'citrus aurantium', 'citrus limon', 'citrus sinensis', 'citrus bergamia', 'mentha', 'eucalyptus', 'rosmarinus', 'melaleuca alternifolia', 'tea tree', 'cymbopogon', 'pelargonium', 'ylang', 'cananga'], 'Concentrated plant scents that can sensitize skin.', ['Acne'], { irritancy: 3, tags: ['essential-oil', 'rosacea-trigger', 'eczema-trigger'] }),
-  I('menthol', 'Menthol and cooling agents', ['menthol', 'menthyl', 'camphor'], 'Gives a cooling tingle, which is actually irritation.', [], { irritancy: 3, tags: ['rosacea-trigger', 'eczema-trigger'] }),
+  // Camphor itself, never "dicamphor" (Terephthalylidene Dicamphor Sulfonic Acid is a UV filter, audit 2026-10-28).
+  I('menthol', 'Menthol and cooling agents', ['menthol', 'menthyl'], 'Gives a cooling tingle, which is actually irritation.', [], { irritancy: 3, tags: ['rosacea-trigger', 'eczema-trigger'], test: inci => /(^|[^a-z])camphor/.test(inci) }),
   I('alcohol', 'Drying alcohol', ['alcohol denat', 'sd alcohol', 'isopropyl alcohol'], 'Makes textures light, but can dry out and irritate skin.', [], { irritancy: 2, exact: ['alcohol', 'ethanol'], tags: ['drying-alcohol', 'drying', 'rosacea-trigger', 'eczema-trigger'] }),
   I('witchhazel', 'Witch hazel', ['hamamelis'], 'Astringent; can be drying for sensitive skin.', ['Oily'], { irritancy: 2, tags: ['rosacea-trigger'] }),
   I('sls', 'Sodium lauryl sulfate', ['sodium lauryl sulfate', 'ammonium lauryl sulfate'], 'Harsh foaming agent that can strip and irritate.', [], { irritancy: 4, comedogenic: 2, tags: ['drying', 'eczema-trigger', 'rosacea-trigger'] }),
@@ -132,6 +133,8 @@ const productList = product => {
   return { full, key, partial: !product?.ingredients_text }
 }
 
+// Actives that work even at the end of the list.
+const LOW_DOSE = ['retinol', 'peptides', 'matrixyl', 'argireline', 'copperpeptides']
 // How much an ingredient counts, from where it sits in the INCI list.
 const positionWeight = (pos, partial) => {
   if (partial) return 0.8 // only hero ingredients known
@@ -398,9 +401,12 @@ export const productMatch = (product, profile) => {
   // What it does for this skin
   const benefits = []
   let benefit = 0
-  for (const { entry, weight } of found) {
+  for (const { entry, weight, pos } of found) {
     const helps = entry.goodFor.filter(g => facts.mine.includes(g))
     if (!helps.length) continue
+    // A trace at the very end of the list (usually under 1%) isn't a benefit, except
+    // for actives that work at tiny doses (audit 2026-10-28). Safety rules still read every position.
+    if (!partial && pos >= 20 && !LOW_DOSE.includes(entry.id)) continue
     benefit += 9 * weight * Math.min(2, 1 + (helps.length - 1) * 0.25)
     benefits.push({ entry, weight, text: `${entry.name} helps with ${[...new Set(helps.map(phrase))].join(', ')}` })
   }

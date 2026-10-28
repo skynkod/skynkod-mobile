@@ -18,16 +18,22 @@ export const describeDays = (days) => {
 }
 
 // What a product does that matters for scheduling and clashes.
+// Same rule as Rekod (audit 2026-10-28): an acid, vitamin C or benzoyl peroxide
+// counts in the first 12 ingredients or when the label names it; a retinoid
+// counts wherever it sits (it works at tiny doses). A trace at the end of a
+// sunscreen is not an exfoliation.
 export const activesOf = (product) => {
-  const ids = new Set(findIngredients(product).map(f => f.entry.id))
+  const found = findIngredients(product)
+  const ids = new Set(found.map(f => f.entry.id))
+  const main = new Set(found.filter(f => f.pos <= 12).map(f => f.entry.id))
   const name = `${product?.name || ''}`.toLowerCase()
-  const strongAcid = ids.has('glycolic') || ids.has('salicylic') || ids.has('lactic') || ids.has('mandelic') || /aha|bha|peel|exfoli/.test(name)
+  const strongAcid = main.has('glycolic') || main.has('salicylic') || main.has('lactic') || main.has('mandelic') || /\b(aha|bha)\b|peel|exfoli|glycolic|salicylic/.test(name)
   return {
     retinoid: ids.has('retinol'),
     acid: strongAcid,
-    exfoliant: strongAcid || product?.category === 'exfoliant' || ids.has('scrub'),
-    vitaminC: ids.has('vitaminc'),
-    benzoyl: ids.has('benzoyl'),
+    exfoliant: strongAcid || product?.category === 'exfoliant' || main.has('scrub'),
+    vitaminC: main.has('vitaminc') || /vitamin\s?c\b/.test(name),
+    benzoyl: main.has('benzoyl') || /benzoyl/.test(name),
     spf: product?.category === 'sunscreen' || ids.has('zincoxide') || ids.has('chemicalspf'),
   }
 }

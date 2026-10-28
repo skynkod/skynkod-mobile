@@ -495,7 +495,7 @@ const PhotoPick = ({ z, q, h, opts, onDone, max = 0, one = false, initial = [] }
     </Page>
   )
 }
-const RowPick = ({ z, q, h, opts, onDone, extra }) => {
+const RowPick = ({ z, q, h, opts, onDone, extra, below }) => {
   const { F } = useOb()
   const [on, setOn] = useState(null)
   return (
@@ -514,9 +514,37 @@ const RowPick = ({ z, q, h, opts, onDone, extra }) => {
           </Rise>
         ))}
       </View>
+      {below}
       <Spacer />
       {extra}
     </Page>
+  )
+}
+// "I'm under 18" (audit 2026-10-28): a small link under the ages, never where
+// Continue sits on the other screens, and a confirmation before anything happens.
+const UnderAge = ({ onConfirm }) => {
+  const { F } = useOb()
+  const [asking, setAsking] = useState(false)
+  if (!asking) {
+    return (
+      <Pressable onPress={() => setAsking(true)} hitSlop={8} style={{ alignSelf: 'center', marginTop: 16 }}>
+        <Text style={[F.r, { color: C.mute, fontSize: 13, textDecorationLine: 'underline' }]}>I'm under 18</Text>
+      </Pressable>
+    )
+  }
+  return (
+    <View style={[styles.tg, { marginTop: 16 }]}>
+      <Text style={[F.s, { fontSize: 15, color: C.ink }]}>Are you under 18?</Text>
+      <Text style={[F.r, { fontSize: 13, lineHeight: 18, color: C.mute, marginTop: 4 }]}>Skynkod is for adults. If you are under 18, your answers and your account will be deleted.</Text>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+        <Pressable onPress={() => setAsking(false)} style={[styles.chip, { flex: 1, alignItems: 'center', paddingVertical: 10 }]}>
+          <Text style={[F.m, { fontSize: 13, color: C.ink }]}>I made a mistake</Text>
+        </Pressable>
+        <Pressable onPress={onConfirm} style={[styles.chip, { flex: 1, alignItems: 'center', paddingVertical: 10, backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
+          <Text style={[F.m, { fontSize: 13, color: '#fff' }]}>Yes, I'm under 18</Text>
+        </Pressable>
+      </View>
+    </View>
   )
 }
 const YesNo = ({ z, q, h, onDone }) => {
@@ -1556,7 +1584,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) 
     case 'age': content = (
       <RowPick z="skin" q="How old are you?" h="Your skin changes over the years: we adapt your routine to your age." opts={AGES.map(t => ({ t }))}
         onDone={(o, i) => { say(AGE_SAY[i]); setTimeout(() => { set({ age: i }); go(i >= 3 && P.sex !== 'man' ? 'meno' : 'wash') }, 900) }}
-        extra={<Ghost title="I'm under 18" onPress={() => { setMinor(true); deleteAccount().catch(error => logError('Onboarding_minorDelete', error, {}, 'warn')) }} />} />
+        below={<UnderAge onConfirm={() => { setMinor(true); if (userId) deleteAccount().catch(error => logError('Onboarding_minorDelete', error, {}, 'warn')) }} />} />
     ); break
     case 'meno': content = <RowPick z="skin" q="Where are you with menopause?" h="It changes the skin a lot: drier, thinner, less firm. We adapt your care." opts={MENO} onDone={o => { set({ meno: o.v }); go('wash') }} />; break
     case 'wash': content = <PhotoPick z="skin" q="2 hours after washing, your skin…" h="Think of a normal day." opts={WASH} one onDone={o => { set({ feel: o.v }); go('shine') }} />; break
