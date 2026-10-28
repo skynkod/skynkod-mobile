@@ -7,6 +7,7 @@ import { logError } from '../utils/errorLogger'
 import { useT } from '../utils/LanguageContext'
 import { Screen, Card, Input, Button, Banner, SegmentedControl, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
+import { GlossyScope, GTYPE, GFW } from '../components/glossy'
 
 const LOGO = require('../assets/images/skynkod-logo.png')
 // Turn on once Google is set up in Supabase > Authentication > Providers.
@@ -26,7 +27,7 @@ const readAuthParams = (url = '') => {
 
 const GOOGLE_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH === 'true'
 
-export default function LoginScreen({ onLogin, onNew }) {
+function LoginScreenInner({ onLogin, onNew }) {
   const colors = useColors()
   const t = useT()
 
@@ -187,13 +188,13 @@ export default function LoginScreen({ onLogin, onNew }) {
   return (
     <Screen keyboard contentStyle={styles.content}>
       <View style={styles.hero}>
-        <Text style={[TYPE.heading, { color: colors.textSecondary, fontWeight: '600' }]}>{t('Welcome to')}</Text>
+        <Text style={[GTYPE.heading, { color: colors.textSecondary, ...GFW('600') }]}>{t('Welcome to')}</Text>
         <Image source={LOGO} resizeMode="contain" style={styles.logo} accessibilityLabel="Skynkod" />
       </View>
 
       {isReset ? (
       <Card style={{ padding: SPACING.xl }}>
-        <Text style={[TYPE.subheading, { color: colors.text, marginBottom: SPACING.lg }]}>{t('Reset your password')}</Text>
+        <Text style={[GTYPE.subheading, { color: colors.text, marginBottom: SPACING.lg }]}>{t('Reset your password')}</Text>
 
         {error ? <Banner message={error} /> : null}
         {notice && !error ? <Banner tone="success" message={notice} /> : null}
@@ -276,7 +277,7 @@ export default function LoginScreen({ onLogin, onNew }) {
         />
         {!isSignUp ? (
           <Pressable onPress={() => switchMode('reset')} style={{ marginTop: SPACING.lg }}>
-            <Text style={[TYPE.caption, { color: colors.primary, textAlign: 'center', fontWeight: '700' }]}>{t('Forgot password?')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.primary, textAlign: 'center', ...GFW('700') }]}>{t('Forgot password?')}</Text>
           </Pressable>
         ) : null}
 
@@ -284,7 +285,7 @@ export default function LoginScreen({ onLogin, onNew }) {
         <>
         <View style={styles.divider}>
           <View style={[styles.line, { backgroundColor: colors.border }]} />
-          <Text style={[TYPE.caption, { color: colors.muted }]}>{t('or')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.muted }]}>{t('or')}</Text>
           <View style={[styles.line, { backgroundColor: colors.border }]} />
         </View>
         <Button title={t('Continue with Google')} icon="logo-google" variant="secondary" onPress={handleGoogle} disabled={loading} />
@@ -294,9 +295,9 @@ export default function LoginScreen({ onLogin, onNew }) {
       )}
 
       <Pressable onPress={() => switchMode(isReset || isSignUp ? 'signin' : 'signup')} style={{ marginTop: SPACING.xl }}>
-        <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center' }]}>
+        <Text style={[GTYPE.caption, { color: colors.muted, textAlign: 'center' }]}>
           {isReset ? t('Remembered it? ') : isSignUp ? t('Already have an account? ') : t('New to Skynkod? ')}
-          <Text style={{ color: colors.primary, fontWeight: '700' }}>{isReset || isSignUp ? t('Sign in') : t('Create one')}</Text>
+          <Text style={{ color: colors.primary, ...GFW('700') }}>{isReset || isSignUp ? t('Sign in') : t('Create one')}</Text>
         </Text>
       </Pressable>
     </Screen>
@@ -310,3 +311,9 @@ const styles = StyleSheet.create({
   line: { flex: 1, height: StyleSheet.hairlineWidth },
   logo: { width: 230, height: 230 * 333 / 1306, marginTop: SPACING.md },
 })
+
+
+// The glossy universe (Lita, 2026-10-28): same screen, in pink glass by day and deep plum at night.
+export default function LoginScreen(props) {
+  return <GlossyScope><LoginScreenInner {...props} /></GlossyScope>
+}

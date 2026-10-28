@@ -6,7 +6,7 @@ import { isNightAt } from './daylight'
 import { setSkinDayCoords } from './skin-day'
 import { logError } from './errorLogger'
 
-const ThemeContext = createContext()
+export const ThemeContext = createContext()
 const STORAGE_KEY = 'skynkod_theme_mode'
 const LOCATION_KEY = 'skynkod_location'
 const DAY_MS = 24 * 60 * 60 * 1000

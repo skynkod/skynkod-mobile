@@ -2,7 +2,8 @@ import React from 'react'
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
-import { useTheme } from '../utils/ThemeContext'
+import { useTheme, ThemeContext } from '../utils/ThemeContext'
+import { TYPE } from '../utils/theme'
 
 // The glossy universe of the sign-up, for the screens inside the app (audit
 // 2026-10-28; Lita: one model screen first, then the others). Pink glass by day,
@@ -63,3 +64,33 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontSize: 16 },
   btnArrow: { position: 'absolute', right: 22 },
 })
+
+// Inter by weight: one family per weight (iOS ignores fontWeight on these fonts).
+const FAMILY = { 400: 'Inter_400Regular', normal: 'Inter_400Regular', 500: 'Inter_500Medium', 600: 'Inter_600SemiBold', 700: 'Inter_700Bold', 800: 'Inter_700Bold', 900: 'Inter_700Bold', bold: 'Inter_700Bold' }
+export const GFW = w => ({ fontFamily: FAMILY[w] || FAMILY[400] })
+// The app's type scale, in Inter.
+export const GTYPE = Object.fromEntries(Object.entries(TYPE).map(([k, { fontWeight, ...rest }]) => [k, { ...rest, ...GFW(fontWeight) }]))
+
+// Wraps a screen in the glossy universe: the shared components (Screen, Card,
+// Button, Input…) read these colours and draw glass, the photo-like backdrop
+// and the glossy button. The screen's own content stays as it is.
+export const GlossyScope = ({ children }) => {
+  const base = useTheme()
+  const [loaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold })
+  const C = base.isDark ? GLOSS.night : GLOSS.day
+  const colors = {
+    ...base.colors,
+    bg: 'transparent',
+    surface: base.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
+    card: C.glass,
+    border: C.glassLine,
+    primary: base.isDark ? C.mauve : C.mauve2,
+    primarySoft: C.glassOn,
+    text: C.ink,
+    textSecondary: C.soft,
+    muted: C.mute,
+    solid: C.bg,
+  }
+  if (!loaded) return <View style={{ flex: 1, backgroundColor: C.bg }} />
+  return <ThemeContext.Provider value={{ ...base, colors, glossy: true, gloss: C }}>{children}</ThemeContext.Provider>
+}

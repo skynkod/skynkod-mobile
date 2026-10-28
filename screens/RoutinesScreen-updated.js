@@ -25,10 +25,11 @@ import { weekAudit } from '../utils/week-audit';
 import { todaySteps, describeDays } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { GlossyScope, GTYPE, GFW } from '../components/glossy'
 
 const todayKey = (userId, tab) => `routine_day_${userId}_${tab}_${skinDay().toDateString()}`;
 
-export default function RoutinesScreen({ route, navigation }) {
+function RoutinesScreenInner({ route, navigation }) {
   const colors = useColors();
   const t = useT();
   const { user } = useAuth();
@@ -134,7 +135,7 @@ export default function RoutinesScreen({ route, navigation }) {
       onBack={goBack}
       right={saved ? (
         <Pressable onPress={build} hitSlop={10}>
-          <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Edit')}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.primary }]}>{t('Edit')}</Text>
         </Pressable>
       ) : null}
       title={t('Routines')} subtitle={saved ? saved.name : t('Morning and evening')}>
@@ -149,19 +150,19 @@ export default function RoutinesScreen({ route, navigation }) {
 
       {!saved ? (
         <Card style={{ marginTop: SPACING.xl, padding: SPACING.xl }}>
-          <Text style={[TYPE.overline, { color: colors.primary }]}>{t('No products in this routine')}</Text>
-          <Text style={[TYPE.heading, { color: colors.text, marginTop: SPACING.sm }]}>
+          <Text style={[GTYPE.overline, { color: colors.primary }]}>{t('No products in this routine')}</Text>
+          <Text style={[GTYPE.heading, { color: colors.text, marginTop: SPACING.sm }]}>
             {tab === 'morning' ? t('Build your morning routine') : t('Build your night routine')}
           </Text>
-          <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+          <Text style={[GTYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
             {t('Add the products you already use, or let us build a routine made for your skin.')}
           </Text>
           <Pressable onPress={build} style={[styles.buildButton, { backgroundColor: colors.primary }]}>
-            <Text style={{ color: colors.onPrimary, fontSize: 16, fontWeight: '600' }}>{t('Add my products')}</Text>
+            <Text style={{ color: colors.onPrimary, fontSize: 16, ...GFW('600') }}>{t('Add my products')}</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.buildButton, styles.programmeButton]}>
             <FeatureIcon name="rekod" size={18} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>{t('Get a routine made for me')}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 16, ...GFW('600') }}>{t('Get a routine made for me')}</Text>
           </Pressable>
         </Card>
       ) : null}
@@ -170,12 +171,12 @@ export default function RoutinesScreen({ route, navigation }) {
       <Card style={{ marginTop: SPACING.xl }}>
         <View style={styles.progressHead}>
           <View>
-            <Text style={[TYPE.overline, { color: colors.muted }]}>{t('Today')}</Text>
-            <Text style={[TYPE.heading, { color: colors.text, marginTop: 2 }]}>
+            <Text style={[GTYPE.overline, { color: colors.muted }]}>{t('Today')}</Text>
+            <Text style={[GTYPE.heading, { color: colors.text, marginTop: 2 }]}>
               {completed === filled.length && filled.length ? t('All done ✨') : t('{done} of {total} steps', { done: completed, total: filled.length })}
             </Text>
           </View>
-          <Text style={[TYPE.title, { color: colors.primary }]}>{Math.round(progress * 100)}%</Text>
+          <Text style={[GTYPE.title, { color: colors.primary }]}>{Math.round(progress * 100)}%</Text>
         </View>
         <ProgressBar value={progress} style={{ marginTop: SPACING.md }} />
       </Card>
@@ -192,8 +193,8 @@ export default function RoutinesScreen({ route, navigation }) {
           <View style={styles.quizRow}>
             <Ionicons name="layers-outline" size={22} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('How to apply, in order')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Which product first, how much and how')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('How to apply, in order')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Which product first, how much and how')}</Text>
             </View>
             <Ionicons name="diamond" size={14} color="#33202E" />
           </View>
@@ -204,7 +205,7 @@ export default function RoutinesScreen({ route, navigation }) {
         <Card tone="soft" style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('SkinProfile')}>
           <View style={styles.quizRow}>
             <Ionicons name="help-circle-outline" size={22} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1, fontWeight: '600' }]}>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1, ...GFW('600') }]}>
               {t('Complete your skin profile to personalize this routine')}
             </Text>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
@@ -231,7 +232,7 @@ export default function RoutinesScreen({ route, navigation }) {
                   {isDone ? (
                     <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
                   ) : (
-                    <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{idx + 1}</Text>
+                    <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('700') }]}>{idx + 1}</Text>
                   )}
                 </View>
                 {!last ? <View style={[styles.line, { backgroundColor: colors.border }]} /> : null}
@@ -239,7 +240,7 @@ export default function RoutinesScreen({ route, navigation }) {
 
               <Card style={[styles.stepCard, isDone && { opacity: 0.55 }]}>
                 <View style={styles.stepHead}>
-                  <Text style={[TYPE.subheading, { color: colors.text, textDecorationLine: isDone ? 'line-through' : 'none' }]}>
+                  <Text style={[GTYPE.subheading, { color: colors.text, textDecorationLine: isDone ? 'line-through' : 'none' }]}>
                     {t(step.action)}
                   </Text>
                   {step.time ? <Badge label={t(step.time)} /> : null}
@@ -252,11 +253,11 @@ export default function RoutinesScreen({ route, navigation }) {
                     style={({ pressed }) => [styles.productRow, { opacity: pressed ? 0.7 : 1 }]}
                   >
                     {photoOf(step) ? <Image source={{ uri: photoOf(step) }} style={styles.productPhoto} resizeMode="contain" /> : null}
-                    <Text style={[TYPE.body, { color: step.product_id ? colors.primary : colors.textSecondary, flex: 1, fontWeight: step.product_id ? '600' : '400' }]}>{t(step.product)}</Text>
+                    <Text style={[GTYPE.body, { color: step.product_id ? colors.primary : colors.textSecondary, flex: 1, fontWeight: step.product_id ? '600' : '400' }]}>{t(step.product)}</Text>
                     {step.product_id ? <Ionicons name="chevron-forward" size={16} color={colors.muted} /> : null}
                   </Pressable>
                 ) : (
-                  <Text style={[TYPE.body, { color: colors.primary, fontWeight: '600', marginTop: SPACING.xs }]}>{t('Pick a product')} ›</Text>
+                  <Text style={[GTYPE.body, { color: colors.primary, ...GFW('600'), marginTop: SPACING.xs }]}>{t('Pick a product')} ›</Text>
                 )}
                 {productsById[step.product_id] ? (
                   <RoutineProductLine product={productsById[step.product_id]} profile={profile} stopAdvice={stopAdvice}
@@ -270,17 +271,17 @@ export default function RoutinesScreen({ route, navigation }) {
                 {/* Her prescribed treatment: her doctor's times, and any alert (rulebook section 6). */}
                 {step.rx ? (
                   <View style={{ marginTop: SPACING.xs, gap: 4 }}>
-                    {Array.isArray(step.days) && step.days.length ? <Text style={[TYPE.caption, { color: colors.muted }]}>{t(describeDays(step.days))}</Text> : null}
+                    {Array.isArray(step.days) && step.days.length ? <Text style={[GTYPE.caption, { color: colors.muted }]}>{t(describeDays(step.days))}</Text> : null}
                     {(step.issues || []).map(issue => (
-                      <Text key={issue.text} style={[TYPE.caption, { color: issue.level === 'avoid' ? colors.warning : colors.textSecondary }]}>{t(issue.text)}. {t(issue.detail)}</Text>
+                      <Text key={issue.text} style={[GTYPE.caption, { color: issue.level === 'avoid' ? colors.warning : colors.textSecondary }]}>{t(issue.text)}. {t(issue.detail)}</Text>
                     ))}
-                    <Text style={[TYPE.caption, { color: colors.muted }]}>{t(step.why)}</Text>
+                    <Text style={[GTYPE.caption, { color: colors.muted }]}>{t(step.why)}</Text>
                   </View>
                 ) : null}
                 {step.tip ? (
                   <View style={styles.tipRow}>
                     <Ionicons name="bulb-outline" size={14} color={colors.primary} />
-                    <Text style={[TYPE.caption, { color: colors.muted, flex: 1 }]}>{t(step.tip)}</Text>
+                    <Text style={[GTYPE.caption, { color: colors.muted, flex: 1 }]}>{t(step.tip)}</Text>
                   </View>
                 ) : null}
               </Card>
@@ -308,3 +309,9 @@ const styles = StyleSheet.create({
   stepHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: SPACING.sm },
   tipRow: { flexDirection: 'row', gap: 6, marginTop: SPACING.sm, alignItems: 'flex-start' },
 });
+
+
+// The glossy universe (Lita, 2026-10-28): same screen, in pink glass by day and deep plum at night.
+export default function RoutinesScreen(props) {
+  return <GlossyScope><RoutinesScreenInner {...props} /></GlossyScope>
+}

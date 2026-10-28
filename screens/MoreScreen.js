@@ -34,6 +34,7 @@ import SkinProfileScreen from './SkinProfileScreen'
 import ProposalsScreen from './ProposalsScreen'
 import { isAdmin } from '../utils/contributions'
 import { isPremiumUser, setPremium } from '../utils/premium'
+import { GlossyScope, GTYPE, GFW } from '../components/glossy'
 
 export const MORE_SCREENS = [
   { name: 'LifeModes', component: LifeModesScreen, label: 'Your skin right now', subtitle: 'Pregnancy, reacting skin, season', icon: 'heart-outline', group: 'track' },
@@ -70,7 +71,7 @@ const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning 
 const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget', 'PregnancySafe', 'SkinTimeline', 'SkinReport']
 const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
-export default function MoreScreen({ navigation }) {
+function MoreScreenInner({ navigation }) {
   const colors = useColors()
   const { user, logout } = useAuth()
   const firstName = useFirstName(user?.id)
@@ -115,21 +116,21 @@ export default function MoreScreen({ navigation }) {
         <View style={styles.profileTop}>
           <ProfileAvatar name={firstName || user?.email} level={journey?.level.level} size={64} background={colors.primarySoft} textColor={colors.primary} />
           <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 18 }]} numberOfLines={1}>{firstName || (user?.email || '').split('@')[0]}</Text>
-            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{user?.email}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, fontSize: 18 }]} numberOfLines={1}>{firstName || (user?.email || '').split('@')[0]}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 2 }]} numberOfLines={1}>{user?.email}</Text>
           </View>
         </View>
         {journey ? (
           <>
             <View style={[styles.rowBetween, { marginTop: SPACING.lg }]}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(journey.level.tier.name).toUpperCase()}</Text>
-              <Text style={[TYPE.caption, { color: colors.muted }]}>{journey.level.next ? `${journey.xp} / ${journey.level.next.xp} XP` : `${journey.xp} XP`}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t(journey.level.tier.name).toUpperCase()}</Text>
+              <Text style={[GTYPE.caption, { color: colors.muted }]}>{journey.level.next ? `${journey.xp} / ${journey.level.next.xp} XP` : `${journey.xp} XP`}</Text>
             </View>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 2 }]}>{t('Level {n}', { n: journey.level.level })} · {t(journey.level.name)}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 2 }]}>{t('Level {n}', { n: journey.level.level })} · {t(journey.level.name)}</Text>
             <ProgressBar value={journey.level.progress} style={{ marginTop: SPACING.sm }} />
             <View style={[styles.stats, { borderTopColor: colors.border }]}>
-              <View style={styles.stat}><Ionicons name="ribbon-outline" size={16} color={colors.primary} /><Text style={[TYPE.caption, { color: colors.text }]}><Text style={{ fontWeight: '700' }}>{journey.earned.length}/{journey.earnableCount}</Text> {t('badges')}</Text></View>
-              <View style={styles.stat}><Ionicons name="star" size={15} color="#C99A45" /><Text style={[TYPE.caption, { color: colors.text }]}><Text style={{ fontWeight: '700' }}>{journey.stars}</Text> {t('stars')}</Text></View>
+              <View style={styles.stat}><Ionicons name="ribbon-outline" size={16} color={colors.primary} /><Text style={[GTYPE.caption, { color: colors.text }]}><Text style={{ ...GFW('700') }}>{journey.earned.length}/{journey.earnableCount}</Text> {t('badges')}</Text></View>
+              <View style={styles.stat}><Ionicons name="star" size={15} color="#C99A45" /><Text style={[GTYPE.caption, { color: colors.text }]}><Text style={{ ...GFW('700') }}>{journey.stars}</Text> {t('stars')}</Text></View>
               <Ionicons name="chevron-forward" size={16} color={colors.muted} />
             </View>
           </>
@@ -142,11 +143,11 @@ export default function MoreScreen({ navigation }) {
         {(journey?.earned.length ? journey.earned.slice(0, 8) : VISIBLE_BADGES.filter(canEarn).slice(0, 5)).map(b => (
           <Pressable key={b.id} onPress={() => open('Journey')} style={styles.badge}>
             <BadgeImage badge={b} size={64} locked={!b.earned} />
-            <Text numberOfLines={2} style={[TYPE.caption, { color: b.earned ? colors.text : colors.muted, textAlign: 'center', fontSize: 11, marginTop: 4 }]}>{t(b.name)}</Text>
+            <Text numberOfLines={2} style={[GTYPE.caption, { color: b.earned ? colors.text : colors.muted, textAlign: 'center', fontSize: 11, marginTop: 4 }]}>{t(b.name)}</Text>
           </Pressable>
         ))}
       </ScrollView>
-      {journey && !journey.earned.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xs }]}>{t('Your first badges are waiting for you.')}</Text> : null}
+      {journey && !journey.earned.length ? <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.xs }]}>{t('Your first badges are waiting for you.')}</Text> : null}
 
       {/* My stars: the seniority milestones, greyed until reached */}
       <SectionHeader title={t('My stars')} action={t('See all')} onAction={() => open('Journey')} style={{ marginTop: SPACING.xl }} />
@@ -157,12 +158,12 @@ export default function MoreScreen({ navigation }) {
             return (
               <View key={b.id} style={styles.starItem}>
                 <BadgeImage badge={b} size={46} locked={!won} />
-                <Text style={[TYPE.caption, { color: won ? colors.text : colors.muted, fontSize: 10, textAlign: 'center', marginTop: 2 }]}>{t(STAR_LABEL[b.target])}</Text>
+                <Text style={[GTYPE.caption, { color: won ? colors.text : colors.muted, fontSize: 10, textAlign: 'center', marginTop: 2 }]}>{t(STAR_LABEL[b.target])}</Text>
               </View>
             )
           })}
         </View>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, textAlign: 'center' }]}>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, textAlign: 'center' }]}>
           {t('{n} active weeks', { n: journey?.stars || 0 })}
         </Text>
       </Card>
@@ -209,7 +210,7 @@ export default function MoreScreen({ navigation }) {
         style={({ pressed }) => [styles.logout, { borderColor: colors.border, opacity: pressed || loggingOut ? 0.6 : 1 }]}
       >
         {loggingOut ? <ActivityIndicator color={colors.danger} /> : <Ionicons name="log-out-outline" size={20} color={colors.danger} />}
-        <Text style={[TYPE.bodyStrong, { color: colors.danger }]}>Log out</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.danger }]}>Log out</Text>
       </Pressable>
     </Screen>
   )
@@ -227,3 +228,9 @@ const styles = StyleSheet.create({
   listCard: { paddingHorizontal: SPACING.lg },
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, marginTop: SPACING.xxl },
 })
+
+
+// The glossy universe (Lita, 2026-10-28): same screen, in pink glass by day and deep plum at night.
+export default function MoreScreen(props) {
+  return <GlossyScope><MoreScreenInner {...props} /></GlossyScope>
+}

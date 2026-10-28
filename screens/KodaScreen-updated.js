@@ -13,6 +13,7 @@ import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE } from '../utils/theme';
 import { track } from '../utils/analytics';
+import { GlossyScope, GTYPE, GFW } from '../components/glossy'
 
 const SUGGESTIONS = [
   'Build me a simple morning routine',
@@ -23,7 +24,7 @@ const SUGGESTIONS = [
 
 const intro = (t) => ({ role: 'assistant', content: t(generateKodaIntroduction()), timestamp: new Date().toISOString() });
 
-export default function KodaScreen({ route, navigation }) {
+function KodaScreenInner({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
@@ -131,14 +132,14 @@ export default function KodaScreen({ route, navigation }) {
             item.error && { backgroundColor: colors.dangerSoft, borderColor: colors.dangerSoft },
           ]}
         >
-          <Text style={[TYPE.body, { color: isUser ? colors.onPrimary : item.error ? colors.danger : colors.text }]}>{item.content}</Text>
+          <Text style={[GTYPE.body, { color: isUser ? colors.onPrimary : item.error ? colors.danger : colors.text }]}>{item.content}</Text>
           {!isUser && item.plan && getSituation(item.plan) ? (
             <Pressable
               onPress={() => navigation.navigate('Emergency', { situation: item.plan, openedAt: Date.now() })}
               style={({ pressed }) => [styles.planButton, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
               <Ionicons name="medkit-outline" size={16} color={colors.onPrimary} />
-              <Text style={[TYPE.caption, { color: colors.onPrimary, fontWeight: '700', flexShrink: 1 }]}>
+              <Text style={[GTYPE.caption, { color: colors.onPrimary, ...GFW('700'), flexShrink: 1 }]}>
                 {t('Start the 7-day plan')} · {t(getSituation(item.plan).title)}
               </Text>
             </Pressable>
@@ -187,16 +188,16 @@ export default function KodaScreen({ route, navigation }) {
 
       {outOfQuestions ? (
         <View style={[styles.outCard, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, textAlign: 'center' }]}>{t("You've used your {n} free questions this week 🌸", { n: quota.limit || 3 })}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, textAlign: 'center' }]}>{t("You've used your {n} free questions this week 🌸", { n: quota.limit || 3 })}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>
             {t('Koda will be back for you on Monday, with {n} new free questions.', { n: quota.limit || 3 })}{'\n'}{t('Want to keep chatting now? Premium gives you Koda every day.')}
           </Text>
           <Pressable onPress={() => navigation.navigate('Premium')}
             style={({ pressed }) => [styles.unlock, { opacity: pressed ? 0.85 : 1 }]}>
             <Ionicons name="diamond" size={15} color="#E2C6DA" />
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t('Unlock Koda with Premium')}</Text>
+            <Text style={{ color: '#FFFFFF', ...GFW('700'), fontSize: 15 }}>{t('Unlock Koda with Premium')}</Text>
           </Pressable>
-          <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('See you Monday 👋')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('See you Monday 👋')}</Text>
         </View>
       ) : (
       <>
@@ -251,3 +252,9 @@ const styles = StyleSheet.create({
   input: { flex: 1, maxHeight: 120, minHeight: 44, borderRadius: 22, borderWidth: 1, paddingHorizontal: SPACING.lg, paddingTop: 12, paddingBottom: 12, fontSize: 15 },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
+
+
+// The glossy universe (Lita, 2026-10-28): same screen, in pink glass by day and deep plum at night.
+export default function KodaScreen(props) {
+  return <GlossyScope><KodaScreenInner {...props} /></GlossyScope>
+}

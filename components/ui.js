@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NavigationContext } from '@react-navigation/native'
@@ -16,6 +17,11 @@ import { Ionicons } from '@expo/vector-icons'
 import FeatureIcon from './FeatureIcon'
 import { useTheme } from '../utils/ThemeContext'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { GlossyBackdrop, GTYPE, GFW } from './glossy'
+
+const BTN = require('../assets/onboarding/btn.png')
+// Inside a GlossyScope (audit 2026-10-28): Inter, glass and the glossy button.
+const look = theme => ({ T: theme.glossy ? GTYPE : TYPE, fw: w => (theme.glossy ? GFW(w) : { fontWeight: w }) })
 
 export const useColors = () => useTheme().colors
 
@@ -50,7 +56,9 @@ export function Screen({
   refreshControl,
   scrollRef,
 }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   // Outside the NavigationContainer (login, onboarding) there's no navigation.
   const navigation = useContext(NavigationContext)
   const insets = useSafeAreaInsets()
@@ -75,9 +83,9 @@ export function Screen({
           {right || null}
         </View>
       )}
-      {overline ? <Text style={[TYPE.overline, { color: colors.primary, marginBottom: 4 }]}>{overline}</Text> : null}
-      {title ? <Text style={[TYPE.title, { color: colors.text }]}>{title}</Text> : null}
-      {subtitle ? <Text style={[TYPE.body, { color: colors.muted, marginTop: 2 }]}>{subtitle}</Text> : null}
+      {overline ? <Text style={[T.overline, { color: colors.primary, marginBottom: 4 }]}>{overline}</Text> : null}
+      {title ? <Text style={[T.title, { color: colors.text }]}>{title}</Text> : null}
+      {subtitle ? <Text style={[T.body, { color: colors.muted, marginTop: 2 }]}>{subtitle}</Text> : null}
     </View>
   )
 
@@ -101,14 +109,16 @@ export function Screen({
     </View>
   )
 
+  // Glass screens keep a solid bar so text never shows through it.
+  const barBg = theme.glossy ? (theme.isDark ? 'rgba(27,19,30,0.94)' : 'rgba(251,244,248,0.94)') : colors.bg
   const stickyBar = scroll && compact && (title || showBack) ? (
-    <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+    <View style={[styles.sticky, { backgroundColor: barBg, borderBottomColor: colors.border }]}>
       {showBack ? (
         <Pressable onPress={onBack || (() => navigation.goBack())} hitSlop={12} accessibilityRole="button" accessibilityLabel="Back" style={styles.stickyBack}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
       ) : <View style={styles.stickyBack} />}
-      <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center' }]} numberOfLines={1}>{title || ''}</Text>
+      <Text style={[T.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center' }]} numberOfLines={1}>{title || ''}</Text>
       <View style={styles.stickyBack}>{right || null}</View>
     </View>
   ) : null
@@ -124,7 +134,7 @@ export function Screen({
           style={[
             styles.footer,
             // Without a tab bar underneath (login, onboarding) the footer must clear the home indicator.
-            { borderTopColor: colors.border, backgroundColor: colors.bg, paddingBottom: SPACING.md + (navigation ? 0 : insets.bottom) },
+            { borderTopColor: colors.border, backgroundColor: barBg, paddingBottom: SPACING.md + (navigation ? 0 : insets.bottom) },
           ]}
         >
           {footer}
@@ -133,7 +143,7 @@ export function Screen({
     </>
   )
 
-  return (
+  const page = (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.bg }}>
       {keyboard ? (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -144,14 +154,23 @@ export function Screen({
       )}
     </SafeAreaView>
   )
+  if (!theme.glossy) return page
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.solid }}>
+      <GlossyBackdrop night={theme.isDark} />
+      {page}
+    </View>
+  )
 }
 
 export function LoadingView({ label }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={[styles.center, { backgroundColor: colors.bg }]}>
       <ActivityIndicator size="large" color={colors.primary} />
-      {label ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{label}</Text> : null}
+      {label ? <Text style={[T.caption, { color: colors.muted, marginTop: SPACING.md }]}>{label}</Text> : null}
     </View>
   )
 }
@@ -159,13 +178,18 @@ export function LoadingView({ label }) {
 // ─── Surfaces ────────────────────────────────────────────────────────────────
 
 export function Card({ children, style, onPress, tone = 'default', padded = true }) {
-  const { colors, isDark } = useTheme()
+  const theme = useTheme()
+  const { colors, isDark } = theme
+  const { T, fw } = look(theme)
   const toneStyle = {
     default: { backgroundColor: colors.card, borderColor: colors.border },
     soft: { backgroundColor: colors.primarySoft, borderColor: 'transparent' },
     primary: { backgroundColor: colors.primary, borderColor: 'transparent' },
   }[tone]
-  const base = [styles.card, padded && styles.cardPadded, toneStyle, tone === 'default' && shadow(colors, isDark), style]
+  const glass = theme.glossy && tone !== 'primary'
+    ? { borderWidth: 1.5, borderRadius: 18, shadowColor: theme.gloss.shadow, shadowOpacity: isDark ? 0.35 : 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
+    : null
+  const base = [styles.card, padded && styles.cardPadded, toneStyle, tone === 'default' && !glass && shadow(colors, isDark), glass, style]
 
   if (!onPress) return <View style={base}>{children}</View>
   return (
@@ -176,13 +200,15 @@ export function Card({ children, style, onPress, tone = 'default', padded = true
 }
 
 export function SectionHeader({ title, action, onAction, style }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={[styles.sectionHeader, style]}>
-      <Text style={[TYPE.subheading, { color: colors.text }]}>{title}</Text>
+      <Text style={[T.subheading, { color: colors.text }]}>{title}</Text>
       {action ? (
         <Pressable onPress={onAction} hitSlop={8}>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{action}</Text>
+          <Text style={[T.caption, { color: colors.primary, ...fw('700') }]}>{action}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -190,7 +216,9 @@ export function SectionHeader({ title, action, onAction, style }) {
 }
 
 export function IconCircle({ name, size = 40, color, background, iconSize }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View
       style={{
@@ -209,13 +237,15 @@ export function IconCircle({ name, size = 40, color, background, iconSize }) {
 
 // `below`: an extra control under the subtitle (a time chooser…).
 export function ListRow({ icon, iconColor, iconBackground, title, subtitle, right, onPress, last, destructive, below = null }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   const content = (
     <View style={[styles.listRow, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
       {icon ? <IconCircle name={icon} size={36} color={iconColor} background={iconBackground} /> : null}
       <View style={{ flex: 1 }}>
-        <Text style={[TYPE.bodyStrong, { color: destructive ? colors.danger : colors.text }]}>{title}</Text>
-        {subtitle ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{subtitle}</Text> : null}
+        <Text style={[T.bodyStrong, { color: destructive ? colors.danger : colors.text }]}>{title}</Text>
+        {subtitle ? <Text style={[T.caption, { color: colors.muted, marginTop: 2 }]}>{subtitle}</Text> : null}
         {below}
       </View>
       {right !== undefined ? right : onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
@@ -232,7 +262,9 @@ export function ListRow({ icon, iconColor, iconBackground, title, subtitle, righ
 // ─── Controls ────────────────────────────────────────────────────────────────
 
 export function Button({ title, onPress, variant = 'primary', icon, loading, disabled, style, size = 'md' }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   const v = {
     primary: { bg: colors.primary, fg: colors.onPrimary, border: 'transparent' },
     secondary: { bg: colors.primarySoft, fg: colors.primary, border: 'transparent' },
@@ -241,6 +273,7 @@ export function Button({ title, onPress, variant = 'primary', icon, loading, dis
     danger: { bg: colors.dangerSoft, fg: colors.danger, border: 'transparent' },
   }[variant]
   const isDisabled = disabled || loading
+  const glossyPrimary = theme.glossy && variant === 'primary'
 
   return (
     <Pressable
@@ -250,18 +283,20 @@ export function Button({ title, onPress, variant = 'primary', icon, loading, dis
       style={({ pressed }) => [
         styles.button,
         size === 'sm' && styles.buttonSm,
-        { backgroundColor: v.bg, borderColor: v.border },
+        { backgroundColor: glossyPrimary ? 'transparent' : v.bg, borderColor: v.border },
+        glossyPrimary && { borderRadius: 999, overflow: 'hidden' },
         pressed && styles.pressed,
         isDisabled && { opacity: 0.5 },
         style,
       ]}
     >
+      {theme.glossy && variant === 'primary' ? <Image source={BTN} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', borderRadius: 999 }]} resizeMode="stretch" /> : null}
       {loading ? (
-        <ActivityIndicator color={v.fg} />
+        <ActivityIndicator color={glossyPrimary ? '#fff' : v.fg} />
       ) : (
         <>
-          {icon ? <FeatureIcon name={icon} size={size === 'sm' ? 16 : 18} color={v.fg} /> : null}
-          <Text style={[size === 'sm' ? TYPE.caption : TYPE.bodyStrong, { color: v.fg, fontWeight: '700' }]}>{title}</Text>
+          {icon ? <FeatureIcon name={icon} size={size === 'sm' ? 16 : 18} color={glossyPrimary ? '#fff' : v.fg} /> : null}
+          <Text style={[size === 'sm' ? T.caption : T.bodyStrong, { color: glossyPrimary ? '#fff' : v.fg, ...fw('700') }]}>{title}</Text>
         </>
       )}
     </Pressable>
@@ -269,7 +304,9 @@ export function Button({ title, onPress, variant = 'primary', icon, loading, dis
 }
 
 export function IconButton({ icon, onPress, accessibilityLabel, tone = 'default', size = 40 }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   const bg = tone === 'primary' ? colors.primary : colors.card
   const fg = tone === 'primary' ? colors.onPrimary : colors.text
   return (
@@ -289,10 +326,12 @@ export function IconButton({ icon, onPress, accessibilityLabel, tone = 'default'
 }
 
 export function Input({ label, style, multiline, ...props }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={{ marginBottom: SPACING.md }}>
-      {label ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginBottom: 6, fontWeight: '600' }]}>{label}</Text> : null}
+      {label ? <Text style={[T.caption, { color: colors.textSecondary, marginBottom: 6, ...fw('600') }]}>{label}</Text> : null}
       <TextInput
         placeholderTextColor={colors.muted}
         multiline={multiline}
@@ -309,7 +348,9 @@ export function Input({ label, style, multiline, ...props }) {
 }
 
 export function Chip({ label, selected, onPress, icon }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <Pressable
       onPress={onPress}
@@ -323,13 +364,15 @@ export function Chip({ label, selected, onPress, icon }) {
       ]}
     >
       {icon ? <Ionicons name={icon} size={15} color={selected ? colors.onPrimary : colors.textSecondary} /> : null}
-      <Text style={[TYPE.caption, { color: selected ? colors.onPrimary : colors.text, fontWeight: '600' }]}>{label}</Text>
+      <Text style={[T.caption, { color: selected ? colors.onPrimary : colors.text, ...fw('600') }]}>{label}</Text>
     </Pressable>
   )
 }
 
 export function SegmentedControl({ options, value, onChange }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={[styles.segmented, { backgroundColor: colors.surface }]}>
       {options.map(opt => {
@@ -341,7 +384,7 @@ export function SegmentedControl({ options, value, onChange }) {
             style={[styles.segment, active && { backgroundColor: colors.card }]}
           >
             {opt.icon ? <Ionicons name={opt.icon} size={16} color={active ? colors.primary : colors.muted} /> : null}
-            <Text style={[TYPE.caption, { fontWeight: '700', color: active ? colors.text : colors.muted }]}>{opt.label}</Text>
+            <Text style={[T.caption, { ...fw('700'), color: active ? colors.text : colors.muted }]}>{opt.label}</Text>
           </Pressable>
         )
       })}
@@ -350,17 +393,19 @@ export function SegmentedControl({ options, value, onChange }) {
 }
 
 export function Stepper({ label, value, onChange, min = 0, max = 10, hint }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={{ marginBottom: SPACING.lg }}>
       <View style={styles.rowBetween}>
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{label}</Text>
-          {hint ? <Text style={[TYPE.caption, { color: colors.muted }]}>{hint}</Text> : null}
+          <Text style={[T.bodyStrong, { color: colors.text }]}>{label}</Text>
+          {hint ? <Text style={[T.caption, { color: colors.muted }]}>{hint}</Text> : null}
         </View>
         <View style={styles.stepperControls}>
           <IconButton icon="remove" size={34} onPress={() => onChange(Math.max(min, value - 1))} accessibilityLabel={`Decrease ${label}`} />
-          <Text style={[TYPE.subheading, { color: colors.primary, minWidth: 28, textAlign: 'center' }]}>{value}</Text>
+          <Text style={[T.subheading, { color: colors.primary, minWidth: 28, textAlign: 'center' }]}>{value}</Text>
           <IconButton icon="add" size={34} onPress={() => onChange(Math.min(max, value + 1))} accessibilityLabel={`Increase ${label}`} />
         </View>
       </View>
@@ -370,7 +415,9 @@ export function Stepper({ label, value, onChange, min = 0, max = 10, hint }) {
 }
 
 export function ProgressBar({ value = 0, color, style, height = 8 }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   const pct = Math.max(0, Math.min(1, value || 0)) * 100
   return (
     <View style={[{ height, borderRadius: height, backgroundColor: colors.surface, overflow: 'hidden' }, style]}>
@@ -382,13 +429,15 @@ export function ProgressBar({ value = 0, color, style, height = 8 }) {
 // ─── Feedback ────────────────────────────────────────────────────────────────
 
 export function EmptyState({ icon = 'leaf-outline', title, description, action, onAction }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={styles.empty}>
       <IconCircle name={icon} size={64} />
-      <Text style={[TYPE.subheading, { color: colors.text, marginTop: SPACING.lg, textAlign: 'center' }]}>{title}</Text>
+      <Text style={[T.subheading, { color: colors.text, marginTop: SPACING.lg, textAlign: 'center' }]}>{title}</Text>
       {description ? (
-        <Text style={[TYPE.body, { color: colors.muted, marginTop: 6, textAlign: 'center', maxWidth: 280 }]}>{description}</Text>
+        <Text style={[T.body, { color: colors.muted, marginTop: 6, textAlign: 'center', maxWidth: 280 }]}>{description}</Text>
       ) : null}
       {action ? <Button title={action} onPress={onAction} variant="secondary" style={{ marginTop: SPACING.lg }} /> : null}
     </View>
@@ -396,7 +445,9 @@ export function EmptyState({ icon = 'leaf-outline', title, description, action, 
 }
 
 export function Banner({ tone = 'error', message, actionLabel, onAction, style }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   const t = {
     error: { bg: colors.dangerSoft, fg: colors.danger, icon: 'alert-circle' },
     info: { bg: colors.primarySoft, fg: colors.primary, icon: 'cloud-offline-outline' },
@@ -405,10 +456,10 @@ export function Banner({ tone = 'error', message, actionLabel, onAction, style }
   return (
     <View style={[styles.banner, { backgroundColor: t.bg }, style]}>
       <Ionicons name={t.icon} size={18} color={t.fg} />
-      <Text style={[TYPE.caption, { color: t.fg, flex: 1, fontWeight: '600' }]}>{message}</Text>
+      <Text style={[T.caption, { color: t.fg, flex: 1, ...fw('600') }]}>{message}</Text>
       {actionLabel ? (
         <Pressable onPress={onAction} hitSlop={8}>
-          <Text style={[TYPE.caption, { color: t.fg, fontWeight: '800' }]}>{actionLabel}</Text>
+          <Text style={[T.caption, { color: t.fg, ...fw('800') }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -416,7 +467,9 @@ export function Banner({ tone = 'error', message, actionLabel, onAction, style }
 }
 
 export function Badge({ label, tone = 'primary' }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   const t = {
     primary: [colors.primarySoft, colors.primary],
     success: [colors.successSoft, colors.success],
@@ -425,13 +478,15 @@ export function Badge({ label, tone = 'primary' }) {
   }[tone]
   return (
     <View style={[styles.badge, { backgroundColor: t[0] }]}>
-      <Text style={[TYPE.overline, { color: t[1], fontSize: 10 }]}>{label}</Text>
+      <Text style={[T.overline, { color: t[1], fontSize: 10 }]}>{label}</Text>
     </View>
   )
 }
 
 export function BottomSheet({ title, onClose, children }) {
-  const { colors } = useTheme()
+  const theme = useTheme()
+  const { colors } = theme
+  const { T, fw } = look(theme)
   return (
     <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]}>
       <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
@@ -439,7 +494,7 @@ export function BottomSheet({ title, onClose, children }) {
         <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: colors.bg }]}>
           <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
           <View style={[styles.rowBetween, { marginBottom: SPACING.lg }]}>
-            <Text style={[TYPE.heading, { color: colors.text }]}>{title}</Text>
+            <Text style={[T.heading, { color: colors.text }]}>{title}</Text>
             <IconButton icon="close" size={34} onPress={onClose} accessibilityLabel="Close" />
           </View>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
