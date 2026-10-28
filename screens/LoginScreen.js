@@ -26,7 +26,7 @@ const readAuthParams = (url = '') => {
 
 const GOOGLE_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH === 'true'
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, onNew }) {
   const colors = useColors()
   const t = useT()
 
@@ -41,6 +41,8 @@ export default function LoginScreen({ onLogin }) {
   const isReset = mode === 'reset'
 
   const switchMode = (m) => {
+    // New accounts are made at the end of the sign-up journey (audit 2026-10-28).
+    if (m === 'signup' && onNew) return onNew()
     setMode(m)
     setError(null)
     setNotice(null)

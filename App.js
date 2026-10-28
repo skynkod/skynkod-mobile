@@ -30,6 +30,7 @@ import JournalScreen from './screens/JournalScreen'
 import KodaScreen from './screens/KodaScreen-updated'
 import RoutinesScreen from './screens/RoutinesScreen-updated'
 import SkinIssuesScreen from './screens/SkinIssuesScreen'
+import ProfileChapterScreen from './screens/ProfileChapterScreen'
 import MoreScreen, { MORE_SCREENS } from './screens/MoreScreen'
 import SearchScreen from './screens/SearchScreen'
 import ProductScreen from './screens/ProductScreen'
@@ -149,6 +150,7 @@ function AppTabs({ userId }) {
       {[
         { name: 'Routines', component: RoutinesScreen },
         { name: 'SkinIssues', component: SkinIssuesScreen },
+        { name: 'ProfileChapter', component: ProfileChapterScreen },
         { name: 'Search', component: SearchScreen },
         { name: 'Product', component: ProductScreen },
         { name: 'Ingredient', component: IngredientScreen },
@@ -172,7 +174,7 @@ function AppTabs({ userId }) {
           options={{
             tabBarButton: () => null,
             tabBarItemStyle: { display: 'none' },
-            ...(['Scanner', 'RoutineBuilder'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
+            ...(['Scanner', 'RoutineBuilder', 'ProfileChapter', 'SkinIssues', 'SkinProfile'].includes(screen.name) ? { tabBarStyle: { display: 'none' } } : {}),
           }}
         />
       ))}
@@ -225,6 +227,10 @@ function AppContent() {
   const [loading, setLoading] = useState(true)
   const [showSplash, setShowSplash] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  // No account yet: the sign-up journey comes first, the account at its end
+  // (audit 2026-10-28). "I already have an account" opens the login screen.
+  const [showLogin, setShowLogin] = useState(false)
+  const [journeyKey, setJourneyKey] = useState(0)
   // Face ID lock (Settings › Privacy): at launch and each time the app comes back.
   const [locked, setLocked] = useState(false)
   useEffect(() => {
@@ -369,8 +375,22 @@ function AppContent() {
     setUser(null)
   }
 
-  // The account was deleted on the server (under 18 at sign-up): back to login.
+  // Her account was just created at the end of the sign-up journey: the journey
+  // goes on to her results with the same answers (same screen, now with her id).
+  const handleSignedUp = async (email, userId) => {
+    const data = { email, userId }
+    await AsyncStorage.setItem('skynkod_user', JSON.stringify(data))
+    setShowOnboarding(true)
+    setUser(data)
+    setAnalyticsUser(userId).then(() => track('app_open')).catch(() => {})
+    markSeen(userId)
+  }
+
+  // The account was deleted on the server (under 18 at sign-up), or she left
+  // the journey: back to the start of the journey.
   const handleAccountGone = async () => {
+    setJourneyKey(k => k + 1)
+    setShowLogin(false)
     await AsyncStorage.removeItem('skynkod_user').catch(() => {})
     // Signed out (session ended or account gone): her reminders stop too (notifications audit).
     await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {})
@@ -405,12 +425,21 @@ function AppContent() {
   }
 
   let content = null
-  if (booting) {
+  const devChapter = __DEV__ && Platform.OS === 'web' ? new URLSearchParams(globalThis.location?.search || '').get('chapter') : null
+  if (devChapter) {
+    // Dev web preview of a profile step, with sample saved answers; the result is logged.
+    const sample = { goals: ['clear'], sex: 'woman', ageRange: 3, menopause: 'during', feel: 'combo', shine: 'tzone', pores: 'nose', reactivity: 'often', sun: 'tan', tone: 4, faceZones: ['forehead', 'jaw'], issues: ['comedonal-acne', 'pih', 'dark-circles', 'chapped-lips'], eyeDetails: ['brown'], priority: 'Dark spots', secondary: 'Acne', sleepHours: 6, stress: 'high', makeup: 'daily', sunTime: 'low', sweat: false, avoid: ['Fragrance', 'niacinamide'], conditions: ['Rosacea'], meds: [], prefs: ['vegan'], routineLevel: 'basic' }
+    content = <OnboardingScreen userId={null} mode={{ chapters: devChapter.split(','), answers: sample, row: { first_name: 'Lina', consent_health_at: 'x' }, onDone: (answers, health) => { globalThis.__profileSaved = { answers, health } }, onCancel: () => { globalThis.__profileCancelled = true } }} />
+  } else if (__DEV__ && Platform.OS === 'web' && globalThis.location?.search?.includes('onboarding')) {
+    content = <OnboardingScreen userId={null} onComplete={async () => {}} onLeave={() => {}} />
+  } else if (booting) {
     content = showSplash ? null : <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1 }} />
-  } else if (!user) {
-    content = <LoginScreen onLogin={handleLogin} />
-  } else if (showOnboarding) {
-    content = <OnboardingScreen userId={user.userId} onComplete={handleOnboardingComplete} onLeave={handleAccountGone} />
+  } else if (!user && showLogin) {
+    content = <LoginScreen onLogin={handleLogin} onNew={() => setShowLogin(false)} />
+  } else if (!user || showOnboarding) {
+    // One screen for both: creating the account mid-journey keeps her answers.
+    content = <OnboardingScreen key={`journey-${journeyKey}`} userId={user?.userId || null} onComplete={handleOnboardingComplete} onLeave={handleAccountGone}
+      onSignedIn={handleSignedUp} onHaveAccount={() => setShowLogin(true)} />
   } else {
     content = (
       <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>

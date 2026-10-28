@@ -7,7 +7,7 @@ import * as WebBrowser from 'expo-web-browser'
 import * as Haptics from 'expo-haptics'
 import Svg, { Path, Circle, Ellipse, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
-import { updateUserProfile } from '../utils/supabase'
+import { updateUserProfile, signUp, signIn, supabase } from '../utils/supabase'
 import { requestNotificationPermissions, DEFAULT_TIMES } from '../utils/notifications'
 import { startBasicRoutine } from '../utils/rekod'
 import { deleteAccount } from '../utils/account'
@@ -610,7 +610,7 @@ const Hero = ({ source, height, fade }) => {
 
 // ---------- the screens ----------
 const Welcome = () => {
-  const { F, W, go } = useOb()
+  const { F, W, go, userId, onHaveAccount } = useOb()
   const t = useType()
   const orb = Math.min(340, W - 20)
   return (
@@ -631,6 +631,7 @@ const Welcome = () => {
       </Rise>
       <Spacer />
       <Btn title="Start my journey" onPress={() => go('name')} />
+      {!userId && onHaveAccount ? <Ghost title="I already have an account" onPress={onHaveAccount} /> : null}
     </Page>
   )
 }
@@ -1215,8 +1216,72 @@ const Last = () => {
   )
 }
 
+// "Save your Skyn Profile" (audit 2026-10-28, Lita: before her results). The
+// answers so far live in this screen's state; the account is created here, then
+// "See my results" saves everything to it.
+const Account = () => {
+  const { F, nm, go, onSignedIn } = useOb()
+  const t = useType()
+  const [mine, setMine] = useState(false) // she already has an account
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const submit = async () => {
+    const clean = email.trim().toLowerCase()
+    setError(null)
+    if (!/^\S+@\S+\.\S+$/.test(clean)) return setError('Please enter a valid email.')
+    if (!mine && password.length < 8) return setError('Password must be at least 8 characters.')
+    if (mine && !password) return setError('Please enter your password.')
+    setBusy(true)
+    try {
+      const result = mine ? await signIn(clean, password) : await signUp(clean, password)
+      if (!result.success) throw new Error(result.error)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        // Email confirmation still required on the server: she confirms, then signs in here.
+        setMine(true)
+        setPassword('')
+        return setError('Check your inbox to confirm your email, then sign in here.')
+      }
+      track(mine ? 'sign_in' : 'sign_up', { where: 'onboarding' })
+      await onSignedIn?.(clean, session.user.id)
+      go('final', {}, { push: false })
+    } catch (err) {
+      await logError('Onboarding_account', err, { mine }, 'warn')
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <Page>
+        <Bar noBack />
+        <Rise style={{ alignItems: 'center', marginTop: 8 }}>
+          <Image source={IMG.cards} style={{ width: 170, height: 150 }} resizeMode="contain" />
+        </Rise>
+        <Rise i={1}>
+          <Text style={[t.h1, { textAlign: 'center' }]}>{mine ? 'Welcome back' : `Save your Skyn Profile${nm}`}</Text>
+          <Text style={[t.p, { textAlign: 'center' }]}>{mine ? 'Sign in: your new answers go to your account.' : 'Your results are ready. Create your account to see them and keep your routine.'}</Text>
+        </Rise>
+        <Rise i={2} style={[styles.tg, { marginTop: 18, gap: 4 }]}>
+          <TextInput value={email} onChangeText={v => { setEmail(v); setError(null) }} placeholder="Email" placeholderTextColor={C.mute}
+            keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={[F.r, styles.other]} />
+          <TextInput value={password} onChangeText={v => { setPassword(v); setError(null) }} placeholder={mine ? 'Your password' : 'Password (at least 8 characters)'} placeholderTextColor={C.mute}
+            secureTextEntry autoComplete={mine ? 'current-password' : 'new-password'} textContentType={mine ? 'password' : 'newPassword'} onSubmitEditing={submit} returnKeyType="go" style={[F.r, styles.other]} />
+          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: '#C0577A', marginTop: 6 }]}>{error}</Text> : null}
+        </Rise>
+        <Spacer />
+        <Btn title={busy ? '…' : mine ? 'Sign in and see my results' : 'Create my account'} onPress={submit} disabled={busy} />
+        <Ghost title={mine ? 'New here? Create an account' : 'I already have an account'} onPress={() => { setMine(!mine); setError(null); setPassword('') }} />
+      </Page>
+    </KeyboardAvoidingView>
+  )
+}
+
 const Build = () => {
-  const { F, go } = useOb()
+  const { F, go, userId, mode } = useOb()
   const t = useType()
   const [pc, setPc] = useState(0)
   useEffect(() => {
@@ -1225,7 +1290,8 @@ const Build = () => {
   }, [])
   useEffect(() => {
     if (pc < 100) return
-    const id = setTimeout(() => go('final', {}, { push: false }), 300)
+    // No account yet (audit 2026-10-28): she saves her profile right before her results.
+    const id = setTimeout(() => go(userId || mode ? 'final' : 'account', {}, { push: false }), 300)
     return () => clearTimeout(id)
   }, [pc])
   const msgs = ['Reading your skin…', 'Checking our products…', 'Finding what helps you…', 'Your plan is coming together…']
@@ -1416,7 +1482,7 @@ const Minor = ({ onLeave }) => {
 }
 
 // mode (My Skyn Profile): { chapters, answers, row, onDone(answers, health), onCancel }
-export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) {
+export default function OnboardingScreen({ userId, onComplete, onLeave, mode, onSignedIn, onHaveAccount }) {
   const insets = useSafeAreaInsets()
   const { width: W, height: H } = useWindowDimensions()
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold })
@@ -1570,7 +1636,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) 
     }
   }
 
-  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId, mode }
+  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId, mode, onSignedIn, onHaveAccount }
 
   let content
   switch (cur.id) {
@@ -1645,6 +1711,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode }) 
     case 'safety': content = <Safety />; break
     case 'last': content = <Last />; break
     case 'build': content = <Build />; break
+    case 'account': content = <Account />; break
     case 'final': content = <Final />; break
     case 'notify': content = <Notify />; break
     default: content = <Welcome />
