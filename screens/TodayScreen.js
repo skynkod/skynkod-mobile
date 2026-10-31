@@ -112,7 +112,18 @@ export default function TodayScreen({ navigation, route }) {
   const [forecastDays, setForecastDays] = useState(null)
   // Far from home in another climate (or just back): the routine adapts.
   const [environment, setEnvironment] = useState(null)
-  const [envClosed, setEnvClosed] = useState(false)
+  // Closed with the cross: it stays closed for this trip (or this return home),
+  // even after the app restarts. A new trip, or coming back, shows it again.
+  const [envClosedSig, setEnvClosedSig] = useState(null)
+  const envSig = environment ? `${environment.kind}:${(environment.labels || []).join(',')}` : null
+  const envClosed = !!envSig && envClosedSig === envSig
+  useEffect(() => {
+    if (user?.id) AsyncStorage.getItem(`env_closed_${user.id}`).then(setEnvClosedSig).catch(() => {})
+  }, [user?.id])
+  const closeEnvironment = () => {
+    setEnvClosedSig(envSig)
+    AsyncStorage.setItem(`env_closed_${user.id}`, envSig).catch(() => {})
+  }
   const [patterns, setPatterns] = useState(null)
   const premium = usePremium()
   // Her skin today (check-in or journal), and the products of her routines, so
@@ -652,7 +663,7 @@ export default function TodayScreen({ navigation, route }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Ionicons name={environment.kind === 'back' ? 'home-outline' : 'airplane-outline'} size={16} color={colors.primary} />
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR ENVIRONMENT CHANGED')}</Text>
-            <Pressable onPress={() => setEnvClosed(true)} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
+            <Pressable onPress={closeEnvironment} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
           </View>
           {environment.kind === 'back' ? (
             <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('You’re back home: your usual routine fits again.')}</Text>
