@@ -7,7 +7,9 @@ import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { getUserRoutines } from '../utils/routines-service';
 import { todaySteps } from '../utils/routine-checks';
-import { currentRoutine, todayStepsWithPauses } from '../utils/current-routine';
+import { currentRoutine, todayStepsWithPauses, withLipsStep } from '../utils/current-routine';
+import { withTreatmentSteps } from '../utils/treatments';
+import { useSkinProfile } from '../utils/useSkinProfile';
 import { getDayProgress, getRecentRegularity, localDay, syncTodayTicks } from '../utils/routine-log';
 import { MOODS, TAGS, MOOD_MESSAGES, getEntriesBetween, saveDay, getSkinPatterns, getProductReactions, saveSleep, SLEEP_QUALITY, SLEEP_HOURS } from '../utils/journal-day';
 import SkinStateChips from '../components/SkinStateChips';
@@ -84,6 +86,8 @@ export default function JournalScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  // Her treatments are steps of her routine on Home: the count includes them too.
+  const profile = useSkinProfile(user?.id);
   // Today is the skin day (sunrise to sunrise), like on Home: at 1 am it is still yesterday.
   const today = skinDay();
   const [selected, setSelected] = useState(today);
@@ -176,16 +180,22 @@ export default function JournalScreen({ route, navigation }) {
       const isToday = sameDay(selected, skinDay());
       const rows = (await Promise.all(['morning', 'evening'].map(async type => {
         const routine = currentRoutine(list, type);
-        const steps = isToday ? await todayStepsWithPauses(user.id, routine, { morning: currentRoutine(list, 'morning') }) : todaySteps(routine?.steps || [], selected);
-        // Optional steps don't count, as on Home.
-        const counted = steps.filter(s => !s.optional)
-        return counted.length ? { type, total: counted.length, done: Math.min(progress[type].size, counted.length) } : null;
+        // The same list and tick numbers as Home: lips and her treatment
+        // included, the remover with its own number.
+        const base = withTreatmentSteps(withLipsStep(routine?.steps || []), type, profile);
+        const tickList = todaySteps(base, isToday ? new Date() : selected);
+        const tickOf = s => (s.key === 'remover' ? 99 : tickList.indexOf(s));
+        const steps = isToday ? await todayStepsWithPauses(user.id, { ...routine, steps: base }, { morning: currentRoutine(list, 'morning') }) : tickList;
+        // Only the steps that count, as on Home: with a product, not optional.
+        // A ticked optional or paused step no longer makes it look done.
+        const counted = steps.filter(s => s.product && !s.optional);
+        return counted.length ? { type, total: counted.length, done: counted.filter(s => progress[type].has(tickOf(s))).length } : null;
       }))).filter(Boolean);
       setRoutineLog({ rows, regularity });
     } catch (error) {
       await logError('Journal_loadRoutines', error, {}, 'warn');
     }
-  }, [user?.id, selected.toDateString()]);
+  }, [user?.id, selected.toDateString(), profile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -266,16 +276,18 @@ export default function JournalScreen({ route, navigation }) {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => () => {
-      clearTimeout(noteTimer.current);
-      if (!dirty.current) return;
-      Alert.alert(t('Save your check-in?'), t('You left the journal without saving.'), [
-        { text: t("Don't save"), style: 'destructive', onPress: () => { dirty.current = false; setStatus('idle'); } },
-        { text: t('Save'), onPress: () => saveNow() },
-      ]);
-    }, [selected.toDateString(), user?.id])
-  );
+  // Asked only when she really leaves the journal (back, or Home): opening a
+  // page from it (the 7-day plan, Dekod, an issue sheet, Koda) keeps her
+  // changes waiting here, with no question.
+  useEffect(() => navigation.addListener('beforeRemove', e => {
+    clearTimeout(noteTimer.current);
+    if (!dirty.current) return;
+    e.preventDefault();
+    Alert.alert(t('Save your check-in?'), t('You left the journal without saving.'), [
+      { text: t("Don't save"), style: 'destructive', onPress: () => { dirty.current = false; setStatus('idle'); navigation.dispatch(e.data.action); } },
+      { text: t('Save'), onPress: async () => { await saveNow(); if (!dirty.current) navigation.dispatch(e.data.action); } },
+    ]);
+  }), [navigation, selected.toDateString(), user?.id]);
 
   // Changing day with unsaved changes: ask first.
   const leaveDay = go => {
