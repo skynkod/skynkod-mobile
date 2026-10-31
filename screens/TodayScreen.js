@@ -321,9 +321,31 @@ export default function TodayScreen({ navigation, route }) {
   // The makeup remover (Lita, 2026-10-25): every evening with sunscreen or daily makeup, optional with makeup some days.
   const removerNow = removerNeed({ makeup: profile?.makeup, hasSpf: hasSunscreen(routines.morning?.steps || [], routineProducts) })
   const withEssentials = period => (period === 'evening' ? withRemoverStep(withLipsStep(routines.evening?.steps || []), removerNow) : withLipsStep(routines[period]?.steps || []))
+  // Today's whole list, built once per screen update so every list below holds
+  // the same steps. Her prescribed creams show as "Your treatment" in whatever
+  // routine she has (rulebook section 6).
+  const fullToday = { morning: todaySteps(withTreatmentSteps(withEssentials('morning'), 'morning', profile)), evening: todaySteps(withTreatmentSteps(withEssentials('evening'), 'evening', profile)) }
+  // A tick belongs to a step, not to a place on screen: its number is the step's
+  // place in the list the Routines page ticks too (without the remover, which has
+  // its own number). A product left out today (skin state, short evening, a plan)
+  // no longer moves the ticks onto the next product.
+  const tickList = {
+    morning: todaySteps(withTreatmentSteps(withLipsStep(routines.morning?.steps || []), 'morning', profile)),
+    evening: todaySteps(withTreatmentSteps(withLipsStep(routines.evening?.steps || []), 'evening', profile)),
+  }
+  const REMOVER_TICK = 99
+  const tickOf = (period, step) => {
+    if (step.key === 'remover') return REMOVER_TICK
+    const list = tickList[period]
+    // Her products are the same objects in both lists; the lips and treatment
+    // steps are rebuilt each time, so they're found by their key.
+    const same = list.indexOf(step)
+    if (same >= 0) return same
+    const byKey = step.key ? list.findIndex(x => x.key === step.key) : -1
+    return byKey >= 0 ? byKey : 100 + fullToday[period].indexOf(step)
+  }
   const adjustedFullOf = period => {
-    // Her prescribed creams show as "Your treatment" in whatever routine she has (rulebook section 6).
-    const plain = withPauses(todaySteps(withTreatmentSteps(withEssentials(period), period, profile)), { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
+    const plain = withPauses(fullToday[period], { plan: sos.plan, products: sos.products, newest: sos.newest, pausedIds: pausedProducts.map(p => p.id) })
     // A product her profile says to avoid (pregnancy, breastfeeding, an allergy)
     // waits, even in a routine made before (integration audit, 2026-10-25).
     const avoid = plain.steps.filter(st => routineProducts[st.product_id] && profile && productMatch(routineProducts[st.product_id], profile).avoid.length)
@@ -351,7 +373,7 @@ export default function TodayScreen({ navigation, route }) {
     const steps = stepsOf(period)
     // An empty step (no product yet) can't be ticked: it doesn't count.
     // An optional step (the remover with makeup only some days) doesn't count either.
-    return { total: steps.filter(s => s.product && !s.optional).length, done: steps.filter((s, i) => s.product && !s.optional && done[period][i]).length }
+    return { total: steps.filter(s => s.product && !s.optional).length, done: steps.filter(s => s.product && !s.optional && done[period][tickOf(period, s)]).length }
   }
   const morning = countOf('morning')
   const evening = countOf('evening')
@@ -368,8 +390,10 @@ export default function TodayScreen({ navigation, route }) {
     logStep({ userId: user.id, routineId: routines[period]?.id, type: period, stepIndex: idx, done: !!next[idx] })
     track('routine_step', { period })
     syncSoon(user.id, 2500)
+    // Done when every step that counts is ticked: an optional one (the remover
+    // on a no-makeup evening) doesn't hold it back, as in the step counter.
     const steps = stepsOf(period)
-    if (next[idx] && steps.every((s, i) => !s.product || next[i])) {
+    if (next[idx] && steps.every(s => !s.product || s.optional || next[tickOf(period, s)])) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       track('routine_done', { period })
       setOpen(null)
@@ -397,19 +421,31 @@ export default function TodayScreen({ navigation, route }) {
   // Last night's sleep, saved on today's entry; read by the journal patterns.
   const todayEntry = sameSkinDay(entry?.date, coords) ? entry : null
   const sleepDone = todayEntry?.sleep_hours != null && !!todayEntry?.sleep_quality
-  const pickSleep = async (change) => {
+  // Two quick taps (how she slept, then the hours) are saved one after the
+  // other, each on the entry the previous one wrote: never two entries for one
+  // day, and the second tap never erases the first.
+  const entryRef = useRef(entry)
+  entryRef.current = entry
+  const sleepQueue = useRef(Promise.resolve())
+  const pickSleep = (change) => {
     tap()
-    const next = { hours: todayEntry?.sleep_hours ?? null, quality: todayEntry?.sleep_quality ?? null, ...change }
-    try {
-      const day = skinDay(new Date(), coords)
-      const id = await saveSleep(user.id, day, next, todayEntry?.id)
-      const noon = new Date(day)
-      noon.setHours(12, 0, 0, 0)
-      setEntry({ skin_conditions: [], ...(todayEntry || {}), id, date: todayEntry?.date || noon.toISOString(), sleep_hours: next.hours, sleep_quality: next.quality })
-      if (next.hours != null && next.quality) { setSleepOpen(false); if (!sleepDone) track('sleep_logged') }
-    } catch (error) {
-      logError('Today_sleep', error)
-    }
+    sleepQueue.current = sleepQueue.current.then(async () => {
+      const current = sameSkinDay(entryRef.current?.date, coords) ? entryRef.current : null
+      const wasDone = current?.sleep_hours != null && !!current?.sleep_quality
+      const next = { hours: current?.sleep_hours ?? null, quality: current?.sleep_quality ?? null, ...change }
+      try {
+        const day = skinDay(new Date(), coords)
+        const id = await saveSleep(user.id, day, next, current?.id)
+        const noon = new Date(day)
+        noon.setHours(12, 0, 0, 0)
+        const saved = { skin_conditions: [], ...(current || {}), id, date: current?.date || noon.toISOString(), sleep_hours: next.hours, sleep_quality: next.quality }
+        entryRef.current = saved
+        setEntry(saved)
+        if (next.hours != null && next.quality) { setSleepOpen(false); if (!wasDone) track('sleep_logged') }
+      } catch (error) {
+        logError('Today_sleep', error)
+      }
+    })
   }
 
   const hour = new Date().getHours()
@@ -486,12 +522,12 @@ export default function TodayScreen({ navigation, route }) {
           <View style={{ marginTop: SPACING.sm }}>
             {/* The neck too (Lita, 2026-10-24) */}
             <Text style={[TYPE.caption, { color: colors.muted, marginBottom: SPACING.xs }]}>{t('On your face and neck, then your eyes and lips.')}</Text>
-            {stepsOf(period).map((s, i) => (
+            {stepsOf(period).map((s, i) => { const ticked = !!done[period][tickOf(period, s)]; return (
               <View key={`${s.key}-${i}`} style={[styles.stepRow, { borderTopColor: colors.border }]}>
                 {s.product ? (
-                  <Pressable onPress={() => toggle(period, i)} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: !!done[period][i] }}
-                    style={[styles.check, { borderColor: done[period][i] ? colors.primary : colors.border, backgroundColor: done[period][i] ? colors.primary : 'transparent' }]}>
-                    {done[period][i] ? <Ionicons name="checkmark" size={14} color={colors.onPrimary} /> : null}
+                  <Pressable onPress={() => toggle(period, tickOf(period, s))} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: ticked }}
+                    style={[styles.check, { borderColor: ticked ? colors.primary : colors.border, backgroundColor: ticked ? colors.primary : 'transparent' }]}>
+                    {ticked ? <Ionicons name="checkmark" size={14} color={colors.onPrimary} /> : null}
                   </Pressable>
                 ) : (
                   <View style={[styles.check, { borderColor: colors.primary, borderStyle: 'dashed' }]}><Ionicons name="add" size={14} color={colors.primary} /></View>
@@ -500,11 +536,11 @@ export default function TodayScreen({ navigation, route }) {
                 <Pressable onPress={() => (s.product_id ? navigation.navigate('Product', { id: s.product_id })
                   : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withEssentials(period) }))} style={{ flex: 1 }}>
                   <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}{s.optional ? ` · ${t(s.optionalNote || 'on evenings you wear makeup')}` : ''}</Text>
-                  <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: done[period][i] ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
+                  <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: ticked ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
                   {s.rx && s.issues?.length ? <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? colors.warning : colors.muted }]}>{t(s.issues[0].text)}</Text> : null}
                 </Pressable>
               </View>
-            ))}
+            ) })}
             {/* Same words everywhere: her skin today says "Not right now"; a plan or
                 her own choice says "Paused". */}
             {adjustedOf(period).paused.filter(x => x.reason === 'skin state').length ? (
@@ -687,9 +723,10 @@ export default function TodayScreen({ navigation, route }) {
       {/* The life mode that's on (pregnancy first, then reacting skin), like Flo's stage */}
       {['pregnant', 'breastfeeding'].includes(pregnancy) || sos.plan ? (
         <Pressable onPress={() => navigation.navigate('LifeModes')} style={[styles.modeChip, { backgroundColor: colors.primarySoft }]}>
-          <Ionicons name={sos.plan && !['pregnant', 'breastfeeding'].includes(pregnancy) ? 'flame-outline' : 'heart-outline'} size={14} color={colors.primary} />
+          {/* A 7-day plan shows its own name and icon: a sunburn or waxing plan isn't "reacting" skin */}
+          <Ionicons name={sos.plan && !['pregnant', 'breastfeeding'].includes(pregnancy) ? (sos.plan.situation.icon || 'flame-outline') : 'heart-outline'} size={14} color={colors.primary} />
           <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
-            {pregnancy === 'pregnant' ? t('Pregnancy mode') : pregnancy === 'breastfeeding' ? t('Breastfeeding mode') : t('My skin is reacting')}
+            {pregnancy === 'pregnant' ? t('Pregnancy mode') : pregnancy === 'breastfeeding' ? t('Breastfeeding mode') : sos.plan.situation.title ? t(sos.plan.situation.title) : t('My skin is reacting')}
           </Text>
         </Pressable>
       ) : null}
