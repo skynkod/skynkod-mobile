@@ -37,6 +37,8 @@ export const LanguageProvider = ({ children }) => {
   }
 
   const setLanguageAsync = async (lang) => {
+    // A language the app isn't translated into yet is never switched on.
+    if (!SUPPORTED_LANGUAGES.includes(lang)) return
     try {
       setLanguage(lang)
       await AsyncStorage.setItem('skynkod_language', lang)

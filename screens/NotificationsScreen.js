@@ -33,11 +33,14 @@ export default function NotificationsScreen({ route }) {
     const next = { ...settings, [reminder.key]: enabled }
     setSettings(next)
     try {
-      await AsyncStorage.setItem(`notifications_${userId}`, JSON.stringify(next))
+      // The phone refuses notifications: the switch goes back off, so it never
+      // shows a reminder that can't arrive.
       if (enabled && !(await requestNotificationPermissions())) {
+        setSettings(settings)
         Alert.alert(t('Notifications are off'), t('Allow notifications for Skynkod in your phone settings.'))
         return
       }
+      await AsyncStorage.setItem(`notifications_${userId}`, JSON.stringify(next))
       await syncSmartReminders(userId)
     } catch (error) {
       await logError('NotificationsScreen_toggle', error, { userId, key: reminder.key })

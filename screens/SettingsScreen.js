@@ -3,6 +3,7 @@ import { Text, Alert, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../utils/ThemeContext'
 import { useLanguage } from '../utils/LanguageContext'
+import { SUPPORTED_LANGUAGES } from '../utils/i18n'
 import { useAuth } from '../utils/AuthContext'
 import { logError } from '../utils/errorLogger'
 import { deleteAccount } from '../utils/account'
@@ -10,11 +11,14 @@ import { LEAVING_REASONS, sendLeavingReason } from '../utils/privacy'
 import { Screen, Card, SectionHeader, ListRow, SegmentedControl, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
 
+// Only the languages the app is fully translated into (utils/i18n.js): French
+// shows again once it's added there (languages come last). With one language,
+// there's nothing to choose and the section stays hidden.
 const LANGS = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
   // Spanish comes back once the app is translated (languages come last).
-]
+].filter(l => SUPPORTED_LANGUAGES.includes(l.code))
 
 export default function SettingsScreen({ route, navigation }) {
   const userId = route?.params?.userId
@@ -86,6 +90,7 @@ export default function SettingsScreen({ route, navigation }) {
         Auto switches to dark mode at sunset and back at sunrise.
       </Text>
 
+      {LANGS.length > 1 ? (<>
       <SectionHeader title="Language" style={{ marginTop: SPACING.xxl }} />
       <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
         {LANGS.map((lang, idx) => (
@@ -99,6 +104,7 @@ export default function SettingsScreen({ route, navigation }) {
           />
         ))}
       </Card>
+      </>) : null}
 
       <SectionHeader title="Data & account" style={{ marginTop: SPACING.xxl }} />
       <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
