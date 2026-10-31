@@ -23,7 +23,7 @@ import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
 import { isPremiumUser } from '../utils/premium'
 import { getActivePlan } from '../utils/emergency-state'
-import { isReactiveState, stateLabel, REACTIVE as REACTIVE_STATES } from '../utils/skin-state'
+import { isReactiveState, stateLabel, currentSkinState, REACTIVE as REACTIVE_STATES } from '../utils/skin-state'
 import { prioritiesOf } from '../utils/skin-quiz'
 import { syncSmartReminders } from '../utils/notifications'
 import {
@@ -134,6 +134,10 @@ export default function RekodScreen({ navigation }) {
   // A purge being followed: "All good" keeps the level (Lita, 2026-10-25).
   const [purging, setPurging] = useState(false)
   useFocusEffect(useCallback(() => { if (user?.id) isPurgingNow(user.id).then(setPurging).catch(() => setPurging(false)) }, [user?.id]))
+  // Her skin today, read again each time Rekod opens: a check-in on Home
+  // ("irritated") shows here at once, not only after the app restarts.
+  const [skinState, setSkinState] = useState(null)
+  useFocusEffect(useCallback(() => { if (user?.id) currentSkinState(user.id).then(setSkinState).catch(() => {}) }, [user?.id]))
 
   // A changed step goes into the saved routine (members) or the preview (before joining).
   const applyStep = async (period, index, step) => {
@@ -288,7 +292,12 @@ export default function RekodScreen({ navigation }) {
       setPicked(prev => (prev.length ? prev : [...first, ...(row?.skin_goals || []).map(g => fromSignup[g])].filter(Boolean).reduce((list, g) => (list.length < 3 && !conflictWith(list, g) && !list.includes(g) ? [...list, g] : list), [])))
     }).catch(() => {})
   }, [user?.id])
+  // What was already known when the quiz started: an answer saved during the
+  // quiz no longer removes its question from the count, or from the way back.
+  const [quizStart, setQuizStart] = useState(null)
+  const asked = quizStart || { reactivity: !!known.reactivity, actives: !!known.actives }
   const confirmGoals = (list = picked) => {
+    setQuizStart({ reactivity: !!known.reactivity, actives: !!known.actives })
     const reactive = profile?.skin_type === 'Sensitive' || [...(profile?.skin_conditions || []), ...(profile?.skin_concerns || [])].some(c => REACTIVE.includes(c))
     const base = { goal: list[0], goals: list, sensitive: reactive || known.reactivity === 'often' }
     if (!known.reactivity) { setAnswers(base); return setStep('sensitive') }
@@ -299,7 +308,7 @@ export default function RekodScreen({ navigation }) {
   }
 
   // The quiz, one question per screen: only what we don't know yet.
-  const quizOrder = ['goals', ...(!known.reactivity ? ['sensitive'] : []), ...(!known.actives ? ['experience'] : []), ...((answers.experience || known.actives) === 'used' ? ['priority'] : []), 'products']
+  const quizOrder = ['goals', ...(!asked.reactivity ? ['sensitive'] : []), ...(!asked.actives ? ['experience'] : []), ...((answers.experience || known.actives) === 'used' ? ['priority'] : []), 'products']
   const quizProgress = (id) => {
     const i = Math.max(0, quizOrder.indexOf(id))
     return (
@@ -342,7 +351,7 @@ export default function RekodScreen({ navigation }) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
     const experience = next.experience || known.actives
-    if (key === 'sensitive') setStep(!known.actives ? 'experience' : experience === 'used' ? 'priority' : 'products')
+    if (key === 'sensitive') setStep(!asked.actives ? 'experience' : experience === 'used' ? 'priority' : 'products')
     else if (key === 'experience') setStep(value === 'used' ? 'priority' : 'products')
     else if (key === 'priority') setStep('products')
     else buildPreview(next)
@@ -386,9 +395,22 @@ export default function RekodScreen({ navigation }) {
     }
   }
 
+  // Leaves only once it's really saved: offline, she's told and stays in her Rekod.
+  const leaveThen = async (after) => {
+    try {
+      await leaveRekod(user.id)
+    } catch (error) {
+      await logError('Rekod_leave', error)
+      Alert.alert('Something went wrong', 'Your Rekod could not be stopped. Check your connection and try again.')
+      return
+    }
+    syncSmartReminders(user.id)
+    setPlan(null)
+    after()
+  }
   const leave = () => Alert.alert('Leave your Rekod?', 'Your current routine stays as it is. You can start a new Rekod anytime.', [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Leave', style: 'destructive', onPress: async () => { await leaveRekod(user.id).catch(() => {}); syncSmartReminders(user.id); setPlan(null); setStep('intro') } },
+    { text: 'Leave', style: 'destructive', onPress: () => leaveThen(() => setStep('intro')) },
   ])
 
   if (plan === undefined) return <Loading />
@@ -419,7 +441,7 @@ export default function RekodScreen({ navigation }) {
     ])
     const newGoal = () => Alert.alert('Start a new goal?', 'Your current routine stays until your new Rekod is ready. Questions you already answered won’t be asked again.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Choose a new goal', onPress: async () => { await leaveRekod(user.id).catch(() => {}); syncSmartReminders(user.id); setPlan(null); setPicked([]); setEndAnswer(null); setStep('goals') } },
+      { text: 'Choose a new goal', onPress: () => leaveThen(() => { setPicked([]); setEndAnswer(null); setStep('goals') }) },
     ])
     const CHOICES = [
       { id: 'gentle', icon: 'leaf-outline', title: 'Keep my results', text: 'The same products, with fewer strong evenings. Made to last for months.', onPress: () => keep('gentle') },
@@ -547,11 +569,11 @@ export default function RekodScreen({ navigation }) {
           })}
         </View>
         {/* Her skin today (check-in): a strong night waits while it is irritated */}
-        {isReactiveState(profile?.skinState?.states) && (tonight === 'retinoid' || tonight === 'exfoliation') ? (
+        {isReactiveState(skinState?.states) && (tonight === 'retinoid' || tonight === 'exfoliation') ? (
           <View style={[styles.card, { backgroundColor: C.primarySoft, borderColor: C.border, flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' }]}>
             <Ionicons name="time-outline" size={18} color={C.primary} style={{ marginTop: 1 }} />
             <Text style={[TYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>
-              Not right for you tonight: your skin is {stateLabel(profile.skinState.states.find(x => REACTIVE_STATES.includes(x))).toLowerCase()}. Skip the {nightInfo(plan, tonight).short.toLowerCase()} and make it a repair night. Your plan stays the same.
+              Not right for you tonight: your skin is {stateLabel(skinState.states.find(x => REACTIVE_STATES.includes(x))).toLowerCase()}. Skip the {nightInfo(plan, tonight).short.toLowerCase()} and make it a repair night. Your plan stays the same.
             </Text>
           </View>
         ) : null}
@@ -915,7 +937,7 @@ export default function RekodScreen({ navigation }) {
   const q = QUESTIONS[step]
   if (!q || busy) return <Loading label={busy ? 'Building your Rekod…' : undefined} />
   return (
-    <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'products' ? ((answers.experience || known.actives) === 'used' ? 'priority' : !known.actives ? 'experience' : !known.reactivity ? 'sensitive' : 'goals') : step === 'priority' ? (known.actives ? 'goals' : 'experience') : step === 'experience' ? (known.reactivity ? 'goals' : 'sensitive') : 'goals')}>
+    <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'products' ? ((answers.experience || known.actives) === 'used' ? 'priority' : !asked.actives ? 'experience' : !asked.reactivity ? 'sensitive' : 'goals') : step === 'priority' ? (!asked.actives ? 'experience' : !asked.reactivity ? 'sensitive' : 'goals') : step === 'experience' ? (asked.reactivity ? 'goals' : 'sensitive') : 'goals')}>
       {quizProgress(step)}
       <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700', marginTop: SPACING.xl }]}>{goalOf(answers.goal).title}</Text>
       <Text style={[styles.question, { color: C.text }]}>{q.title}</Text>
