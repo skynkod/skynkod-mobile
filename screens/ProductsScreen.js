@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { trackOpened, trackFinished } from '../utils/journey'
 import { View, Text, Pressable, StyleSheet, Alert, RefreshControl, Modal } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen, LoadingView, SegmentedControl, BottomSheet, useColors } from '../components/ui'
 import ProductVerdict from '../components/ProductVerdict'
@@ -37,6 +38,16 @@ const FILTERS = [
   ...(BODY_CARE_ENABLED ? [{ value: 'body', label: 'Body' }, { value: 'hand care', label: 'Hand care' }] : []),
 ]
 
+// Products she removed from her shelf herself, kept on the phone: the routine
+// sync below doesn't put them back.
+const removedKey = userId => `shelf_removed_${userId}`
+const removedByHer = async userId => new Set(JSON.parse(await AsyncStorage.getItem(removedKey(userId)).catch(() => null) || '[]'))
+const rememberRemoved = async (userId, productId) => {
+  const ids = await removedByHer(userId)
+  ids.add(String(productId))
+  await AsyncStorage.setItem(removedKey(userId), JSON.stringify([...ids])).catch(() => {})
+}
+
 // The user's shelf ("I own") and wishlist ("To buy"), with how well each
 // product suits their skin and whether it's already in a routine.
 export default function ProductsScreen({ navigation }) {
@@ -65,9 +76,11 @@ export default function ProductsScreen({ navigation }) {
       const ids = [...new Set((routines.success ? routines.data : []).flatMap(r => (r.steps || []).map(s => s.product_id)).filter(Boolean))]
       setInRoutine(new Set(ids))
 
-      // Every product in a routine belongs on the shelf: add any that's missing.
+      // Every product in a routine belongs on the shelf: add any that's missing,
+      // except one she removed herself (it no longer comes back by itself).
       const have = new Set(firstLoad.map(r => r.product_id))
-      const missing = ids.filter(id => !have.has(id))
+      const removed = await removedByHer(user.id)
+      const missing = ids.filter(id => !have.has(id) && !removed.has(String(id)))
       if (__DEV__) console.log('[MyProducts] routine products:', ids.length, '| on shelf:', firstLoad.length, '| missing:', missing.length)
       let mine = firstLoad
       if (missing.length) {
@@ -131,7 +144,8 @@ export default function ProductsScreen({ navigation }) {
     if (!offer) return
     const date = d => d.toLocaleDateString(language, { day: 'numeric', month: 'short' })
     Alert.alert(t('New for your skin?'), [
-      t('Test it first: a little under your jaw tonight. Tomorrow morning, we’ll ask you how it went.'),
+      // The same test as the card on Home (AAD, rulebook R11): elbow, 7 days.
+      t('Put a little on the inside of your elbow, morning and evening, for 7 days. Redness or itching before then? Stop it. In 7 days, we’ll ask you how it went.'),
       offer.other ? t('You started {other} on {date}. One new product at a time: wait until {until} to know what suits your skin.', { other: offer.other.name, date: date(new Date(offer.other.date)), until: date(offer.other.until) }) : null,
     ].filter(Boolean).join('\n\n'), [
       { text: t('No thanks'), style: 'cancel', onPress: () => declinePatchTest(user.id).catch(() => {}) },
@@ -184,6 +198,7 @@ export default function ProductsScreen({ navigation }) {
     setRows(prev => prev.filter(r => r.id !== row.id))
     try {
       await removeMyProduct(row.id)
+      if (row.product_id) await rememberRemoved(user.id, row.product_id)
     } catch (error) {
       await logError('ProductsScreen_remove', error, {}, 'warn')
       load()
