@@ -549,6 +549,13 @@ const keepOwnProducts = (fresh = [], current = []) => {
   return fresh.map(step => current.find(c => sameStep(c, step)) ? { ...current.find(c => sameStep(c, step)), days: step.days } : step)
 }
 
+// Her saved morning and evening routines, the latest of each.
+const currentRoutine = async (userId) => {
+  const { data, error } = await supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false })
+  if (error) throw error
+  return { morning: (data || []).find(r => r.type === 'morning')?.steps || [], evening: (data || []).find(r => r.type === 'evening')?.steps || [] }
+}
+
 // Rebuilds a member's routine with the latest rules and catalogue, keeping the
 // products she chose herself. Saves only when something changed.
 export const refreshRekodRoutine = async (userId, plan) => {
@@ -560,10 +567,10 @@ export const refreshRekodRoutine = async (userId, plan) => {
   // Every flag the calendar reads (Home, reminders) is saved when it changes.
   const KEYS = ['reactive', 'fragile', 'sensitive', 'pregnant', 'missing', 'builtKey', 'rosacea', 'eczema', 'perioral', 'retinolOk', 'cystic', 'deepStart', 'inflamed', 'vitc']
   if (JSON.stringify(KEYS.map(k => plan[k])) !== JSON.stringify(KEYS.map(k => kept[k]))) await saveRekodPlan(userId, kept)
-  const { data } = await supabase.from('routines').select('type, steps').eq('user_id', userId).order('created_at', { ascending: false })
+  const saved = await currentRoutine(userId)
   const out = {}
   for (const type of ['morning', 'evening']) {
-    const current = (data || []).find(r => r.type === type)?.steps || []
+    const current = saved[type]
     const merged = keepOwnProducts(fresh[type], current)
     const sig = list => JSON.stringify(list.map(x => [x.key, x.product_id, x.days, (x.issues || []).length, !!x.why]))
     if (sig(merged) !== sig(current)) {
@@ -653,7 +660,9 @@ export const programmeFinished = (plan, now = new Date()) => !plan.maintenance &
 export const startMaintenance = async (userId, plan, profile, mode = 'gentle') => {
   const next = { ...plan, maintenance: true, maintenanceMode: mode, maintenanceSince: new Date().toISOString(), extraReset: false }
   const routine = await buildRekodRoutine(userId, next, profile)
+  const current = await currentRoutine(userId)
   for (const type of ['morning', 'evening']) {
+    routine[type] = keepOwnProducts(routine[type], current[type])
     const res = await saveRoutine(userId, type, routine[type])
     if (!res.success) throw new Error(res.error)
   }
@@ -669,6 +678,7 @@ export const isPurgingNow = async userId => purgeRunning(await loadState(userId,
 export const recordCheckIn = async (userId, plan, answer, profile) => {
   const next = applyCheckIn(plan, answer, new Date(), { hold: await isPurgingNow(userId) })
   const routine = await buildRekodRoutine(userId, next, profile)
+  routine.evening = keepOwnProducts(routine.evening, (await currentRoutine(userId)).evening)
   const res = await saveRoutine(userId, 'evening', routine.evening)
   if (!res.success) throw new Error(res.error)
   Object.assign(next, routine.flags)
