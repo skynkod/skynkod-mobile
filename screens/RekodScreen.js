@@ -361,7 +361,7 @@ export default function RekodScreen({ navigation }) {
     setBusy(true)
     try {
       const day0 = recentScan(scans) || olderDay0
-      const res = await startRekod(user.id, { ...answers, baseline: day0 ? { id: day0.id, at: day0.created_at, points: day0.result?.points } : null }, profile)
+      const res = await startRekod(user.id, { ...answers, chosen: preview, baseline: day0 ? { id: day0.id, at: day0.created_at, points: day0.result?.points } : null }, profile)
       syncSmartReminders(user.id)
       track('rekod_start', { goal: answers.goal, experience: answers.experience })
       setPlan(res.plan)

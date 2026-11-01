@@ -541,6 +541,14 @@ export const replaceRoutineStep = async (userId, period, index, step) => {
   return steps
 }
 
+// A rebuilt routine keeps the products she chose herself. Her own product stays
+// only while the step keeps the same active: when azelaic acid makes way for
+// retinol, the step gets a retinol product (audit 3).
+const keepOwnProducts = (fresh = [], current = []) => {
+  const sameStep = (c, step) => c.custom && c.key === step.key && c.night === step.night && JSON.stringify(c.want || []) === JSON.stringify(step.want || [])
+  return fresh.map(step => current.find(c => sameStep(c, step)) ? { ...current.find(c => sameStep(c, step)), days: step.days } : step)
+}
+
 // Rebuilds a member's routine with the latest rules and catalogue, keeping the
 // products she chose herself. Saves only when something changed.
 export const refreshRekodRoutine = async (userId, plan) => {
@@ -556,10 +564,7 @@ export const refreshRekodRoutine = async (userId, plan) => {
   const out = {}
   for (const type of ['morning', 'evening']) {
     const current = (data || []).find(r => r.type === type)?.steps || []
-    // Her own product stays only while the step keeps the same active: when azelaic
-    // acid makes way for retinol, the step gets a retinol product (audit 3).
-    const sameStep = (c, step) => c.custom && c.key === step.key && c.night === step.night && JSON.stringify(c.want || []) === JSON.stringify(step.want || [])
-    const merged = fresh[type].map(step => current.find(c => sameStep(c, step)) ? { ...current.find(c => sameStep(c, step)), days: step.days } : step)
+    const merged = keepOwnProducts(fresh[type], current)
     const sig = list => JSON.stringify(list.map(x => [x.key, x.product_id, x.days, (x.issues || []).length, !!x.why]))
     if (sig(merged) !== sig(current)) {
       const res = await saveRoutine(userId, type, merged)
@@ -628,6 +633,8 @@ export const startRekod = async (userId, answers, givenProfile) => {
   plan.previous = { morning: (before || []).find(r => r.type === 'morning')?.steps || [], evening: (before || []).find(r => r.type === 'evening')?.steps || [] }
   const routine = await buildRekodRoutine(userId, plan, profile)
   for (const type of ['morning', 'evening']) {
+    // The products she changed in the preview, before joining.
+    routine[type] = keepOwnProducts(routine[type], answers.chosen?.[type])
     const res = await saveRoutine(userId, type, routine[type])
     if (!res.success) throw new Error(res.error)
   }
