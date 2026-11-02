@@ -88,6 +88,18 @@ export default function DekodScreen({ navigation }) {
     if (!user?.id) return
     hasDekodConsent(user.id).then(setConsent)
   }, [user?.id])
+  // Leaving Dekod at any moment (even mid-analysis): the photos on the phone go at once.
+  const focused = useRef(true)
+  useFocusEffect(useCallback(() => {
+    focused.current = true
+    return () => {
+      focused.current = false
+      deletePhotos(photos.current)
+      photos.current = []
+      setShot(null)
+      setStage(s => (s === 'analysing' || s === 'camera' ? 'home' : s))
+    }
+  }, []))
 
   if (premium === undefined || consent === undefined) return <PLoading />
   // Free users get one Dekod to try, once (Lita, 2026-10-23); following the
@@ -124,6 +136,12 @@ export default function DekodScreen({ navigation }) {
       setStage('analysing')
       // Her skin type and known issues make the notes and tips kinder; the scores never use them.
       const res = await runDekod(final.base64, language, profile ? { skinType: profile.skin_type, issues: profile.skin_concerns } : null)
+      // She left during the analysis: nothing to show, and no copy stays behind.
+      if (!focused.current) {
+        forgetPhotos()
+        if (res.ok) { loadHistory(); syncSmartReminders(user.id); syncSoon(user.id) }
+        return
+      }
       if (res.error === 'consent_required') {
         forgetPhotos()
         setConsent(false)
