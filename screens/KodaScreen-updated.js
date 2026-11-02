@@ -87,23 +87,27 @@ function KodaScreenInner({ route, navigation }) {
     scrollToBottom();
     // Discreet mode: Koda conversations aren't kept.
     const keep = user?.id && !(await isDiscreet(user.id));
-    if (keep) saveChatMessage(user.id, userMessage);
     track('koda_message'); // only that a message was sent, never its content
 
     let reply;
     try {
       const response = await askKoda(content, history, language, profile);
       if (response.error === 'weekly_limit') {
-        // No error bubble: the gentle card below takes over.
+        // No error bubble: the gentle card below takes over. Her question isn't
+        // left unanswered in the chat: it goes back in the box, for when she can ask.
+        setMessages(prev => prev.filter(m => m !== userMessage));
+        setInputText(content);
         setQuota(q => ({ ...(q || {}), unlimited: false, left: 0, resetsAt: response.resetsAt }));
         setLoading(false);
         return;
       }
+      if (keep) await saveChatMessage(user.id, userMessage);
       reply = response.error
         ? { role: 'assistant', content: t(response.message) || t('Sorry, something went wrong.'), timestamp: new Date().toISOString(), error: true }
         : response;
       if (!response.error && typeof response.left === 'number') setQuota(q => ({ ...(q || {}), unlimited: false, left: response.left }));
     } catch (error) {
+      if (keep) saveChatMessage(user.id, userMessage);
       reply = { role: 'assistant', content: t('Oops! Connection issue. Please try again.'), timestamp: new Date().toISOString(), error: true };
     }
 
