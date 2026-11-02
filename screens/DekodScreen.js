@@ -242,7 +242,7 @@ export default function DekodScreen({ navigation }) {
             <View style={{ alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xl }}>
               <ActivityIndicator color={P.primary} />
               <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t('Checking light and position…')}</Text>
-              <Text style={[TYPE.caption, { color: P.muted }]}>{t('Your photo is analysed, then deleted.')}</Text>
+              <Text style={[TYPE.caption, { color: P.muted }]}>{t('Your photo is analysed by our AI provider. Skynkod doesn\'t keep it.')}</Text>
             </View>
           ) : (
             <View style={{ marginTop: SPACING.xl, gap: SPACING.sm, alignSelf: 'stretch', paddingHorizontal: SPACING.lg }}>
@@ -313,7 +313,7 @@ export default function DekodScreen({ navigation }) {
           </>
         )}>
         <Line icon="camera-outline" text="Dekod looks at one photo of your face to describe what is visible on your skin." />
-        <Line icon="trash-outline" text="Your photo is analysed, then deleted. It is never stored or shared." />
+        <Line icon="trash-outline" text="Your photo is sent to Anthropic, our AI provider in the United States, to read your skin. Skynkod doesn't keep your photo." />
         <Line icon="document-text-outline" text="Only the result is saved in your account, and you can delete it anytime." />
         <Line icon="medical-outline" text="Dekod gives cosmetic observations, not a medical diagnosis." />
       </PremiumShell>
@@ -420,7 +420,7 @@ export default function DekodScreen({ navigation }) {
         {[
           ['grid-outline', 'Redness, shine, spots, blackheads, dryness, dark spots and dullness'],
           ['trending-up-outline', 'Follow how they change, scan after scan'],
-          ['shield-checkmark-outline', 'Your photo is analysed, then deleted'],
+          ['shield-checkmark-outline', 'Skynkod doesn\'t keep your photo'],
         ].map(([icon, text]) => (
           <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
             <View style={styles.rowIcon}><Ionicons name={icon} size={18} color={P.primary} /></View>

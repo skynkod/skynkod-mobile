@@ -164,7 +164,7 @@ export default function PrivacyScreen({ navigation }) {
         />
         <Row
           title={t('Dekod skin scan')}
-          subtitle={t('Your selfie is analysed, then deleted; only the result is kept in your account.')}
+          subtitle={t('Your selfie is sent to Anthropic for the analysis. Skynkod only keeps the result, in your account.')}
           value={profile.consent_dekod_at}
           onChange={setDekod}
         />
