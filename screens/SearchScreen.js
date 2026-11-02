@@ -76,14 +76,18 @@ export default function SearchScreen({ navigation, route }) {
     }
     const id = ++requestId.current
     setLoading(true)
+    let wanted
     const timer = setTimeout(async () => {
       try {
         const rows = await searchProducts(q)
         if (id === requestId.current) setProducts(rows)
-        // Nothing found for a real-looking name: note it as a wanted product.
-        if (!rows.length && q.length >= 4 && !searchIngredients(q).length) {
-          requestProduct('name', q).catch(() => {})
-          track('search_no_result', { q: q.slice(0, 60) })
+        // Nothing found for a real-looking name: noted as a wanted product only
+        // once she has stopped typing for a moment, never for half a word.
+        if (id === requestId.current && !rows.length && q.length >= 4 && !searchIngredients(q).length) {
+          wanted = setTimeout(() => {
+            requestProduct('name', q).catch(() => {})
+            track('search_no_result', { q: q.slice(0, 60) })
+          }, 3000)
         }
       } catch (error) {
         await logError('SearchScreen_search', error, { q }, 'warn')
@@ -91,7 +95,7 @@ export default function SearchScreen({ navigation, route }) {
         if (id === requestId.current) setLoading(false)
       }
     }, 300)
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer); clearTimeout(wanted) }
   }, [query, locked])
 
   const hasQuery = query.trim().length >= 2
