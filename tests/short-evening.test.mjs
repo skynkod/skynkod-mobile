@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
+import { mock } from 'node:test'
 import { shortSteps, canGoShort, shiftPlan, shouldSuggestSimplify } from '../utils/short-evening-core.js'
 import { weekPattern, weekOf } from '../utils/rekod-schedule.js'
+
+// A fixed today: weekPattern depends on the plan's current week, and a pause moves
+// the plan a day back, so on some real dates the two weeks compared would differ.
+mock.timers.enable({ apis: ['Date'], now: new Date(2026, 9, 14, 12) })
 
 // Tonight's essentials: cleanser, cream, lips. Never the active.
 const steps = [
