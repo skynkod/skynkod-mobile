@@ -139,6 +139,8 @@ export default function DekodScreen({ navigation }) {
       // She left during the analysis: nothing to show, and no copy stays behind.
       if (!focused.current) {
         forgetPhotos()
+        setShot(null)
+        setStage('home')
         if (res.ok) { loadHistory(); syncSmartReminders(user.id); syncSoon(user.id) }
         return
       }
@@ -168,7 +170,8 @@ export default function DekodScreen({ navigation }) {
       syncSoon(user.id)
     } catch (error) {
       forgetPhotos()
-      setStage('tips')
+      setStage(focused.current ? 'tips' : 'home')
+      if (focused.current) Alert.alert(t('Dekod is unavailable'), t('Please try again in a moment.'))
       await logError('Dekod_shoot', error, {}, 'warn')
     }
   }
