@@ -6,7 +6,7 @@ import { useColors } from './ui'
 import { useT } from '../utils/LanguageContext'
 import { supabase } from '../utils/supabase'
 import { expectationFor, expectationStatus } from '../utils/expectations'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
 
 // "Your expectations" under each product in her routines (Lita, 2026-10-24):
 // how long she has used it, and when it's fair to judge it. Free.
@@ -14,6 +14,7 @@ import { SPACING, TYPE } from '../utils/theme'
 import { verdictKey, getVerdicts, saveVerdicts } from '../utils/expectation-verdicts'
 import { trackVerdict } from '../utils/journey'
 import { markAsked, canAskAgain } from '../utils/ask-pace'
+import { GTYPE, GFW, glassCard } from './glossy'
 
 export { verdictKey, getVerdicts }
 
@@ -71,7 +72,7 @@ export default function ExpectationLine({ product, startedAt, verdict, onAnswer,
       </View>
       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginTop: 6 }}>
         <Ionicons name="hourglass-outline" size={13} color={colors.muted} style={{ marginTop: 2 }} />
-        <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 17 }]}>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 17 }]}>
           {st.phase === 'early'
             ? t('Day {day} · too early to judge. {what}: first changes after {range} weeks.', { day: st.day, what: t(expect.what), range })
             : verdict ? t(SAID[verdict.value]) : canAsk ? t('Week {week} · time to look: how is your skin with it?', { week: st.week }) : t('Week {week} · we’ll ask how it’s going in a few days.', { week: st.week })}
@@ -80,8 +81,8 @@ export default function ExpectationLine({ product, startedAt, verdict, onAnswer,
       {st.phase === 'look' && !verdict && canAsk ? (
         <View style={styles.answers}>
           {ANSWERS.map(a => (
-            <Pressable key={a.value} onPress={() => onAnswer?.(a.value)} hitSlop={4} style={[styles.answer, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{a.emoji} {t(a.label)}</Text>
+            <Pressable key={a.value} onPress={() => onAnswer?.(a.value)} hitSlop={4} style={[styles.answer, { borderColor: colors.border, ...glassCard(colors) }]}>
+              <Text style={[GTYPE.caption, { color: colors.text, ...GFW('600') }]}>{a.emoji} {t(a.label)}</Text>
             </Pressable>
           ))}
         </View>

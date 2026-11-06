@@ -16,8 +16,10 @@ import { useSkinProfile } from '../utils/useSkinProfile'
 import { logError } from '../utils/errorLogger'
 import { syncSmartReminders } from '../utils/notifications'
 import { track } from '../utils/analytics'
-import { SPACING, TYPE, liveStyles } from '../utils/theme'
+import { SPACING, liveStyles } from '../utils/theme'
 import { useTheme } from '../utils/ThemeContext'
+import { GTYPE, GFW } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 const LABEL = 'Dekod · Premium'
 
@@ -186,17 +188,17 @@ export default function DekodScreen({ navigation }) {
         const level = levelFor(score)
         return (
           <View key={p.key} style={styles.row}>
-            <View style={styles.rowIcon}><Ionicons name={p.icon} size={18} color={P.primary} /></View>
+            <View style={styles.rowIcon}><FeatureIcon name={p.icon} size={18} color={P.primary} /></View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-                <Text style={[TYPE.bodyStrong, { color: P.text, flex: 1 }]}>{t(p.label)}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: P.text, flex: 1 }]}>{t(p.label)}</Text>
                 {/* A point the photo didn't show is "Not read", never "None" */}
                 <Text style={[styles.chip, { color: level ? LEVEL_COLOR[level] : P.muted, borderColor: level ? LEVEL_COLOR[level] : P.border }]}>
                   {level ? `${t(LEVEL[level])}${typeof r.score === 'number' ? ` · ${r.score}/10` : ''}` : t('Not read')}
                 </Text>
               </View>
-              {r.note ? <Text style={[TYPE.caption, { color: P.textSecondary, marginTop: 3, lineHeight: 18 }]}>{r.note}</Text> : null}
-              {level && level !== 'none' && r.tip ? <Text style={[TYPE.caption, { color: P.primary, marginTop: 3, lineHeight: 18 }]}>{r.tip}</Text> : null}
+              {r.note ? <Text style={[GTYPE.caption, { color: P.textSecondary, marginTop: 3, lineHeight: 18 }]}>{r.note}</Text> : null}
+              {level && level !== 'none' && r.tip ? <Text style={[GTYPE.caption, { color: P.primary, marginTop: 3, lineHeight: 18 }]}>{r.tip}</Text> : null}
             </View>
           </View>
         )
@@ -204,14 +206,14 @@ export default function DekodScreen({ navigation }) {
     </View>
   )
   const Disclaimer = () => (
-    <Text style={[TYPE.caption, { color: P.muted, marginTop: SPACING.lg, lineHeight: 17 }]}>
+    <Text style={[GTYPE.caption, { color: P.muted, marginTop: SPACING.lg, lineHeight: 17 }]}>
       {t('Dekod describes what is visible on your skin. It is not a medical diagnosis: for anything that worries you, see a dermatologist.')}
     </Text>
   )
   const Line = ({ icon, text }) => (
     <View style={styles.line}>
-      <View style={styles.rowIcon}><Ionicons name={icon} size={18} color={P.primary} /></View>
-      <Text style={[TYPE.body, { color: P.text, flex: 1, lineHeight: 22 }]}>{t(text)}</Text>
+      <View style={styles.rowIcon}><FeatureIcon name={icon} size={18} color={P.primary} /></View>
+      <Text style={[GTYPE.body, { color: P.text, flex: 1, lineHeight: 22 }]}>{t(text)}</Text>
     </View>
   )
 
@@ -262,20 +264,20 @@ export default function DekodScreen({ navigation }) {
           {!done ? (
             <View style={{ alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xl }}>
               <ActivityIndicator color={P.primary} />
-              <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t('Checking light and position…')}</Text>
-              <Text style={[TYPE.caption, { color: P.muted }]}>{t('Your photo is analysed by our AI provider. Skynkod doesn\'t keep it.')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: P.text }]}>{t('Checking light and position…')}</Text>
+              <Text style={[GTYPE.caption, { color: P.muted }]}>{t('Your photo is analysed by our AI provider. Skynkod doesn\'t keep it.')}</Text>
             </View>
           ) : (
             <View style={{ marginTop: SPACING.xl, gap: SPACING.sm, alignSelf: 'stretch', paddingHorizontal: SPACING.lg }}>
               {lines.map(([ok, label]) => (
                 <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-                  <Ionicons name={ok ? 'checkmark-circle' : 'alert-circle'} size={20} color={ok ? '#5BD08A' : P.warn} />
-                  <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t(label)}</Text>
+                  <FeatureIcon name={ok ? 'checkmark-circle' : 'alert-circle'} size={20} color={ok ? '#5BD08A' : P.warn} />
+                  <Text style={[GTYPE.bodyStrong, { color: P.text }]}>{t(label)}</Text>
                 </View>
               ))}
               {shot.ok
-                ? <Text style={[TYPE.caption, { color: P.primary, marginTop: SPACING.md, textAlign: 'center' }]}>{t('Decoding your skin…')}</Text>
-                : shot.retake ? <Text style={[TYPE.caption, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{shot.retake}</Text> : null}
+                ? <Text style={[GTYPE.caption, { color: P.primary, marginTop: SPACING.md, textAlign: 'center' }]}>{t('Decoding your skin…')}</Text>
+                : shot.retake ? <Text style={[GTYPE.caption, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{shot.retake}</Text> : null}
             </View>
           )}
         </View>
@@ -370,7 +372,7 @@ export default function DekodScreen({ navigation }) {
           : (
             <>
               <PButton title={t('Follow my skin with Premium')} icon="diamond-outline" onPress={() => navigation.navigate('Premium')} />
-              <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your free scan is done. Premium: a scan a day and your evolution.')}</Text>
+              <Text style={[GTYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your free scan is done. Premium: a scan a day and your evolution.')}</Text>
             </>
           )}>
         <Points points={latest.result?.points} version={latest.result?.version} />
@@ -387,8 +389,8 @@ export default function DekodScreen({ navigation }) {
                 return (
                   <View key={p.key} style={styles.row}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[TYPE.bodyStrong, { color: P.text }]}>{t(p.label)}</Text>
-                      <Text style={{ color: better ? P.success : worse ? P.warn : P.muted, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
+                      <Text style={[GTYPE.bodyStrong, { color: P.text }]}>{t(p.label)}</Text>
+                      <Text style={{ color: better ? P.success : worse ? P.warn : P.muted, fontSize: 12, ...GFW('700'), marginTop: 2 }}>
                         {from ? t(LEVEL[from]) : t('Not read')} → {to ? t(LEVEL[to]) : t('Not read')}
                       </Text>
                     </View>
@@ -409,8 +411,8 @@ export default function DekodScreen({ navigation }) {
         <View style={{ gap: SPACING.sm }}>
           {history.map(h => (
             <Pressable key={h.id} onPress={() => { tap(); setViewing(h) }} style={styles.row}>
-              <Text style={[TYPE.bodyStrong, { color: P.text, width: 64 }]}>{new Date(h.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
-              <Text style={[TYPE.caption, { color: P.textSecondary, flex: 1 }]} numberOfLines={1}>{h.result?.summary}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: P.text, width: 64 }]}>{new Date(h.created_at).toLocaleDateString(language, { day: 'numeric', month: 'short' })}</Text>
+              <Text style={[GTYPE.caption, { color: P.textSecondary, flex: 1 }]} numberOfLines={1}>{h.result?.summary}</Text>
               <Ionicons name="chevron-forward" size={16} color={P.muted} />
             </Pressable>
           ))}
@@ -430,13 +432,13 @@ export default function DekodScreen({ navigation }) {
       footer={(
         <>
           {startButton}
-          <Text style={[TYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>
+          <Text style={[GTYPE.caption, { color: P.muted, textAlign: 'center', marginTop: SPACING.sm }]}>
             {premium ? t('One scan a day with your Premium.') : t('Your first scan is free. Then a scan a day with Premium.')}
           </Text>
         </>
       )}>
       <Text style={[styles.landingTitle, { color: P.text }]}>{t('See what your skin shows today')}</Text>
-      <Text style={[TYPE.body, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>{t('One selfie reads 7 points of your skin, with one tip for each.')}</Text>
+      <Text style={[GTYPE.body, { color: P.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>{t('One selfie reads 7 points of your skin, with one tip for each.')}</Text>
       <View style={{ gap: SPACING.lg, marginTop: SPACING.xxl }}>
         {[
           ['grid-outline', 'Redness, shine, spots, blackheads, dryness, dark spots and dullness'],
@@ -444,8 +446,8 @@ export default function DekodScreen({ navigation }) {
           ['shield-checkmark-outline', 'Skynkod doesn\'t keep your photo'],
         ].map(([icon, text]) => (
           <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
-            <View style={styles.rowIcon}><Ionicons name={icon} size={18} color={P.primary} /></View>
-            <Text style={[TYPE.body, { color: P.text, flex: 1 }]}>{t(text)}</Text>
+            <View style={styles.rowIcon}><FeatureIcon name={icon} size={18} color={P.primary} /></View>
+            <Text style={[GTYPE.body, { color: P.text, flex: 1 }]}>{t(text)}</Text>
           </View>
         ))}
       </View>
@@ -455,18 +457,18 @@ export default function DekodScreen({ navigation }) {
 }
 
 const styles = liveStyles(() => StyleSheet.create({
-  landingTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.md },
+  landingTitle: { ...GFW('700'), letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderColor: P.border, backgroundColor: P.card, borderRadius: 18, padding: SPACING.md },
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: P.primarySoft },
-  chip: { fontSize: 11, fontWeight: '700', borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
+  chip: { fontSize: 11, ...GFW('700'), borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
   line: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: SPACING.lg },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, textTransform: 'uppercase', marginTop: SPACING.xxl, marginBottom: SPACING.sm },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 24 },
   bar: { width: 8, borderRadius: 3 },
   // Centred a little below the middle, where the face sits when holding the phone at eye level.
   ovalWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingTop: 90 },
   oval: { width: 250, height: 340, borderRadius: 170, borderWidth: 3, borderColor: 'rgba(255,255,255,0.85)' },
-  ovalHint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, fontWeight: '600' },
+  ovalHint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, ...GFW('600') },
   ovalPhoto: { width: 210, height: 286, borderRadius: 143, borderWidth: 5, overflow: 'hidden', backgroundColor: P.primarySoft },
   close: { position: 'absolute', top: 60, left: 20 },
   shutter: { position: 'absolute', bottom: 50, alignSelf: 'center', width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },

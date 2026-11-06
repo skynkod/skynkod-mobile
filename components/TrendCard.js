@@ -8,7 +8,9 @@ import { useT } from '../utils/LanguageContext'
 import { trendNote } from '../utils/trends'
 import { track } from '../utils/analytics'
 import { logError } from '../utils/errorLogger'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // "Seen on TikTok?" (Lita, 2026-10-25): the answer to a trend typed in the
 // search bar, and a Share button that sends it as an image.
@@ -46,28 +48,28 @@ export default function TrendCard({ trend, profile, style }) {
   return (
     <View style={style}>
       {/* What the image shows: the trend, the verdict, why, and what to do instead */}
-      <View ref={shot} collapsable={false} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View ref={shot} collapsable={false} style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
         <Text style={[styles.kicker, { color: colors.primary }]}>{t('SEEN ONLINE?')}</Text>
-        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xs, fontSize: 17, lineHeight: 23 }]}>“{t(trend.title)}”</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xs, fontSize: 17, lineHeight: 23 }]}>“{t(trend.title)}”</Text>
         <View style={[styles.verdict, { backgroundColor: colors[`${v.tone}Soft`] || colors.primarySoft }]}>
-          <Ionicons name={v.icon} size={18} color={tone} />
-          <Text style={[TYPE.bodyStrong, { color: tone }]}>{t(v.label)}</Text>
+          <FeatureIcon name={v.icon} size={18} color={tone} />
+          <Text style={[GTYPE.bodyStrong, { color: tone }]}>{t(v.label)}</Text>
         </View>
-        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.md, lineHeight: 21 }]}>{t(trend.why)}</Text>
-        <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
-          <Text style={{ fontWeight: '700' }}>{t('Instead: ')}</Text>{t(trend.instead)}
+        <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.md, lineHeight: 21 }]}>{t(trend.why)}</Text>
+        <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+          <Text style={{ ...GFW('700') }}>{t('Instead: ')}</Text>{t(trend.instead)}
         </Text>
         {note ? (
           <View style={[styles.note, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name="person-circle-outline" size={16} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(note)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(note)}</Text>
           </View>
         ) : null}
-        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('Checked with Skynkod · skynkod.com')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('Checked with Skynkod · skynkod.com')}</Text>
       </View>
       <Pressable onPress={share} disabled={sharing} hitSlop={6} style={styles.shareBtn}>
         <Ionicons name="share-outline" size={16} color={colors.primary} />
-        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Share')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Share')}</Text>
       </Pressable>
     </View>
   )
@@ -75,7 +77,7 @@ export default function TrendCard({ trend, profile, style }) {
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 20, padding: SPACING.lg },
-  kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1 },
+  kicker: { fontSize: 11, ...GFW('700'), letterSpacing: 1.1 },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginTop: SPACING.md },
   note: { flexDirection: 'row', gap: SPACING.sm, borderRadius: 12, padding: SPACING.md, marginTop: SPACING.md },
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end', marginTop: SPACING.sm },

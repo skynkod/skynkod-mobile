@@ -14,7 +14,9 @@ import { getVerdicts } from '../utils/expectation-verdicts'
 import { logStopped } from '../utils/skin-events'
 import { trackStopAdvised } from '../utils/journey'
 import { logError } from '../utils/errorLogger'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // "Consider stopping" (Lita, 2026-10-24): the data each screen needs (her
 // routines, the journal's reactions, what she chose to keep), and the card.
@@ -82,7 +84,7 @@ export default function StopAdvice({ advice, product, inRoutine, premium, onStop
     return (
       <Pressable onPress={() => navigation.navigate('Premium')} style={[styles.teaser, { borderColor: colors.border }, style]}>
         <Ionicons name="diamond" size={13} color={colors.primary} />
-        <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{t('Skynkod has advice about this product')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{t('Skynkod has advice about this product')}</Text>
         <Ionicons name="chevron-forward" size={14} color={colors.muted} />
       </Pressable>
     )
@@ -104,23 +106,23 @@ export default function StopAdvice({ advice, product, inRoutine, premium, onStop
   return (
     <View style={[styles.card, { backgroundColor: bg }, style]}>
       <View style={{ flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' }}>
-        <Ionicons name={ICON[advice.kind] || 'alert-circle-outline'} size={16} color={tone} style={{ marginTop: 1 }} />
+        <FeatureIcon name={ICON[advice.kind] || 'alert-circle-outline'} size={16} color={tone} style={{ marginTop: 1 }} />
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.caption, { color: tone, fontWeight: '800', letterSpacing: 0.4 }]}>{t('CONSIDER STOPPING')} · {t(advice.title)}</Text>
-          <Text style={[TYPE.caption, { color: colors.text, marginTop: 2, lineHeight: 18 }]}>{t(advice.text, advice.params)}</Text>
+          <Text style={[GTYPE.caption, { color: tone, ...GFW('800'), letterSpacing: 0.4 }]}>{t('CONSIDER STOPPING')} · {t(advice.title)}</Text>
+          <Text style={[GTYPE.caption, { color: colors.text, marginTop: 2, lineHeight: 18 }]}>{t(advice.text, advice.params)}</Text>
           {advice.kind === 'duplicate' || advice.kind === 'notNeeded' ? (
-            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2, lineHeight: 17 }]}>{t('It isn’t a bad product: it just doesn’t add much to your routine right now.')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 2, lineHeight: 17 }]}>{t('It isn’t a bad product: it just doesn’t add much to your routine right now.')}</Text>
           ) : null}
         </View>
       </View>
       <View style={styles.actions}>
         {inRoutine ? (
           <Pressable onPress={confirmStop} disabled={busy} hitSlop={6} style={[styles.btn, { backgroundColor: tone }]}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>{t('Remove from routine')}</Text>
+            <Text style={{ color: '#FFFFFF', ...GFW('700'), fontSize: 13 }}>{t('Remove from routine')}</Text>
           </Pressable>
         ) : null}
         <Pressable onPress={onKeep} hitSlop={6} style={[styles.btn, { borderWidth: 1, borderColor: tone }]}>
-          <Text style={{ color: tone, fontWeight: '700', fontSize: 13 }}>{t('Keep it')}</Text>
+          <Text style={{ color: tone, ...GFW('700'), fontSize: 13 }}>{t('Keep it')}</Text>
         </Pressable>
       </View>
     </View>

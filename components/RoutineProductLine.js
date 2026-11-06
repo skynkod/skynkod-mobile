@@ -8,7 +8,9 @@ import StopAdvice from './StopAdvice'
 import AskKodaLink from './AskKodaLink'
 import { useT } from '../utils/LanguageContext'
 import { expectationFor, expectationStatus } from '../utils/expectations'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE, GFW } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // Under each product of her routine (Lita's audit, 2026-10-24): one line, the
 // most useful right now. Consider stopping first, then "time to look", then
@@ -32,7 +34,7 @@ export default function RoutineProductLine({ product, profile, stopAdvice, start
         open ? stopCard : (
           <Pressable onPress={() => setOpen(true)} style={styles.line} hitSlop={4}>
             <Ionicons name="alert-circle" size={14} color={tone} />
-            <Text style={[TYPE.caption, { color: tone, fontWeight: '700', flex: 1 }]} numberOfLines={1}>{t('Consider stopping')} · {t(advice.title)}</Text>
+            <Text style={[GTYPE.caption, { color: tone, ...GFW('700'), flex: 1 }]} numberOfLines={1}>{t('Consider stopping')} · {t(advice.title)}</Text>
           </Pressable>
         )
       ) : top === 'verdict' ? <ProductVerdict product={product} profile={profile} /> : expect}
@@ -47,8 +49,8 @@ export default function RoutineProductLine({ product, profile, stopAdvice, start
       ) : null}
 
       <Pressable onPress={() => setOpen(o => !o)} hitSlop={8} style={styles.more} accessibilityRole="button">
-        <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>{open ? t('Less') : t('More')}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={colors.muted} />
+        <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('600') }]}>{open ? t('Less') : t('More')}</Text>
+        <FeatureIcon name={open ? 'chevron-up' : 'chevron-down'} size={12} color={colors.muted} />
       </Pressable>
     </View>
   )

@@ -22,7 +22,8 @@ import { BottomSheet } from '../components/ui'
 import { logError } from '../utils/errorLogger'
 import { logStopped } from '../utils/skin-events'
 import { isActiveProduct, recentNewActive, recentStartedActives, alreadyStarted } from '../utils/new-actives'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard, glassBubble, PageBackdrop } from '../components/glossy'
 
 // Guided "build your routine": one essential step per page (I have one /
 // Help me choose / Skip), then a summary where more steps can be added.
@@ -281,11 +282,11 @@ export default function RoutineBuilderScreen({ navigation, route }) {
 
   const ProductCard = ({ product, onChange, onRemove }) => {
     return (
-      <View style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.productCard, { ...glassCard(colors), borderColor: colors.border }]}>
         <ProductThumb product={product} style={styles.photo} />
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
           <ProductVerdict product={product} profile={profile} />
         </View>
         <View style={{ alignItems: 'flex-end', gap: SPACING.md }}>
@@ -296,7 +297,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
           ) : null}
           {onChange ? (
             <Pressable onPress={onChange} hitSlop={10}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Change')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Change')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -325,7 +326,8 @@ export default function RoutineBuilderScreen({ navigation, route }) {
   const progress = Math.min(1, index / essentials.length)
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.bg, paddingTop: insets.top }]}>
+    <View style={[styles.flex, { backgroundColor: colors.solid || colors.bg, paddingTop: insets.top }]}>
+      <PageBackdrop />
       <View style={styles.topBar}>
         <Pressable
           onPress={() => (index > 0 && !route?.params?.editSteps?.length ? setIndex(index - 1) : leave())}
@@ -334,7 +336,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[TYPE.bodyStrong, { color: colors.text }]}>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>
           {period === 'morning' ? t('Morning routine') : t('Night routine')}
         </Text>
         <Pressable onPress={leave} hitSlop={12} accessibilityLabel={t('Close')}>
@@ -349,14 +351,14 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         <Animated.View style={{ opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }}>
           {!inSummary ? (
             <>
-              <Text style={[TYPE.overline, { color: colors.primary }]}>
+              <Text style={[GTYPE.overline, { color: colors.primary }]}>
                 {t('Step {n} of {total}', { n: index + 1, total: essentials.length })}
               </Text>
-              <View style={[styles.stepIcon, { backgroundColor: colors.primarySoft }]}>
-                <Ionicons name={step.icon} size={26} color={colors.primary} />
+              <View style={[styles.stepIcon, { ...glassBubble(colors), backgroundColor: colors.primarySoft }]}>
+                <FeatureIcon name={step.icon} size={26} color={colors.primary} />
               </View>
               <Text style={[styles.headline, { color: colors.text }]}>{t(step.title)}</Text>
-              <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t(step.why)}</Text>
+              <Text style={[GTYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t(step.why)}</Text>
 
               {currentSlot?.product ? (
                 <View style={{ marginTop: SPACING.xl }}>
@@ -371,7 +373,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
             </>
           ) : (
             <>
-              <Text style={[TYPE.overline, { color: colors.primary }]}>{t('Almost done')}</Text>
+              <Text style={[GTYPE.overline, { color: colors.primary }]}>{t('Almost done')}</Text>
               <Text style={[styles.headline, { color: colors.text }]}>
                 {period === 'morning' ? t('Your morning routine') : t('Your night routine')}
               </Text>
@@ -384,14 +386,14 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                         <ProductCard product={slot.product} onChange={() => pick(slot.key, slot.uid)} onRemove={() => removeSlot(slot.uid)} />
                         <Pressable onPress={() => setDaysFor(slot.uid)} style={[styles.daysChip, { backgroundColor: colors.primarySoft }]}>
                           <Ionicons name="calendar-outline" size={13} color={colors.primary} />
-                          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(describeDays(slot.days))}</Text>
+                          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t(describeDays(slot.days))}</Text>
                           <Ionicons name="chevron-down" size={12} color={colors.primary} />
                         </Pressable>
                       </>
                     ) : (
                       <Pressable onPress={() => pick(slot.key, slot.uid)} style={[styles.emptyStep, { borderColor: colors.border }]}>
                         <Ionicons name="add" size={18} color={colors.primary} />
-                        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Choose a product')}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Choose a product')}</Text>
                       </Pressable>
                     )}
                   </View>
@@ -410,21 +412,21 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                   {issues.map((issue, idx) => (
                     <View key={idx} style={[styles.issue, { backgroundColor: issue.level === 'warning' ? colors.warningSoft : colors.surface }]}>
                       <View style={styles.issueHead}>
-                        <Ionicons name={issue.level === 'warning' ? 'alert-circle' : 'information-circle'} size={18} color={issue.level === 'warning' ? colors.warning : colors.primary} />
-                        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(issue.title)}</Text>
+                        <FeatureIcon name={issue.level === 'warning' ? 'alert-circle' : 'information-circle'} size={18} color={issue.level === 'warning' ? colors.warning : colors.primary} />
+                        <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(issue.title)}</Text>
                       </View>
-                      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(issue.text)}</Text>
+                      <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(issue.text)}</Text>
                       <View style={styles.issueActions}>
                         {issue.fix ? (
-                          <Pressable onPress={() => applyFix(issue.fix)} style={[styles.fixButton, { backgroundColor: colors.card }]}>
-                            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
+                          <Pressable onPress={() => applyFix(issue.fix)} style={[styles.fixButton, { ...glassCard(colors) }]}>
+                            <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>
                               {t('Fix: use it on {days}', { days: describeDays(issue.fix.days) })}
                             </Text>
                           </Pressable>
                         ) : null}
                         {issue.stepIndex !== undefined ? (
                           <Pressable onPress={() => acknowledge(issue)} style={[styles.fixButton, { backgroundColor: 'transparent' }]}>
-                            <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t("I'm used to this")}</Text>
+                            <Text style={[GTYPE.caption, { color: colors.textSecondary, ...GFW('700') }]}>{t("I'm used to this")}</Text>
                           </Pressable>
                         ) : null}
                       </View>
@@ -438,9 +440,9 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                   <Text style={[styles.stepLabel, { color: colors.muted, marginTop: SPACING.xl }]}>{t('ADD A STEP')}</Text>
                   <View style={styles.chips}>
                     {addable.map(k => (
-                      <Pressable key={k} onPress={() => addStep(k)} style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                      <Pressable key={k} onPress={() => addStep(k)} style={[styles.chip, { borderColor: colors.border, ...glassCard(colors) }]}>
                         <Ionicons name="add" size={14} color={colors.primary} />
-                        <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{t(STEP_TYPES[k].label)}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.text, ...GFW('600') }]}>{t(STEP_TYPES[k].label)}</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -455,13 +457,13 @@ export default function RoutineBuilderScreen({ navigation, route }) {
         <BottomSheet title={t('When do you use it?')} onClose={() => setDaysFor(null)}>
           {editingSlot ? (
             <>
-              <Text style={[TYPE.body, { color: colors.textSecondary }]}>{editingSlot.product?.name}</Text>
+              <Text style={[GTYPE.body, { color: colors.textSecondary }]}>{editingSlot.product?.name}</Text>
               <View style={styles.dayRow}>
                 {DAY_LABELS.map((label, d) => {
                   const on = (editingSlot.days && editingSlot.days.length ? editingSlot.days : EVERY_DAY).includes(d)
                   return (
                     <Pressable key={label} onPress={() => toggleDay(d)} style={[styles.day, { backgroundColor: on ? colors.primary : colors.card, borderColor: on ? colors.primary : colors.border }]}>
-                      <Text style={{ color: on ? colors.onPrimary : colors.text, fontWeight: '700', fontSize: 12 }}>{t(label)}</Text>
+                      <Text style={{ color: on ? colors.onPrimary : colors.text, ...GFW('700'), fontSize: 12 }}>{t(label)}</Text>
                     </Pressable>
                   )
                 })}
@@ -473,8 +475,8 @@ export default function RoutineBuilderScreen({ navigation, route }) {
                   { label: '2 times a week', days: [2, 6] },
                   { label: 'Once a week', days: [0] },
                 ].map(p => (
-                  <Pressable key={p.label} onPress={() => setDays(p.days)} style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                    <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{t(p.label)}</Text>
+                  <Pressable key={p.label} onPress={() => setDays(p.days)} style={[styles.chip, { borderColor: colors.border, ...glassCard(colors) }]}>
+                    <Text style={[GTYPE.caption, { color: colors.text, ...GFW('600') }]}>{t(p.label)}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -489,7 +491,7 @@ export default function RoutineBuilderScreen({ navigation, route }) {
             <Pill title={t('Next')} icon="arrow-forward" onPress={() => setIndex(index + 1)} />
           ) : (
             <Pressable onPress={() => setIndex(index + 1)} style={{ alignSelf: 'center', padding: SPACING.md }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.muted }]}>{t('Skip this step')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.muted }]}>{t('Skip this step')}</Text>
             </Pressable>
           )
         ) : (
@@ -507,13 +509,13 @@ const styles = StyleSheet.create({
   fill: { height: 3, borderRadius: 2 },
   scroll: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.xxl, paddingBottom: SPACING.xxl },
   stepIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg },
-  headline: { fontSize: 30, fontWeight: '700', letterSpacing: -0.6, lineHeight: 36, marginTop: SPACING.lg },
+  headline: { fontSize: 30, ...GFW('700'), letterSpacing: -0.6, lineHeight: 36, marginTop: SPACING.lg },
   productCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md },
   photo: { width: 52, height: 52, borderRadius: 10, backgroundColor: '#FFFFFF' },
   noPhoto: { alignItems: 'center', justifyContent: 'center' },
   pill: { flexDirection: 'row', gap: SPACING.sm, height: 56, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  pillText: { fontSize: 16, fontWeight: '600' },
-  stepLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginBottom: 6 },
+  pillText: { fontSize: 16, ...GFW('600') },
+  stepLabel: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, marginBottom: 6 },
   emptyStep: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.md, padding: SPACING.lg },
   daysChip: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, marginTop: 6 },
   issue: { borderRadius: RADIUS.md, padding: SPACING.lg },

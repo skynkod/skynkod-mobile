@@ -14,7 +14,8 @@ import { CONDITION_EXPLAIN } from '../utils/encyclopedia/condition-explain'
 import { getArticle } from '../utils/encyclopedia'
 import { getIngredient, productMatch, isUnsuitable } from '../utils/ingredients-guide'
 import { productsWithIngredient } from '../utils/catalog'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
 
 // One skin issue (Lita, 2026-10-24): where it shows and what it looks like,
 // what happens under the skin, what skincare can and can't do, what a
@@ -63,8 +64,8 @@ export default function ConditionScreen({ route, navigation }) {
       <Text style={[styles.section, { color }]}>{t(title)}</Text>
       {items.map((x, i) => (
         <View key={i} style={styles.item}>
-          <Ionicons name={icon} size={16} color={color} style={{ marginTop: 2 }} />
-          <Text style={[TYPE.body, { color: colors.text, flex: 1, lineHeight: 21 }]}>{typeof x === 'string' ? t(x) : null}</Text>
+          <FeatureIcon name={icon} size={16} color={color} style={{ marginTop: 2 }} />
+          <Text style={[GTYPE.body, { color: colors.text, flex: 1, lineHeight: 21 }]}>{typeof x === 'string' ? t(x) : null}</Text>
         </View>
       ))}
     </View>
@@ -74,16 +75,16 @@ export default function ConditionScreen({ route, navigation }) {
     <View style={{ marginTop: SPACING.lg }}>
       <Text style={[styles.section, { color: colors.primary }]}>{t(title)}</Text>
       {items.map(x => (
-        <View key={x.name} style={[styles.treat, { borderColor: colors.border, backgroundColor: colors.card }]}>
-          <Ionicons name={icon} size={18} color={colors.primary} style={{ marginTop: 1 }} />
+        <View key={x.name} style={[styles.treat, { borderColor: colors.border, ...glassCard(colors) }]}>
+          <FeatureIcon name={icon} size={18} color={colors.primary} style={{ marginTop: 1 }} />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(x.name)}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(x.what)}</Text>
-            {x.downtime && x.downtime !== '—' ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Recovery')}: {t(x.downtime)}</Text> : null}
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(x.name)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(x.what)}</Text>
+            {x.downtime && x.downtime !== '—' ? <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Recovery')}: {t(x.downtime)}</Text> : null}
           </View>
         </View>
       ))}
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4, lineHeight: 17 }]}>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 4, lineHeight: 17 }]}>
         {prescription ? t('Only a doctor can prescribe these. Never start one on your own.') : t('Ask a dermatologist or a qualified aesthetic doctor whether it suits you.')}
       </Text>
     </View>
@@ -97,7 +98,7 @@ export default function ConditionScreen({ route, navigation }) {
       {explain ? (
         <View style={{ marginTop: SPACING.lg }}>
           <Text style={[styles.section, { color: colors.primary }]}>{t('WHAT IS IT?')}</Text>
-          <Text style={[TYPE.body, { color: colors.text, lineHeight: 22 }]}>{t(explain.what)}</Text>
+          <Text style={[GTYPE.body, { color: colors.text, lineHeight: 22 }]}>{t(explain.what)}</Text>
         </View>
       ) : null}
       <List icon="help-circle-outline" color={colors.primary} title="WHY IT HAPPENS" items={explain?.why} />
@@ -105,11 +106,11 @@ export default function ConditionScreen({ route, navigation }) {
       <List icon="eye-outline" color={colors.primary} title="WHAT YOU MAY NOTICE" items={c.notice} />
 
       {explain?.course ? (
-        <View style={[styles.course, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.course, { ...glassCard(colors), borderColor: colors.border }]}>
           <Ionicons name="time-outline" size={18} color={colors.primary} style={{ marginTop: 1 }} />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Does it go away? How long does it last?')}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(explain.course)}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Does it go away? How long does it last?')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(explain.course)}</Text>
           </View>
         </View>
       ) : null}
@@ -121,10 +122,10 @@ export default function ConditionScreen({ route, navigation }) {
 
       {/* Always: Skynkod guides, a dermatologist confirms */}
       <View style={[styles.derm, { backgroundColor: c.derm?.level === 'urgent' ? colors.dangerSoft : c.derm?.level === 'soon' ? colors.warningSoft : colors.primarySoft }]}>
-        <Ionicons name={c.derm?.level === 'urgent' ? 'alert-circle' : 'person-outline'} size={20} color={tone} />
+        <FeatureIcon name={c.derm?.level === 'urgent' ? 'alert-circle' : 'person-outline'} size={20} color={tone} />
         <View style={{ flex: 1 }}>
-          {c.derm ? <Text style={[TYPE.bodyStrong, { color: colors.text, lineHeight: 20 }]}>{t(c.derm.text)}</Text> : null}
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: c.derm ? 4 : 0, lineHeight: 18 }]}>{t(GUIDE_NOTE)}</Text>
+          {c.derm ? <Text style={[GTYPE.bodyStrong, { color: colors.text, lineHeight: 20 }]}>{t(c.derm.text)}</Text> : null}
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: c.derm ? 4 : 0, lineHeight: 18 }]}>{t(GUIDE_NOTE)}</Text>
         </View>
       </View>
 
@@ -132,11 +133,11 @@ export default function ConditionScreen({ route, navigation }) {
         <>
           <Text style={[styles.section, { color: colors.primary, marginTop: SPACING.xl }]}>{t('PRODUCTS THAT FIT YOUR SKIN')}</Text>
           {products.map(p => (
-            <Pressable key={p.id} onPress={() => navigation.navigate('Product', { id: p.id })} style={[styles.product, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable key={p.id} onPress={() => navigation.navigate('Product', { id: p.id })} style={[styles.product, { ...glassCard(colors), borderColor: colors.border }]}>
               <ProductThumb product={p} style={styles.thumb} />
               <View style={{ flex: 1 }}>
-                <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{p.brand}</Text>
-                <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{p.name}</Text>
+                <Text style={[GTYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{p.brand}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{p.name}</Text>
                 <ProductVerdict product={p} profile={profile} />
               </View>
             </Pressable>
@@ -147,13 +148,13 @@ export default function ConditionScreen({ route, navigation }) {
       <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xl }}>
         {article ? (
           <Pressable onPress={() => navigation.navigate('Article', { id: article.id })} style={[styles.btn, { borderColor: colors.border }]}>
-            <Ionicons name="book-outline" size={16} color={colors.primary} />
-            <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Read more')}</Text>
+            <FeatureIcon name="book-outline" size={16} color={colors.primary} />
+            <Text style={[GTYPE.bodyStrong, { color: colors.primary }]}>{t('Read more')}</Text>
           </Pressable>
         ) : null}
         <Pressable onPress={() => navigation.navigate('Koda', { prefill: t('I think I might have {issue}. What should I do?', { issue: t(c.title).toLowerCase() }) })} style={[styles.btn, { borderColor: colors.border }]}>
           <FeatureIcon name="koda" size={16} color={colors.primary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('Ask Koda')}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.primary }]}>{t('Ask Koda')}</Text>
         </Pressable>
       </View>
 
@@ -163,7 +164,7 @@ export default function ConditionScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   hero: { borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, marginBottom: SPACING.sm },
   item: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start', marginBottom: 6 },
   treat: { flexDirection: 'row', gap: SPACING.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm },
   course: { flexDirection: 'row', gap: SPACING.md, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg },

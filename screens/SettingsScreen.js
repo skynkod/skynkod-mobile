@@ -9,7 +9,8 @@ import { logError } from '../utils/errorLogger'
 import { deleteAccount } from '../utils/account'
 import { LEAVING_REASONS, sendLeavingReason } from '../utils/privacy'
 import { Screen, Card, SectionHeader, ListRow, SegmentedControl, useColors } from '../components/ui'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE } from '../components/glossy'
 
 // Only the languages the app is fully translated into (utils/i18n.js): French
 // shows again once it's added there (languages come last). With one language,
@@ -86,7 +87,7 @@ export default function SettingsScreen({ route, navigation }) {
           { value: 'auto', label: 'Auto', icon: 'time-outline' },
         ]}
       />
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>
         Auto switches to dark mode at sunset and back at sunrise.
       </Text>
 
@@ -135,7 +136,7 @@ export default function SettingsScreen({ route, navigation }) {
         />
       </Card>
 
-      <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>
+      <Text style={[GTYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>
         Skynkod v1.0.0 · Your skin. Your code. Decoded daily.
       </Text>
     </Screen>

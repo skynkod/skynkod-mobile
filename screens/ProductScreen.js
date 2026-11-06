@@ -23,7 +23,9 @@ import { formatMAD } from '../utils/skynbudget'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
 import { safeAlternativeFor, concernAlternativeFor } from '../utils/rekod'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 // A product: its match with the user's skin first, the why underneath, then
 // key ingredients. The full INCI list stays folded away.
@@ -140,12 +142,12 @@ export default function ProductScreen({ navigation, route }) {
       <View style={styles.hero}>
         <ProductThumb product={product} style={styles.image} />
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{product.brand}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{product.brand}</Text>
           <Text style={[styles.name, { color: colors.text }]}>{product.name}</Text>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4, textTransform: 'capitalize' }]}>{t(product.category)}</Text>
+          <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 4, textTransform: 'capitalize' }]}>{t(product.category)}</Text>
           {prices ? (
-            <Text style={[TYPE.caption, { color: colors.text, marginTop: 6 }]}>
-              <Text style={{ fontWeight: '700' }}>~{formatMAD(prices.typical)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, marginTop: 6 }]}>
+              <Text style={{ ...GFW('700') }}>~{formatMAD(prices.typical)}</Text>
               <Text style={{ color: colors.textSecondary }}> {t('usual price')} · {t('{n} purchases', { n: prices.purchases })}{prices.top_store ? ` · ${t('often at {store}', { store: t(prices.top_store) })}` : ''}</Text>
             </Text>
           ) : null}
@@ -155,13 +157,13 @@ export default function ProductScreen({ navigation, route }) {
       {/* One decision card (Lita's audit, 2026-10-24): her skin today, whether to
           buy it or stop it, and Koda; the full verdict and ingredients follow. */}
       {product ? (
-        <View style={[styles.decision, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <View style={[styles.decision, { borderColor: colors.border, ...glassCard(colors) }]}>
           {match.notNow && match.tone !== 'danger' ? (
             <View style={styles.decisionRow}>
               <Ionicons name="time-outline" size={20} color={colors.warning} style={{ marginTop: 1 }} />
               <View style={{ flex: 1 }}>
-                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.notNow.title)}</Text>
-                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(match.notNow.text)}. {t(match.notNow.detail)}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(match.notNow.title)}</Text>
+                <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(match.notNow.text)}. {t(match.notNow.detail)}</Text>
               </View>
             </View>
           ) : null}
@@ -177,13 +179,13 @@ export default function ProductScreen({ navigation, route }) {
               prefill={t('Should I use {product} with my routine? How and when?', { product: product.name })} />
             {purgeOffer && !purgeOpen ? (
               <Pressable onPress={() => setPurgeOpen(purgeOffer)} hitSlop={4} style={{ marginTop: SPACING.sm }}>
-                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Spots since you started it? Purging or a reaction')} ›</Text>
+                <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Spots since you started it? Purging or a reaction')} ›</Text>
               </Pressable>
             ) : null}
             {purgeOpen ? <PurgeCard userId={user.id} state={purgeOpen} onChange={onPurgeChange} style={{ marginTop: SPACING.md }} /> : null}
             {profile?.priority && CONCERN_CONDITIONS[profile.priority] ? (
               <Pressable onPress={() => navigation.navigate('Condition', { id: CONCERN_CONDITIONS[profile.priority][0] })} hitSlop={4} style={{ marginTop: SPACING.sm }}>
-                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('What skincare can and can’t do for your {concern}', { concern: t(profile.priority).toLowerCase() })} ›</Text>
+                <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('What skincare can and can’t do for your {concern}', { concern: t(profile.priority).toLowerCase() })} ›</Text>
               </Pressable>
             ) : null}
           </View>
@@ -196,8 +198,8 @@ export default function ProductScreen({ navigation, route }) {
           <View style={styles.matchHead}>
             <Ionicons name="help-circle" size={40} color={colors.muted} />
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Not checked yet')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Not checked yet')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>
                 {t('We don’t have this product’s full ingredient list yet, so we can’t check it against your skin.')}
               </Text>
             </View>
@@ -216,8 +218,8 @@ export default function ProductScreen({ navigation, route }) {
             />
           )}
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(match.label)}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(match.label)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>
               {profile?.skin_type ? t('Compared with your Skyn Profile') : t('Add your skin type for a personal match')}
             </Text>
           </View>
@@ -225,23 +227,23 @@ export default function ProductScreen({ navigation, route }) {
         {match.good.map((r, idx) => (
           <View key={`g${idx}`} style={styles.reason}>
             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}
         {(match.notes || []).map((r, idx) => (
           <View key={`n${idx}`} style={styles.reason}>
             <Ionicons name="information-circle" size={16} color={colors.muted} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}
         {match.unverified.map((r, idx) => (
           <View key={`u${idx}`} style={styles.reason}>
             <Ionicons name="help-circle" size={16} color={colors.muted} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>{t(r.text)}</Text>
           </View>
         ))}
         {match.partial ? (
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
             {t('Based on its key ingredients only: we don’t have the full list yet.')}
           </Text>
         ) : null}
@@ -251,29 +253,29 @@ export default function ProductScreen({ navigation, route }) {
       {/* Not 100% safe for her: the closest product that is */}
       {altShown?.alternative && lockedDetail ? (
         <PremiumBlur locked title="A better product for your skin" text="Premium shows the closest product that is 100% safe for you." style={{ marginTop: SPACING.lg, minHeight: 150 }}>
-          <View style={[styles.altCard, { backgroundColor: '#33202E', marginTop: 0 }]}>
-            <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
+          <View style={[styles.altCard, { backgroundColor: '#5E3F56', marginTop: 0 }]}>
+            <FeatureIcon name="shield-checkmark-outline" size={22} color="#A8E2BC" />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{altShown.alternative.brand} {altShown.alternative.name}</Text>
+              <Text style={{ color: '#C5A8BB', fontSize: 10, ...GFW('700'), letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, ...GFW('600'), marginTop: 2 }}>{altShown.alternative.brand} {altShown.alternative.name}</Text>
             </View>
           </View>
         </PremiumBlur>
       ) : altShown ? (
         altShown.alternative ? (
-          <Pressable onPress={() => navigation.navigate('Product', { id: altShown.alternative.id, product: undefined })} style={[styles.altCard, { backgroundColor: '#33202E' }]}>
-            <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
+          <Pressable onPress={() => navigation.navigate('Product', { id: altShown.alternative.id, product: undefined })} style={[styles.altCard, { backgroundColor: '#5E3F56' }]}>
+            <FeatureIcon name="shield-checkmark-outline" size={22} color="#A8E2BC" />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{altShown.alternative.brand} {altShown.alternative.name}</Text>
+              <Text style={{ color: '#C5A8BB', fontSize: 10, ...GFW('700'), letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, ...GFW('600'), marginTop: 2 }}>{altShown.alternative.brand} {altShown.alternative.name}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 }}>{altShown.concern ? t('Targets {concern}, your main concern, and suits your skin.', { concern: t(altShown.concern).toLowerCase() }) : altShown.active ? t('Also with {active}, without the ingredients that bother your skin.', { active: altShown.active.toLowerCase() }) : t('A similar product without the ingredients that bother your skin.')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
+            <Ionicons name="chevron-forward" size={18} color="#C5A8BB" />
           </Pressable>
         ) : (
           <View style={[styles.altCard, { backgroundColor: colors.surface }]}>
-            <Ionicons name="search-outline" size={20} color={colors.muted} />
-            <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{altShown.active ? t("We couldn't find another product with {active} that is 100% safe for your skin yet.", { active: altShown.active.toLowerCase() }) : t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
+            <FeatureIcon name="search-outline" size={20} color={colors.muted} />
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{altShown.active ? t("We couldn't find another product with {active} that is 100% safe for your skin yet.", { active: altShown.active.toLowerCase() }) : t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
           </View>
         )
       ) : null}
@@ -282,27 +284,27 @@ export default function ProductScreen({ navigation, route }) {
         <View style={[styles.avoidCard, { backgroundColor: colors.dangerSoft }]}>
           <View style={styles.avoidHead}>
             <Ionicons name="close-circle" size={20} color={colors.danger} />
-            <Text style={[TYPE.bodyStrong, { color: colors.danger }]}>{t('Why we say avoid')}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.danger }]}>{t('Why we say avoid')}</Text>
           </View>
           {match.avoid.map((a, idx) => (
             <View key={idx} style={{ marginTop: SPACING.sm }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(a.text)}</Text>
-              {a.detail ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(a.detail)}</Text> : null}
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(a.text)}</Text>
+              {a.detail ? <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(a.detail)}</Text> : null}
               {a.alternatives.length && lockedDetail ? (
-                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700', marginTop: SPACING.md }]} onPress={() => navigation.navigate('Premium')}>
-                  {t('Safer alternatives')} · <Text style={{ color: '#33202E' }}>{t('with Premium')} ◆</Text>
+                <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700'), marginTop: SPACING.md }]} onPress={() => navigation.navigate('Premium')}>
+                  {t('Safer alternatives')} · <Text style={{ color: '#5E3F56' }}>{t('with Premium')} ◆</Text>
                 </Text>
               ) : a.alternatives.length ? (
                 <>
-                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700', marginTop: SPACING.md }]}>{t('Safer alternatives')}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700'), marginTop: SPACING.md }]}>{t('Safer alternatives')}</Text>
                   <View style={styles.altRow}>
                     {a.alternatives.map(id => (
                       <Pressable
                         key={id}
                         onPress={() => navigation.navigate('Ingredient', { id })}
-                        style={[styles.altChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        style={[styles.altChip, { ...glassCard(colors), borderColor: colors.border }]}
                       >
-                        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t(getIngredient(id)?.name || id)}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t(getIngredient(id)?.name || id)}</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -323,15 +325,15 @@ export default function ProductScreen({ navigation, route }) {
               watch: { label: 'Keep an eye', bg: colors.cautionSoft, fg: colors.caution, icon: 'eye' },
             }[tr.level]
             return (
-              <View key={idx} style={[styles.triggerCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <View key={idx} style={[styles.triggerCard, { borderColor: colors.border, ...glassCard(colors) }]}>
                 <View style={[styles.levelChip, { backgroundColor: lv.bg }]}>
-                  <Ionicons name={lv.icon} size={13} color={lv.fg} />
+                  <FeatureIcon name={lv.icon} size={13} color={lv.fg} />
                   <Text style={[styles.levelText, { color: lv.fg }]}>{t(lv.label)}</Text>
                 </View>
-                <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t(tr.text)}</Text>
-                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(tr.detail)}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t(tr.text)}</Text>
+                <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>{t(tr.detail)}</Text>
                 {tr.about ? (
-                  <Text style={[TYPE.caption, { color: colors.muted, marginTop: 6, lineHeight: 17 }]}>{t('What it is:')} {t(tr.about)}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 6, lineHeight: 17 }]}>{t('What it is:')} {t(tr.about)}</Text>
                 ) : null}
               </View>
             )
@@ -346,8 +348,8 @@ export default function ProductScreen({ navigation, route }) {
             {match.found.slice(0, 3).map(entry => (
               <View key={entry.id} style={[styles.ingredient, { borderBottomColor: colors.border }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(entry.what)}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(entry.what)}</Text>
                 </View>
               </View>
             ))}
@@ -363,8 +365,8 @@ export default function ProductScreen({ navigation, route }) {
               style={[styles.ingredient, { borderBottomColor: colors.border }]}
             >
               <View style={{ flex: 1 }}>
-                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
-                <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(entry.what)}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
+                <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>{t(entry.what)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.muted} />
             </Pressable>
@@ -374,17 +376,17 @@ export default function ProductScreen({ navigation, route }) {
 
       {product.ingredients_text ? (
         <Pressable onPress={() => setShowAll(!showAll)} style={{ marginTop: SPACING.lg }}>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>
             {showAll ? t('Hide full ingredient list') : t('See full ingredient list')}
           </Text>
-          {showAll ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{product.ingredients_text}</Text> : null}
+          {showAll ? <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{product.ingredients_text}</Text> : null}
         </Pressable>
       ) : null}
 
       {status === 'owned' ? (
         <Pressable onPress={() => navigation.navigate('Products')} style={[styles.statusBar, { backgroundColor: colors.successSoft }]}>
           <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-          <Text style={[TYPE.bodyStrong, { color: colors.success, flex: 1 }]}>{t('In my products')}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.success, flex: 1 }]}>{t('In my products')}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.success} />
         </Pressable>
       ) : null}
@@ -394,7 +396,7 @@ export default function ProductScreen({ navigation, route }) {
           {status === 'to_buy' ? (
             <View style={[styles.statusBar, { backgroundColor: colors.primarySoft }]}>
               <Ionicons name="bag-handle" size={18} color={colors.primary} />
-              <Text style={[TYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>{t('In your To buy list')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.primary, flex: 1 }]}>{t('In your To buy list')}</Text>
             </View>
           ) : null}
           <Pressable
@@ -426,14 +428,14 @@ export default function ProductScreen({ navigation, route }) {
               <Pressable
                 key={r.id}
                 onPress={() => openRetailer(r, product)}
-                style={({ pressed }) => [styles.shop, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.8 : 1 }]}
+                style={({ pressed }) => [styles.shop, { borderColor: colors.border, ...glassCard(colors), opacity: pressed ? 0.8 : 1 }]}
               >
-                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{r.name}</Text>
+                <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700') }]}>{r.name}</Text>
                 <Ionicons name="open-outline" size={13} color={colors.muted} />
               </Pressable>
             ))}
           </View>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>
+          <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 17 }]}>
             {t('Skynkod may earn a small commission when you buy through these links. It never changes our verdicts.')}
           </Text>
         </>
@@ -453,10 +455,10 @@ const styles = StyleSheet.create({
   hero: { flexDirection: 'row', gap: SPACING.lg, alignItems: 'center' },
   image: { width: 96, height: 96, borderRadius: RADIUS.md, backgroundColor: '#FFFFFF' },
   noImage: { alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, marginTop: 2 },
+  name: { fontSize: 20, ...GFW('700'), letterSpacing: -0.3, marginTop: 2 },
   matchCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.xl, gap: SPACING.sm },
   matchHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: 4 },
-  matchScore: { fontSize: 32, fontWeight: '800', letterSpacing: -1 },
+  matchScore: { fontSize: 32, ...GFW('800'), letterSpacing: -1 },
   reason: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   avoidCard: { borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.md },
   avoidHead: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
@@ -464,13 +466,13 @@ const styles = StyleSheet.create({
   altChip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
   triggerCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.sm },
   levelChip: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-  levelText: { fontSize: 11, fontWeight: '700' },
+  levelText: { fontSize: 11, ...GFW('700') },
   shops: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   shop: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.xs },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.xs },
   ingredient: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.md },
   secondaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, height: 52, borderRadius: RADIUS.md, marginTop: SPACING.sm },
   statusBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.md, padding: SPACING.lg, marginTop: SPACING.xl },
-  addText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  addText: { color: '#FFFFFF', fontSize: 16, ...GFW('600') },
 })

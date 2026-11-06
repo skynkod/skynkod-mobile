@@ -9,7 +9,9 @@ import { useAuth } from '../utils/AuthContext';
 import { trackArticle } from '../utils/journey';
 import { getArticle, SECTIONS, ARTICLES } from '../utils/encyclopedia';
 import { getIngredient } from '../utils/ingredients-guide';
-import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { SPACING, RADIUS } from '../utils/theme';
+import { GTYPE, GFW, glassCard } from '../components/glossy';
+import FeatureIcon from '../components/FeatureIcon'
 
 // One Skyncyclopedia article.
 export default function ArticleScreen({ navigation, route }) {
@@ -28,17 +30,17 @@ export default function ArticleScreen({ navigation, route }) {
 
   return (
     <Screen back>
-      <Text style={[TYPE.overline, { color: colors.primary }]}>{t(section?.label || '')}</Text>
-      <Text style={[TYPE.title, { color: colors.text, marginTop: SPACING.xs }]}>{t(article.title)}</Text>
+      <Text style={[GTYPE.overline, { color: colors.primary }]}>{t(section?.label || '')}</Text>
+      <Text style={[GTYPE.title, { color: colors.text, marginTop: SPACING.xs }]}>{t(article.title)}</Text>
       {article.section !== 'myths' && article.subtitle ? (
-        <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.xs }]}>{t(article.subtitle)}</Text>
+        <Text style={[GTYPE.body, { color: colors.textSecondary, marginTop: SPACING.xs }]}>{t(article.subtitle)}</Text>
       ) : null}
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('{n} min read', { n: article.minutes })}</Text>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('{n} min read', { n: article.minutes })}</Text>
 
       {/* A skin issue: its full guide (illustrations, what skincare can and can't do, treatments) */}
       {getCondition(article.id) ? (
         <Pressable onPress={() => navigation.navigate('Condition', { id: article.id })} style={[styles.guideCard, { backgroundColor: colors.primarySoft }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('What skincare can do, the treatments, and when to see a dermatologist')} ›</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.primary }]}>{t('What skincare can do, the treatments, and when to see a dermatologist')} ›</Text>
         </Pressable>
       ) : null}
 
@@ -50,7 +52,7 @@ export default function ArticleScreen({ navigation, route }) {
           <View style={styles.chips}>
             {ingredients.map(i => (
               <Pressable key={i.id} onPress={() => navigation.navigate('Ingredient', { id: i.id })} style={[styles.chip, { backgroundColor: colors.primarySoft }]}>
-                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '600' }]}>{t(i.name)}</Text>
+                <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('600') }]}>{t(i.name)}</Text>
                 <Ionicons name="chevron-forward" size={12} color={colors.primary} />
               </Pressable>
             ))}
@@ -73,16 +75,16 @@ export default function ArticleScreen({ navigation, route }) {
         <>
           <Text style={[styles.label, { color: colors.muted }]}>{t('KEEP READING')}</Text>
           {related.map(a => (
-            <Pressable key={a.id} onPress={() => navigation.navigate('Article', { id: a.id })} style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name={a.icon} size={18} color={colors.primary} />
-              <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]} numberOfLines={2}>{t(a.title)}</Text>
+            <Pressable key={a.id} onPress={() => navigation.navigate('Article', { id: a.id })} style={[styles.row, { ...glassCard(colors), borderColor: colors.border }]}>
+              <FeatureIcon name={a.icon} size={18} color={colors.primary} />
+              <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]} numberOfLines={2}>{t(a.title)}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.muted} />
             </Pressable>
           ))}
         </>
       ) : null}
 
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xl }]}>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.xl }]}>
         {t('General information, not a diagnosis. For a persistent or painful problem, see a dermatologist.')}
       </Text>
     </Screen>
@@ -91,7 +93,7 @@ export default function ArticleScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   guideCard: { borderRadius: 16, padding: SPACING.lg, marginTop: SPACING.lg },
-  label: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  label: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.md, marginBottom: SPACING.sm },

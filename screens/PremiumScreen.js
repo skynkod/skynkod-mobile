@@ -7,9 +7,9 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue, planPrice } from '../utils/premium'
 import { Screen, Card, IconCircle, useColors } from '../components/ui'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
 import FeatureIcon from '../components/FeatureIcon'
-import { useGlossy, GlossyBackdrop, Glass, GlossyButton, GlassIcon } from '../components/glossy'
+import { useGlossy, GlossyBackdrop, Glass, GlossyButton, GlassIcon, GTYPE, GFW } from '../components/glossy'
 
 const ORB = require('../assets/onboarding/orb-welcome.png')
 const FREE = ['Unlimited product scans with your verdict', 'Should I buy this? (the answer)', 'Safety alerts: allergies, pregnancy, reactions', 'Your skin forecast, every day', 'Your morning and evening routines', 'When to judge each product', 'Your skin review every 2 weeks', 'Your skin journal', 'Your skin timeline', 'Your badges and levels', 'Koda: 3 questions a week']
@@ -53,12 +53,12 @@ export default function PremiumScreen({ navigation, route }) {
       <Screen back>
         <View style={styles.hero}>
           <IconCircle name="diamond" size={80} />
-          <Text style={[TYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>{t('You’re Premium ✨')}</Text>
-          <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your skin code is fully unlocked. Enjoy every feature.')}</Text>
+          <Text style={[GTYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>{t('You’re Premium ✨')}</Text>
+          <Text style={[GTYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your skin code is fully unlocked. Enjoy every feature.')}</Text>
         </View>
         {month ? (
           <Card>
-            <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700', letterSpacing: 1 }]}>{t('THIS MONTH WITH PREMIUM')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('700'), letterSpacing: 1 }]}>{t('THIS MONTH WITH PREMIUM')}</Text>
             {[
               ['koda', t('{n} questions to Koda', { n: month.koda })],
               ['dekod', t('{n} Dekod scans', { n: month.dekod })],
@@ -66,7 +66,7 @@ export default function PremiumScreen({ navigation, route }) {
             ].filter(Boolean).map(([icon, text]) => (
               <View key={text} style={[styles.benefit, { marginBottom: 0, marginTop: SPACING.md, alignItems: 'center' }]}>
                 <IconCircle name={icon} size={32} />
-                <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{text}</Text>
+                <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{text}</Text>
               </View>
             ))}
           </Card>
@@ -152,7 +152,7 @@ export default function PremiumScreen({ navigation, route }) {
 
         {/* Independence pledge */}
         <Glass C={C} night={night} style={[gs.pledge]}>
-          <Ionicons name="shield-checkmark-outline" size={18} color={C.mauve} />
+          <FeatureIcon name="shield-checkmark-outline" size={18} color={C.mauve} />
           <Text style={[F.r, { flex: 1, fontSize: 12.5, lineHeight: 18, color: C.soft }]}>
             {t('Independent, always: no brand pays us and no verdict is for sale. Safety alerts stay free for everyone.')}
           </Text>
@@ -212,12 +212,12 @@ const styles = StyleSheet.create({
   logo: { width: 72, height: 72 },
   logoCircle: { width: 36, height: 36, borderRadius: 36 / 2.6, alignItems: 'center', justifyContent: 'center' },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md, paddingVertical: 5, borderRadius: 999, marginTop: SPACING.md },
-  title: { fontSize: 30, fontWeight: '700', letterSpacing: -0.6, textAlign: 'center', marginTop: SPACING.md },
+  title: { fontSize: 30, ...GFW('700'), letterSpacing: -0.6, textAlign: 'center', marginTop: SPACING.md },
   benefit: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.lg },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
   plan: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1.5, borderRadius: RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.sm },
   badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  badgeText: { color: '#FFFFFF', fontSize: 11, ...GFW('700') },
   pledge: { flexDirection: 'row', gap: SPACING.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, marginTop: SPACING.lg },
   links: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, marginTop: SPACING.xl, marginBottom: SPACING.lg, flexWrap: 'wrap' },
 })

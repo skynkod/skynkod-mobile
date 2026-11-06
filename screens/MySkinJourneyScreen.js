@@ -13,7 +13,9 @@ import { syncJourney, openBox, makeBoxReadyForTest } from '../utils/journey'
 import { CATEGORIES, TIERS, TIER_ORDER, LEVELS, LEVEL_TIERS } from '../utils/journey-core'
 import { shareSkynkod } from '../utils/share'
 import { logError } from '../utils/errorLogger'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 const TESTERS = ['djedidilita@gmail.com']
 const STATE_LABEL = { todo: 'To start', started: 'In progress', done: 'Done' }
@@ -86,18 +88,18 @@ export default function MySkinJourneyScreen() {
           <LevelEmblem level={level.level} size={78} />
           <View style={{ flex: 1 }}>
             <View style={styles.rowBetween}>
-              <Text style={[TYPE.overline, { color: colors.primary }]}>{t(level.tier.name).toUpperCase()}</Text>
+              <Text style={[GTYPE.overline, { color: colors.primary }]}>{t(level.tier.name).toUpperCase()}</Text>
               {data.stars ? (
                 <View style={styles.stars}>
                   <Ionicons name="star" size={13} color="#C99A45" />
-                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{data.stars}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700') }]}>{data.stars}</Text>
                 </View>
               ) : null}
             </View>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, fontSize: 17, marginTop: 2 }]}>{t('Level {n}', { n: level.level })} · {t(level.name)}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, fontSize: 17, marginTop: 2 }]}>{t('Level {n}', { n: level.level })} · {t(level.name)}</Text>
             <View style={[styles.rowBetween, { marginTop: 4 }]}>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>{t(level.description)}</Text>
-              <Text style={[TYPE.caption, { color: colors.muted }]}>{level.next ? `${data.xp} / ${level.next.xp} XP` : `${data.xp} XP`}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={1}>{t(level.description)}</Text>
+              <Text style={[GTYPE.caption, { color: colors.muted }]}>{level.next ? `${data.xp} / ${level.next.xp} XP` : `${data.xp} XP`}</Text>
             </View>
             <ProgressBar value={level.progress} style={{ marginTop: 6 }} />
           </View>
@@ -105,7 +107,7 @@ export default function MySkinJourneyScreen() {
         {streak.active ? (
           <View style={[styles.streak, { borderTopColor: colors.border }]}>
             <Ionicons name="flame" size={16} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>
               {t('{n}-day series', { n: streak.current })} · {streak.doneToday ? t('done today') : t('tick a routine today to keep it')}
             </Text>
           </View>
@@ -135,7 +137,7 @@ export default function MySkinJourneyScreen() {
             return (
               <View key={cat.id} style={{ marginBottom: SPACING.lg }}>
                 <Text style={[styles.section, { color: colors.text }]}>{t(cat.title).toUpperCase()}</Text>
-                <Text style={[TYPE.caption, { color: colors.muted, fontStyle: 'italic', marginBottom: SPACING.sm }]}>{t(cat.subtitle)}</Text>
+                <Text style={[GTYPE.caption, { color: colors.muted, fontStyle: 'italic', marginBottom: SPACING.sm }]}>{t(cat.subtitle)}</Text>
                 <View style={styles.grid}>{list.map(badgeTile)}</View>
               </View>
             )
@@ -149,8 +151,8 @@ export default function MySkinJourneyScreen() {
           {KODA_BOX_ON && (data.box.ready || tester) ? (
             <Card style={{ marginTop: SPACING.lg, alignItems: 'center' }}>
               <BoxArt size={110} />
-              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{data.box.ready ? t('Your Koda box has arrived') : t('Your next Koda box comes on Monday')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>{t('Every active week earns you a seniority star.')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{data.box.ready ? t('Your Koda box has arrived') : t('Your next Koda box comes on Monday')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>{t('Every active week earns you a seniority star.')}</Text>
               {data.box.ready ? <Button title={t('Open my box')} onPress={startBox} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
               {tester && !data.box.ready ? <Button title={t('Test: get my box now')} variant="secondary" icon="cube-outline" onPress={() => makeBoxReadyForTest(user.id).then(load)} style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} /> : null}
             </Card>
@@ -159,22 +161,22 @@ export default function MySkinJourneyScreen() {
           <Text style={[styles.section, { color: colors.text, marginTop: SPACING.xl }]}>{t('THIS WEEK’S CHALLENGES')}</Text>
           {data.challenges.length ? (
             <>
-              <Text style={[TYPE.caption, { color: colors.muted, marginBottom: SPACING.sm }]}>
+              <Text style={[GTYPE.caption, { color: colors.muted, marginBottom: SPACING.sm }]}>
                 {t('From {from} to {to} · +{xp} XP each', { from: fmtDay(data.challenges[0].from), to: fmtDay(data.challenges[0].to), xp: data.challenges[0].xp })}
               </Text>
               <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
                 {data.challenges.map((c, i) => (
                   <View key={c.id} style={[styles.row, i < data.challenges.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                    <Ionicons name={c.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={c.done ? colors.success : colors.muted} />
+                    <FeatureIcon name={c.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={c.done ? colors.success : colors.muted} />
                     <View style={{ flex: 1 }}>
                       <View style={styles.rowBetween}>
-                        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(c.title)}</Text>
-                        <Text style={[TYPE.caption, { color: c.done ? colors.success : colors.textSecondary, fontWeight: '600' }]}>{t(STATE_LABEL[c.state])}</Text>
+                        <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t(c.title)}</Text>
+                        <Text style={[GTYPE.caption, { color: c.done ? colors.success : colors.textSecondary, ...GFW('600') }]}>{t(STATE_LABEL[c.state])}</Text>
                       </View>
-                      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(c.description)}</Text>
+                      <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(c.description)}</Text>
                       <View style={styles.progressRow}>
                         <ProgressBar value={c.value / c.target} height={6} style={{ flex: 1 }} color={c.done ? colors.success : undefined} />
-                        <Text style={[TYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{c.value}/{c.target}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{c.value}/{c.target}</Text>
                       </View>
                     </View>
                   </View>
@@ -191,12 +193,12 @@ export default function MySkinJourneyScreen() {
                   <Pressable key={s.badge.id} onPress={() => setDetail(data.badges.find(b => b.id === s.badge.id))} style={[styles.row, i < data.nextSteps.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
                     <BadgeImage badge={s.badge} size={40} locked />
                     <View style={{ flex: 1 }}>
-                      <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(s.badge.name)}</Text>
-                      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(s.badge.condition)}</Text>
+                      <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(s.badge.name)}</Text>
+                      <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(s.badge.condition)}</Text>
                       {s.target > 1 ? (
                         <View style={styles.progressRow}>
                           <ProgressBar value={s.value / s.target} height={6} style={{ flex: 1 }} />
-                          <Text style={[TYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{s.value}/{s.target}</Text>
+                          <Text style={[GTYPE.caption, { color: colors.textSecondary, minWidth: 34, textAlign: 'right' }]}>{s.value}/{s.target}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -223,13 +225,13 @@ export default function MySkinJourneyScreen() {
               { icon: 'flask-outline', value: data.stats.productsOwned, label: 'Products in your collection' },
             ].map(s => (
               <Card key={s.label} style={styles.statCard}>
-                <Ionicons name={s.icon} size={18} color={colors.primary} />
-                <Text style={[TYPE.heading, { color: colors.text, marginTop: 6 }]}>{s.value}</Text>
-                <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t(s.label)}</Text>
+                <FeatureIcon name={s.icon} size={18} color={colors.primary} />
+                <Text style={[GTYPE.heading, { color: colors.text, marginTop: 6 }]}>{s.value}</Text>
+                <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t(s.label)}</Text>
               </Card>
             ))}
           </View>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 18 }]}>
+          <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm, lineHeight: 18 }]}>
             {t('A series counts the days in a row with a ticked routine. Missing a day never takes away your badges or XP.')}
           </Text>
           <Button title={t('Share Skynkod with a friend')} variant="secondary" icon="share-outline" onPress={() => shareSkynkod(user.id, t)} style={{ marginTop: SPACING.xl }} />
@@ -238,16 +240,16 @@ export default function MySkinJourneyScreen() {
 
       {/* All 15 levels, by tier; the ones not reached yet stay silhouettes */}
       <Modal visible={levelsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setLevelsOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <View style={{ flex: 1, backgroundColor: colors.solid || colors.bg }}>
           <View style={[styles.sheetHead, { borderBottomColor: colors.border }]}>
-            <Text style={[TYPE.heading, { color: colors.text }]}>{t('Your levels')}</Text>
+            <Text style={[GTYPE.heading, { color: colors.text }]}>{t('Your levels')}</Text>
             <Pressable onPress={() => setLevelsOpen(false)} hitSlop={10} accessibilityLabel={t('Close')}><Ionicons name="close" size={24} color={colors.text} /></Pressable>
           </View>
           <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: SPACING.xxxl }}>
             {LEVEL_TIERS.map(tier => (
               <View key={tier.id} style={{ marginBottom: SPACING.xl }}>
                 <Text style={[styles.section, { color: colors.text }]}>{t(tier.name).toUpperCase()}</Text>
-                <Text style={[TYPE.caption, { color: colors.muted, fontStyle: 'italic', marginBottom: SPACING.sm }]}>{t('Levels {a}–{b}', { a: tier.levels[0], b: tier.levels[1] })} · {t(tier.description)}</Text>
+                <Text style={[GTYPE.caption, { color: colors.muted, fontStyle: 'italic', marginBottom: SPACING.sm }]}>{t('Levels {a}–{b}', { a: tier.levels[0], b: tier.levels[1] })} · {t(tier.description)}</Text>
                 {LEVELS.filter(l => l.level >= tier.levels[0] && l.level <= tier.levels[1]).map(l => {
                   const reached = level.level >= l.level
                   const current = level.level === l.level
@@ -255,11 +257,11 @@ export default function MySkinJourneyScreen() {
                     <View key={l.level} style={[styles.levelItem, { backgroundColor: current ? colors.primarySoft : colors.card, borderColor: current ? colors.primary : colors.border }]}>
                       <LevelEmblem level={l.level} size={64} locked={!reached} />
                       <View style={{ flex: 1 }}>
-                        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('LEVEL {n}', { n: String(l.level).padStart(2, '0') })}{current ? ` · ${t('YOU ARE HERE')}` : ''}</Text>
-                        <Text style={[TYPE.bodyStrong, { color: reached ? colors.text : colors.textSecondary, marginTop: 2 }]}>{t(l.name)}</Text>
-                        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(l.description)}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('LEVEL {n}', { n: String(l.level).padStart(2, '0') })}{current ? ` · ${t('YOU ARE HERE')}` : ''}</Text>
+                        <Text style={[GTYPE.bodyStrong, { color: reached ? colors.text : colors.textSecondary, marginTop: 2 }]}>{t(l.name)}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t(l.description)}</Text>
                       </View>
-                      <Text style={[TYPE.caption, { color: colors.muted }]}>{reached ? <Ionicons name="checkmark-circle" size={18} color={colors.success} /> : `${l.xp} XP`}</Text>
+                      <Text style={[GTYPE.caption, { color: colors.muted }]}>{reached ? <Ionicons name="checkmark-circle" size={18} color={colors.success} /> : `${l.xp} XP`}</Text>
                     </View>
                   )
                 })}
@@ -333,10 +335,10 @@ const styles = StyleSheet.create({
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: StyleSheet.hairlineWidth },
-  section: { fontSize: 13, fontWeight: '600', letterSpacing: 2.2 },
+  section: { fontSize: 13, ...GFW('600'), letterSpacing: 2.2 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   tile: { alignItems: 'center', paddingBottom: SPACING.md },
-  tileName: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 4, paddingHorizontal: 2 },
+  tileName: { fontSize: 12, ...GFW('600'), textAlign: 'center', marginTop: 4, paddingHorizontal: 2 },
   tileSub: { fontSize: 10, textAlign: 'center', marginTop: 2, paddingHorizontal: 2, lineHeight: 13 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm },
@@ -344,18 +346,18 @@ const styles = StyleSheet.create({
   statCard: { width: '48.5%' },
   back: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl },
   detail: { width: '100%', maxWidth: 320, borderRadius: RADIUS.xl, padding: SPACING.xl, alignItems: 'center' },
-  detailName: { fontSize: 22, fontWeight: '600', marginTop: SPACING.md, textAlign: 'center' },
+  detailName: { fontSize: 22, ...GFW('600'), marginTop: SPACING.md, textAlign: 'center' },
   detailText: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 4 },
   detailCount: { fontSize: 11, textAlign: 'right', marginBottom: 4 },
   bar: { height: 7, borderRadius: 4, overflow: 'hidden' },
   status: { alignSelf: 'stretch', marginTop: SPACING.lg, paddingVertical: 11, borderRadius: 999, alignItems: 'center' },
-  statusText: { fontSize: 12, fontWeight: '700', letterSpacing: 1.6 },
+  statusText: { fontSize: 12, ...GFW('700'), letterSpacing: 1.6 },
   detailDate: { fontSize: 12, marginTop: SPACING.md, textAlign: 'center' },
   detailKoda: { fontSize: 13, fontStyle: 'italic', marginTop: SPACING.sm, textAlign: 'center', lineHeight: 19 },
   sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: SPACING.lg, borderBottomWidth: StyleSheet.hairlineWidth },
   levelItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, marginBottom: SPACING.sm },
   stars: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(201,154,69,0.14)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 },
-  kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, fontWeight: '600' },
-  boxTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '600', marginTop: SPACING.lg, textAlign: 'center' },
+  kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, ...GFW('600') },
+  boxTitle: { color: '#FFFFFF', fontSize: 22, ...GFW('600'), marginTop: SPACING.lg, textAlign: 'center' },
   boxText: { color: '#D8C8D3', fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: SPACING.sm },
 })

@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { useColors } from './ui'
 import FeatureIcon from './FeatureIcon'
 import WeatherArt, { skyKind, SKY_LABEL } from './WeatherArt'
+import { GlossyIcon } from './FeatureIcon'
 import { useT } from '../utils/LanguageContext'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard, GlossyFill } from './glossy'
 
 // "Your skin forecast" (Lita, 2026-10-24: "just today is enough"): the weather
 // now with its drawing and a small season chip, today's advice, and the one
@@ -17,25 +19,25 @@ export default function SkinForecast({ forecast, now, season, signals = [], onEn
 
   const seasonChip = season ? (
     <View style={[styles.season, { backgroundColor: colors.primarySoft }]}>
-      <Ionicons name={season.icon} size={13} color={colors.primary} />
+      <FeatureIcon name={season.icon} size={13} color={colors.primary} />
       <Text style={[styles.seasonText, { color: colors.primary }]}>{t(season.label)}</Text>
     </View>
   ) : null
 
   if (!forecast) {
     return (
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
+      <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }, style]}>
         <View style={styles.nowRow}>
-          <WeatherArt kind="partly" width={52} />
+          <GlossyIcon name="forecast" size={44} />
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('See your local skin weather')}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t('UV, dry air and heat today, with what your skin will need.')}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('See your local skin weather')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t('UV, dry air and heat today, with what your skin will need.')}</Text>
           </View>
           {seasonChip}
         </View>
-        <Pressable onPress={onEnableLocation} style={[styles.enable, { backgroundColor: colors.primary }]}>
+        <Pressable onPress={onEnableLocation} style={[styles.enable, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
           <Ionicons name="location-outline" size={16} color={colors.onPrimary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Turn on local weather')}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Turn on local weather')}</Text>
         </Pressable>
       </View>
     )
@@ -46,27 +48,28 @@ export default function SkinForecast({ forecast, now, season, signals = [], onEn
   const nowKind = now ? skyKind(now.code, now.isDay) : skyKind(forecast.tiles[0].code)
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
+    <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }, style]}>
       {/* The weather right now, and the season */}
       <View style={styles.nowRow}>
-        <WeatherArt kind={nowKind} width={60} />
+        {/* Sun behind a cloud has its glossy icon; the other skies keep their drawings. */}
+        {nowKind === 'partly' ? <GlossyIcon name="forecast" size={50} /> : <WeatherArt kind={nowKind} width={60} />}
         <View style={{ flex: 1 }}>
           <Text style={[styles.temp, { color: colors.text }]}>{now ? now.temp : forecast.tiles[0].temp}°</Text>
-          <Text style={[TYPE.caption, { color: colors.primary }]} numberOfLines={1}>
+          <Text style={[GTYPE.caption, { color: colors.primary }]} numberOfLines={1}>
             {[t(SKY_LABEL[nowKind]), now ? `UV ${now.uv}` : null, now ? t('Air {n}%', { n: now.humidity }) : null].filter(Boolean).join(' · ')}
           </Text>
         </View>
         {seasonChip}
       </View>
 
-      <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{t(tile.tip.head, params)}</Text>
-      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 19 }]}>{t(tile.tip.advice, params)}</Text>
+      <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md }]}>{t(tile.tip.head, params)}</Text>
+      <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 19 }]}>{t(tile.tip.advice, params)}</Text>
       {signals.length ? (
         <View style={[styles.signals, { borderTopColor: colors.border }]}>
           {signals.slice(0, 1).map((s, i) => (
             <View key={i} style={styles.signal}>
               <FeatureIcon name={s.icon} size={16} color={colors.primary} style={{ marginTop: 1 }} />
-              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.text, Object.fromEntries(Object.entries(s.params || {}).map(([k, v]) => [k, typeof v === 'string' ? t(v) : v])))}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.text, Object.fromEntries(Object.entries(s.params || {}).map(([k, v]) => [k, typeof v === 'string' ? t(v) : v])))}</Text>
             </View>
           ))}
         </View>
@@ -78,9 +81,9 @@ export default function SkinForecast({ forecast, now, season, signals = [], onEn
 const styles = StyleSheet.create({
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.lg, padding: SPACING.lg },
   nowRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  temp: { fontSize: 26, fontWeight: '600', letterSpacing: -0.5 },
+  temp: { fontSize: 26, ...GFW('600'), letterSpacing: -0.5 },
   season: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' },
-  seasonText: { fontSize: 12, fontWeight: '600' },
+  seasonText: { fontSize: 12, ...GFW('600') },
   enable: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, borderRadius: 999, height: 44, marginTop: SPACING.md },
   signals: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: SPACING.md, paddingTop: SPACING.md, gap: SPACING.sm },
   signal: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' },

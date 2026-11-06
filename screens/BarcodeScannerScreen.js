@@ -12,7 +12,8 @@ import { proposeProduct, takeProductPhoto, addProposalPhotos } from '../utils/co
 import { logError } from '../utils/errorLogger'
 import { requestProduct } from '../utils/community-data'
 import { track } from '../utils/analytics'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
 
 // Full-screen camera that reads a product barcode and opens its page.
 export default function BarcodeScannerScreen({ navigation, route }) {
@@ -131,23 +132,23 @@ export default function BarcodeScannerScreen({ navigation, route }) {
           {status === 'looking' ? (
             <View style={styles.sheetRow}>
               <ActivityIndicator color={colors.primary} />
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Looking up this product…')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Looking up this product…')}</Text>
             </View>
           ) : status === 'propose' ? (
             <>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Help us add this product')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Help us add this product')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
                 {t('Photos are optional: the front, and the ingredient list on the back. We check every product before it joins Skynkod.')}
               </Text>
               <View style={styles.photoRow}>
                 {[['front', 'Front'], ['back', 'Ingredients']].map(([side, label]) => (
-                  <Pressable key={side} onPress={() => snap(side)} style={[styles.photoSlot, { borderColor: colors.border, backgroundColor: colors.card }]} accessibilityRole="button" accessibilityLabel={t(label)}>
+                  <Pressable key={side} onPress={() => snap(side)} style={[styles.photoSlot, { borderColor: colors.border, ...glassCard(colors) }]} accessibilityRole="button" accessibilityLabel={t(label)}>
                     {photos[side] ? (
                       <Image source={{ uri: photos[side].uri }} style={styles.photoImg} />
                     ) : (
                       <>
                         <Ionicons name="camera-outline" size={22} color={colors.muted} />
-                        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t(label)}</Text>
+                        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t(label)}</Text>
                       </>
                     )}
                   </Pressable>
@@ -158,18 +159,18 @@ export default function BarcodeScannerScreen({ navigation, route }) {
             </>
           ) : status === 'thanks' ? (
             <>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Thank you! 🌿')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Thank you! 🌿')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, lineHeight: 18 }]}>
                 {t('We’ll check this product and add it to Skynkod. Each product accepted earns you points towards the Official Contributor badge.')}
               </Text>
               <Button title={t('Scan again')} onPress={scanAgain} style={{ marginTop: SPACING.lg }} />
             </>
           ) : (
             <>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>
                 {status === 'notFound' ? t("We don't know this product yet") : t("Couldn't look up this product")}
               </Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>
                 {status === 'notFound'
                   ? unknown?.suggestion?.name
                     ? t('It looks like {product}. Help us add it, or find it in our list.', { product: [unknown.suggestion.brand, unknown.suggestion.name].filter(Boolean).join(' ') })
@@ -206,10 +207,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#000000' },
   top: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg },
   round: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#FFFFFF', fontSize: 17, fontWeight: '600' },
+  title: { color: '#FFFFFF', fontSize: 17, ...GFW('600') },
   frameWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: { width: '72%', height: 170, borderRadius: RADIUS.lg, borderWidth: 3, borderColor: 'rgba(255,255,255,0.9)' },
-  hint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, fontWeight: '500' },
+  hint: { color: '#FFFFFF', marginTop: SPACING.lg, fontSize: 14, ...GFW('500') },
   sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: SPACING.xl },
   sheetRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   photoRow: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg },

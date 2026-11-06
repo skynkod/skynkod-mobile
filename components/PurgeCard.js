@@ -7,7 +7,9 @@ import { useT } from '../utils/LanguageContext'
 import { purgeCardState, answerPurgeQuestions, answerPurgeFollowUp, markPurgeSeen } from '../utils/purge-check'
 import { setProductPaused } from '../utils/paused-products'
 import { logError } from '../utils/errorLogger'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // "Purging or a reaction?" (Lita, 2026-10-25), on Home and in the journal:
 // the 3 questions one at a time, then the answer, then the 4- and 8-week follow-ups.
@@ -52,24 +54,24 @@ export default function PurgeCard({ userId, state, onChange, style }) {
   }
   const option = (label, onPress, icon) => (
     <Pressable key={label} onPress={onPress} disabled={busy} style={({ pressed }) => [styles.option, { borderColor: colors.border, opacity: pressed || busy ? 0.6 : 1 }]}>
-      {icon ? <Ionicons name={icon} size={18} color={colors.primary} /> : null}
-      <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{label}</Text>
+      {icon ? <FeatureIcon name={icon} size={18} color={colors.primary} /> : null}
+      <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{label}</Text>
     </Pressable>
   )
   const head = (kicker, icon = 'help-circle-outline') => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-      <Ionicons name={icon} size={16} color={colors.primary} />
+      <FeatureIcon name={icon} size={16} color={colors.primary} />
       <Text style={[styles.kicker, { color: colors.primary, flex: 1 }]}>{kicker}</Text>
     </View>
   )
-  const body = text => <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{text}</Text>
-  const small = text => <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{text}</Text>
+  const body = text => <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{text}</Text>
+  const small = text => <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>{text}</Text>
   const button = (label, onPress, primary = true) => (
     <Pressable key={label} onPress={onPress} disabled={busy} style={[styles.btn, primary ? { backgroundColor: colors.primary } : { borderWidth: 1, borderColor: colors.border }]}>
-      <Text style={[TYPE.bodyStrong, { color: primary ? colors.onPrimary : colors.text }]}>{label}</Text>
+      <Text style={[GTYPE.bodyStrong, { color: primary ? colors.onPrimary : colors.text }]}>{label}</Text>
     </Pressable>
   )
-  const box = children => <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>{children}</View>
+  const box = children => <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }, style]}>{children}</View>
 
   // 1 · The 3 questions, one at a time.
   if (state.kind === 'ask') {
@@ -81,17 +83,17 @@ export default function PurgeCard({ userId, state, onChange, style }) {
     return box(<>
       {head(t('PURGING OR A REACTION?'))}
       {step === 'where' ? body(t(state.manual ? 'A few quick questions to know if your spots since {product} are normal.' : 'Spots keep showing up since you started {product}. A few quick questions to know if it’s normal.', { product: product.name })) : null}
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('Question {n} of {total}', { n, total })}</Text>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('Question {n} of {total}', { n, total })}</Text>
       {step === 'where' ? <>
-        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Where are the spots?')}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Where are the spots?')}</Text>
         {option(t('Where I usually get them'), () => setAnswers({ where: 'usual' }), 'locate-outline')}
         {option(t('In new places'), () => setAnswers({ where: 'new' }), 'add-circle-outline')}
       </> : step === 'itch' ? <>
-        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Does it itch, sting or burn?')}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Does it itch, sting or burn?')}</Text>
         {option(t('Yes'), () => (total === 2 ? finish({ ...answers, itch: true }) : setAnswers({ ...answers, itch: true })), 'flame-outline')}
         {option(t('No'), () => (total === 2 ? finish({ ...answers, itch: false }) : setAnswers({ ...answers, itch: false })), 'checkmark-circle-outline')}
       </> : <>
-        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Is {product} a strong active (retinol, acids, benzoyl peroxide)?', { product: product.name })}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 4 }]}>{t('Is {product} a strong active (retinol, acids, benzoyl peroxide)?', { product: product.name })}</Text>
         {option(t('Yes'), () => finish({ ...answers, active: true }), 'flask-outline')}
         {option(t('No, or I don’t know'), () => finish({ ...answers, active: false }), 'water-outline')}
       </>}
@@ -146,7 +148,7 @@ export default function PurgeCard({ userId, state, onChange, style }) {
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 20, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, marginTop: SPACING.xxl },
-  kicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1 },
+  kicker: { fontSize: 11, ...GFW('700'), letterSpacing: 1.1 },
   option: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 14, padding: SPACING.md, marginTop: SPACING.sm },
   row: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md },
   btn: { flex: 1, height: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },

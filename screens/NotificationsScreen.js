@@ -6,7 +6,8 @@ import { logError } from '../utils/errorLogger'
 import { requestNotificationPermissions, getReminderPrefs, syncSmartReminders } from '../utils/notifications'
 import { Screen, Card, ListRow, useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE } from '../components/glossy'
 
 // 3 a day at most by default (Lita's audit, 2026-10-24). Times match
 // utils/notifications.js; Rekod, Dekod and the 7-day plan join these reminders
@@ -79,7 +80,7 @@ export default function NotificationsScreen({ route }) {
                 <Pressable onPress={() => shiftTime(r, -30)} hitSlop={8} accessibilityLabel={t('Earlier')} style={{ padding: 4 }}>
                   <Ionicons name="remove-circle-outline" size={24} color={colors.primary} />
                 </Pressable>
-                <Text style={[TYPE.bodyStrong, { color: colors.text, minWidth: 52, textAlign: 'center' }]}>{settings[r.time]}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text, minWidth: 52, textAlign: 'center' }]}>{settings[r.time]}</Text>
                 <Pressable onPress={() => shiftTime(r, 30)} hitSlop={8} accessibilityLabel={t('Later')} style={{ padding: 4 }}>
                   <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
                 </Pressable>
@@ -97,7 +98,7 @@ export default function NotificationsScreen({ route }) {
           />
         ))}
       </Card>
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
         {t('Your Rekod review and Dekod day come with the morning reminder, never as an extra one.')}
       </Text>
     </Screen>

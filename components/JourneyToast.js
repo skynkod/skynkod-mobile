@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics'
 import { onJourneyNews } from '../utils/journey'
 import { useLanguage } from '../utils/LanguageContext'
 import { BadgeImage, LevelEmblem, TierPill } from './Badge'
+import { GFW } from './glossy'
 
 // "New badge!": a dark, glowing screen the moment a badge is earned (one
 // after another if several), and a short note when a level is reached.
@@ -117,13 +118,13 @@ export default function JourneyToast({ onOpen }) {
 const styles = StyleSheet.create({
   back: { flex: 1, backgroundColor: '#1E141D', alignItems: 'center', justifyContent: 'center', padding: 28 },
   glow: { position: 'absolute', left: -80, top: -80 },
-  title: { color: '#FFFFFF', fontSize: 26, fontWeight: '600', marginTop: 18, textAlign: 'center' },
-  kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, fontWeight: '600' },
-  name: { color: '#F6EEF2', fontSize: 18, fontWeight: '600', marginTop: 12 },
+  title: { color: '#FFFFFF', fontSize: 26, ...GFW('600'), marginTop: 18, textAlign: 'center' },
+  kicker: { color: '#E9CF9A', fontSize: 12, letterSpacing: 2.4, ...GFW('600') },
+  name: { color: '#F6EEF2', fontSize: 18, ...GFW('600'), marginTop: 12 },
   text: { color: '#CDBCC8', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 6, maxWidth: 300 },
   koda: { color: '#B9A6B4', fontSize: 13, fontStyle: 'italic', lineHeight: 19, textAlign: 'center', marginTop: 12, maxWidth: 300 },
   button: { marginTop: 28, alignSelf: 'stretch', maxWidth: 320, width: '100%', backgroundColor: '#E7D2F0', borderRadius: 999, paddingVertical: 15, alignItems: 'center' },
-  buttonText: { color: '#3B2140', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: '#3B2140', fontSize: 16, ...GFW('600') },
   link: { color: '#E7D2F0', fontSize: 14, marginTop: 18, textDecorationLine: 'underline' },
   more: { color: '#8F7D8B', fontSize: 12, marginTop: 10 },
 })

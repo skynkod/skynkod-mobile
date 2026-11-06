@@ -19,7 +19,9 @@ import { getUserRoutines } from '../utils/routines-service'
 import { SHOP_LINKS_ENABLED } from '../utils/shop'
 import { logError } from '../utils/errorLogger'
 import { patchOfferFor, startPatchTest, declinePatchTest } from '../utils/patch-test'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard, GlossyFill } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 // Filter chips, in routine order; only categories the user has are shown.
 const FILTERS = [
@@ -240,7 +242,7 @@ export default function ProductsScreen({ navigation }) {
                 onPress={() => setFilter(f.value)}
                 style={[styles.filter, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primary : colors.border }]}
               >
-                <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600' }]}>{t(f.label)}</Text>
+                <Text style={[GTYPE.caption, { color: on ? colors.primary : colors.text, ...GFW('600') }]}>{t(f.label)}</Text>
               </Pressable>
             )
           })}
@@ -249,23 +251,23 @@ export default function ProductsScreen({ navigation }) {
 
       {!inTab.length ? (
         <View style={[styles.empty, { borderColor: colors.border }]}>
-          <Ionicons name={tab === 'owned' ? 'flask-outline' : 'bag-handle-outline'} size={34} color={colors.primary} />
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md, textAlign: 'center' }]}>
+          <FeatureIcon name={tab === 'owned' ? 'flask-outline' : 'bag-handle-outline'} size={34} color={colors.primary} />
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md, textAlign: 'center' }]}>
             {tab === 'owned' ? t('Add the products you use') : t('Your To buy list is empty')}
           </Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
             {tab === 'owned'
               ? t('Scan or search them to see how well each one suits your skin.')
               : t("Products you'd like to try, or that Koda recommends, will land here.")}
           </Text>
           <View style={styles.emptyActions}>
-            <Pressable onPress={() => navigation.navigate('Scanner')} style={[styles.emptyButton, { backgroundColor: colors.primary }]}>
-              <Ionicons name="scan-outline" size={18} color={colors.onPrimary} />
-              <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{t('Scan')}</Text>
+            <Pressable onPress={() => navigation.navigate('Scanner')} style={[styles.emptyButton, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+              <FeatureIcon glossy name="scan-outline" size={18} color={colors.onPrimary} />
+              <Text style={{ color: colors.onPrimary, ...GFW('600') }}>{t('Scan')}</Text>
             </Pressable>
             <Pressable onPress={() => navigation.navigate('Search')} style={[styles.emptyButton, { backgroundColor: colors.primarySoft }]}>
               <Ionicons name="search" size={18} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('Search')}</Text>
+              <Text style={{ color: colors.primary, ...GFW('600') }}>{t('Search')}</Text>
             </Pressable>
           </View>
         </View>
@@ -278,12 +280,12 @@ export default function ProductsScreen({ navigation }) {
             key={row.id}
             onPress={() => (product ? navigation.navigate('Product', { id: product.id }) : openActions(row))}
             onLongPress={() => openActions(row)}
-            style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.row, { ...glassCard(colors), borderColor: colors.border }]}
           >
             <ProductThumb product={product} style={styles.photo} />
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product?.brand || row.brand}</Text>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product?.name || row.product_name}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product?.brand || row.brand}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product?.name || row.product_name}</Text>
               {product && inRoutine.has(product.id) ? (
                 <View style={[styles.routineTag, { backgroundColor: colors.primarySoft }]}>
                   <Ionicons name="water" size={11} color={colors.primary} />
@@ -302,7 +304,7 @@ export default function ProductsScreen({ navigation }) {
                       : t('Not opened yet')
                 return (
                   <Pressable onPress={() => openLife(row)} style={styles.lifeTag} hitSlop={6}>
-                    <Ionicons name={life.status === 'expired' ? 'alert-circle' : life.status === 'soon' ? 'time' : 'time-outline'} size={12} color={tone} />
+                    <FeatureIcon name={life.status === 'expired' ? 'alert-circle' : life.status === 'soon' ? 'time' : 'time-outline'} size={12} color={tone} />
                     <Text style={[styles.lifeText, { color: tone }]}>{text}</Text>
                   </Pressable>
                 )
@@ -317,9 +319,9 @@ export default function ProductsScreen({ navigation }) {
             {SHOP_LINKS_ENABLED && row.status === 'to_buy' && product ? (
               <Pressable
                 onPress={() => navigation.navigate('Product', { id: product.id })}
-                style={[styles.buyPill, { backgroundColor: colors.primary }]}
-              >
-                <Text style={{ color: colors.onPrimary, fontSize: 12, fontWeight: '700' }}>{t('Buy')}</Text>
+                style={[styles.buyPill, { backgroundColor: colors.primary, overflow: 'hidden' }]}
+              ><GlossyFill />
+                <Text style={{ color: colors.onPrimary, fontSize: 12, ...GFW('700') }}>{t('Buy')}</Text>
               </Pressable>
             ) : null}
             <Pressable onPress={() => openActions(row)} hitSlop={12} accessibilityLabel={t('More options')}>
@@ -330,28 +332,28 @@ export default function ProductsScreen({ navigation }) {
       })}
       <Modal visible={!!lifeRow} transparent animationType="fade" onRequestClose={() => setLifeRow(null)}>
         <BottomSheet title={t('Opening & expiry')} onClose={() => setLifeRow(null)}>
-          <Text style={[TYPE.body, { color: colors.textSecondary }]} numberOfLines={2}>{lifeRow?.product?.name || lifeRow?.product_name}</Text>
+          <Text style={[GTYPE.body, { color: colors.textSecondary }]} numberOfLines={2}>{lifeRow?.product?.name || lifeRow?.product_name}</Text>
 
           <Text style={[styles.sheetLabel, { color: colors.text }]}>{t('Opened')}</Text>
           <View style={styles.stepper}>
             <Pressable onPress={() => setOpenedDraft(d => shiftMonth(d, -1))} style={[styles.stepBtn, { borderColor: colors.border }]}><Ionicons name="chevron-back" size={16} color={colors.text} /></Pressable>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center', textTransform: 'capitalize' }]}>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center', textTransform: 'capitalize' }]}>
               {openedDraft ? openedDraft.toLocaleDateString(language, { month: 'long', year: 'numeric' }) : t('Not opened yet')}
             </Text>
             <Pressable onPress={() => setOpenedDraft(d => { const x = shiftMonth(d, 1); return x > new Date() ? new Date() : x })} style={[styles.stepBtn, { borderColor: colors.border }]}><Ionicons name="chevron-forward" size={16} color={colors.text} /></Pressable>
           </View>
           <Pressable onPress={() => setOpenedDraft(new Date())} hitSlop={6} style={{ alignSelf: 'center', marginTop: 6 }}>
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('I opened it today')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('I opened it today')}</Text>
           </Pressable>
 
           <Text style={[styles.sheetLabel, { color: colors.text }]}>{t('Keeps after opening')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('The open-jar symbol on the pack, like "12M".')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('The open-jar symbol on the pack, like "12M".')}</Text>
           <View style={styles.paoRow}>
             {[3, 6, 9, 12, 18, 24].map(m => {
               const on = paoDraft === m
               return (
                 <Pressable key={m} onPress={() => setPaoDraft(m)} style={[styles.paoChip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                  <Text style={{ color: on ? colors.primary : colors.text, fontWeight: '700', fontSize: 13 }}>{m}M</Text>
+                  <Text style={{ color: on ? colors.primary : colors.text, ...GFW('700'), fontSize: 13 }}>{m}M</Text>
                 </Pressable>
               )
             })}
@@ -360,19 +362,19 @@ export default function ProductsScreen({ navigation }) {
           <Text style={[styles.sheetLabel, { color: colors.text }]}>{t('Expiry date on the box (optional)')}</Text>
           <View style={styles.stepper}>
             <Pressable onPress={() => setExpiryDraft(d => shiftMonth(d, -1))} style={[styles.stepBtn, { borderColor: colors.border }]}><Ionicons name="chevron-back" size={16} color={colors.text} /></Pressable>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center', textTransform: 'capitalize' }]}>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center', textTransform: 'capitalize' }]}>
               {expiryDraft ? expiryDraft.toLocaleDateString(language, { month: 'long', year: 'numeric' }) : t('Not set')}
             </Text>
             <Pressable onPress={() => setExpiryDraft(d => shiftMonth(d || shiftMonth(new Date(), 11), 1))} style={[styles.stepBtn, { borderColor: colors.border }]}><Ionicons name="chevron-forward" size={16} color={colors.text} /></Pressable>
           </View>
           {expiryDraft ? (
             <Pressable onPress={() => setExpiryDraft(null)} hitSlop={6} style={{ alignSelf: 'center', marginTop: 6 }}>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('Remove expiry date')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, ...GFW('700') }]}>{t('Remove expiry date')}</Text>
             </Pressable>
           ) : null}
 
-          <Pressable onPress={saveLife} style={[styles.saveLife, { backgroundColor: colors.primary }]}>
-            <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{t('Save')}</Text>
+          <Pressable onPress={saveLife} style={[styles.saveLife, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+            <Text style={{ color: colors.onPrimary, ...GFW('600') }}>{t('Save')}</Text>
           </Pressable>
         </BottomSheet>
       </Modal>
@@ -387,8 +389,8 @@ const styles = StyleSheet.create({
   photo: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#FFFFFF' },
   noPhoto: { alignItems: 'center', justifyContent: 'center' },
   lifeTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  lifeText: { fontSize: 11, fontWeight: '600' },
-  sheetLabel: { fontSize: 15, fontWeight: '700', marginTop: SPACING.xl },
+  lifeText: { fontSize: 11, ...GFW('600') },
+  sheetLabel: { fontSize: 15, ...GFW('700'), marginTop: SPACING.xl },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: SPACING.sm },
   stepBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   paoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
   saveLife: { height: 50, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl, marginBottom: SPACING.xl },
   buyPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   routineTag: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 },
-  routineText: { fontSize: 11, fontWeight: '700' },
+  routineText: { fontSize: 11, ...GFW('700') },
   empty: { alignItems: 'center', borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.lg, padding: SPACING.xl, marginTop: SPACING.xl },
   emptyActions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
   emptyButton: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10 },

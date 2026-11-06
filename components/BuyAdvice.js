@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { useColors } from './ui'
 import { useT } from '../utils/LanguageContext'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // "Should I buy this?" on a product she doesn't own (Lita, 2026-10-24).
 const ANSWER = {
@@ -23,20 +25,20 @@ export default function BuyAdvice({ verdict, premium, style }) {
   const locked = !verdict.free && premium === false
   return (
     <View style={[styles.card, { backgroundColor: colors[a.soft] }, style]}>
-      <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '800', letterSpacing: 0.6 }]}>{t('SHOULD I BUY THIS?')}</Text>
+      <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('800'), letterSpacing: 0.6 }]}>{t('SHOULD I BUY THIS?')}</Text>
       <View style={styles.head}>
-        <Ionicons name={a.icon} size={26} color={colors[a.tone]} />
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>{t(a.label)}</Text>
+        <FeatureIcon name={a.icon} size={26} color={colors[a.tone]} />
+        <Text style={{ fontSize: 20, ...GFW('800'), color: colors.text }}>{t(a.label)}</Text>
       </View>
       {locked ? (
         <Pressable onPress={() => navigation.navigate('Premium')} style={styles.lock} hitSlop={6}>
           <Ionicons name="diamond" size={13} color={colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('See why with Premium')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('See why with Premium')}</Text>
         </Pressable>
       ) : premium === undefined && !verdict.free ? null : (
         <>
-          <Text style={[TYPE.body, { color: colors.text, marginTop: 4, lineHeight: 21 }]}>{t(verdict.text, verdict.params)}</Text>
-          {verdict.save ? <Text style={[TYPE.bodyStrong, { color: colors[a.tone], marginTop: 4 }]}>{t('Save your money.')}</Text> : null}
+          <Text style={[GTYPE.body, { color: colors.text, marginTop: 4, lineHeight: 21 }]}>{t(verdict.text, verdict.params)}</Text>
+          {verdict.save ? <Text style={[GTYPE.bodyStrong, { color: colors[a.tone], marginTop: 4 }]}>{t('Save your money.')}</Text> : null}
         </>
       )}
     </View>

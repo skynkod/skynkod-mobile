@@ -5,7 +5,8 @@ import { updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { SKIN_TYPES } from '../utils/constants'
 import { Screen, Card, Button, useColors } from '../components/ui'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW } from '../components/glossy'
 
 const QUESTIONS = [
   {
@@ -83,15 +84,15 @@ export default function SkinTypeQuizScreen({ route }) {
     const info = SKIN_TYPES[result.toLowerCase()] || Object.values(SKIN_TYPES).find(s => s.name === result)
     return (
       <Screen back>
-        <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>Your skin type</Text>
+        <Text style={[GTYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>Your skin type</Text>
         <Card tone="soft" style={styles.resultCard}>
           <Text style={[styles.headline, { color: colors.primary, textAlign: 'center' }]}>{result}</Text>
-          <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{info?.description}</Text>
+          <Text style={[GTYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{info?.description}</Text>
         </Card>
         {saved ? (
           <View style={[styles.savedRow, { backgroundColor: colors.successSoft }]}>
             <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text style={[TYPE.bodyStrong, { color: colors.success }]}>Saved — your routines now use it</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.success }]}>Saved — your routines now use it</Text>
           </View>
         ) : (
           <Button title="Save my skin type" onPress={save} loading={saving} />
@@ -108,7 +109,7 @@ export default function SkinTypeQuizScreen({ route }) {
       <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
         <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${((current + 1) / QUESTIONS.length) * 100}%` }]} />
       </View>
-      <Text style={[TYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>{`Question ${current + 1} of ${QUESTIONS.length}`}</Text>
+      <Text style={[GTYPE.overline, { color: colors.primary, marginTop: SPACING.xl }]}>{`Question ${current + 1} of ${QUESTIONS.length}`}</Text>
       <Text style={[styles.headline, { color: colors.text }]}>{q.question}</Text>
       <View style={styles.choices}>
         {q.answers.map(a => (
@@ -132,9 +133,9 @@ const styles = StyleSheet.create({
   resultCard: { alignItems: 'center', paddingVertical: SPACING.xxxl, marginTop: SPACING.lg, marginBottom: SPACING.xl },
   progressTrack: { height: 3, borderRadius: 2, overflow: 'hidden', marginTop: SPACING.sm },
   progressFill: { height: 3, borderRadius: 2 },
-  headline: { fontSize: 32, fontWeight: '700', letterSpacing: -0.8, lineHeight: 38, marginTop: SPACING.sm },
+  headline: { fontSize: 32, ...GFW('700'), letterSpacing: -0.8, lineHeight: 38, marginTop: SPACING.sm },
   choices: { marginTop: SPACING.xxl, gap: SPACING.sm },
   choice: { borderRadius: 999, borderWidth: 1, paddingVertical: 16, paddingHorizontal: SPACING.xl },
-  choiceLabel: { fontSize: 16, fontWeight: '600' },
+  choiceLabel: { fontSize: 16, ...GFW('600') },
   savedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.lg, borderRadius: RADIUS.md },
 })

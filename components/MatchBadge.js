@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useColors } from './ui'
+import { GFW } from './glossy'
 
 // Green / grey / orange pill saying how well something suits the user's skin.
 export default function MatchBadge({ tone = 'neutral', label, size = 'sm' }) {
@@ -22,6 +23,6 @@ export default function MatchBadge({ tone = 'neutral', label, size = 'sm' }) {
 const styles = StyleSheet.create({
   pill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, alignSelf: 'flex-start' },
   lg: { paddingHorizontal: 14, paddingVertical: 7 },
-  text: { fontSize: 11, fontWeight: '700' },
+  text: { fontSize: 11, ...GFW('700') },
   lgText: { fontSize: 14 },
 })

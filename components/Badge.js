@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
 import { TIERS } from '../utils/journey-core'
+import { GFW } from './glossy'
 
 // Badge art, cut from Lita's badge mockups (assets/badges). Replace a file to
 // update a badge; badges without art fall back to a soft hexagon.
@@ -270,7 +271,7 @@ export function TierPill({ tier, style }) {
 }
 
 const styles = StyleSheet.create({
-  mark: { position: 'absolute', color: '#FFFFFF', fontWeight: '300', opacity: 0.9 },
+  mark: { position: 'absolute', color: '#FFFFFF', ...GFW('300'), opacity: 0.9 },
   pill: { alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 3, borderRadius: 999 },
-  pillText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
+  pillText: { color: '#FFFFFF', fontSize: 10, ...GFW('700'), letterSpacing: 1.4 },
 })

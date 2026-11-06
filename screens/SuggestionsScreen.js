@@ -10,7 +10,8 @@ import ProductThumb from '../components/ProductThumb'
 import { getIngredient, findIngredients, productMatch, badgeText, badgeTone, isUnsuitable } from '../utils/ingredients-guide'
 import { getSituation, NEEDS } from '../utils/emergency-plans'
 import { logError } from '../utils/errorLogger'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
 
 // Product ideas for one day of an Emergency plan: what the user already owns
 // first, then the best-suited options. Never a product that's wrong for them.
@@ -78,15 +79,15 @@ export default function SuggestionsScreen({ navigation, route }) {
   const Row = ({ product, match, owned }) => (
     <Pressable
       onPress={() => navigation.navigate('Product', { id: product.id })}
-      style={[styles.row, { backgroundColor: colors.card, borderColor: owned ? colors.success : colors.border }]}
+      style={[styles.row, { ...glassCard(colors), borderColor: owned ? colors.success : colors.border }]}
     >
       <ProductThumb product={product} style={styles.photo} />
       <View style={{ flex: 1 }}>
-        <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
-        <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
       </View>
       {owned ? (
-        <Text style={[TYPE.caption, { color: colors.success, fontWeight: '700' }]}>{t('You have it')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.success, ...GFW('700') }]}>{t('You have it')}</Text>
       ) : (
         <MatchBadge tone={badgeTone(match)} label={t(badgeText(match))} />
       )}
@@ -101,19 +102,19 @@ export default function SuggestionsScreen({ navigation, route }) {
           <Text style={[styles.section, { color: colors.muted }]}>{t(section.label).toUpperCase()}</Text>
           {section.fromShelf.length ? (
             <>
-              <Text style={[TYPE.caption, { color: colors.success, fontWeight: '700', marginBottom: 6 }]}>{t('From your shelf, no need to buy')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.success, ...GFW('700'), marginBottom: 6 }]}>{t('From your shelf, no need to buy')}</Text>
               {section.fromShelf.slice(0, 2).map(p => <Row key={`own-${p.id}`} product={p} owned />)}
-              {section.options.length ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, marginBottom: 6 }]}>{t('Other good options')}</Text> : null}
+              {section.options.length ? <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm, marginBottom: 6 }]}>{t('Other good options')}</Text> : null}
             </>
           ) : null}
           {section.options.map(o => <Row key={o.product.id} product={o.product} match={o.match} />)}
           {!section.fromShelf.length && !section.options.length ? (
-            <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('No suitable product found in our catalogue yet.')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('No suitable product found in our catalogue yet.')}</Text>
           ) : null}
         </View>
       ))}
       {sections ? (
-        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.xl, lineHeight: 17 }]}>
+        <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.xl, lineHeight: 17 }]}>
           {t('Suggestions are picked for your skin profile only. No brand pays to appear here.')}
         </Text>
       ) : null}
@@ -122,7 +123,7 @@ export default function SuggestionsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, marginBottom: SPACING.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.md, marginBottom: SPACING.sm },
   photo: { width: 48, height: 48, borderRadius: 8, backgroundColor: '#FFFFFF' },
   noPhoto: { alignItems: 'center', justifyContent: 'center' },

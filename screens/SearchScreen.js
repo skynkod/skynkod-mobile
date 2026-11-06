@@ -15,7 +15,9 @@ import { searchIngredients, ingredientFit, productMatch, badgeText, badgeTone, i
 import { logError } from '../utils/errorLogger'
 import TrendCard from '../components/TrendCard'
 import { findTrend } from '../utils/trends'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 // What each product is, in plain English, next to names that may be in French.
 const CATEGORY_LABEL = { cleanser: 'Cleanser', toner: 'Toner', serum: 'Serum', moisturizer: 'Moisturizer', sunscreen: 'Sunscreen', exfoliant: 'Exfoliant', mask: 'Mask', 'eye care': 'Eye care', 'lip care': 'Lip care' }
@@ -103,10 +105,10 @@ export default function SearchScreen({ navigation, route }) {
   // Searching without the product in hand is Premium, like Yuka; scanning stays
   // free, and so does finding a product to teach the scanner an unknown barcode.
   const pitch = (
-    <View style={[styles.pitch, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[TYPE.overline, { color: colors.primary }]}>{t('PREMIUM')}</Text>
-      <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xs }]}>{t('Search any product or ingredient')}</Text>
-      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.xs, lineHeight: 18 }]}>
+    <View style={[styles.pitch, { ...glassCard(colors), borderColor: colors.border }]}>
+      <Text style={[GTYPE.overline, { color: colors.primary }]}>{t('PREMIUM')}</Text>
+      <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xs }]}>{t('Search any product or ingredient')}</Text>
+      <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.xs, lineHeight: 18 }]}>
         {t('Check a product before you buy it, or learn what an ingredient does, without needing the bottle in your hands.')}
       </Text>
       <UnlockButton style={{ marginTop: SPACING.md, alignSelf: 'stretch' }} />
@@ -116,7 +118,7 @@ export default function SearchScreen({ navigation, route }) {
 
   return (
     <Screen back keyboard>
-      <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.searchBar, { ...glassCard(colors), borderColor: colors.border }]}>
         <Ionicons name="search" size={18} color={colors.muted} />
         <TextInput
           value={query}
@@ -134,14 +136,14 @@ export default function SearchScreen({ navigation, route }) {
           </Pressable>
         ) : null}
         <Pressable onPress={() => navigation.navigate('Scanner')} hitSlop={10} accessibilityLabel={t('Scan a product')}>
-          <Ionicons name="scan-outline" size={22} color={colors.primary} />
+          <FeatureIcon glossy name="scan-outline" size={22} color={colors.primary} />
         </Pressable>
       </View>
 
       {pendingBarcode ? (
         <View style={[styles.linkBanner, { backgroundColor: colors.primarySoft }]}>
           <Ionicons name="barcode-outline" size={18} color={colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t('Tap your product to teach the scanner its barcode.')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>{t('Tap your product to teach the scanner its barcode.')}</Text>
         </View>
       ) : null}
 
@@ -149,7 +151,7 @@ export default function SearchScreen({ navigation, route }) {
       {hasQuery && trend ? <TrendCard trend={trend} profile={profile} style={{ marginTop: SPACING.lg }} /> : null}
 
       {!hasQuery ? (
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md, lineHeight: 18 }]}>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md, lineHeight: 18 }]}>
           {t('Seen a skincare tip on TikTok? Type it to check it, like “toothpaste on a pimple”. Free.')}
         </Text>
       ) : null}
@@ -161,16 +163,16 @@ export default function SearchScreen({ navigation, route }) {
           <Text style={[styles.section, { color: colors.muted }]}>{t('POPULAR INGREDIENTS')}</Text>
           <View style={styles.chips}>
             {POPULAR.map(p => (
-              <Pressable key={p} onPress={() => setQuery(p)} style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]}>{t(p)}</Text>
+              <Pressable key={p} onPress={() => setQuery(p)} style={[styles.chip, { ...glassCard(colors), borderColor: colors.border }]}>
+                <Text style={[GTYPE.caption, { color: colors.text, ...GFW('600') }]}>{t(p)}</Text>
               </Pressable>
             ))}
           </View>
           <Pressable onPress={() => navigation.navigate('Scanner')} style={[styles.scanCard, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name="barcode-outline" size={28} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Scan a product')}</Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Point your camera at the barcode')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Scan a product')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Point your camera at the barcode')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
           </Pressable>
@@ -186,14 +188,14 @@ export default function SearchScreen({ navigation, route }) {
               <Pressable
                 key={entry.id}
                 onPress={() => navigation.navigate('Ingredient', { id: entry.id })}
-                style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.row, { ...glassCard(colors), borderColor: colors.border }]}
               >
                 <View style={[styles.thumb, { backgroundColor: colors.primarySoft }]}>
-                  <Ionicons name="flask-outline" size={20} color={colors.primary} />
+                  <FeatureIcon name="flask-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>{t(entry.what)}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(entry.name)}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>{t(entry.what)}</Text>
                 </View>
                 <MatchBadge tone={fit.tone} label={t(fit.label)} />
               </Pressable>
@@ -208,7 +210,7 @@ export default function SearchScreen({ navigation, route }) {
           {loading && !products.length ? <ActivityIndicator color={colors.primary} style={{ marginTop: SPACING.lg }} /> : null}
           {!loading && !products.length ? (
             <View style={[styles.empty, { borderColor: colors.border }]}>
-              <Text style={[TYPE.body, { color: colors.textSecondary, textAlign: 'center' }]}>
+              <Text style={[GTYPE.body, { color: colors.textSecondary, textAlign: 'center' }]}>
                 {t("We couldn't find this product yet. Try scanning its barcode.")}
               </Text>
             </View>
@@ -221,12 +223,12 @@ export default function SearchScreen({ navigation, route }) {
               <Pressable
                 key={product.id}
                 onPress={() => openProduct(product)}
-                style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.row, { ...glassCard(colors), borderColor: colors.border }]}
               >
                 <ProductThumb product={product} style={styles.photo} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}{product.category ? ` · ${t(CATEGORY_LABEL[product.category] || product.category)}` : ''}</Text>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.textSecondary }]} numberOfLines={1}>{product.brand}{product.category ? ` · ${t(CATEGORY_LABEL[product.category] || product.category)}` : ''}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
                 </View>
                 <MatchBadge tone={badgeTone(match)} label={t(badgeText(match))} />
               </Pressable>
@@ -242,7 +244,7 @@ const styles = StyleSheet.create({
   pitch: { borderWidth: 1, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.xl },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, height: 50, borderRadius: 999, borderWidth: 1, paddingHorizontal: SPACING.lg },
   input: { flex: 1, fontSize: 16, height: '100%' },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
   scanCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderRadius: RADIUS.lg, padding: SPACING.lg, marginTop: SPACING.xl },

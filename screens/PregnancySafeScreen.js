@@ -4,7 +4,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { Screen, Card, useColors } from '../components/ui'
 import { useT } from '../utils/LanguageContext'
 import { INGREDIENTS, PREGNANCY_DETAIL, PREGNANCY_ALTERNATIVES } from '../utils/ingredients-guide'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE, GFW } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 // "What's safe for you now", for the pregnancy and breastfeeding mode. The
 // same rules the product verdicts use (utils/ingredients-guide.js).
@@ -19,10 +21,10 @@ export default function PregnancySafeScreen({ navigation }) {
 
   const Row = ({ item, icon, tone, text }) => (
     <Pressable onPress={() => navigation.navigate('Ingredient', { id: item.id })} style={[styles.row, { borderBottomColor: colors.border }]}>
-      <Ionicons name={icon} size={18} color={tone} style={{ marginTop: 2 }} />
+      <FeatureIcon name={icon} size={18} color={tone} style={{ marginTop: 2 }} />
       <View style={{ flex: 1 }}>
-        <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t(item.name)}</Text>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(text)}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t(item.name)}</Text>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t(text)}</Text>
       </View>
     </Pressable>
   )
@@ -44,16 +46,16 @@ export default function PregnancySafeScreen({ navigation }) {
         {safe.map(i => <Row key={i.id} item={i} icon="checkmark-circle-outline" tone={colors.success} text={i.what} />)}
       </Card>
 
-      <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.lg, lineHeight: 18 }]}>
+      <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.lg, lineHeight: 18 }]}>
         {t('Every product you scan is checked against these rules for you. Wear a broad-spectrum sunscreen every day: pregnancy can make dark patches (melasma) appear.')}
       </Text>
-      <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.sm }]}>{t('Check with your doctor or midwife, especially for prescribed treatments.')}</Text>
+      <Text style={[GTYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.sm }]}>{t('Check with your doctor or midwife, especially for prescribed treatments.')}</Text>
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   card: { paddingHorizontal: SPACING.lg },
   row: { flexDirection: 'row', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
 })

@@ -16,7 +16,7 @@ import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
 import { searchProducts, getMyProducts } from '../utils/catalog'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
-import { SPACING, TYPE, livePalette, liveStyles } from '../utils/theme'
+import { SPACING, livePalette, liveStyles } from '../utils/theme'
 import { useTheme } from '../utils/ThemeContext'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod, averagePoints, startPoints } from '../utils/dekod'
 import { isIntroHidden } from '../components/PremiumSpace'
@@ -26,6 +26,8 @@ import { getActivePlan } from '../utils/emergency-state'
 import { isReactiveState, stateLabel, currentSkinState, REACTIVE as REACTIVE_STATES } from '../utils/skin-state'
 import { prioritiesOf } from '../utils/skin-quiz'
 import { syncSmartReminders } from '../utils/notifications'
+import { GTYPE, GFW, glassBubble, GlossyFill, PageBackdrop, glassCard } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 import {
   GOALS, NIGHTS, nightInfo, goalOf, goalsTitle, weekOf, weekPattern, checkInDue,
   buildRekodRoutine, getRekodPlan, startRekod, recordCheckIn, leaveRekod, isReactive, patternFromRoutine, isPurgingNow,
@@ -43,11 +45,12 @@ const REACTIVE = ['Rosacea', 'Eczema', 'Perioral dermatitis', 'Sensitivity']
 
 // Light and calm like the rest of the app (Lita, 2026-10-23); deep plum marks
 // what is Premium.
-const C = livePalette({ plum: ['#33202E', '#E8D6E1'] })
+const C = livePalette({ plum: ['#5E3F56', '#E8D6E1'] })
 
 function Shell({ navigation, overline, title, subtitle, footer, children, onBack, scroll = true }) {
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: C.solid || C.bg }}>
+<PageBackdrop />
       <View style={styles.topBar}>
         {/* Rekod is a tab now: a back arrow only inside its own steps */}
         {onBack ? (
@@ -57,7 +60,7 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
         ) : <View style={{ width: 26 }} />}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <Ionicons name="diamond" size={12} color={C.plum} />
-          <Text style={[TYPE.overline, { color: C.plum }]}>Rekod · Premium</Text>
+          <Text style={[GTYPE.overline, { color: C.plum }]}>Rekod · Premium</Text>
         </View>
         {/* Always a way out, back to where she came from */}
         <Pressable onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
@@ -66,9 +69,9 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
       </View>
       {scroll ? (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {overline ? <Text style={[TYPE.overline, { color: C.primary }]}>{overline}</Text> : null}
+          {overline ? <Text style={[GTYPE.overline, { color: C.primary }]}>{overline}</Text> : null}
           {title ? <Text style={[styles.title, { color: C.text }]}>{title}</Text> : null}
-          {subtitle ? <Text style={[TYPE.body, { color: C.muted, marginTop: 4 }]}>{subtitle}</Text> : null}
+          {subtitle ? <Text style={[GTYPE.body, { color: C.muted, marginTop: 4 }]}>{subtitle}</Text> : null}
           {children}
         </ScrollView>
       ) : <View style={[styles.scroll, { flex: 1 }]}>{children}</View>}
@@ -81,18 +84,20 @@ function RButton({ title, onPress, loading, disabled, outline, small, style }) {
   return (
     <Pressable onPress={onPress} disabled={disabled || loading} accessibilityRole="button" style={({ pressed }) => [
       styles.rbutton, small && { height: 40 },
-      outline ? { borderWidth: 1, borderColor: C.primary } : { backgroundColor: C.primary },
+      outline ? { borderWidth: 1, borderColor: C.primary } : { backgroundColor: C.primary, overflow: 'hidden' },
       (pressed || disabled) && { opacity: 0.7 }, style,
     ]}>
-      {loading ? <ActivityIndicator color={outline ? C.primary : C.onPrimary} /> : <Text style={[TYPE.bodyStrong, { color: outline ? C.primary : C.onPrimary, fontWeight: '700', fontSize: small ? 13 : 15 }]}>{title}</Text>}
+      {outline ? null : <GlossyFill />}
+      {loading ? <ActivityIndicator color={outline ? C.primary : C.onPrimary} /> : <Text style={[GTYPE.bodyStrong, { color: outline ? C.primary : C.onPrimary, ...GFW('700'), fontSize: small ? 13 : 15 }]}>{title}</Text>}
     </Pressable>
   )
 }
 
 const Loading = ({ label }) => (
-  <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: SPACING.md }}>
+  <View style={{ flex: 1, backgroundColor: C.solid || C.bg, alignItems: 'center', justifyContent: 'center', gap: SPACING.md }}>
+<PageBackdrop />
     <ActivityIndicator color={C.primary} size="large" />
-    {label ? <Text style={[TYPE.caption, { color: C.muted }]}>{label}</Text> : null}
+    {label ? <Text style={[GTYPE.caption, { color: C.muted }]}>{label}</Text> : null}
   </View>
 )
 
@@ -313,7 +318,7 @@ export default function RekodScreen({ navigation }) {
     const i = Math.max(0, quizOrder.indexOf(id))
     return (
       <View style={{ marginTop: SPACING.sm }}>
-        <Text style={[TYPE.caption, { color: C.muted, textAlign: 'center' }]}>{i + 1} / {quizOrder.length}</Text>
+        <Text style={[GTYPE.caption, { color: C.muted, textAlign: 'center' }]}>{i + 1} / {quizOrder.length}</Text>
         <View style={[styles.quizBar, { backgroundColor: C.border }]}><View style={{ width: `${((i + 1) / quizOrder.length) * 100}%`, height: 3, borderRadius: 2, backgroundColor: C.primary }} /></View>
       </View>
     )
@@ -454,36 +459,36 @@ export default function RekodScreen({ navigation }) {
     const ordered = advice ? [...CHOICES.filter(c => c.id === advice.choice), ...CHOICES.filter(c => c.id !== advice.choice)] : CHOICES
     return (
       <Shell navigation={navigation} onBack={endAnswer ? () => setEndAnswer(null) : undefined}>
-        <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700', marginTop: SPACING.md }]}>{goalsTitle(plan)} · {weeksDone} weeks</Text>
+        <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700'), marginTop: SPACING.md }]}>{goalsTitle(plan)} · {weeksDone} weeks</Text>
         <Text style={[styles.title, { color: C.text }]}>{endAnswer ? 'What would you like now?' : 'Your programme is done 🌸'}</Text>
 
         {!endAnswer ? (
           <>
             {rows ? (
-              <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
-                <Text style={[TYPE.bodyStrong, { color: C.text }]}>Your Dekod, before and after</Text>
+              <View style={[styles.card, { ...glassCard(C) }]}>
+                <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Your Dekod, before and after</Text>
                 {rows.map(r => (
                   <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
-                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, fontWeight: '700' }}>{r.from ? LEVEL_LABEL[r.from] : 'Not read'} → {r.to ? LEVEL_LABEL[r.to] : 'Not read'}</Text>
+                    <Text style={[GTYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
+                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, ...GFW('700') }}>{r.from ? LEVEL_LABEL[r.from] : 'Not read'} → {r.to ? LEVEL_LABEL[r.to] : 'Not read'}</Text>
                   </View>
                 ))}
               </View>
             ) : (
-              <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center' }]}>
-                <Ionicons name="scan-circle-outline" size={24} color={C.primary} />
-                <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>Take a Dekod to compare with your Day 0</Text>
+              <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { ...glassCard(C), flexDirection: 'row', alignItems: 'center' }]}>
+                <FeatureIcon glossy name="scan-circle-outline" size={24} color={C.primary} />
+                <Text style={[GTYPE.body, { color: C.text, flex: 1 }]}>Take a Dekod to compare with your Day 0</Text>
                 <Ionicons name="chevron-forward" size={18} color={C.muted} />
               </Pressable>
             )}
             {regularity !== null ? (
-              <Text style={[TYPE.caption, { color: C.muted, marginTop: SPACING.md }]}>You did your routine on {Math.round(regularity * 100)}% of the days.</Text>
+              <Text style={[GTYPE.caption, { color: C.muted, marginTop: SPACING.md }]}>You did your routine on {Math.round(regularity * 100)}% of the days.</Text>
             ) : null}
             <Text style={[styles.question, { color: C.text, marginTop: SPACING.xl, fontSize: 24, lineHeight: 30 }]}>Do you see a difference?</Text>
             <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
               {[['yes', 'Yes, clearly'], ['little', 'A little'], ['no', 'Not really']].map(([v, label]) => (
                 <Pressable key={v} onPress={() => { tap(); setEndAnswer(v); track('rekod_end_answer', { answer: v }) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-                  <Text style={[TYPE.bodyStrong, { color: C.text, fontSize: 16 }]}>{label}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: C.text, fontSize: 16 }]}>{label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -491,11 +496,11 @@ export default function RekodScreen({ navigation }) {
         ) : (
           <>
             <View style={[styles.card, { backgroundColor: C.primarySoft, borderColor: C.primarySoft }]}>
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>Our advice</Text>
-              <Text style={[TYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{advice.why}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Our advice</Text>
+              <Text style={[GTYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{advice.why}</Text>
               {advice.choice === 'newgoal' ? (
                 <Pressable onPress={() => navigation.navigate('Koda')} hitSlop={8}>
-                  <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Ask Koda about my skin</Text>
+                  <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>Ask Koda about my skin</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -507,17 +512,17 @@ export default function RekodScreen({ navigation }) {
                     backgroundColor: best ? C.primarySoft : C.card, borderWidth: best ? 2 : 1, borderColor: best ? C.primary : C.border,
                     flexDirection: 'row', alignItems: 'center', gap: SPACING.md, opacity: busy ? 0.6 : pressed ? 0.85 : 1,
                   }]}>
-                    <Ionicons name={c.icon} size={20} color={C.primary} />
+                    <FeatureIcon name={c.icon} size={20} color={C.primary} />
                     <View style={{ flex: 1 }}>
-                      {best ? <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Recommended for you</Text> : null}
-                      <Text style={[TYPE.bodyStrong, { color: C.text }]}>{c.title}</Text>
-                      <Text style={[TYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 17 }]}>{c.text}</Text>
+                      {best ? <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>Recommended for you</Text> : null}
+                      <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{c.title}</Text>
+                      <Text style={[GTYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 17 }]}>{c.text}</Text>
                     </View>
                   </Pressable>
                 )
               })}
             </View>
-            <Text style={[TYPE.caption, { color: C.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>Whatever you choose, a short Rekod review comes back every 4 weeks, and you can change your mind anytime.</Text>
+            <Text style={[GTYPE.caption, { color: C.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>Whatever you choose, a short Rekod review comes back every 4 weeks, and you can change your mind anytime.</Text>
           </>
         )}
       </Shell>
@@ -546,11 +551,11 @@ export default function RekodScreen({ navigation }) {
             ? <Ring progress={1} label="✓" sub="maintenance" />
             : <Ring progress={week / goal.weeks} label={`${week}`} sub={`of ${goal.weeks} weeks`} />}
           <View style={{ flex: 1, gap: 6 }}>
-            <Text style={[TYPE.overline, { color: C.primary }]}>{plan.maintenance ? 'My Rekod · keeping my results' : 'My Rekod'}</Text>
+            <Text style={[GTYPE.overline, { color: C.primary }]}>{plan.maintenance ? 'My Rekod · keeping my results' : 'My Rekod'}</Text>
             <Text style={[styles.dashTitle, { color: C.text }]} numberOfLines={2}>{goalsTitle(plan)}</Text>
             <View style={[styles.pill, { backgroundColor: C.primarySoft }]}>
-              <Ionicons name={nightInfo(plan, tonight).icon} size={14} color={C.primary} />
-              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Tonight · {nightInfo(plan, tonight).short}{tonightPaused ? ' · paused' : ''}</Text>
+              <FeatureIcon name={nightInfo(plan, tonight).icon} size={14} color={C.primary} />
+              <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>Tonight · {nightInfo(plan, tonight).short}{tonightPaused ? ' · paused' : ''}</Text>
             </View>
           </View>
         </View>
@@ -560,9 +565,9 @@ export default function RekodScreen({ navigation }) {
             const strong = night === 'retinoid' || night === 'exfoliation'
             return (
               <View key={i} style={styles.dayCol}>
-                <Text style={[TYPE.caption, { color: i === todayIdx ? C.text : C.muted, fontSize: 11, fontWeight: i === todayIdx ? '700' : '500' }]}>{DAY_LETTERS[i]}</Text>
+                <Text style={[GTYPE.caption, { color: i === todayIdx ? C.text : C.muted, fontSize: 11, ...GFW(i === todayIdx ? '700' : '500') }]}>{DAY_LETTERS[i]}</Text>
                 <View style={[styles.dayDot, { backgroundColor: strong ? C.primary : C.primarySoft, borderWidth: i === todayIdx ? 2 : 0, borderColor: C.text }]}>
-                  <Ionicons name={NIGHTS[night].icon} size={14} color={strong ? C.onPrimary : C.primary} />
+                  <FeatureIcon name={NIGHTS[night].icon} size={14} color={strong ? C.onPrimary : C.primary} />
                 </View>
               </View>
             )
@@ -572,18 +577,18 @@ export default function RekodScreen({ navigation }) {
         {isReactiveState(skinState?.states) && (tonight === 'retinoid' || tonight === 'exfoliation') ? (
           <View style={[styles.card, { backgroundColor: C.primarySoft, borderColor: C.border, flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start' }]}>
             <Ionicons name="time-outline" size={18} color={C.primary} style={{ marginTop: 1 }} />
-            <Text style={[TYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>
+            <Text style={[GTYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>
               Not right for you tonight: your skin is {stateLabel(skinState.states.find(x => REACTIVE_STATES.includes(x))).toLowerCase()}. Skip the {nightInfo(plan, tonight).short.toLowerCase()} and make it a repair night. Your plan stays the same.
             </Text>
           </View>
         ) : null}
 
         {pausedNights.size ? (
-          <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center' }]}>
-            <Ionicons name="medkit-outline" size={22} color={C.primary} />
+          <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.card, { ...glassCard(C), flexDirection: 'row', alignItems: 'center' }]}>
+            <FeatureIcon name="medkit-outline" size={22} color={C.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>Your 7-day plan comes first</Text>
-              <Text style={[TYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Your 7-day plan comes first</Text>
+              <Text style={[GTYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>
                 {[...pausedNights].map(n => (n === 'retinoid' ? nightInfo(plan, 'retinoid').short : 'Exfoliation')).join(' and ')} nights are paused for now{sos?.phase === 'return' ? ', and come back step by step' : ' (until day 7)'}, then Rekod picks up where it stopped.
               </Text>
             </View>
@@ -593,7 +598,7 @@ export default function RekodScreen({ navigation }) {
 
         <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ alignSelf: 'center', marginTop: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="calendar-outline" size={15} color={C.primary} />
-          <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>See my {goal.weeks}-week plan</Text>
+          <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>See my {goal.weeks}-week plan</Text>
         </Pressable>
         <FullPlan visible={fullOpen} onClose={() => setFullOpen(false)} plan={plan} routine={routine} />
 
@@ -602,12 +607,12 @@ export default function RekodScreen({ navigation }) {
           const nights = nightCounts(plan).ret
           const advised = nightCounts({ ...plan, extraRet: 0 }).ret
           return (
-            <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+            <View style={[styles.card, { ...glassCard(C) }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-                <Ionicons name="moon-outline" size={18} color={C.primary} />
+                <FeatureIcon name="moon-outline" size={18} color={C.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: C.text }]}>Retinol nights</Text>
-                  <Text style={[TYPE.caption, { color: C.muted }]}>{nights} a week{nights === advised ? ' · the pace we advise' : ` · we advise ${advised}`}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Retinol nights</Text>
+                  <Text style={[GTYPE.caption, { color: C.muted }]}>{nights} a week{nights === advised ? ' · the pace we advise' : ` · we advise ${advised}`}</Text>
                 </View>
                 {retinolChoice(plan) ? (
                   <>
@@ -623,7 +628,7 @@ export default function RekodScreen({ navigation }) {
                 ) : null}
               </View>
               {plan.extraRetDropped ? (
-                <Text style={[TYPE.caption, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>Your skin reacted: we went back to the pace we advise. You can add nights again once it’s calm.</Text>
+                <Text style={[GTYPE.caption, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>Your skin reacted: we went back to the pace we advise. You can add nights again once it’s calm.</Text>
               ) : null}
             </View>
           )
@@ -634,15 +639,15 @@ export default function RekodScreen({ navigation }) {
           <Pressable onPress={() => { tap(); navigation.navigate('Premium') }} style={[styles.card, { backgroundColor: C.card, borderColor: C.primary, borderStyle: 'dashed', flexDirection: 'row', alignItems: 'center' }]}>
             <Ionicons name="lock-closed-outline" size={20} color={C.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>Your routine stays as it is</Text>
-              <Text style={[TYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>With Premium, it adapts to your skin every week and the next weeks unlock.</Text>
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Your routine stays as it is</Text>
+              <Text style={[GTYPE.caption, { color: C.muted, marginTop: 2, lineHeight: 18 }]}>With Premium, it adapts to your skin every week and the next weeks unlock.</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={C.muted} />
           </Pressable>
         ) : due ? (
           <Pressable onPress={() => { tap(); setCheckOpen(true) }} style={({ pressed }) => [styles.banner, { opacity: pressed ? 0.85 : 1 }]}>
             <Ionicons name="pulse-outline" size={20} color={C.onPrimary} />
-            <Text style={[TYPE.bodyStrong, { color: C.onPrimary, flex: 1 }]}>{plan.maintenance ? 'Your 4-week Rekod review is ready' : 'Your weekly Rekod review is ready'}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: C.onPrimary, flex: 1 }]}>{plan.maintenance ? 'Your 4-week Rekod review is ready' : 'Your weekly Rekod review is ready'}</Text>
             <Ionicons name="chevron-forward" size={18} color={C.onPrimary} />
           </Pressable>
         ) : null}
@@ -655,16 +660,16 @@ export default function RekodScreen({ navigation }) {
           if (base && latest && latest.id !== base.id) {
             const rows = compareScans(startPoints(scans, plan.startedAt, base.points), averagePoints(scans, 3))
             return (
-              <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+              <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.card, { ...glassCard(C) }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Ionicons name="scan-circle-outline" size={20} color={C.primary} />
-                  <Text style={[TYPE.overline, { color: C.primary, flex: 1 }]}>{finished ? 'Before / after' : 'Your progress since Day 0'}</Text>
+                  <FeatureIcon glossy name="scan-circle-outline" size={20} color={C.primary} />
+                  <Text style={[GTYPE.overline, { color: C.primary, flex: 1 }]}>{finished ? 'Before / after' : 'Your progress since Day 0'}</Text>
                   <Ionicons name="chevron-forward" size={16} color={C.muted} />
                 </View>
                 {rows.map(r => (
                   <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
-                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, fontWeight: '700' }}>
+                    <Text style={[GTYPE.body, { color: C.text, flex: 1 }]}>{r.label}</Text>
+                    <Text style={{ color: r.trend === 'better' ? C.success : r.trend === 'worse' ? C.warning : C.muted, fontSize: 13, ...GFW('700') }}>
                       {r.from ? LEVEL_LABEL[r.from] : 'Not read'} → {r.to ? LEVEL_LABEL[r.to] : 'Not read'}
                     </Text>
                   </View>
@@ -675,11 +680,11 @@ export default function RekodScreen({ navigation }) {
           const lastScanDays = latest ? (Date.now() - new Date(latest.created_at)) / 86400000 : Infinity
           if (lastScanDays < 7) return null
           return (
-            <Pressable onPress={() => { tap(); navigation.navigate('Dekod') }} style={({ pressed }) => [styles.card, { backgroundColor: C.card, borderColor: C.border, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.85 : 1 }]}>
-              <Ionicons name="scan-circle-outline" size={26} color={C.primary} />
+            <Pressable onPress={() => { tap(); navigation.navigate('Dekod') }} style={({ pressed }) => [styles.card, { ...glassCard(C), flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.85 : 1 }]}>
+              <FeatureIcon glossy name="scan-circle-outline" size={26} color={C.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[TYPE.bodyStrong, { color: C.text }]}>{base ? 'Time for this week’s Dekod' : 'Add your Day 0 with Dekod'}</Text>
-                <Text style={[TYPE.caption, { color: C.muted, marginTop: 2 }]}>{base ? 'See what changed since Day 0.' : 'A first scan, to see your progress week after week.'}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{base ? 'Time for this week’s Dekod' : 'Add your Day 0 with Dekod'}</Text>
+                <Text style={[GTYPE.caption, { color: C.muted, marginTop: 2 }]}>{base ? 'See what changed since Day 0.' : 'A first scan, to see your progress week after week.'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={C.muted} />
             </Pressable>
@@ -689,7 +694,7 @@ export default function RekodScreen({ navigation }) {
         <RoutineTabs routine={routine} paused={pausedNights} onOpen={(period, idx) => setSheet({ period, idx })} />
 
         <Pressable onPress={leave} hitSlop={10} style={{ alignSelf: 'center', marginTop: SPACING.xl }}>
-          <Text style={[TYPE.caption, { color: C.muted, fontWeight: '600' }]}>Leave my Rekod</Text>
+          <Text style={[GTYPE.caption, { color: C.muted, ...GFW('600') }]}>Leave my Rekod</Text>
         </Pressable>
 
         <StepSheet step={sheet && routine?.[sheet.period]?.[sheet.idx]} onClose={() => setSheet(null)} navigation={navigation}
@@ -698,7 +703,7 @@ export default function RekodScreen({ navigation }) {
           userId={user?.id} onPick={product => { const s2 = sheet; setSheet(null); chooseOption(s2.period, s2.idx, product) }} />
         <BottomSheetModal visible={checkOpen} onClose={() => setCheckOpen(false)}>
           <Text style={[styles.sheetTitle, { color: C.text }]}>{plan.maintenance ? 'Is your skin still doing well?' : 'Any stinging or redness this week?'}</Text>
-          <Text style={[TYPE.caption, { color: C.muted, marginTop: 4 }]}>Your plan adapts to your answer.</Text>
+          <Text style={[GTYPE.caption, { color: C.muted, marginTop: 4 }]}>Your plan adapts to your answer.</Text>
           {(() => {
             // A Dekod from the last 3 days points to an answer.
             const week = recentScan(scans, 3)
@@ -712,19 +717,19 @@ export default function RekodScreen({ navigation }) {
               <>
                 {!week ? (
                   <Pressable onPress={() => { tap(); setCheckOpen(false); navigation.navigate('Dekod') }} style={[styles.option, { backgroundColor: C.primarySoft, marginTop: SPACING.lg, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
-                    <Ionicons name="scan-circle-outline" size={22} color={C.primary} />
-                    <Text style={[TYPE.bodyStrong, { color: C.primary, flex: 1 }]}>Scan with Dekod first</Text>
+                    <FeatureIcon glossy name="scan-circle-outline" size={22} color={C.primary} />
+                    <Text style={[GTYPE.bodyStrong, { color: C.primary, flex: 1 }]}>Scan with Dekod first</Text>
                     <Ionicons name="chevron-forward" size={16} color={C.primary} />
                   </Pressable>
                 ) : null}
                 {suggested ? (
-                  <Text style={[TYPE.caption, { color: C.primary, marginTop: SPACING.md }]}>{fromJournal === suggested && fromDekod !== suggested ? 'Your journal this week suggests the highlighted answer.' : 'Your latest Dekod suggests the highlighted answer.'}</Text>
+                  <Text style={[GTYPE.caption, { color: C.primary, marginTop: SPACING.md }]}>{fromJournal === suggested && fromDekod !== suggested ? 'Your journal this week suggests the highlighted answer.' : 'Your latest Dekod suggests the highlighted answer.'}</Text>
                 ) : null}
                 <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
                   {[['good', 'All good', purging ? 'Same level while your skin purges' : 'Next week, a little more'], ['little', 'A little', 'We stay at this level'], ['lot', 'A lot', 'We slow down and let your skin rest']].map(([v, l, h]) => (
                     <Pressable key={v} disabled={busy} onPress={async () => { tap(); await checkIn(v); setCheckOpen(false) }} style={({ pressed }) => [styles.option, { backgroundColor: C.card, borderColor: suggested === v ? C.primary : C.border, borderWidth: suggested === v ? 2 : 1, opacity: pressed ? 0.8 : 1 }]}>
-                      <Text style={[TYPE.bodyStrong, { color: C.text }]}>{l}{suggested === v ? (fromJournal === v && fromDekod !== v ? ' · your journal' : ' · Dekod') : ''}</Text>
-                      <Text style={[TYPE.caption, { color: C.muted }]}>{h}</Text>
+                      <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{l}{suggested === v ? (fromJournal === v && fromDekod !== v ? ' · your journal' : ' · Dekod') : ''}</Text>
+                      <Text style={[GTYPE.caption, { color: C.muted }]}>{h}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -743,10 +748,10 @@ export default function RekodScreen({ navigation }) {
       <Shell navigation={navigation} footer={<RButton title="Start the free quiz" onPress={() => { tap(); setStep('goals') }} />}>
         <View style={[styles.pill, { backgroundColor: C.primarySoft, marginTop: SPACING.md }]}>
           <Ionicons name="diamond" size={11} color={C.plum} />
-          <Text style={[TYPE.caption, { color: C.plum, fontWeight: '700' }]}>{premium ? 'Included in your Premium' : 'Premium · free quiz'}</Text>
+          <Text style={[GTYPE.caption, { color: C.plum, ...GFW('700') }]}>{premium ? 'Included in your Premium' : 'Premium · free quiz'}</Text>
         </View>
         <Text style={[styles.title, { color: C.text, marginTop: SPACING.md }]}>A skincare plan made for your skin</Text>
-        <Text style={[TYPE.body, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>Answer a few quick questions and see your plan before you decide.</Text>
+        <Text style={[GTYPE.body, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 22 }]}>Answer a few quick questions and see your plan before you decide.</Text>
         <View style={{ gap: SPACING.lg, marginTop: SPACING.xxl }}>
           {[
             ['calendar-outline', '4 to 12 weeks, up to 3 goals'],
@@ -754,8 +759,8 @@ export default function RekodScreen({ navigation }) {
             ['heart-outline', 'Slows down if your skin reacts'],
           ].map(([icon, text]) => (
             <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
-              <View style={[styles.howNum, { backgroundColor: C.primarySoft }]}><Ionicons name={icon} size={17} color={C.primary} /></View>
-              <Text style={[TYPE.body, { color: C.text, flex: 1 }]}>{text}</Text>
+              <View style={[styles.howNum, { backgroundColor: C.primarySoft }]}><FeatureIcon name={icon} size={17} color={C.primary} /></View>
+              <Text style={[GTYPE.body, { color: C.text, flex: 1 }]}>{text}</Text>
             </View>
           ))}
         </View>
@@ -773,7 +778,7 @@ export default function RekodScreen({ navigation }) {
         footer={<RButton title={picked.length ? 'Continue' : 'Pick at least one goal'} disabled={!picked.length} onPress={() => { tap(); confirmGoals() }} />}>
         {quizProgress('goals')}
         <Text style={[styles.question, { color: C.text, marginTop: SPACING.xl }]}>What would you like to work on?</Text>
-        <Text style={[TYPE.body, { color: C.textSecondary, marginTop: 4 }]}>Up to 3 goals that work well together. The first one leads your plan.</Text>
+        <Text style={[GTYPE.body, { color: C.textSecondary, marginTop: 4 }]}>Up to 3 goals that work well together. The first one leads your plan.</Text>
         <View style={{ gap: SPACING.sm, marginTop: SPACING.xl }}>
           {GOALS.map(g => {
             const pos = picked.indexOf(g.id)
@@ -785,15 +790,15 @@ export default function RekodScreen({ navigation }) {
                 backgroundColor: on ? C.primarySoft : C.card, borderColor: on ? C.primary : C.border, borderWidth: on ? 2 : 1,
                 flexDirection: 'row', alignItems: 'center', gap: SPACING.md, opacity: blocker || full ? 0.45 : 1, transform: [{ scale: pressed ? 0.98 : 1 }],
               }]}>
-                <Ionicons name={GOAL_ICONS[g.id] || 'sparkles-outline'} size={20} color={C.primary} />
+                <FeatureIcon name={GOAL_ICONS[g.id] || 'sparkles-outline'} size={20} color={C.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: C.text }]}>{g.title}</Text>
-                  <Text style={[TYPE.caption, { color: C.muted }]}>
+                  <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{g.title}</Text>
+                  <Text style={[GTYPE.caption, { color: C.muted }]}>
                     {blocker ? `Not with ${goalOf(blocker).title}: ${blocker === 'calm' || g.id === 'calm' ? 'a reactive skin first repairs its barrier, without exfoliation' : 'they work against each other'}` : g.subtitle}
                   </Text>
                 </View>
                 {ideas.includes(g.id) && !on ? <Text style={[styles.miniChip, { color: C.primary, backgroundColor: C.primarySoft }]}>From your Dekod</Text> : null}
-                {on ? <View style={styles.pickNum}><Text style={{ color: C.onPrimary, fontSize: 12, fontWeight: '800' }}>{pos + 1}</Text></View> : null}
+                {on ? <View style={styles.pickNum}><Text style={{ color: C.onPrimary, fontSize: 12, ...GFW('800') }}>{pos + 1}</Text></View> : null}
               </Pressable>
             )
           })}
@@ -820,34 +825,34 @@ export default function RekodScreen({ navigation }) {
             {locked
               ? <RButton title="Start · 7 days free" onPress={() => { tap(); navigation.navigate('Premium') }} />
               : <RButton title="Start my Rekod" onPress={() => { tap(); adopt() }} loading={busy} />}
-            {locked ? <Text style={[TYPE.caption, { color: C.muted, textAlign: 'center', marginTop: SPACING.sm }]}>Cancel anytime</Text> : null}
+            {locked ? <Text style={[GTYPE.caption, { color: C.muted, textAlign: 'center', marginTop: SPACING.sm }]}>Cancel anytime</Text> : null}
           </>
         )}
       >
-        <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700', marginTop: SPACING.md }]}>Your plan · {goalsTitle(answers)}</Text>
+        <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700'), marginTop: SPACING.md }]}>Your plan · {goalsTitle(answers)}</Text>
         <Text style={[styles.title, { color: C.text }]}>{total} weeks</Text>
-        <Text style={[TYPE.body, { color: C.textSecondary, marginTop: SPACING.xs, lineHeight: 22 }]}>{draft ? planWhy(draft) : goalOf(answers.goal).why}</Text>
+        <Text style={[GTYPE.body, { color: C.textSecondary, marginTop: SPACING.xs, lineHeight: 22 }]}>{draft ? planWhy(draft) : goalOf(answers.goal).why}</Text>
         {/* Her health comes first (rulebook section 6): one honest line on what Rekod holds back. */}
         {precautionOf(draft) ? (
-          <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border, marginTop: SPACING.md, flexDirection: 'row', gap: SPACING.sm }]}>
-            <Ionicons name="medkit-outline" size={17} color={C.primary} style={{ marginTop: 2 }} />
-            <Text style={[TYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>{precautionOf(draft)}</Text>
+          <View style={[styles.tileRow, { ...glassCard(C), marginTop: SPACING.md, flexDirection: 'row', gap: SPACING.sm }]}>
+            <FeatureIcon name="medkit-outline" size={17} color={C.primary} style={{ marginTop: 2 }} />
+            <Text style={[GTYPE.caption, { color: C.text, flex: 1, lineHeight: 18 }]}>{precautionOf(draft)}</Text>
           </View>
         ) : null}
 
         <Text style={[styles.section, { color: C.muted }]}>WHAT YOU'LL DO</Text>
-        <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border }]}>
+        <View style={[styles.tileRow, { ...glassCard(C) }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <Ionicons name="sunny-outline" size={17} color={C.primary} />
-            <Text style={[TYPE.bodyStrong, { color: C.text }]}>Every morning, the same steps</Text>
+            <FeatureIcon name="sunny-outline" size={17} color={C.primary} />
+            <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Every morning, the same steps</Text>
           </View>
-          <Text style={[TYPE.caption, { color: C.textSecondary, marginTop: 6 }]}>{(preview.morning || []).map(x => MORNING_WORDS[x.key] || x.action).join(' → ')}</Text>
+          <Text style={[GTYPE.caption, { color: C.textSecondary, marginTop: 6 }]}>{(preview.morning || []).map(x => MORNING_WORDS[x.key] || x.action).join(' → ')}</Text>
         </View>
         {first ? (
-          <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border, marginTop: SPACING.sm }]}>
+          <View style={[styles.tileRow, { ...glassCard(C), marginTop: SPACING.sm }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-              <Ionicons name="moon-outline" size={17} color={C.primary} />
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>In the evening, it changes through the week</Text>
+              <FeatureIcon name="moon-outline" size={17} color={C.primary} />
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>In the evening, it changes through the week</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.md }}>
               {first.pattern.map((night, i) => {
@@ -856,7 +861,7 @@ export default function RekodScreen({ navigation }) {
                   <View key={i} style={styles.dayCol}>
                     <Text style={{ color: C.muted, fontSize: 11 }}>{DAY_LETTERS[i]}</Text>
                     <View style={[styles.dayDot, { width: 32, height: 32, backgroundColor: strong ? C.primary : C.primarySoft }]}>
-                      <Ionicons name={NIGHTS[night].icon} size={14} color={strong ? C.onPrimary : C.primary} />
+                      <FeatureIcon name={NIGHTS[night].icon} size={14} color={strong ? C.onPrimary : C.primary} />
                     </View>
                   </View>
                 )
@@ -865,9 +870,9 @@ export default function RekodScreen({ navigation }) {
             <View style={{ gap: 6, marginTop: SPACING.md }}>
               {nightsIn.map(n => (
                 <View key={n} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
-                  <Ionicons name={NIGHTS[n].icon} size={14} color={C.primary} style={{ marginTop: 2 }} />
-                  <Text style={[TYPE.caption, { color: C.textSecondary, flex: 1, lineHeight: 18 }]}>
-                    <Text style={{ color: C.text, fontWeight: '700' }}>{n === 'retinoid' ? TREATMENT_LABEL[first.treatment] : NIGHTS[n].label}</Text>: {NIGHT_WORDS[n === 'retinoid' ? first.treatment : n]}
+                  <FeatureIcon name={NIGHTS[n].icon} size={14} color={C.primary} style={{ marginTop: 2 }} />
+                  <Text style={[GTYPE.caption, { color: C.textSecondary, flex: 1, lineHeight: 18 }]}>
+                    <Text style={{ color: C.text, ...GFW('700') }}>{n === 'retinoid' ? TREATMENT_LABEL[first.treatment] : NIGHTS[n].label}</Text>: {NIGHT_WORDS[n === 'retinoid' ? first.treatment : n]}
                   </Text>
                 </View>
               ))}
@@ -888,31 +893,31 @@ export default function RekodScreen({ navigation }) {
               {i < arr.length - 1 ? <View style={[styles.timeLine, { backgroundColor: C.border }]} /> : null}
             </View>
             <View style={{ flex: 1, paddingBottom: SPACING.md }}>
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>{when}</Text>
-              <Text style={[TYPE.caption, { color: C.textSecondary, marginTop: 2, lineHeight: 18 }]}>{what}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{when}</Text>
+              <Text style={[GTYPE.caption, { color: C.textSecondary, marginTop: 2, lineHeight: 18 }]}>{what}</Text>
             </View>
           </View>
         ))}
         {/* Honest limits, and the treatments worth asking about, for each goal (Lita, 2026-10-24) */}
         <Pressable onPress={() => navigation.navigate('Condition', { id: GOAL_CONDITION[longest] || 'fine-lines' })} hitSlop={6} style={{ marginBottom: SPACING.md }}>
-          <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>What skincare can and can’t do, and the treatments to ask about ›</Text>
+          <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>What skincare can and can’t do, and the treatments to ask about ›</Text>
         </Pressable>
 
         <Text style={[styles.section, { color: C.muted }]}>YOUR PRODUCTS</Text>
-        <View style={[styles.tileRow, { backgroundColor: C.card, borderColor: C.border }]}>
-          <Text style={[TYPE.body, { color: C.text }]}>{kept ? `${kept} of your own product${kept > 1 ? 's are' : ' is'} kept.` : answers.productPref === 'new' ? 'We suggest a product for each step.' : 'None of your products fits these steps yet: we suggest one for each.'}</Text>
-          <Text style={[TYPE.caption, { color: C.muted, marginTop: 2 }]}>Every product is checked against your skin. No brand pays to be suggested.</Text>
+        <View style={[styles.tileRow, { ...glassCard(C) }]}>
+          <Text style={[GTYPE.body, { color: C.text }]}>{kept ? `${kept} of your own product${kept > 1 ? 's are' : ' is'} kept.` : answers.productPref === 'new' ? 'We suggest a product for each step.' : 'None of your products fits these steps yet: we suggest one for each.'}</Text>
+          <Text style={[GTYPE.caption, { color: C.muted, marginTop: 2 }]}>Every product is checked against your skin. No brand pays to be suggested.</Text>
         </View>
         {locked ? (
           <Pressable onPress={() => { tap(); navigation.navigate('Premium') }} style={[styles.tileRow, { borderColor: C.primary, borderStyle: 'dashed', flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm }]}>
             <Ionicons name="lock-closed-outline" size={17} color={C.primary} />
-            <Text style={[TYPE.body, { color: C.primary, flex: 1 }]}>Each step with its product, and your plan week by week</Text>
+            <Text style={[GTYPE.body, { color: C.primary, flex: 1 }]}>Each step with its product, and your plan week by week</Text>
           </Pressable>
         ) : (
           <>
             <Pressable onPress={() => { tap(); setFullOpen(true) }} hitSlop={8} style={{ marginTop: SPACING.lg, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="calendar-outline" size={15} color={C.primary} />
-              <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>See how your weeks go</Text>
+              <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>See how your weeks go</Text>
             </Pressable>
             <RoutineTabs routine={preview} onOpen={(period, idx) => setSheet({ period, idx })} />
           </>
@@ -939,9 +944,9 @@ export default function RekodScreen({ navigation }) {
   return (
     <Shell navigation={navigation} scroll={false} onBack={() => setStep(step === 'products' ? ((answers.experience || known.actives) === 'used' ? 'priority' : !asked.actives ? 'experience' : !asked.reactivity ? 'sensitive' : 'goals') : step === 'priority' ? (!asked.actives ? 'experience' : !asked.reactivity ? 'sensitive' : 'goals') : step === 'experience' ? (asked.reactivity ? 'goals' : 'sensitive') : 'goals')}>
       {quizProgress(step)}
-      <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700', marginTop: SPACING.xl }]}>{goalOf(answers.goal).title}</Text>
+      <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700'), marginTop: SPACING.xl }]}>{goalOf(answers.goal).title}</Text>
       <Text style={[styles.question, { color: C.text }]}>{q.title}</Text>
-      {q.sub ? <Text style={[TYPE.body, { color: C.textSecondary }]}>{q.sub}</Text> : null}
+      {q.sub ? <Text style={[GTYPE.body, { color: C.textSecondary }]}>{q.sub}</Text> : null}
       <View style={{ gap: SPACING.md, marginTop: SPACING.xl }}>
         {q.options.map(o => {
           const selected = answers[step] === o.v
@@ -952,7 +957,7 @@ export default function RekodScreen({ navigation }) {
               borderWidth: selected ? 2 : 1,
               transform: [{ scale: pressed ? 0.98 : 1 }],
             }]}>
-              <Text style={[TYPE.bodyStrong, { color: C.text, fontSize: 16 }]}>{o.t}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: C.text, fontSize: 16 }]}>{o.t}</Text>
             </Pressable>
           )
         })}
@@ -996,7 +1001,7 @@ function Ring({ progress, label, sub }) {
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.primarySoft} strokeWidth={stroke} fill="none" />
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.primary} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - Math.max(0.03, Math.min(1, progress)))} />
       </Svg>
-      <Text style={{ color: C.text, fontSize: 30, fontWeight: '700' }}>{label}</Text>
+      <Text style={{ color: C.text, fontSize: 30, ...GFW('700') }}>{label}</Text>
       <Text style={{ color: C.muted, fontSize: 11 }}>{sub}</Text>
     </View>
   )
@@ -1011,19 +1016,19 @@ function RoutineTabs({ routine, onOpen, paused }) {
       <View style={[styles.segment, { backgroundColor: C.card }]}>
         {[['morning', 'Morning', 'sunny-outline'], ['evening', 'Evening', 'moon-outline']].map(([id, label, icon]) => (
           <Pressable key={id} onPress={() => { tap(); setTab(id) }} style={[styles.segmentItem, tab === id && { backgroundColor: C.primary }]}>
-            <Ionicons name={icon} size={15} color={tab === id ? C.onPrimary : C.muted} />
-            <Text style={[TYPE.bodyStrong, { color: tab === id ? C.onPrimary : C.muted, fontSize: 14 }]}>{label}</Text>
+            <FeatureIcon name={icon} size={15} color={tab === id ? C.onPrimary : C.muted} />
+            <Text style={[GTYPE.bodyStrong, { color: tab === id ? C.onPrimary : C.muted, fontSize: 14 }]}>{label}</Text>
           </Pressable>
         ))}
       </View>
       <View style={{ gap: SPACING.sm, marginTop: SPACING.md }}>
         {steps.map((s, idx) => (
-          <Pressable key={`${s.key}-${idx}`} onPress={() => { tap(); onOpen(tab, idx) }} style={({ pressed }) => [styles.row, { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.8 : paused?.has(s.night) ? 0.5 : 1 }]}>
-            <View style={[styles.rowIcon, { backgroundColor: C.primarySoft }]}>
-              <Ionicons name={s.night === 'repair' ? 'bandage-outline' : STEP_ICONS[s.key] || 'ellipse-outline'} size={18} color={C.primary} />
+          <Pressable key={`${s.key}-${idx}`} onPress={() => { tap(); onOpen(tab, idx) }} style={({ pressed }) => [styles.row, { ...glassCard(C), opacity: pressed ? 0.8 : paused?.has(s.night) ? 0.5 : 1 }]}>
+            <View style={[styles.rowIcon, { ...glassBubble(C), backgroundColor: C.primarySoft }]}>
+              <FeatureIcon name={s.night === 'repair' ? 'bandage-outline' : STEP_ICONS[s.key] || 'ellipse-outline'} size={18} color={C.primary} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[TYPE.caption, { color: C.muted, fontWeight: '700', fontSize: 11, letterSpacing: 0.6 }]}>{idx + 1} · {s.action.toUpperCase()}</Text>
+              <Text style={[GTYPE.caption, { color: C.muted, ...GFW('700'), fontSize: 11, letterSpacing: 0.6 }]}>{idx + 1} · {s.action.toUpperCase()}</Text>
               <Text style={[styles.product, { color: C.text }]} numberOfLines={1}>{s.product || 'Pick a product'}</Text>
               <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
                 {s.keys?.[0] ? <Text style={[styles.miniChip, { color: C.primary, backgroundColor: C.primarySoft }]}>{s.keys[0].name}</Text> : null}
@@ -1054,24 +1059,25 @@ function FullPlan({ visible, onClose, plan, routine }) {
   const productFor = night => (routine?.evening || []).find(s => s.night === night)?.product
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <View style={{ flex: 1, backgroundColor: C.solid || C.bg }}>
+<PageBackdrop />
         <View style={[styles.topBar, { paddingTop: SPACING.lg }]}>
           <View style={{ width: 26 }} />
-          <Text style={[TYPE.overline, { color: C.primary }]}>Your {weeks.length}-week plan</Text>
+          <Text style={[GTYPE.overline, { color: C.primary }]}>Your {weeks.length}-week plan</Text>
           <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Close"><Ionicons name="close" size={24} color={C.text} /></Pressable>
         </View>
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={[styles.title, { color: C.text }]}>{goalsTitle(plan)}</Text>
-          <Text style={[TYPE.caption, { color: C.muted, marginTop: 4, lineHeight: 18 }]}>
+          <Text style={[GTYPE.caption, { color: C.muted, marginTop: 4, lineHeight: 18 }]}>
             Each week is revealed as you go, adjusted to your weekly Rekod review: if your skin reacts, your plan slows down.
           </Text>
 
-          <View style={[styles.card, { backgroundColor: C.card, borderColor: C.border }]}>
+          <View style={[styles.card, { ...glassCard(C) }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="sunny-outline" size={18} color={C.primary} />
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>Every morning, all {weeks.length} weeks</Text>
+              <FeatureIcon name="sunny-outline" size={18} color={C.primary} />
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>Every morning, all {weeks.length} weeks</Text>
             </View>
-            {morning.map((m, i) => <Text key={i} style={[TYPE.caption, { color: C.textSecondary }]}>{i + 1}. {m}</Text>)}
+            {morning.map((m, i) => <Text key={i} style={[GTYPE.caption, { color: C.textSecondary }]}>{i + 1}. {m}</Text>)}
           </View>
 
           <View style={{ gap: SPACING.sm, marginTop: SPACING.lg }}>
@@ -1080,8 +1086,8 @@ function FullPlan({ visible, onClose, plan, routine }) {
               if (w.week > now + 1) {
                 return (
                   <View key={w.week} style={[styles.option, { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }]}>
-                    <Text style={[TYPE.bodyStrong, { color: C.muted, width: 70 }]}>Week {w.week}</Text>
-                    <Text style={[TYPE.caption, { color: C.muted, flex: 1 }]}>Revealed in week {w.week - 1}, adjusted to your skin</Text>
+                    <Text style={[GTYPE.bodyStrong, { color: C.muted, width: 70 }]}>Week {w.week}</Text>
+                    <Text style={[GTYPE.caption, { color: C.muted, flex: 1 }]}>Revealed in week {w.week - 1}, adjusted to your skin</Text>
                     <Ionicons name="lock-closed-outline" size={15} color={C.muted} />
                   </View>
                 )
@@ -1091,12 +1097,12 @@ function FullPlan({ visible, onClose, plan, routine }) {
                 <Pressable key={w.week} onPress={() => { tap(); setOpen(isOpen ? -1 : w.week) }}
                   style={[styles.option, { backgroundColor: w.now ? C.primarySoft : C.card, borderWidth: 1, borderColor: w.now ? C.primary : C.border, opacity: w.past ? 0.6 : 1 }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-                    <Text style={[TYPE.bodyStrong, { color: C.text, width: 70 }]}>Week {w.week}</Text>
-                    <Text style={[TYPE.caption, { color: C.muted, flex: 1 }]}>{w.phase}</Text>
-                    {w.now ? <Text style={{ color: C.primary, fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>NOW</Text> : null}
-                    <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.muted} />
+                    <Text style={[GTYPE.bodyStrong, { color: C.text, width: 70 }]}>Week {w.week}</Text>
+                    <Text style={[GTYPE.caption, { color: C.muted, flex: 1 }]}>{w.phase}</Text>
+                    {w.now ? <Text style={{ color: C.primary, fontSize: 11, ...GFW('800'), letterSpacing: 0.6 }}>NOW</Text> : null}
+                    <FeatureIcon name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={C.muted} />
                   </View>
-                  {w.changes.length ? <Text style={[TYPE.caption, { color: C.primary, marginTop: 4 }]}>{w.changes.join(' · ')}</Text> : null}
+                  {w.changes.length ? <Text style={[GTYPE.caption, { color: C.primary, marginTop: 4 }]}>{w.changes.join(' · ')}</Text> : null}
                   {isOpen ? (
                     <View style={{ marginTop: SPACING.md, gap: SPACING.sm }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -1106,7 +1112,7 @@ function FullPlan({ visible, onClose, plan, routine }) {
                             <View key={i} style={styles.dayCol}>
                               <Text style={{ color: C.muted, fontSize: 11 }}>{DAY_LETTERS[i]}</Text>
                               <View style={[styles.dayDot, { width: 30, height: 30, backgroundColor: strong ? C.primary : C.primarySoft }]}>
-                                <Ionicons name={NIGHTS[night].icon} size={13} color={strong ? C.onPrimary : C.primary} />
+                                <FeatureIcon name={NIGHTS[night].icon} size={13} color={strong ? C.onPrimary : C.primary} />
                               </View>
                             </View>
                           )
@@ -1114,12 +1120,12 @@ function FullPlan({ visible, onClose, plan, routine }) {
                       </View>
                       {['retinoid', 'exfoliation', 'repair', 'reset'].filter(n => w.pattern.includes(n)).map(n => (
                         <View key={n} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
-                          <Ionicons name={NIGHTS[n].icon} size={15} color={C.primary} style={{ marginTop: 2 }} />
+                          <FeatureIcon name={NIGHTS[n].icon} size={15} color={C.primary} style={{ marginTop: 2 }} />
                           <View style={{ flex: 1 }}>
-                            <Text style={[TYPE.caption, { color: C.text, fontWeight: '700' }]}>
+                            <Text style={[GTYPE.caption, { color: C.text, ...GFW('700') }]}>
                               {n === 'retinoid' ? TREATMENT_LABEL[w.treatment] : NIGHTS[n].label} · {w.pattern.filter(x => x === n).length}×
                             </Text>
-                            <Text style={[TYPE.caption, { color: C.textSecondary }]}>{productFor(n) || NIGHT_PRODUCT_HINT[n]}</Text>
+                            <Text style={[GTYPE.caption, { color: C.textSecondary }]}>{productFor(n) || NIGHT_PRODUCT_HINT[n]}</Text>
                           </View>
                         </View>
                       ))}
@@ -1162,30 +1168,30 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
     <BottomSheetModal visible={!!s} onClose={onClose}>
       {s ? (
         <ScrollView style={{ maxHeight: 560 }} contentContainerStyle={{ gap: SPACING.md }}>
-          <Text style={[TYPE.overline, { color: C.primary }]}>{s.action}{s.days?.length ? ` · ${describeDays(s.days)}` : ''}</Text>
+          <Text style={[GTYPE.overline, { color: C.primary }]}>{s.action}{s.days?.length ? ` · ${describeDays(s.days)}` : ''}</Text>
           {s.product ? (
             <Text style={[styles.miniChip, { alignSelf: 'flex-start', color: s.owned ? C.success : C.primary, backgroundColor: s.owned ? C.successSoft : C.primarySoft }]}>
               {s.owned ? '✓ Your product' : 'Suggested for your skin'}
             </Text>
           ) : null}
           <Text style={[styles.sheetTitle, { color: C.text }]}>{s.product || 'No product yet'}</Text>
-          {s.why ? <Text style={[TYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{s.why}</Text> : null}
-          {s.tip ? <Text style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18, marginTop: SPACING.xs }]}>{s.tip}</Text> : null}
+          {s.why ? <Text style={[GTYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{s.why}</Text> : null}
+          {s.tip ? <Text style={[GTYPE.caption, { color: C.textSecondary, lineHeight: 18, marginTop: SPACING.xs }]}>{s.tip}</Text> : null}
           {s.issues?.length ? (
             <View style={[styles.issueBox, { borderColor: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422' }]}>
-              <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422', fontWeight: '700' }]}>
+              <Text style={[GTYPE.caption, { color: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422', ...GFW('700') }]}>
                 {s.issues[0].level === 'avoid' ? 'Not recommended for your skin' : 'Not 100% safe for your skin'}
               </Text>
-              {s.issues.map((i, n) => <Text key={n} style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>• {i.text}{i.detail ? `. ${i.detail}` : ''}</Text>)}
+              {s.issues.map((i, n) => <Text key={n} style={[GTYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>• {i.text}{i.detail ? `. ${i.detail}` : ''}</Text>)}
             </View>
           ) : null}
           {s.issues?.length && s.product ? (
             <View style={[styles.bestBox, { backgroundColor: C.card }]}>
-              <Text style={[TYPE.bodyStrong, { color: C.text }]}>{s.accepted ? 'You chose to keep it' : 'The best option we found'}</Text>
-              <Text style={[TYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>
+              <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{s.accepted ? 'You chose to keep it' : 'The best option we found'}</Text>
+              <Text style={[GTYPE.caption, { color: C.textSecondary, lineHeight: 18 }]}>
                 No product for this step is 100% safe for your skin yet (because of the points above), so this is the closest match.
               </Text>
-              <Text style={[TYPE.caption, { color: C.primary, lineHeight: 18, fontWeight: '600' }]}>
+              <Text style={[GTYPE.caption, { color: C.primary, lineHeight: 18, ...GFW('600') }]}>
                 Test it first: a little on the inside of your elbow, morning and evening, for 7 days. Redness, itching or swelling? Stop and remove it. Then start on your face every other evening for the first week.
               </Text>
               {!s.accepted ? (
@@ -1195,7 +1201,7 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
                 </View>
               ) : (
                 <Pressable onPress={onRemove} hitSlop={8} style={{ marginTop: 4 }}>
-                  <Text style={[TYPE.caption, { color: C.muted, fontWeight: '700' }]}>Remove from my routine</Text>
+                  <Text style={[GTYPE.caption, { color: C.muted, ...GFW('700') }]}>Remove from my routine</Text>
                 </Pressable>
               )}
             </View>
@@ -1204,7 +1210,7 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
             <View style={styles.keys}>
               {s.keys.map(k => (
                 <Pressable key={k.id} onPress={() => { onClose(); navigation.navigate('Ingredient', { id: k.id }) }} style={[styles.keyChip, { backgroundColor: C.primarySoft }]}>
-                  <Text style={[TYPE.caption, { color: C.primary, fontWeight: '600' }]}>{k.name}</Text>
+                  <Text style={[GTYPE.caption, { color: C.primary, ...GFW('600') }]}>{k.name}</Text>
                 </Pressable>
               ))}
             </View>
@@ -1212,14 +1218,14 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
           {s.product_id ? <RButton title="See the product" onPress={() => { onClose(); navigation.navigate('Product', { id: s.product_id }) }} /> : null}
           {options?.length ? (
             <View style={{ gap: SPACING.sm }}>
-              <Text style={[TYPE.caption, { color: C.muted, fontWeight: '700', letterSpacing: 0.6 }]}>OTHER OPTIONS, ALSO 100% SAFE FOR YOU</Text>
+              <Text style={[GTYPE.caption, { color: C.muted, ...GFW('700'), letterSpacing: 0.6 }]}>OTHER OPTIONS, ALSO 100% SAFE FOR YOU</Text>
               {options.map(o => (
-                <Pressable key={o.product.id} onPress={() => onPick(o.product)} style={({ pressed }) => [styles.tileRow, { backgroundColor: C.card, borderColor: C.border, opacity: pressed ? 0.85 : 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }]}>
+                <Pressable key={o.product.id} onPress={() => onPick(o.product)} style={({ pressed }) => [styles.tileRow, { ...glassCard(C), opacity: pressed ? 0.85 : 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>{o.label}</Text>
-                    <Text style={[TYPE.bodyStrong, { color: C.text }]} numberOfLines={2}>{o.product.brand} {o.product.name}</Text>
+                    <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>{o.label}</Text>
+                    <Text style={[GTYPE.bodyStrong, { color: C.text }]} numberOfLines={2}>{o.product.brand} {o.product.name}</Text>
                   </View>
-                  <Text style={[TYPE.caption, { color: C.primary, fontWeight: '700' }]}>Use this</Text>
+                  <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>Use this</Text>
                 </Pressable>
               ))}
             </View>
@@ -1234,25 +1240,25 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
 const styles = liveStyles(() => StyleSheet.create({
   stepBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dash: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, marginTop: SPACING.md },
-  dashTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 26, lineHeight: 30 },
+  dashTitle: { ...GFW('700'), letterSpacing: -0.4, fontSize: 26, lineHeight: 30 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: C.primary, borderRadius: 18, padding: SPACING.lg, marginTop: SPACING.lg },
   segment: { flexDirection: 'row', borderRadius: 999, padding: 4 },
   segmentItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, borderRadius: 999 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 18, padding: SPACING.md },
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  miniChip: { fontSize: 11, fontWeight: '700', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
+  miniChip: { fontSize: 11, ...GFW('700'), borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden' },
   warnDot: { width: 8, height: 8, borderRadius: 4 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
-  bottomSheet: { backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SPACING.xl, paddingBottom: SPACING.xxxl },
+  bottomSheet: { backgroundColor: C.solid || C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SPACING.xl, paddingBottom: SPACING.xxxl },
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: C.border, marginBottom: SPACING.lg },
   bestBox: { borderRadius: 16, padding: SPACING.md, gap: 6 },
-  sheetTitle: { fontWeight: '700', letterSpacing: -0.4, fontSize: 24, lineHeight: 30 },
+  sheetTitle: { ...GFW('700'), letterSpacing: -0.4, fontSize: 24, lineHeight: 30 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
   scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl },
   footer: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, paddingBottom: SPACING.md },
-  title: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.xs },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  title: { ...GFW('700'), letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.xs },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
   how: { flexDirection: 'row', gap: SPACING.md, alignItems: 'flex-start', marginBottom: SPACING.lg },
   pickNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
   timeDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, marginTop: 3 },
@@ -1263,9 +1269,9 @@ const styles = liveStyles(() => StyleSheet.create({
   bar: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: SPACING.lg },
   rbutton: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.lg },
   premium: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  premiumText: { color: '#33202E', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  hero: { fontWeight: '700', letterSpacing: -0.4, fontSize: 44, lineHeight: 46, marginTop: SPACING.sm },
-  serif: { fontWeight: '700', letterSpacing: -0.4, fontSize: 18 },
+  premiumText: { color: '#5E3F56', fontSize: 10, ...GFW('700'), letterSpacing: 1 },
+  hero: { ...GFW('700'), letterSpacing: -0.4, fontSize: 44, lineHeight: 46, marginTop: SPACING.sm },
+  serif: { ...GFW('700'), letterSpacing: -0.4, fontSize: 18 },
   card: { borderWidth: 1, borderRadius: 20, padding: SPACING.lg, gap: SPACING.md, marginTop: SPACING.lg },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xl },
   dayCol: { alignItems: 'center', gap: 4 },
@@ -1276,14 +1282,14 @@ const styles = liveStyles(() => StyleSheet.create({
   issueBox: { borderWidth: 1, borderRadius: 12, padding: SPACING.sm, gap: 2, marginTop: 2 },
   issueActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   smallBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  sheet: { flex: 1, backgroundColor: C.bg, paddingTop: SPACING.xl, paddingHorizontal: SPACING.xl },
+  sheet: { flex: 1, backgroundColor: C.solid || C.bg, paddingTop: SPACING.xl, paddingHorizontal: SPACING.xl },
   search: { borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, height: 46, color: C.text, backgroundColor: C.card, marginTop: SPACING.md },
   resultRow: { paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   keyChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  product: { fontWeight: '600', fontSize: 15 },
+  product: { ...GFW('600'), fontSize: 15 },
   badge: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  question: { fontWeight: '700', letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.sm },
+  badgeText: { fontSize: 11, ...GFW('700') },
+  question: { ...GFW('700'), letterSpacing: -0.4, fontSize: 30, lineHeight: 36, marginTop: SPACING.sm },
   option: { borderRadius: 18, padding: SPACING.lg },
 }))
 
@@ -1308,16 +1314,16 @@ function OwnProductPicker({ visible, userId, onClose, onPick }) {
           <Text style={[styles.title, { color: C.text, fontSize: 24 }]}>Your own product</Text>
           <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Close"><Ionicons name="close" size={24} color={C.text} /></Pressable>
         </View>
-        <Text style={[TYPE.caption, { color: C.muted, marginTop: 4 }]}>{query.trim().length >= 2 ? 'Search results' : 'From your products. Type to search the catalogue.'}</Text>
+        <Text style={[GTYPE.caption, { color: C.muted, marginTop: 4 }]}>{query.trim().length >= 2 ? 'Search results' : 'From your products. Type to search the catalogue.'}</Text>
         <TextInput value={query} onChangeText={setQuery} placeholder="Search a product or brand" placeholderTextColor={C.muted} style={styles.search} autoFocus />
         <ScrollView keyboardShouldPersistTaps="handled" style={{ marginTop: SPACING.md }}>
           {results.map(p => (
             <Pressable key={p.id} onPress={() => onPick(p)} style={styles.resultRow}>
-              <Text style={[TYPE.caption, { color: C.muted }]}>{p.brand}</Text>
+              <Text style={[GTYPE.caption, { color: C.muted }]}>{p.brand}</Text>
               <Text style={[styles.product, { color: C.text }]}>{p.name}</Text>
             </Pressable>
           ))}
-          {!results.length ? <Text style={[TYPE.caption, { color: C.muted, marginTop: SPACING.lg }]}>No products yet.</Text> : null}
+          {!results.length ? <Text style={[GTYPE.caption, { color: C.muted, marginTop: SPACING.lg }]}>No products yet.</Text> : null}
         </ScrollView>
       </View>
     </Modal>

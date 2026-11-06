@@ -15,7 +15,9 @@ import { healthAvailable, isHealthOn, connectHealth, disconnectHealth } from '..
 import { logError } from '../utils/errorLogger'
 import { refreshIfRekod } from '../utils/rekod'
 import { syncSmartReminders } from '../utils/notifications'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, glassBubble } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 // "Your skin right now" (inspired by Flo's life stages, Lita 2026-10-23): the
 // modes that change the whole app. Pregnancy and breastfeeding (every verdict,
@@ -83,14 +85,14 @@ export default function LifeModesScreen({ navigation }) {
   const Mode = ({ icon, title, text, on, children, onPress, premium }) => (
     <Card style={[styles.mode, on && { borderColor: colors.primary, backgroundColor: colors.primarySoft }]} onPress={onPress}>
       <View style={styles.head}>
-        <View style={[styles.icon, { backgroundColor: on ? colors.primary : colors.primarySoft }]}>
-          <Ionicons name={icon} size={20} color={on ? colors.onPrimary : colors.primary} />
+        <View style={[styles.icon, { ...glassBubble(colors), backgroundColor: on ? colors.primary : colors.primarySoft }]}>
+          <FeatureIcon name={icon} size={20} color={on ? colors.onPrimary : colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{text}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{text}</Text>
         </View>
-        {premium ? <Ionicons name="diamond" size={14} color="#33202E" /> : null}
+        {premium ? <Ionicons name="diamond" size={14} color="#5E3F56" /> : null}
         {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
       </View>
       {children}
@@ -108,7 +110,7 @@ export default function LifeModesScreen({ navigation }) {
           </View>
           {pregnancy !== 'no' ? (
             <Pressable onPress={() => navigation.navigate('PregnancySafe')} style={styles.link} hitSlop={6}>
-              <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{t('What’s safe for you now')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.primary }]}>{t('What’s safe for you now')}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.primary} />
             </Pressable>
           ) : null}
@@ -126,7 +128,7 @@ export default function LifeModesScreen({ navigation }) {
         <Mode icon="fitness-outline" title={t('Apple Health')} on={health.on}
           text={health.on ? t('Connected: your period dates and sleep feed your skin forecast and your journal links. Read only, never shared.') : t('Let Skynkod read your period dates and sleep, to warn you before breakouts. Read only, never shared.')}>
           <Pressable onPress={toggleHealth} style={styles.link} hitSlop={6}>
-            <Text style={[TYPE.bodyStrong, { color: colors.primary }]}>{health.on ? t('Disconnect') : t('Connect Apple Health')}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.primary }]}>{health.on ? t('Disconnect') : t('Connect Apple Health')}</Text>
           </Pressable>
         </Mode>
       ) : null}
@@ -137,7 +139,7 @@ export default function LifeModesScreen({ navigation }) {
           {season.tips.map(tip => (
             <View key={tip} style={styles.tip}>
               <Ionicons name="checkmark" size={14} color={colors.primary} style={{ marginTop: 2 }} />
-              <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip)}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(tip)}</Text>
             </View>
           ))}
         </View>

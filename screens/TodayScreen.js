@@ -54,7 +54,8 @@ import { getCheckInStatus } from '../utils/skin-tracking'
 import { getPausedProducts } from '../utils/paused-products'
 import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard, glassBubble, GlossyFill, PageBackdrop } from '../components/glossy'
 
 // "My skin day", like a food diary: three things to do each day (morning
 // routine, check-in, evening routine), a ring that fills up and a streak.
@@ -497,28 +498,28 @@ export default function TodayScreen({ navigation, route }) {
     // No products in this routine: add hers, or get one made for her skin.
     if (!routines[period]) {
       return (
-        <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border, gap: SPACING.md }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('No products in your {period} routine yet', { period: period === 'morning' ? t('morning') : t('evening') })}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Add the products you already use, or let us build a routine made for your skin.')}</Text>
-          <Pressable onPress={() => navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() })} style={[styles.emptyBtn, { backgroundColor: colors.primary }]}>
-            <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Add my products')}</Text>
+        <View style={[styles.logCard, { ...glassCard(colors), borderColor: colors.border, gap: SPACING.md }]}>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('No products in your {period} routine yet', { period: period === 'morning' ? t('morning') : t('evening') })}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Add the products you already use, or let us build a routine made for your skin.')}</Text>
+          <Pressable onPress={() => navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() })} style={[styles.emptyBtn, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+            <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Add my products')}</Text>
           </Pressable>
-          <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.emptyBtn, { backgroundColor: '#33202E', flexDirection: 'row', gap: 8 }]}>
+          <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.emptyBtn, { backgroundColor: '#5E3F56', flexDirection: 'row', gap: 8 }]}>
             <FeatureIcon name="rekod" size={18} color="#FFFFFF" />
-            <Text style={[TYPE.bodyStrong, { color: '#FFFFFF' }]}>{t('Get a routine made for me')}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: '#FFFFFF' }]}>{t('Get a routine made for me')}</Text>
           </Pressable>
         </View>
       )
     }
     return (
-      <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.logCard, { ...glassCard(colors), borderColor: colors.border }]}>
         <Pressable disabled={!!count.total && !complete} onPress={() => { tap(); count.total ? (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period })) : navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() }) }} style={styles.logRow}>
-          <View style={[styles.logIcon, { backgroundColor: complete ? colors.successSoft : colors.primarySoft }]}>
-            <Ionicons name={complete ? 'checkmark' : icon} size={20} color={complete ? colors.success : colors.primary} />
+          <View style={[styles.logIcon, { ...glassBubble(colors), backgroundColor: complete ? colors.successSoft : colors.primarySoft }]}>
+            <FeatureIcon glossy name={complete ? 'checkmark' : icon} size={20} color={complete ? colors.success : colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
-            <Text style={[TYPE.caption, { color: colors.muted }]}>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted }]}>
               {count.total ? (complete ? (period === 'morning' ? t('Done · see you tonight') : t('Done · sleep well')) : t('{done} of {total} steps', { done: count.done, total: count.total })) : t('Set up my routine')}
             </Text>
           </View>
@@ -532,7 +533,7 @@ export default function TodayScreen({ navigation, route }) {
         {isOpen ? (
           <View style={{ marginTop: SPACING.sm }}>
             {/* The neck too (Lita, 2026-10-24) */}
-            <Text style={[TYPE.caption, { color: colors.muted, marginBottom: SPACING.xs }]}>{t('On your face and neck, then your eyes and lips.')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted, marginBottom: SPACING.xs }]}>{t('On your face and neck, then your eyes and lips.')}</Text>
             {stepsOf(period).map((s, i) => { const ticked = !!done[period][tickOf(period, s)]; return (
               <View key={`${s.key}-${i}`} style={[styles.stepRow, { borderTopColor: colors.border }]}>
                 {s.product ? (
@@ -546,31 +547,31 @@ export default function TodayScreen({ navigation, route }) {
                 {/* A step without a product (Lips in an older routine): pick one in the builder */}
                 <Pressable onPress={() => (s.product_id ? navigation.navigate('Product', { id: s.product_id })
                   : !s.product && navigation.navigate('RoutineBuilder', { period, startedAt: Date.now(), editSteps: withEssentials(period) }))} style={{ flex: 1 }}>
-                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(s.action)}{s.optional ? ` · ${t(s.optionalNote || 'on evenings you wear makeup')}` : ''}</Text>
-                  <Text style={[TYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: ticked ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
-                  {s.rx && s.issues?.length ? <Text style={[TYPE.caption, { color: s.issues[0].level === 'avoid' ? colors.warning : colors.muted }]}>{t(s.issues[0].text)}</Text> : null}
+                  <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('700') }]}>{t(s.action)}{s.optional ? ` · ${t(s.optionalNote || 'on evenings you wear makeup')}` : ''}</Text>
+                  <Text style={[GTYPE.body, { color: s.product_id ? colors.primary : colors.text, textDecorationLine: ticked ? 'line-through' : 'none' }]} numberOfLines={1}>{s.product || t('Pick a product')}</Text>
+                  {s.rx && s.issues?.length ? <Text style={[GTYPE.caption, { color: s.issues[0].level === 'avoid' ? colors.warning : colors.muted }]}>{t(s.issues[0].text)}</Text> : null}
                 </Pressable>
               </View>
             ) })}
             {/* Same words everywhere: her skin today says "Not right now"; a plan or
                 her own choice says "Paused". */}
             {adjustedOf(period).paused.filter(x => x.reason === 'skin state').length ? (
-              <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
+              <Text style={[GTYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
                 {t('Not right now:')} {adjustedOf(period).paused.filter(x => x.reason === 'skin state').map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
             {adjustedOf(period).paused.filter(x => x.reason === 'avoid').length ? (
-              <Text style={[TYPE.caption, { color: colors.warning, paddingTop: SPACING.sm }]}>
+              <Text style={[GTYPE.caption, { color: colors.warning, paddingTop: SPACING.sm }]}>
                 {['pregnant', 'breastfeeding'].includes(pregnancy) ? t('Not during pregnancy or breastfeeding:') : t('Not for you (your allergies):')} {adjustedOf(period).paused.filter(x => x.reason === 'avoid').map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
             {adjustedOf(period).paused.filter(x => x.reason !== 'skin state' && x.reason !== 'avoid').length ? (
-              <Text style={[TYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
+              <Text style={[GTYPE.caption, { color: colors.muted, paddingTop: SPACING.sm }]}>
                 {t('Paused for now:')} {adjustedOf(period).paused.filter(x => x.reason !== 'skin state' && x.reason !== 'avoid').map(x => x.step.product).join(', ')}
               </Text>
             ) : null}
             <Pressable onPress={() => (plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: period }))} style={{ paddingTop: SPACING.sm }}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('See my whole routine')} ›</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('See my whole routine')} ›</Text>
             </Pressable>
           </View>
         ) : null}
@@ -583,44 +584,44 @@ export default function TodayScreen({ navigation, route }) {
   const keyed = (key, node) => (node ? React.cloneElement(node, { key }) : null)
   const moments = [
     keyed('reacting', reactingShown ? (
-        <View style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.recap, { ...glassCard(colors), borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <Ionicons name={spacing?.kind === 'restore' ? 'leaf-outline' : 'pulse-outline'} size={16} color={colors.primary} />
+            <FeatureIcon name={spacing?.kind === 'restore' ? 'leaf-outline' : 'pulse-outline'} size={16} color={colors.primary} />
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{spacing?.kind === 'restore' ? t('TWO CALMER WEEKS') : t('YOUR SKIN IS REACTING')}</Text>
             {spacing?.kind !== 'restore' ? <Pressable onPress={dismissReacting} hitSlop={12} accessibilityLabel={t('Not now')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable> : null}
           </View>
           {spacing?.kind === 'restore' ? (
             <>
-              <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('Your actives have been spaced for 2 weeks. Bring your usual schedule back?')}</Text>
+              <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('Your actives have been spaced for 2 weeks. Bring your usual schedule back?')}</Text>
               <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
-                <Pressable onPress={() => onSpacing('restore')} style={[styles.emptyBtn, { flex: 1, backgroundColor: colors.primary }]}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Bring them back')}</Text>
+                <Pressable onPress={() => onSpacing('restore')} style={[styles.emptyBtn, { flex: 1, backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+                  <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Bring them back')}</Text>
                 </Pressable>
                 <Pressable onPress={() => onSpacing('dismiss')} style={[styles.emptyBtn, { flex: 1, borderWidth: 1, borderColor: colors.border }]}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Keep spaced')}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Keep spaced')}</Text>
                 </Pressable>
               </View>
             </>
           ) : (
             <>
-              <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+              <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
                 {reactive
                   ? t('Your skin is {state} today: strong actives wait, and products that could irritate it say “Not right now”.', { state: t(stateLabel(skinState.states.find(x => ['irritated', 'red', 'barrier', 'overexfoliated'].includes(x)))).toLowerCase() })
                   : t('Redness, itching or peeling on {n} days this week.', { n: spacing?.days || 2 })}
               </Text>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t('To calm it down, choose one:')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>{t('To calm it down, choose one:')}</Text>
               <Pressable onPress={() => onSpacing('space')} style={[styles.reactOption, { borderColor: colors.border }]}>
                 <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Space my actives for 2 weeks')}</Text>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('Retinol on Monday and Thursday, acids on Saturday.')}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Space my actives for 2 weeks')}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('Retinol on Monday and Thursday, acids on Saturday.')}</Text>
                 </View>
               </Pressable>
               <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.reactOption, { borderColor: colors.border }]}>
-                <Ionicons name="medkit-outline" size={18} color={colors.primary} />
+                <FeatureIcon name="medkit-outline" size={18} color={colors.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('7-day calm plan')} <Ionicons name="diamond" size={12} color={colors.primary} /></Text>
-                  <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('A gentle routine day by day, then your products back one by one.')}</Text>
+                  <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('7-day calm plan')} <Ionicons name="diamond" size={12} color={colors.primary} /></Text>
+                  <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('A gentle routine day by day, then your products back one by one.')}</Text>
                 </View>
               </Pressable>
             </>
@@ -628,19 +629,19 @@ export default function TodayScreen({ navigation, route }) {
         </View>
       ) : null),
     keyed('simplify', shouldSuggestSimplify(shortState) ? (
-        <View style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.recap, { ...glassCard(colors), borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <Ionicons name="moon-outline" size={16} color={colors.primary} />
+            <FeatureIcon name="moon-outline" size={16} color={colors.primary} />
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR EVENINGS')}</Text>
             <Pressable onPress={closeSimplify} hitSlop={12} accessibilityLabel={t('Not now')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
           </View>
-          <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('3 short evenings this week. Your evening routine may be too long for you right now. Shorten it?')}</Text>
+          <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('3 short evenings this week. Your evening routine may be too long for you right now. Shorten it?')}</Text>
           <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
-            <Pressable onPress={() => { closeSimplify(); plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: 'evening' }) }} style={[styles.emptyBtn, { flex: 1, backgroundColor: colors.primary }]}>
-              <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Shorten it')}</Text>
+            <Pressable onPress={() => { closeSimplify(); plan ? navigation.navigate('Rekod') : navigation.navigate('Routines', { tab: 'evening' }) }} style={[styles.emptyBtn, { flex: 1, backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+              <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Shorten it')}</Text>
             </Pressable>
             <Pressable onPress={closeSimplify} style={[styles.emptyBtn, { flex: 1, borderWidth: 1, borderColor: colors.border }]}>
-              <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Keep it')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Keep it')}</Text>
             </Pressable>
           </View>
         </View>
@@ -654,28 +655,28 @@ export default function TodayScreen({ navigation, route }) {
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('WEEK {n} · SKIN REVIEW', { n: checkIn.week })}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </View>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t('How is your skin doing?')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('10 seconds to see your progress.')}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>{t('How is your skin doing?')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('10 seconds to see your progress.')}</Text>
         </Pressable>
       ) : null),
     keyed('environment', environment && !envClosed ? (
-        <View style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.recap, { ...glassCard(colors), borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <Ionicons name={environment.kind === 'back' ? 'home-outline' : 'airplane-outline'} size={16} color={colors.primary} />
+            <FeatureIcon name={environment.kind === 'back' ? 'home-outline' : 'airplane-outline'} size={16} color={colors.primary} />
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR ENVIRONMENT CHANGED')}</Text>
             <Pressable onPress={closeEnvironment} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
           </View>
           {environment.kind === 'back' ? (
-            <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('You’re back home: your usual routine fits again.')}</Text>
+            <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t('You’re back home: your usual routine fits again.')}</Text>
           ) : (
             <>
-              <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+              <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
                 {t('You’re somewhere {what} than home.', { what: environment.labels.map(l => t(l)).join(t(' and ')) })}
               </Text>
               {[['Morning', environment.morning], ['Evening', environment.evening]].map(([label, list]) => list.length ? (
                 <View key={label} style={{ marginTop: SPACING.sm }}>
-                  <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '700' }]}>{t(label).toUpperCase()}</Text>
-                  {list.map(a => <Text key={a} style={[TYPE.caption, { color: colors.text, lineHeight: 19 }]}>→ {t(a)}</Text>)}
+                  <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('700') }]}>{t(label).toUpperCase()}</Text>
+                  {list.map(a => <Text key={a} style={[GTYPE.caption, { color: colors.text, lineHeight: 19 }]}>→ {t(a)}</Text>)}
                 </View>
               ) : null)}
             </>
@@ -683,19 +684,20 @@ export default function TodayScreen({ navigation, route }) {
         </View>
       ) : null),
     keyed('tip', recap ? (
-        <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.recap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.recap, { ...glassCard(colors), borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+            <FeatureIcon name="koda" size={20} color={colors.primary} />
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR TIP FOR THE WEEK')}</Text>
             <Pressable onPress={closeRecap} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
           </View>
-          <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t(recap.tip)}</Text>
+          <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{t(recap.tip)}</Text>
         </Pressable>
       ) : null),
   ].filter(Boolean)
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.solid || colors.bg }}>
+      <PageBackdrop />
     <Animated.ScrollView style={{ flex: 1 }} snapToOffsets={[0, swapAt]} snapToEnd={false} decelerationRate="fast" contentContainerStyle={{ paddingTop: insets.top + SPACING.xl, paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxl * 2, minHeight: Dimensions.get('window').height + swapAt }}
       scrollEventThrottle={32}
       onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true, listener: e => { const down = e.nativeEvent.contentOffset.y > swapAt * 0.75; if (down !== compact) setCompact(down) } })}
@@ -710,13 +712,13 @@ export default function TodayScreen({ navigation, route }) {
           {weather ? (
             <>
               <Text style={[styles.date, { color: colors.accent }]}>·</Text>
-              <Ionicons name={weather.icon} size={13} color={colors.primary} />
+              <FeatureIcon name={weather.icon} size={13} color={colors.primary} />
               <Text style={[styles.date, { color: colors.primary }]}>{weather.temp}°</Text>
             </>
           ) : null}
         </View>
-        <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')} style={[styles.bell, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="notifications-outline" size={19} color={colors.text} />
+        <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')} style={[styles.bell, { ...glassCard(colors), borderColor: colors.border }]}>
+          <FeatureIcon glossy name="notifications-outline" size={22} color={colors.text} />
         </Pressable>
         {/* Profile lives here now that Rekod and Dekod have the bottom bar */}
         <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={{ marginLeft: SPACING.sm, marginRight: 6 }}>
@@ -735,8 +737,8 @@ export default function TodayScreen({ navigation, route }) {
       {['pregnant', 'breastfeeding'].includes(pregnancy) || sos.plan ? (
         <Pressable onPress={() => navigation.navigate('LifeModes')} style={[styles.modeChip, { backgroundColor: colors.primarySoft }]}>
           {/* A 7-day plan shows its own name and icon: a sunburn or waxing plan isn't "reacting" skin */}
-          <Ionicons name={sos.plan && !['pregnant', 'breastfeeding'].includes(pregnancy) ? (sos.plan.situation.icon || 'flame-outline') : 'heart-outline'} size={14} color={colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>
+          <FeatureIcon name={sos.plan && !['pregnant', 'breastfeeding'].includes(pregnancy) ? (sos.plan.situation.icon || 'flame-outline') : 'heart-outline'} size={14} color={colors.primary} />
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>
             {pregnancy === 'pregnant' ? t('Pregnancy mode') : pregnancy === 'breastfeeding' ? t('Breastfeeding mode') : sos.plan.situation.title ? t(sos.plan.situation.title) : t('My skin is reacting')}
           </Text>
         </Pressable>
@@ -755,20 +757,20 @@ export default function TodayScreen({ navigation, route }) {
       <View style={styles.searchRow}>
         {premium === false ? (
           <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
-            style={({ pressed }) => [styles.scanBtn, { flex: 1, justifyContent: 'center', backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-            <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
-            <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan a product')}</Text>
+            style={({ pressed }) => [styles.scanBtn, { flex: 1, justifyContent: 'center', backgroundColor: colors.primary, overflow: 'hidden', transform: [{ scale: pressed ? 0.98 : 1 }] }]}><GlossyFill />
+            <FeatureIcon glossy name="scan-outline" size={26} color={colors.onPrimary} />
+            <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan a product')}</Text>
           </Pressable>
         ) : (
           <>
-            <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable onPress={() => navigation.navigate('Search')} style={[styles.search, { flex: 1, ...glassCard(colors), borderColor: colors.border }]}>
               <Ionicons name="search" size={18} color={colors.muted} />
-              <Text style={[TYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
+              <Text style={[GTYPE.body, { color: colors.muted, flex: 1 }]} numberOfLines={1}>{t('Search a product')}</Text>
             </Pressable>
             <Pressable onPress={() => { tap(); navigation.navigate('Scanner') }} accessibilityLabel={t('Scan a product')}
-              style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
-              <Ionicons name="scan-outline" size={20} color={colors.onPrimary} />
-              <Text style={[TYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
+              style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, overflow: 'hidden', transform: [{ scale: pressed ? 0.95 : 1 }] }]}><GlossyFill />
+              <FeatureIcon glossy name="scan-outline" size={26} color={colors.onPrimary} />
+              <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Scan')}</Text>
             </Pressable>
           </>
         )}
@@ -776,7 +778,7 @@ export default function TodayScreen({ navigation, route }) {
       {premium === false ? (
         <Pressable onPress={() => navigation.navigate('Search')} hitSlop={6} style={styles.learnLink}>
           <Ionicons name="search" size={14} color={colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Search without the product')} <Ionicons name="diamond" size={11} color={colors.primary} /></Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Search without the product')} <Ionicons name="diamond" size={11} color={colors.primary} /></Text>
         </Pressable>
       ) : null}
 
@@ -787,7 +789,7 @@ export default function TodayScreen({ navigation, route }) {
           {moments[0]}
           {momentsOpen ? moments.slice(1) : moments.length > 1 ? (
             <Pressable onPress={() => setMomentsOpen(true)} hitSlop={6} style={{ alignSelf: 'center', marginTop: SPACING.sm }}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('{n} more', { n: moments.length - 1 })}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('{n} more', { n: moments.length - 1 })}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -802,23 +804,23 @@ export default function TodayScreen({ navigation, route }) {
       {now !== 'morning' && routines.evening && !Object.values(done.evening || {}).some(Boolean) && (shortTonight || canGoShort(adjustedFullOf('evening').steps)) ? (
         shortTonight ? (
           <View style={{ paddingTop: SPACING.sm, gap: 4 }}>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
               {t('Tonight, just the essentials. If you wear makeup, take it off well first.')}{(shortState.shifted || []).includes(skinDayKey()) ? ` ${t('Rekod takes a one-night pause: everything moves one evening later.')}` : ''}
             </Text>
             <Pressable onPress={() => onShort(false)} disabled={shortBusy} hitSlop={6}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Back to my full routine')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Back to my full routine')}</Text>
             </Pressable>
           </View>
         ) : (
           <Pressable onPress={() => onShort(true)} disabled={shortBusy} hitSlop={6} style={{ paddingTop: SPACING.sm }}>
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Tired? Short version tonight')} ›</Text>
+            <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Tired? Short version tonight')} ›</Text>
           </Pressable>
         )
       ) : null}
       {sos.plan ? (
-        <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.sosLine, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name={sos.plan.situation.icon} size={16} color={colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+        <Pressable onPress={() => navigation.navigate('Emergency')} style={[styles.sosLine, { ...glassCard(colors), borderColor: colors.border }]}>
+          <FeatureIcon name={sos.plan.situation.icon} size={16} color={colors.primary} />
+          <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
             {sos.plan.phase === 'return'
               ? (sos.plan.comingBack
                 ? t('Gradual return · today, {what} comes back', { what: t(RETURN_LABELS[sos.plan.comingBack]).toLowerCase() })
@@ -834,8 +836,8 @@ export default function TodayScreen({ navigation, route }) {
         const tip = tipOfTheMoment({ period: afterSunrise && hour < 18 ? 'day' : 'evening', sleptHours: todayEntry?.sleep_hours ?? null, zones: profile?.acneWhere || [] })
         return (
           <View style={[styles.tip, { backgroundColor: colors.primarySoft }]}>
-            <Ionicons name={afterSunrise && hour < 18 ? 'water-outline' : 'bed-outline'} size={16} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(tip.text, tip.params)}</Text>
+            <FeatureIcon name={afterSunrise && hour < 18 ? 'water-outline' : 'bed-outline'} size={16} color={colors.primary} />
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(tip.text, tip.params)}</Text>
           </View>
         )
       })()}
@@ -844,14 +846,14 @@ export default function TodayScreen({ navigation, route }) {
       <Text style={[styles.section, { color: colors.muted }]}>{t('Your skin today')}</Text>
       {/* Last night's sleep, in the morning only */}
       {now === 'morning' ? (sleepDone && !sleepOpen ? (
-        <Pressable onPress={() => setSleepOpen(true)} style={[styles.logCard, styles.logRow, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: SPACING.sm }]}>
-          <View style={[styles.logIcon, { backgroundColor: colors.successSoft }]}><Ionicons name="bed-outline" size={20} color={colors.success} /></View>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t('Slept {n} h · {how}', { n: todayEntry.sleep_hours, how: t(SLEEP_QUALITY.find(q => q.value === todayEntry.sleep_quality)?.label).toLowerCase() })}</Text>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Edit')}</Text>
+        <Pressable onPress={() => setSleepOpen(true)} style={[styles.logCard, styles.logRow, { ...glassCard(colors), borderColor: colors.border, marginBottom: SPACING.sm }]}>
+          <View style={[styles.logIcon, { ...glassBubble(colors), backgroundColor: colors.successSoft }]}><Ionicons name="bed-outline" size={20} color={colors.success} /></View>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t('Slept {n} h · {how}', { n: todayEntry.sleep_hours, how: t(SLEEP_QUALITY.find(q => q.value === todayEntry.sleep_quality)?.label).toLowerCase() })}</Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Edit')}</Text>
         </Pressable>
       ) : (
-        <View style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: SPACING.sm }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('How did you sleep?')}</Text>
+        <View style={[styles.logCard, { ...glassCard(colors), borderColor: colors.border, marginBottom: SPACING.sm }]}>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('How did you sleep?')}</Text>
           <View style={[styles.chipsRow, { marginTop: SPACING.md }]}>
             {SLEEP_QUALITY.map(q => {
               const on = todayEntry?.sleep_quality === q.value
@@ -859,19 +861,19 @@ export default function TodayScreen({ navigation, route }) {
                 <Pressable key={q.value} onPress={() => pickSleep({ quality: q.value })} accessibilityState={{ selected: on }}
                   style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
                   <MaterialCommunityIcons name={q.icon} size={18} color={on ? colors.onPrimary : colors.primary} />
-                  <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{t(q.label)}</Text>
+                  <Text style={[GTYPE.caption, { color: on ? colors.onPrimary : colors.primary, ...GFW('700') }]}>{t(q.label)}</Text>
                 </Pressable>
               )
             })}
           </View>
-          <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('How many hours?')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('How many hours?')}</Text>
           <View style={[styles.chipsRow, { marginTop: SPACING.sm }]}>
             {SLEEP_HOURS.map(h => {
               const on = todayEntry?.sleep_hours != null && Number(todayEntry.sleep_hours) === h
               return (
                 <Pressable key={h} onPress={() => pickSleep({ hours: h })} accessibilityState={{ selected: on }}
                   style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
-                  <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{h === 4 ? '≤4' : h === 9 ? '9+' : h}</Text>
+                  <Text style={[GTYPE.caption, { color: on ? colors.onPrimary : colors.primary, ...GFW('700') }]}>{h === 4 ? '≤4' : h === 9 ? '9+' : h}</Text>
                 </Pressable>
               )
             })}
@@ -879,20 +881,20 @@ export default function TodayScreen({ navigation, route }) {
         </View>
       )) : null}
       {todayMood && !checkinOpen ? (
-        <Pressable onPress={() => setCheckinOpen(true)} style={[styles.logCard, styles.logRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.logIcon, { backgroundColor: colors.successSoft }]}><Ionicons name="checkmark" size={20} color={colors.success} /></View>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t('Checked in · {mood}', { mood: t(MOODS.find(m => m.value === todayMood)?.label).toLowerCase() })}</Text>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Edit')}</Text>
+        <Pressable onPress={() => setCheckinOpen(true)} style={[styles.logCard, styles.logRow, { ...glassCard(colors), borderColor: colors.border }]}>
+          <View style={[styles.logIcon, { ...glassBubble(colors), backgroundColor: colors.successSoft }]}><Ionicons name="checkmark" size={20} color={colors.success} /></View>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t('Checked in · {mood}', { mood: t(MOODS.find(m => m.value === todayMood)?.label).toLowerCase() })}</Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Edit')}</Text>
         </Pressable>
       ) : (
-      <Pressable onPress={() => navigation.navigate('Journal', { openNew: Date.now() })} style={[styles.logCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable onPress={() => navigation.navigate('Journal', { openNew: Date.now() })} style={[styles.logCard, { ...glassCard(colors), borderColor: colors.border }]}>
         <View style={styles.logRow}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>
             {todayMood ? t('Today: {mood}', { mood: t(MOODS.find(m => m.value === todayMood)?.label).toLowerCase() }) : t('How does your skin feel?')}
           </Text>
           {todayMood ? (
             <Pressable onPress={() => navigation.navigate('Journal', { openNew: Date.now() })} hitSlop={8}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Add details')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Add details')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -914,13 +916,13 @@ export default function TodayScreen({ navigation, route }) {
       </Pressable>
       )}
       <Pressable onPress={() => navigation.navigate('Skyncyclopedia')} hitSlop={6} style={styles.learnLink}>
-        <Ionicons name="library-outline" size={15} color={colors.primary} />
-        <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Learn about your skin: issues, ingredients, the basics')} ›</Text>
+        <FeatureIcon name="library-outline" size={15} color={colors.primary} />
+        <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Learn about your skin: issues, ingredients, the basics')} ›</Text>
       </Pressable>
 
-      <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.progressLink, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
-        <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>
+      <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.progressLink, { borderColor: colors.border, ...glassCard(colors) }]}>
+        <FeatureIcon name="trending-up-outline" size={18} color={colors.primary} />
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1, fontSize: 14 }]}>{t('See my progress')}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       </Pressable>
 
@@ -932,7 +934,7 @@ export default function TodayScreen({ navigation, route }) {
           <Text style={styles.programmeKicker}>{plan ? t('WEEK {n} OF {total}', { n: Math.min(weekOf(plan), planWeeks(plan)), total: planWeeks(plan) }) : t('PREMIUM · REKOD')}</Text>
           <Text style={styles.programmeTitle} numberOfLines={1}>{plan ? goalsTitle(plan) : t('Rekod: your skin programme, made for you')}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
+        <Ionicons name="chevron-forward" size={18} color="#C5A8BB" />
       </Pressable>
     </Animated.ScrollView>
 
@@ -942,12 +944,12 @@ export default function TodayScreen({ navigation, route }) {
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
-            {weather ? <><Ionicons name={weather.icon} size={12} color={colors.primary} /><Text style={[styles.date, { color: colors.primary }]}>{weather.temp}°</Text></> : null}
+            {weather ? <><FeatureIcon name={weather.icon} size={12} color={colors.primary} /><Text style={[styles.date, { color: colors.primary }]}>{weather.temp}°</Text></> : null}
           </View>
-          <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 2 }]} numberOfLines={1}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 2 }]} numberOfLines={1}>{greeting}{firstName ? `, ${firstName}` : ''}</Text>
         </View>
         <Pressable onPress={() => navigation.navigate('Alerts')} hitSlop={10} accessibilityLabel={t('Notifications')}>
-          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          <FeatureIcon glossy name="notifications-outline" size={24} color={colors.text} />
         </Pressable>
         <Pressable onPress={() => navigation.navigate('More')} hitSlop={10} accessibilityLabel={t('Profile')} style={{ marginLeft: SPACING.md, marginRight: 4 }}>
           <ProfileAvatar name={firstName} level={journey?.level.level} size={30} color={colors.primary} textColor={colors.onPrimary} />
@@ -988,18 +990,18 @@ const styles = StyleSheet.create({
   modeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingVertical: 5, paddingHorizontal: SPACING.md, marginTop: SPACING.md },
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
-  date: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  hello: { fontSize: 30, fontWeight: '800', letterSpacing: -0.7, lineHeight: 38 },
+  date: { fontSize: 12, ...GFW('700'), letterSpacing: 1.2, textTransform: 'uppercase' },
+  hello: { fontSize: 30, ...GFW('800'), letterSpacing: -0.7, lineHeight: 38 },
   sosLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth },
   moodMessage: { fontSize: 13, lineHeight: 18, marginTop: SPACING.md },
   avatarSmall: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.md },
   progressLink: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, borderWidth: 1, borderRadius: 16, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
   recap: { borderWidth: 1, borderRadius: 20, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, marginTop: SPACING.xxl },
-  recapKicker: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1 },
+  recapKicker: { fontSize: 11, ...GFW('700'), letterSpacing: 1.1 },
   emptyBtn: { height: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   helloRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xxl },
   glyph: { marginTop: 4 },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxxl, marginBottom: SPACING.md },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, textTransform: 'uppercase', marginTop: SPACING.xxxl, marginBottom: SPACING.md },
   bell: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   programmeIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
   today: { flexDirection: 'row', alignItems: 'center', gap: SPACING.lg, borderWidth: 1, borderRadius: 24, padding: SPACING.lg, marginTop: SPACING.lg },
@@ -1015,8 +1017,8 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: SPACING.sm },
   scanBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 52, borderRadius: 999, paddingHorizontal: SPACING.lg },
   search: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 52 },
-  programme: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#33202E', borderRadius: 22, padding: SPACING.lg },
-  programmeKicker: { color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
-  programmeTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginTop: 2 },
+  programme: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, backgroundColor: '#5E3F56', borderRadius: 22, padding: SPACING.lg },
+  programmeKicker: { color: '#C5A8BB', fontSize: 10, ...GFW('700'), letterSpacing: 1.2 },
+  programmeTitle: { color: '#FFFFFF', fontSize: 15, ...GFW('700'), marginTop: 2 },
   tip: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderRadius: RADIUS.lg, padding: SPACING.md, marginTop: SPACING.md },
 })

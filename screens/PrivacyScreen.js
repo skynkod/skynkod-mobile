@@ -8,11 +8,13 @@ import { useT, useLanguage } from '../utils/LanguageContext'
 import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { setAnalyticsOff } from '../utils/analytics'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
 import { exportMyData, isDiscreet, setDiscreet, isLockOn, canLock, setLock } from '../utils/privacy'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from '../utils/supabase'
 import { refreshIfRekod } from '../utils/rekod'
+import { GTYPE } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 const OFFERS_ENABLED = false
 
@@ -146,8 +148,8 @@ export default function PrivacyScreen({ navigation }) {
   const Row = ({ title, subtitle, value, onChange, last }) => (
     <View style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
       <View style={{ flex: 1 }}>
-        <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 17 }]}>{subtitle}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{title}</Text>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 17 }]}>{subtitle}</Text>
       </View>
       <Switch value={!!value} onValueChange={onChange} trackColor={{ true: colors.primary }} />
     </View>
@@ -206,7 +208,7 @@ export default function PrivacyScreen({ navigation }) {
         ) : null}
       </Card>
 
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.lg, lineHeight: 18 }]}>
         {profile.consent_terms_at
           ? t('You accepted the terms of use and privacy policy on {date}.', { date: date(profile.consent_terms_at) })
           : t("You haven't accepted the terms of use yet.")}
@@ -225,8 +227,8 @@ export default function PrivacyScreen({ navigation }) {
             onPress={item.onPress}
             style={[styles.link, idx < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
           >
-            <Ionicons name={item.icon} size={20} color={colors.textSecondary} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{item.title}</Text>
+            <FeatureIcon name={item.icon} size={20} color={colors.textSecondary} />
+            <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{item.title}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </Pressable>
         ))}

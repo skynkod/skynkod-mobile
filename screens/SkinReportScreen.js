@@ -8,8 +8,10 @@ import { useT, useLanguage } from '../utils/LanguageContext'
 import { shareReport } from '../utils/skin-report'
 import { logError } from '../utils/errorLogger'
 import { track } from '../utils/analytics'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
 import ProgressTabs from '../components/ProgressTabs'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 const INSIDE = [
   ['person-outline', 'Your skin profile and treatments'],
@@ -49,26 +51,26 @@ export default function SkinReportScreen() {
       footer={premium ? <Button title={t('Create my report')} icon="document-text-outline" loading={busy} onPress={create} /> : <UnlockButton />}>
       <ProgressTabs current="SkinReport" />
       <Card>
-        <Text style={[TYPE.overline, { color: colors.muted }]}>{t('WHAT’S INSIDE')}</Text>
+        <Text style={[GTYPE.overline, { color: colors.muted }]}>{t('WHAT’S INSIDE')}</Text>
         {INSIDE.map(([icon, text]) => (
           <View key={text} style={styles.row}>
-            <Ionicons name={icon} size={18} color={colors.primary} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(text)}</Text>
+            <FeatureIcon name={icon} size={18} color={colors.primary} />
+            <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{t(text)}</Text>
           </View>
         ))}
-        <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md, lineHeight: 17 }]}>{t('Only what you logged in Skynkod. It’s not a diagnosis: your dermatologist decides.')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.md, lineHeight: 17 }]}>{t('Only what you logged in Skynkod. It’s not a diagnosis: your dermatologist decides.')}</Text>
       </Card>
       <Text style={[styles.section, { color: colors.muted }]}>{t('YOUR QUESTIONS FOR THE APPOINTMENT')}</Text>
       <TextInput value={questions} onChangeText={setQuestions} multiline editable={!!premium}
         placeholder={t('Can I keep using retinol with my treatment?')} placeholderTextColor={colors.muted}
-        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} />
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Optional. They’re added at the end of your report.')}</Text>
+        style={[styles.input, { ...glassCard(colors), borderColor: colors.border, color: colors.text }]} />
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Optional. They’re added at the end of your report.')}</Text>
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginTop: SPACING.md },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   input: { minHeight: 110, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: 15, textAlignVertical: 'top' },
 })

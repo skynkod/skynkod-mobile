@@ -70,7 +70,9 @@ const PLAN_PROMPTS = {
   barrier: 'Dry skin? Start a 7-day plan to repair your barrier',
 };
 import { Screen, useColors } from '../components/ui';
-import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { SPACING, RADIUS } from '../utils/theme';
+import { GTYPE, GFW, glassCard, glassBubble } from '../components/glossy';
+import FeatureIcon from '../components/FeatureIcon';
 
 const startOfWeek = (date) => {
   const d = new Date(date);
@@ -379,7 +381,7 @@ export default function JournalScreen({ route, navigation }) {
       </View>
 
       {/* The night before: saved at once, in the same queue as the rest of the day */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
         <Text style={[styles.overline, { color: colors.primary }]}>{t('THE NIGHT BEFORE')}</Text>
         <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm }}>
           {SLEEP_QUALITY.map(q => {
@@ -387,7 +389,7 @@ export default function JournalScreen({ route, navigation }) {
             return (
               <Pressable key={q.value} onPress={() => pickSleep({ quality: on ? null : q.value })} accessibilityState={{ selected: on }}
                 style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
-                <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{t(q.label)}</Text>
+                <Text style={[GTYPE.caption, { color: on ? colors.onPrimary : colors.primary, ...GFW('700') }]}>{t(q.label)}</Text>
               </Pressable>
             );
           })}
@@ -398,7 +400,7 @@ export default function JournalScreen({ route, navigation }) {
             return (
               <Pressable key={h} onPress={() => pickSleep({ hours: on ? null : h })} accessibilityState={{ selected: on }}
                 style={[styles.sleepChip, { flex: 1, backgroundColor: on ? colors.primary : colors.primarySoft }]}>
-                <Text style={[TYPE.caption, { color: on ? colors.onPrimary : colors.primary, fontWeight: '700' }]}>{h === 4 ? '≤4 h' : h === 9 ? '9+ h' : `${h} h`}</Text>
+                <Text style={[GTYPE.caption, { color: on ? colors.onPrimary : colors.primary, ...GFW('700') }]}>{h === 4 ? '≤4 h' : h === 9 ? '9+ h' : `${h} h`}</Text>
               </Pressable>
             );
           })}
@@ -406,12 +408,12 @@ export default function JournalScreen({ route, navigation }) {
       </View>
 
       {/* Check-in */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
         <View style={styles.cardHead}>
           <Text style={[styles.overline, { color: colors.primary }]}>{t('CHECK-IN')}</Text>
-          {status === 'dirty' ? <Text style={[TYPE.caption, { color: colors.muted, fontWeight: '600' }]}>{t('Not saved yet')}</Text> : null}
+          {status === 'dirty' ? <Text style={[GTYPE.caption, { color: colors.muted, ...GFW('600') }]}>{t('Not saved yet')}</Text> : null}
         </View>
-        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm }]}>
           {isToday ? t('How is your skin today?') : t('How was your skin that day?')}
         </Text>
         <View style={styles.moods}>
@@ -422,7 +424,7 @@ export default function JournalScreen({ route, navigation }) {
                 <View style={[styles.face, on && { backgroundColor: colors.primarySoft }]}>
                   <MaterialCommunityIcons name={m.icon} size={34} color={on ? colors.primary : colors.textSecondary} />
                 </View>
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[TYPE.caption, { color: on ? colors.primary : colors.textSecondary, fontWeight: on ? '700' : '500', textAlign: 'center' }]}>{t(m.label)}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[GTYPE.caption, { color: on ? colors.primary : colors.textSecondary, ...GFW(on ? '700' : '500'), textAlign: 'center' }]}>{t(m.label)}</Text>
               </Pressable>
             );
           })}
@@ -432,27 +434,27 @@ export default function JournalScreen({ route, navigation }) {
         <SkinStateChips value={states} onChange={setStatesNow} style={{ marginTop: SPACING.lg }} />
 
         {/* Dekod, the skin scan (Premium) */}
-        <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.planCard, { backgroundColor: '#33202E' }]}>
-          <Ionicons name="scan-circle-outline" size={20} color="#E2C6DA" />
+        <Pressable onPress={() => navigation.navigate('Dekod')} style={[styles.planCard, { backgroundColor: '#5E3F56' }]}>
+          <FeatureIcon glossy name="scan-circle-outline" size={20} color="#C5A8BB" />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: '#E2C6DA', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('DEKOD · SKIN SCAN')}</Text>
-            <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', lineHeight: 18, marginTop: 2 }]}>{t('Scan your skin with one selfie')}</Text>
+            <Text style={{ color: '#C5A8BB', fontSize: 11, ...GFW('800'), letterSpacing: 0.6 }}>{t('DEKOD · SKIN SCAN')}</Text>
+            <Text style={[GTYPE.caption, { color: '#FFFFFF', ...GFW('700'), lineHeight: 18, marginTop: 2 }]}>{t('Scan your skin with one selfie')}</Text>
           </View>
-          <Ionicons name={premium ? 'diamond' : 'lock-closed'} size={15} color="#E2C6DA" />
+          <FeatureIcon name={premium ? 'diamond' : 'lock-closed'} size={15} color="#C5A8BB" />
         </Pressable>
 
         {mood && MOOD_MESSAGES[mood] ? (
           <View style={[styles.tipBox, { backgroundColor: colors.surface }]}>
-            <Ionicons name="sparkles-outline" size={15} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(MOOD_MESSAGES[mood])}</Text>
+            <FeatureIcon name="koda" size={18} color={colors.primary} />
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(MOOD_MESSAGES[mood])}</Text>
           </View>
         ) : null}
 
         {/* Only when the skin isn’t at its best: Okay, Not great or Tough day (or ticked from a Dekod scan) */}
         {['okay', 'bad', 'terrible'].includes(mood) || (fromScan && !mood) ? (
           <>
-        <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.xl }]}>{t("What's going on?")}</Text>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Select all that apply')}</Text>
         <View style={styles.tags}>
           {(mood === 'okay' && !tags.some(tag => !OKAY_TAGS.includes(tag)) ? OKAY_TAGS : TAGS).map(tag => {
             const on = tags.includes(tag);
@@ -462,7 +464,7 @@ export default function JournalScreen({ route, navigation }) {
                 onPress={() => toggleTag(tag)}
                 style={[styles.tag, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primarySoft : colors.border }]}
               >
-                <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600' }]}>{t(tag)}</Text>
+                <Text style={[GTYPE.caption, { color: on ? colors.primary : colors.text, ...GFW('600') }]}>{t(tag)}</Text>
               </Pressable>
             );
           })}
@@ -472,7 +474,7 @@ export default function JournalScreen({ route, navigation }) {
           <View style={styles.tags}>
             {[...new Set(tags.map(tag => TAG_CONDITION[tag]).filter(Boolean))].map(id => (
               <Pressable key={id} onPress={() => navigation.navigate('Condition', { id })} hitSlop={4}>
-                <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Learn about {issue}', { issue: t(getCondition(id).title).toLowerCase() })} ›</Text>
+                <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Learn about {issue}', { issue: t(getCondition(id).title).toLowerCase() })} ›</Text>
               </Pressable>
             ))}
           </View>
@@ -481,34 +483,34 @@ export default function JournalScreen({ route, navigation }) {
         {/* Which new product: the app can then spot reactions that follow it */}
         {tags.includes('Used new product') ? (
           <View style={{ marginTop: SPACING.md }}>
-            <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{t('Which new product?')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700') }]}>{t('Which new product?')}</Text>
             {owned.length ? (
               <View style={[styles.tags, { marginTop: SPACING.sm }]}>
                 {owned.slice(0, 12).map(p => {
                   const on = newProducts.some(x => x.id === p.id);
                   return (
                     <Pressable key={p.id} onPress={() => toggleNewProduct(p)} style={[styles.tag, { backgroundColor: on ? colors.primarySoft : colors.card, borderColor: on ? colors.primarySoft : colors.border }]}>
-                      <Text style={[TYPE.caption, { color: on ? colors.primary : colors.text, fontWeight: '600' }]} numberOfLines={1}>{p.name}</Text>
+                      <Text style={[GTYPE.caption, { color: on ? colors.primary : colors.text, ...GFW('600') }]} numberOfLines={1}>{p.name}</Text>
                     </Pressable>
                   );
                 })}
               </View>
             ) : (
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Add it to My products to follow how your skin reacts.')}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Add it to My products to follow how your skin reacts.')}</Text>
             )}
           </View>
         ) : null}
 
         {/* Something new on her skin: the photos, to add it to her profile (Lita, 2026-10-25) */}
         <Pressable onPress={() => navigation.navigate('SkinIssues')} hitSlop={6} style={{ marginTop: SPACING.md }}>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>+ {t('New skin issue')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>+ {t('New skin issue')}</Text>
         </Pressable>
 
         {tags.some(tag => TAG_TIPS[tag]) ? (
           <View style={[styles.tipBox, { backgroundColor: colors.surface, flexDirection: 'column', alignItems: 'stretch', gap: 6 }]}>
             {tags.filter(tag => TAG_TIPS[tag]).map(tag => (
-              <Text key={tag} style={[TYPE.caption, { color: colors.text, lineHeight: 18 }]}>
-                <Text style={{ fontWeight: '700' }}>{t(tag)} · </Text>{t(TAG_TIPS[tag])}
+              <Text key={tag} style={[GTYPE.caption, { color: colors.text, lineHeight: 18 }]}>
+                <Text style={{ ...GFW('700') }}>{t(tag)} · </Text>{t(TAG_TIPS[tag])}
               </Text>
             ))}
           </View>
@@ -518,14 +520,14 @@ export default function JournalScreen({ route, navigation }) {
         {['okay', 'bad', 'terrible'].includes(mood) ? (
           <Pressable
             onPress={() => navigation.navigate('Emergency', { issues: issuesFromTags(tags), openedAt: Date.now() })}
-            style={[styles.planCard, { backgroundColor: '#33202E' }]}
+            style={[styles.planCard, { backgroundColor: '#5E3F56' }]}
           >
-            <Ionicons name="diamond" size={16} color="#E2C6DA" />
+            <Ionicons name="diamond" size={16} color="#C5A8BB" />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#E2C6DA', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('EMERGENCY MODE')}</Text>
-              <Text style={[TYPE.caption, { color: '#FFFFFF', fontWeight: '700', lineHeight: 18, marginTop: 2 }]}>{t(planFor(tags) ? planPrompt(tags) : 'Skin not at its best? Get a 7-day plan made for it')}</Text>
+              <Text style={{ color: '#C5A8BB', fontSize: 11, ...GFW('800'), letterSpacing: 0.6 }}>{t('EMERGENCY MODE')}</Text>
+              <Text style={[GTYPE.caption, { color: '#FFFFFF', ...GFW('700'), lineHeight: 18, marginTop: 2 }]}>{t(planFor(tags) ? planPrompt(tags) : 'Skin not at its best? Get a 7-day plan made for it')}</Text>
             </View>
-            <Ionicons name={premium ? 'chevron-forward' : 'lock-closed'} size={16} color="#E2C6DA" />
+            <FeatureIcon name={premium ? 'chevron-forward' : 'lock-closed'} size={16} color="#C5A8BB" />
           </Pressable>
         ) : null}
           </>
@@ -549,7 +551,7 @@ export default function JournalScreen({ route, navigation }) {
         <Pressable onPress={async () => { await saveNow(); if (!dirty.current) setTimeout(() => navigation.navigate('Home'), 500); }} disabled={status !== 'dirty'}
           style={({ pressed }) => [styles.saveBtn, { backgroundColor: status === 'saved' ? colors.successSoft || colors.primarySoft : colors.primary, opacity: status === 'idle' ? 0.45 : pressed ? 0.85 : 1 }]}>
           {status === 'saving' ? <ActivityIndicator size="small" color={colors.onPrimary} /> : (
-            <Text style={{ color: status === 'saved' ? colors.success : colors.onPrimary, fontWeight: '700', fontSize: 15 }}>
+            <Text style={{ color: status === 'saved' ? colors.success : colors.onPrimary, ...GFW('700'), fontSize: 15 }}>
               {status === 'saved' ? `✓ ${t('Saved')}` : t('Save')}
             </Text>
           )}
@@ -562,18 +564,18 @@ export default function JournalScreen({ route, navigation }) {
       {reactions.filter(r => !(purge.state?.kind === 'ask' && purge.state.product.id === r.product.id)).slice(0, 2).map(r => {
         const isPaused = paused.some(p => p.id === r.product.id);
         return (
-          <View key={r.product.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View key={r.product.id} style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
             <Text style={[styles.overline, { color: colors.primary }]}>{t('A PRODUCT TO WATCH')}</Text>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>
               {t('{tag} often appeared in the days after you started {product}.', { tag: t(r.tag), product: r.product.name })}
             </Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Seen {n} times in your journal. It may be a coincidence.', { n: r.count })}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 4 }]}>{t('Seen {n} times in your journal. It may be a coincidence.', { n: r.count })}</Text>
             <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
               <Pressable onPress={() => togglePause(r.product)} style={[styles.smallBtn, { backgroundColor: isPaused ? colors.primarySoft : colors.primary }]}>
-                <Text style={[TYPE.caption, { color: isPaused ? colors.primary : colors.onPrimary, fontWeight: '700' }]}>{t(isPaused ? 'Resume it' : 'Pause it')}</Text>
+                <Text style={[GTYPE.caption, { color: isPaused ? colors.primary : colors.onPrimary, ...GFW('700') }]}>{t(isPaused ? 'Resume it' : 'Pause it')}</Text>
               </Pressable>
               <Pressable onPress={() => navigation.navigate('Koda', { prefill: t('My skin often reacts after I use {product}. What should I do?', { product: r.product.name }) })} style={[styles.smallBtn, { backgroundColor: colors.surface }]}>
-                <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]}>{t('Ask Koda')}</Text>
+                <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700') }]}>{t('Ask Koda')}</Text>
               </Pressable>
             </View>
           </View>
@@ -582,17 +584,17 @@ export default function JournalScreen({ route, navigation }) {
 
       {/* What your skin tells you: links that keep coming back (observations, no advice) */}
       {skinPatterns ? (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
           <Text style={[styles.overline, { color: colors.primary }]}>{t('WHAT YOUR SKIN TELLS YOU')}</Text>
           {!skinPatterns.ready ? (
             <>
-              <Text style={[TYPE.body, { color: colors.text, marginTop: SPACING.md }]}>
+              <Text style={[GTYPE.body, { color: colors.text, marginTop: SPACING.md }]}>
                 {t('Keep checking in: {n} of {total} days.', { n: skinPatterns.checkIns, total: skinPatterns.needed })}
               </Text>
               <View style={[styles.progressTrack, { backgroundColor: colors.surface }]}>
                 <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${Math.round((skinPatterns.checkIns / skinPatterns.needed) * 100)}%` }]} />
               </View>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
                 {t("Then we'll tell you what makes your skin react.")}
               </Text>
             </>
@@ -601,12 +603,12 @@ export default function JournalScreen({ route, navigation }) {
             (() => {
               const row = p => (
               <View key={p.id} style={styles.patternRow}>
-                <View style={[styles.patternIcon, { backgroundColor: p.positive ? colors.successSoft : colors.primarySoft }]}>
-                  <Ionicons name={p.icon} size={18} color={p.positive ? colors.success : colors.primary} />
+                <View style={[styles.patternIcon, { ...glassBubble(colors), backgroundColor: p.positive ? colors.successSoft : colors.primarySoft }]}>
+                  <FeatureIcon name={p.icon} size={18} color={p.positive ? colors.success : colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[TYPE.body, { color: colors.text }]}>{t(p.text)}</Text>
-                  <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Noticed {n} of {total} times', { n: p.times, total: p.total })}</Text>
+                  <Text style={[GTYPE.body, { color: colors.text }]}>{t(p.text)}</Text>
+                  <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t('Noticed {n} of {total} times', { n: p.times, total: p.total })}</Text>
                 </View>
               </View>
               );
@@ -622,19 +624,19 @@ export default function JournalScreen({ route, navigation }) {
               );
             })()
           ) : (
-            <Text style={[TYPE.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+            <Text style={[GTYPE.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
               {t('Nothing stands out yet. Keep checking in, it gets clearer over time.')}
             </Text>
           )}
           {skinPatterns.ready ? (
-            <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('These are trends, not a diagnosis.')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.md }]}>{t('These are trends, not a diagnosis.')}</Text>
           ) : null}
         </View>
       ) : null}
 
       {/* Routines of that day */}
       {routineLog?.rows.length ? (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
           <Text style={[styles.overline, { color: colors.primary }]}>{isToday ? t('LOG TODAY') : t('ROUTINES THAT DAY')}</Text>
           {routineLog.rows.map(row => {
             const complete = row.done >= row.total;
@@ -644,16 +646,16 @@ export default function JournalScreen({ route, navigation }) {
                 onPress={() => navigation?.navigate('Routines', { tab: row.type })}
                 style={[styles.logRow, { backgroundColor: colors.surface }]}
               >
-                <Ionicons name={row.type === 'morning' ? 'sunny' : 'moon-outline'} size={20} color={row.type === 'morning' ? '#E8B04A' : colors.secondary} />
-                <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{row.type === 'morning' ? t('Morning Routine') : t('Tonight Routine')}</Text>
+                <FeatureIcon name={row.type === 'morning' ? 'sunny' : 'moon-outline'} size={20} color={row.type === 'morning' ? '#E8B04A' : colors.secondary} />
+                <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{row.type === 'morning' ? t('Morning Routine') : t('Tonight Routine')}</Text>
                 {complete ? <Ionicons name="checkmark" size={16} color={colors.success} /> : null}
-                <Text style={[TYPE.caption, { color: complete ? colors.success : colors.textSecondary, fontWeight: '700' }]}>
+                <Text style={[GTYPE.caption, { color: complete ? colors.success : colors.textSecondary, ...GFW('700') }]}>
                   {t('{done}/{total} steps', { done: row.done, total: row.total })}
                 </Text>
               </Pressable>
             );
           })}
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
             {t('Routine done {done} of the last {days} days', { done: routineLog.regularity.done, days: routineLog.regularity.days })}
           </Text>
         </View>
@@ -666,8 +668,8 @@ const styles = StyleSheet.create({
   sleepChip: { height: 34, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   week: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
   day: { width: 40, alignItems: 'center', paddingVertical: 8, borderRadius: 14 },
-  dayName: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-  dayNum: { fontSize: 17, fontWeight: '700', marginTop: 4 },
+  dayName: { fontSize: 11, ...GFW('600'), textTransform: 'capitalize' },
+  dayNum: { fontSize: 17, ...GFW('700'), marginTop: 4 },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 4 },
   progressTrack: { height: 6, borderRadius: 3, marginTop: SPACING.md, overflow: 'hidden' },
   progressFill: { height: 6, borderRadius: 3 },
@@ -679,7 +681,7 @@ const styles = StyleSheet.create({
   planCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg },
   card: { borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.xl, marginTop: SPACING.xl },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  overline: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
+  overline: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8 },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
   notePlaceholder: { position: 'absolute', top: SPACING.xl + SPACING.lg, left: SPACING.lg, fontSize: 15, zIndex: 2, elevation: 2 },
   mood: { alignItems: 'center', gap: 6, width: 58 },

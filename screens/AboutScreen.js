@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Linking, Image } from 'react-native'
 import { logError } from '../utils/errorLogger'
 import { APP_INFO } from '../utils/constants'
 import { Screen, Card, SectionHeader, ListRow, useColors } from '../components/ui'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE } from '../components/glossy'
 
 const LOGO = require('../assets/images/skynkod-logo.png')
 const LOGO_RATIO = 1306 / 333
@@ -32,11 +33,11 @@ export default function AboutScreen() {
     <Screen back>
       <View style={styles.hero}>
         <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Skynkod" />
-        <Text style={[TYPE.body, { color: colors.muted }]}>Your skin. Your code. Decoded daily. · v{APP_INFO.version}</Text>
+        <Text style={[GTYPE.body, { color: colors.muted }]}>Your skin. Your code. Decoded daily. · v{APP_INFO.version}</Text>
       </View>
 
       <Card>
-        <Text style={[TYPE.body, { color: colors.textSecondary }]}>
+        <Text style={[GTYPE.body, { color: colors.textSecondary }]}>
           Skynkod reads your products, follows your skin day after day and teaches you how to care for it, based on your skin type and concerns. For personal questions, Koda, our AI, is here to help.
         </Text>
       </Card>
@@ -46,7 +47,7 @@ export default function AboutScreen() {
         {FEATURES.map((f, idx) => (
           <View key={f} style={[styles.feature, idx === FEATURES.length - 1 && { marginBottom: 0 }]}>
             <View style={[styles.bullet, { backgroundColor: colors.primary }]} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{f}</Text>
+            <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{f}</Text>
           </View>
         ))}
       </Card>
@@ -60,7 +61,7 @@ export default function AboutScreen() {
         <ListRow icon="server-outline" title="Product data: Open Beauty Facts" subtitle="Open Database License (ODbL)" onPress={() => open('https://world.openbeautyfacts.org')} last />
       </Card>
 
-      <Text style={[TYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>Made with care for your skin 💜</Text>
+      <Text style={[GTYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.xxl }]}>Made with care for your skin 💜</Text>
     </Screen>
   )
 }

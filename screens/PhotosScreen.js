@@ -6,7 +6,8 @@ import { getUserPhotos, deletePhoto, supabase } from '../utils/supabase'
 import { useFetchWithCache } from '../utils/useFetchWithCache'
 import { logError } from '../utils/errorLogger'
 import { Screen, Button, EmptyState, Banner, LoadingView, useColors } from '../components/ui'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW } from '../components/glossy'
 
 const GAP = SPACING.md
 const TILE = (Dimensions.get('window').width - SPACING.xl * 2 - GAP) / 2
@@ -105,7 +106,7 @@ export default function PhotosScreen({ route }) {
       {uploading ? (
         <View style={[styles.uploading, { backgroundColor: colors.primarySoft }]}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>Uploading…</Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>Uploading…</Text>
         </View>
       ) : null}
 
@@ -143,6 +144,6 @@ const styles = StyleSheet.create({
   tile: { width: TILE, height: TILE * 1.3, borderRadius: RADIUS.lg, overflow: 'hidden' },
   image: { width: '100%', height: '100%' },
   dateTag: { position: 'absolute', left: 8, bottom: 8, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  dateText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  dateText: { color: '#fff', fontSize: 11, ...GFW('700') },
   deleteBtn: { position: 'absolute', right: 8, top: 8, backgroundColor: 'rgba(0,0,0,0.45)', width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
 })

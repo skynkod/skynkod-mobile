@@ -5,7 +5,8 @@ import { useColors } from './ui'
 import MatchBadge from './MatchBadge'
 import { useT } from '../utils/LanguageContext'
 import { productMatch, matchReason } from '../utils/ingredients-guide'
-import { TYPE } from '../utils/theme'
+import { GTYPE } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // "Does this suit me?" for a product: badge plus the main reason, from the
 // user's skin type and concerns.
@@ -21,8 +22,8 @@ export default function ProductVerdict({ product, profile }) {
     <View style={styles.wrap}>
       <MatchBadge tone={tone} label={match.notNow && match.tone !== 'danger' ? t('Not right now') : match.tone === 'success' ? `${match.score}% · ${t(match.label)}` : t(match.label)} />
       <View style={styles.reason}>
-        <Ionicons name={icon} size={13} color={tint} style={{ marginTop: 1 }} />
-        <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={2}>{t(matchReason(match, profile))}</Text>
+        <FeatureIcon name={icon} size={13} color={tint} style={{ marginTop: 1 }} />
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1 }]} numberOfLines={2}>{t(matchReason(match, profile))}</Text>
       </View>
     </View>
   )

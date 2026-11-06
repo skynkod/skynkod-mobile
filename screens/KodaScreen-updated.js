@@ -13,7 +13,8 @@ import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE, LIGHT_COLORS } from '../utils/theme';
 import { track } from '../utils/analytics';
-import { GlossyScope, GTYPE, GFW } from '../components/glossy'
+import { GlossyScope, GTYPE, GFW, glassCard, GlossyFill } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 const SUGGESTIONS = [
   'Build me a simple morning routine',
@@ -132,7 +133,7 @@ function KodaScreenInner({ route, navigation }) {
             styles.bubble,
             isUser
               ? { backgroundColor: colors.primary, borderBottomRightRadius: 6 }
-              : { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 6 },
+              : { ...glassCard(colors), borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth, borderBottomLeftRadius: 6 },
             item.error && { backgroundColor: colors.dangerSoft, borderColor: colors.dangerSoft },
           ]}
         >
@@ -140,9 +141,9 @@ function KodaScreenInner({ route, navigation }) {
           {!isUser && item.plan && getSituation(item.plan) ? (
             <Pressable
               onPress={() => navigation.navigate('Emergency', { situation: item.plan, openedAt: Date.now() })}
-              style={({ pressed }) => [styles.planButton, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Ionicons name="medkit-outline" size={16} color={colors.onPrimary} />
+              style={({ pressed }) => [styles.planButton, { backgroundColor: colors.primary, overflow: 'hidden', opacity: pressed ? 0.85 : 1 }]}
+            ><GlossyFill />
+              <FeatureIcon name="medkit-outline" size={16} color={colors.onPrimary} />
               <Text style={[GTYPE.caption, { color: colors.onPrimary, ...GFW('700'), flexShrink: 1 }]}>
                 {t('Start the 7-day plan')} · {t(getSituation(item.plan).title)}
               </Text>
@@ -174,7 +175,7 @@ function KodaScreenInner({ route, navigation }) {
             {loading ? (
               <View style={[styles.row, styles.rowKoda]}>
                 <IconCircle name="koda" size={30} />
-                <View style={[styles.bubble, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
+                <View style={[styles.bubble, { ...glassCard(colors), borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
                   <ActivityIndicator size="small" color={colors.primary} />
                 </View>
               </View>
@@ -216,7 +217,7 @@ function KodaScreenInner({ route, navigation }) {
       ) : null}
       <View style={[styles.composer, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+          style={[styles.input, { ...glassCard(colors), borderColor: colors.border, color: colors.text }]}
           placeholder={t('Ask Koda anything…')}
           placeholderTextColor={colors.muted}
           value={inputText}
@@ -229,8 +230,8 @@ function KodaScreenInner({ route, navigation }) {
           disabled={!canSend}
           accessibilityRole="button"
           accessibilityLabel={t('Send')}
-          style={[styles.send, { backgroundColor: colors.primary, opacity: canSend ? 1 : 0.4 }]}
-        >
+          style={[styles.send, { backgroundColor: colors.primary, overflow: 'hidden', opacity: canSend ? 1 : 0.4 }]}
+        ><GlossyFill />
           <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
         </Pressable>
       </View>

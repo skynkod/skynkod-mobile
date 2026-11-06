@@ -14,6 +14,7 @@ import { logError } from '../utils/errorLogger'
 import { fromAnswers, Backdrop, Bubble, LineIcon, GLOSSY as C, STEPS, CONCERN_LABEL, AGES, SAFETY, LIFE_CARDS } from './OnboardingScreen'
 import { rxName } from '../utils/treatments'
 import { LIGHT_COLORS } from '../utils/theme'
+import { GFW } from '../components/glossy'
 
 // My Skyn Profile (Lita, 2026-10-27): the 7 steps of the sign-up, in the same
 // glossy style, each with what she answered. Tapping a step replays it with
@@ -28,7 +29,7 @@ export default function SkinProfileScreen({ navigation }) {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold })
   const F = fontsLoaded
     ? { r: { fontFamily: 'Inter_400Regular' }, m: { fontFamily: 'Inter_500Medium' }, s: { fontFamily: 'Inter_600SemiBold' } }
-    : { r: {}, m: { fontWeight: '500' }, s: { fontWeight: '600' } }
+    : { r: {}, m: { ...GFW('500') }, s: { ...GFW('600') } }
 
   useFocusEffect(useCallback(() => {
     if (!user?.id) return

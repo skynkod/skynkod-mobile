@@ -118,7 +118,7 @@ export const findPatterns = ({ entries = [], openedDates = [], routineDates = []
       found.push({
         id: 'routine-good',
         factor: 'routine',
-        icon: 'sparkles-outline',
+        icon: 'koda',
         text: 'Your skin feels better on the days you do your routine.',
         times: good(done),
         total: done.length,

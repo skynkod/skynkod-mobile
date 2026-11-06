@@ -3,7 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from './ui';
 import { useT } from '../utils/LanguageContext';
-import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { SPACING, RADIUS } from '../utils/theme';
+import { GTYPE, GFW } from './glossy';
+import FeatureIcon from './FeatureIcon'
 
 // The blocks of a Skyncyclopedia article: paragraphs, headings, lists, steps,
 // and tip / warning / dermatologist callouts.
@@ -12,20 +14,20 @@ export default function ArticleBody({ article }) {
   const t = useT();
   const Callout = ({ icon, bg, fg, text }) => (
     <View style={[styles.callout, { backgroundColor: bg }]}>
-      <Ionicons name={icon} size={18} color={fg} style={{ marginTop: 2 }} />
-      <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(text)}</Text>
+      <FeatureIcon name={icon} size={18} color={fg} style={{ marginTop: 2 }} />
+      <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{t(text)}</Text>
     </View>
   );
 
   const renderBlock = (b, i) => {
-    if (b.h) return <Text key={i} style={[TYPE.heading, styles.h, { color: colors.text }]}>{t(b.h)}</Text>;
-    if (b.p) return <Text key={i} style={[TYPE.body, styles.p, { color: colors.text }]}>{t(b.p)}</Text>;
+    if (b.h) return <Text key={i} style={[GTYPE.heading, styles.h, { color: colors.text }]}>{t(b.h)}</Text>;
+    if (b.p) return <Text key={i} style={[GTYPE.body, styles.p, { color: colors.text }]}>{t(b.p)}</Text>;
     if (b.list) return (
       <View key={i} style={styles.p}>
         {b.list.map((item, j) => (
           <View key={j} style={styles.item}>
             <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(item)}</Text>
+            <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{t(item)}</Text>
           </View>
         ))}
       </View>
@@ -35,9 +37,9 @@ export default function ArticleBody({ article }) {
         {b.steps.map((item, j) => (
           <View key={j} style={styles.item}>
             <View style={[styles.num, { backgroundColor: colors.primarySoft }]}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '800' }]}>{j + 1}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('800') }]}>{j + 1}</Text>
             </View>
-            <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(item)}</Text>
+            <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{t(item)}</Text>
           </View>
         ))}
       </View>

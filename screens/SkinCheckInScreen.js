@@ -11,7 +11,8 @@ import { OVERALL, CHECKIN_CONCERNS } from '../utils/skin-tracking-core'
 import { logError } from '../utils/errorLogger'
 import { usePremium } from '../components/PremiumLock'
 import { getDekodResults } from '../utils/dekod'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from '../components/glossy'
 
 // The check-in every 2 weeks (Lita, 2026-10-24): three quick answers, about
 // ten seconds. Compared with her start, what bothers her, and a Dekod scan if
@@ -59,7 +60,7 @@ export default function SkinCheckInScreen({ route, navigation }) {
             <Pressable key={o.key} onPress={() => setOverall(o.key)} accessibilityRole="button" accessibilityState={{ selected: on }}
               style={[styles.mood, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
               <Text style={{ fontSize: 28 }}>{o.emoji}</Text>
-              <Text style={[TYPE.bodyStrong, { color: on ? colors.primary : colors.text, marginTop: 4 }]}>{t(o.label)}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: on ? colors.primary : colors.text, marginTop: 4 }]}>{t(o.label)}</Text>
             </Pressable>
           )
         })}
@@ -73,22 +74,22 @@ export default function SkinCheckInScreen({ route, navigation }) {
             <Pressable key={c} onPress={() => toggle(c)} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
               style={[styles.chip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
               {on ? <Ionicons name="checkmark" size={14} color={colors.primary} /> : null}
-              <Text style={[TYPE.body, { color: on ? colors.primary : colors.text }]}>{t(c)}</Text>
+              <Text style={[GTYPE.body, { color: on ? colors.primary : colors.text }]}>{t(c)}</Text>
             </Pressable>
           )
         })}
       </View>
-      <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Nothing? Leave it empty.')}</Text>
+      <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Nothing? Leave it empty.')}</Text>
 
       {canScan ? (
       <Pressable onPress={() => setScan(s => !s)} accessibilityRole="checkbox" accessibilityState={{ checked: scan }}
-        style={[styles.scan, { borderColor: scan ? colors.primary : colors.border, backgroundColor: colors.card }]}>
+        style={[styles.scan, { borderColor: scan ? colors.primary : colors.border, ...glassCard(colors) }]}>
         <FeatureIcon name="dekod" size={22} color={colors.primary} />
         <View style={{ flex: 1 }}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Add a Dekod scan')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t('Optional: a photo makes your progress clearer.')}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Add a Dekod scan')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2, lineHeight: 18 }]}>{t('Optional: a photo makes your progress clearer.')}</Text>
         </View>
-        <Ionicons name={scan ? 'checkbox' : 'square-outline'} size={22} color={scan ? colors.primary : colors.muted} />
+        <FeatureIcon name={scan ? 'checkbox' : 'square-outline'} size={22} color={scan ? colors.primary : colors.muted} />
       </Pressable>
       ) : null}
     </Screen>
@@ -96,7 +97,7 @@ export default function SkinCheckInScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  q: { fontSize: 16, fontWeight: '700', marginTop: SPACING.xl, marginBottom: SPACING.md },
+  q: { fontSize: 16, ...GFW('700'), marginTop: SPACING.xl, marginBottom: SPACING.md },
   row: { flexDirection: 'row', gap: SPACING.sm },
   mood: { flex: 1, alignItems: 'center', borderWidth: 1.5, borderRadius: RADIUS.lg, paddingVertical: SPACING.lg },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },

@@ -14,7 +14,9 @@ import {
 import { recordPrice, requestProduct, getPriceStats, STORES } from '../utils/community-data';
 import { currencySymbol } from '../utils/currency';
 import { logError } from '../utils/errorLogger';
-import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { SPACING, RADIUS } from '../utils/theme';
+import { GTYPE, GFW, glassCard, glassBubble, GlossyFill } from '../components/glossy';
+import FeatureIcon from '../components/FeatureIcon'
 
 const firstOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
 const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
@@ -208,12 +210,12 @@ export default function BudgetScreen({ navigation }) {
       <Text style={[styles.brand, { color: colors.primary }]}>skynbudget</Text>
 
       {/* Month */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
         <View style={styles.monthNav}>
           <Pressable onPress={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} hitSlop={10} accessibilityLabel={t('Previous month')}>
             <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
           </Pressable>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, textTransform: 'capitalize', fontWeight: '700' }]}>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, textTransform: 'capitalize', ...GFW('700') }]}>
             {isCurrent ? `${t('This month')} · ` : ''}{monthLabel}
           </Text>
           <Pressable disabled={isCurrent} onPress={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} hitSlop={10} accessibilityLabel={t('Next month')}>
@@ -222,7 +224,7 @@ export default function BudgetScreen({ navigation }) {
         </View>
         <View style={styles.amountRow}>
           <Text style={[styles.amount, { color: colors.text }]}>{formatMAD(spent)}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginBottom: 8 }]}>{t('spent')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginBottom: 8 }]}>{t('spent')}</Text>
         </View>
         {budget ? (
           <>
@@ -230,13 +232,13 @@ export default function BudgetScreen({ navigation }) {
               <View style={[styles.fill, { width: `${ratio * 100}%`, backgroundColor: spent > budget ? colors.danger : colors.accent }]} />
             </View>
             <Pressable onPress={() => { setBudgetInput(String(budget)); setBudgetSheet(true); }} style={{ alignSelf: 'flex-end', marginTop: 6 }} hitSlop={8}>
-              <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{formatMAD(budget)} {t('budget')} <Ionicons name="pencil" size={11} color={colors.muted} /></Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{formatMAD(budget)} {t('budget')} <Ionicons name="pencil" size={11} color={colors.muted} /></Text>
             </Pressable>
           </>
         ) : (
           <Pressable onPress={() => { setBudgetInput(''); setBudgetSheet(true); }} style={[styles.setBudget, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name="wallet-outline" size={16} color={colors.primary} />
-            <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>{t('Set a monthly budget')}</Text>
+            <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>{t('Set a monthly budget')}</Text>
           </Pressable>
         )}
 
@@ -256,32 +258,32 @@ export default function BudgetScreen({ navigation }) {
             );
           })}
         </View>
-        <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
           {t('{year} so far: {total}', { year: month.getFullYear(), total: formatMAD(yearTotal) })}
         </Text>
       </View>
 
       {/* Where the money goes */}
       {byCategory.length ? (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Where it goes')}</Text>
+        <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Where it goes')}</Text>
           {byCategory.map(([cat, total]) => (
             <View key={cat} style={styles.catRow}>
-              <Text style={[TYPE.caption, { color: colors.text, width: 92 }]}>{t(CATEGORY_LABELS[cat] || cat)}</Text>
+              <Text style={[GTYPE.caption, { color: colors.text, width: 92 }]}>{t(CATEGORY_LABELS[cat] || cat)}</Text>
               <View style={[styles.catTrack, { backgroundColor: colors.primarySoft }]}>
                 <View style={[styles.catFill, { width: `${(total / spent) * 100}%`, backgroundColor: colors.accent }]} />
               </View>
-              <Text style={[TYPE.caption, { color: colors.textSecondary, width: 70, textAlign: 'right' }]}>{formatMAD(total)}</Text>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary, width: 70, textAlign: 'right' }]}>{formatMAD(total)}</Text>
             </View>
           ))}
         </View>
       ) : null}
 
       {/* Collection */}
-      <Pressable onPress={() => navigation.navigate('Products')} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable onPress={() => navigation.navigate('Products')} style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
         <View style={styles.cardHead}>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Collection')}</Text>
-          <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('{n} products', { n: owned.length })}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Collection')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('{n} products', { n: owned.length })}</Text>
         </View>
         <View style={styles.thumbs}>
           {owned.slice(0, 6).map(p => (
@@ -289,27 +291,27 @@ export default function BudgetScreen({ navigation }) {
           ))}
           {owned.length > 6 ? (
             <View style={[styles.more, { backgroundColor: colors.primarySoft }]}>
-              <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>+{owned.length - 6}</Text>
+              <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>+{owned.length - 6}</Text>
             </View>
           ) : null}
-          {!owned.length ? <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('Add the products you own in My products.')}</Text> : null}
+          {!owned.length ? <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('Add the products you own in My products.')}</Text> : null}
         </View>
       </Pressable>
 
       {/* Smart insights */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{t('Smart insights')}</Text>
+      <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }]}>
+        <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('Smart insights')}</Text>
         {(allInsights ? insights : insights.slice(0, 3)).map((ins, i) => (
           <View key={i} style={styles.insight}>
-            <View style={[styles.insightIcon, { backgroundColor: colors.primarySoft }]}>
-              <Ionicons name={ins.icon} size={15} color={colors.primary} />
+            <View style={[styles.insightIcon, { ...glassBubble(colors), backgroundColor: colors.primarySoft }]}>
+              <FeatureIcon name={ins.icon} size={15} color={colors.primary} />
             </View>
-            <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(ins.text)}</Text>
+            <Text style={[GTYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(ins.text)}</Text>
           </View>
         ))}
         {insights.length > 3 ? (
           <Pressable onPress={() => setAllInsights(!allInsights)} style={[styles.viewAll, { backgroundColor: colors.accent }]}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>{allInsights ? t('Show less') : t('View all insights')}</Text>
+            <Text style={{ color: '#FFFFFF', ...GFW('600') }}>{allInsights ? t('Show less') : t('View all insights')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -318,14 +320,14 @@ export default function BudgetScreen({ navigation }) {
       <View style={styles.cardHead}>
         <Text style={[styles.section, { color: colors.muted }]}>{isCurrent ? t('PURCHASES THIS MONTH') : t('PURCHASES')}</Text>
         <Pressable onPress={openAdd} hitSlop={8}>
-          <Text style={[TYPE.caption, { color: colors.primary, fontWeight: '700' }]}>+ {t('Add purchase')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.primary, ...GFW('700') }]}>+ {t('Add purchase')}</Text>
         </Pressable>
       </View>
       {purchases.length ? purchases.map(p => (
         <Pressable key={p.id} onPress={() => openEdit(p)} style={[styles.purchase, { borderBottomColor: colors.border }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{p.product_name || p.name}</Text>
-            <Text style={[TYPE.caption, { color: colors.textSecondary }]}>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]} numberOfLines={1}>{p.product_name || p.name}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>
               {[
                 new Date(p.date).toLocaleDateString(language, { day: 'numeric', month: 'short' }),
                 p.store && t(p.store),
@@ -333,23 +335,23 @@ export default function BudgetScreen({ navigation }) {
               ].filter(Boolean).join(' · ')}
             </Text>
           </View>
-          <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{formatMAD(p.price)}</Text>
+          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{formatMAD(p.price)}</Text>
         </Pressable>
       )) : (
-        <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('No purchases this month.')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('No purchases this month.')}</Text>
       )}
-      {purchases.length ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Tap a purchase to edit or delete it.')}</Text> : null}
+      {purchases.length ? <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('Tap a purchase to edit or delete it.')}</Text> : null}
 
       {/* Budget sheet */}
       <Modal visible={budgetSheet} transparent animationType="fade" onRequestClose={() => setBudgetSheet(false)}>
         <BottomSheet title={t('Monthly budget')} onClose={() => setBudgetSheet(false)}>
-          <Text style={[TYPE.body, { color: colors.textSecondary }]}>{t('How much do you want to spend on skincare each month?')}</Text>
-          <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          <Text style={[GTYPE.body, { color: colors.textSecondary }]}>{t('How much do you want to spend on skincare each month?')}</Text>
+          <View style={[styles.inputRow, { borderColor: colors.border, ...glassCard(colors) }]}>
             <TextInput value={budgetInput} onChangeText={setBudgetInput} keyboardType="decimal-pad" placeholder="500" placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text }]} autoFocus />
-            <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{currencySymbol()}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.textSecondary }]}>{currencySymbol()}</Text>
           </View>
-          <Pressable onPress={saveBudget} style={[styles.save, { backgroundColor: colors.primary }]}>
-            <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{t('Save')}</Text>
+          <Pressable onPress={saveBudget} style={[styles.save, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+            <Text style={{ color: colors.onPrimary, ...GFW('600') }}>{t('Save')}</Text>
           </Pressable>
         </BottomSheet>
       </Modal>
@@ -358,11 +360,11 @@ export default function BudgetScreen({ navigation }) {
       <Modal visible={!!sheet} transparent animationType="fade" onRequestClose={() => setSheet(null)}>
         <BottomSheet title={sheet?.editing ? t('Edit purchase') : t('Add purchase')} onClose={() => setSheet(null)}>
           {sheet?.editing ? (
-            <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{sheet.editing.product_name || sheet.editing.name}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{sheet.editing.product_name || sheet.editing.name}</Text>
           ) : (
             <>
-              <Text style={[TYPE.caption, { color: colors.textSecondary }]}>{t('Which product?')}</Text>
-              <View style={[styles.searchField, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('Which product?')}</Text>
+              <View style={[styles.searchField, { borderColor: colors.border, ...glassCard(colors) }]}>
                 <Ionicons name="search" size={16} color={colors.muted} />
                 <TextInput value={query} onChangeText={setQuery} placeholder={t('Search any product or brand')} placeholderTextColor={colors.muted} autoCorrect={false} style={[styles.searchInput, { color: colors.text }]} />
               </View>
@@ -375,30 +377,30 @@ export default function BudgetScreen({ navigation }) {
                         <ProductThumb product={p} style={styles.resultImage} />
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>{p.brand}</Text>
-                          <Text style={[TYPE.caption, { color: colors.text, fontWeight: '700' }]} numberOfLines={2}>{p.name}</Text>
+                          <Text style={[GTYPE.caption, { color: colors.text, ...GFW('700') }]} numberOfLines={2}>{p.name}</Text>
                         </View>
                         {on ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
                       </Pressable>
                     );
                   })}
                   {!results.length ? (
-                    <Pressable onPress={() => { setPick(null); setOtherName(query.trim()); }} style={[styles.resultRow, { borderColor: otherName ? colors.primary : colors.border, backgroundColor: colors.card }]}>
+                    <Pressable onPress={() => { setPick(null); setOtherName(query.trim()); }} style={[styles.resultRow, { borderColor: otherName ? colors.primary : colors.border, ...glassCard(colors) }]}>
                       <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-                      <Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t('Not in our catalogue? Add "{name}" anyway', { name: query.trim() })}</Text>
+                      <Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>{t('Not in our catalogue? Add "{name}" anyway', { name: query.trim() })}</Text>
                       {otherName ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
                     </Pressable>
                   ) : null}
                 </View>
               ) : (
                 <>
-                  {[...toBuy, ...owned].length ? <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('Or one of yours')}</Text> : null}
+                  {[...toBuy, ...owned].length ? <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('Or one of yours')}</Text> : null}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.sm, paddingVertical: SPACING.sm }}>
                     {[...toBuy, ...owned].map(p => {
                       const on = pick?.id === p.id;
                       return (
                         <Pressable key={p.id} onPress={() => { setPick(on ? null : p); setOtherName(''); }} style={[styles.pickItem, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
                           <ProductThumb product={p} style={styles.pickImage} />
-                          <Text style={{ fontSize: 11, color: colors.text, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{p.name}</Text>
+                          <Text style={{ fontSize: 11, color: colors.text, ...GFW('600'), textAlign: 'center' }} numberOfLines={2}>{p.name}</Text>
                         </Pressable>
                       );
                     })}
@@ -409,50 +411,50 @@ export default function BudgetScreen({ navigation }) {
           )}
 
           {/* Price, with the usual price people pay when we know it */}
-          <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          <View style={[styles.inputRow, { borderColor: colors.border, ...glassCard(colors) }]}>
             <TextInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={t('Price')} placeholderTextColor={colors.muted} style={[styles.input, { color: colors.text }]} />
-            <Text style={[TYPE.bodyStrong, { color: colors.textSecondary }]}>{currencySymbol()}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.textSecondary }]}>{currencySymbol()}</Text>
           </View>
           {liveVerdict ? (
-            <Text style={[TYPE.caption, { color: liveVerdict.good ? colors.success : colors.warning, marginTop: 6, lineHeight: 17 }]}>{liveVerdict.text}</Text>
+            <Text style={[GTYPE.caption, { color: liveVerdict.good ? colors.success : colors.warning, marginTop: 6, lineHeight: 17 }]}>{liveVerdict.text}</Text>
           ) : pickStats ? (
-            <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>{t('Usually ~{usual}.', { usual: formatMAD(pickStats.typical) })}</Text>
+            <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 6 }]}>{t('Usually ~{usual}.', { usual: formatMAD(pickStats.typical) })}</Text>
           ) : null}
           {typedPrice > 0 && sheetCategory ? (
-            <Text style={[TYPE.caption, { color: colors.muted, marginTop: 4 }]}>{t('About {cost} per use', { cost: perUse(typedPrice, sheetCategory) })}</Text>
+            <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 4 }]}>{t('About {cost} per use', { cost: perUse(typedPrice, sheetCategory) })}</Text>
           ) : null}
 
           {/* Date */}
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('When?')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('When?')}</Text>
           <View style={styles.dateRow}>
             <Pressable onPress={() => shiftDate(-1)} hitSlop={8} style={[styles.dateBtn, { borderColor: colors.border }]} accessibilityLabel={t('Previous day')}>
               <Ionicons name="chevron-back" size={16} color={colors.text} />
             </Pressable>
-            <Text style={[TYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center', textTransform: 'capitalize' }]}>{dateLabel}</Text>
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1, textAlign: 'center', textTransform: 'capitalize' }]}>{dateLabel}</Text>
             <Pressable onPress={() => shiftDate(1)} hitSlop={8} style={[styles.dateBtn, { borderColor: colors.border }]} accessibilityLabel={t('Next day')}>
               <Ionicons name="chevron-forward" size={16} color={colors.text} />
             </Pressable>
           </View>
 
           {/* Store */}
-          <Text style={[TYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('Where did you buy it? (optional)')}</Text>
+          <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: SPACING.md }]}>{t('Where did you buy it? (optional)')}</Text>
           <View style={styles.storeRow}>
             {STORES.map(st => {
               const on = store === st;
               return (
                 <Pressable key={st} onPress={() => setStore(on ? null : st)} style={[styles.storeChip, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primarySoft : colors.card }]}>
-                  <Text style={{ fontSize: 12, color: on ? colors.primary : colors.text, fontWeight: '600' }}>{t(st)}</Text>
+                  <Text style={{ fontSize: 12, color: on ? colors.primary : colors.text, ...GFW('600') }}>{t(st)}</Text>
                 </Pressable>
               );
             })}
           </View>
 
-          <Pressable onPress={savePurchase} style={[styles.save, { backgroundColor: colors.primary }]}>
-            <Text style={{ color: colors.onPrimary, fontWeight: '600' }}>{sheet?.editing ? t('Save changes') : t('Add purchase')}</Text>
+          <Pressable onPress={savePurchase} style={[styles.save, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
+            <Text style={{ color: colors.onPrimary, ...GFW('600') }}>{sheet?.editing ? t('Save changes') : t('Add purchase')}</Text>
           </Pressable>
           {sheet?.editing ? (
             <Pressable onPress={removePurchase} style={{ alignSelf: 'center', marginTop: -SPACING.sm, marginBottom: SPACING.xl }}>
-              <Text style={[TYPE.bodyStrong, { color: colors.danger }]}>{t('Delete purchase')}</Text>
+              <Text style={[GTYPE.bodyStrong, { color: colors.danger }]}>{t('Delete purchase')}</Text>
             </Pressable>
           ) : null}
         </BottomSheet>
@@ -462,12 +464,12 @@ export default function BudgetScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  brand: { fontSize: 28, fontWeight: '800', letterSpacing: -0.8, marginBottom: SPACING.sm },
+  brand: { fontSize: 28, ...GFW('800'), letterSpacing: -0.8, marginBottom: SPACING.sm },
   card: { borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth, padding: SPACING.lg, marginTop: SPACING.md },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   monthNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   amountRow: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm, marginTop: 4 },
-  amount: { fontSize: 34, fontWeight: '800', letterSpacing: -1 },
+  amount: { fontSize: 34, ...GFW('800'), letterSpacing: -1 },
   track: { height: 8, borderRadius: 4, overflow: 'hidden', marginTop: SPACING.md },
   fill: { height: 8, borderRadius: 4 },
   setBudget: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: SPACING.md },
@@ -475,7 +477,7 @@ const styles = StyleSheet.create({
   barCol: { flex: 1, alignItems: 'center', height: '100%' },
   barArea: { flex: 1, width: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', borderRadius: 6 },
-  barLabel: { fontSize: 10, fontWeight: '700', marginTop: 4, textTransform: 'capitalize' },
+  barLabel: { fontSize: 10, ...GFW('700'), marginTop: 4, textTransform: 'capitalize' },
   catRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
   catTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   catFill: { height: 8, borderRadius: 4 },
@@ -485,10 +487,10 @@ const styles = StyleSheet.create({
   insight: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, marginTop: SPACING.md },
   insightIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   viewAll: { height: 44, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8, marginTop: SPACING.xl, marginBottom: SPACING.sm },
   purchase: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: StyleSheet.hairlineWidth },
   inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: SPACING.lg, marginTop: SPACING.md },
-  input: { flex: 1, height: 50, fontSize: 18, fontWeight: '600' },
+  input: { flex: 1, height: 50, fontSize: 18, ...GFW('600') },
   save: { height: 50, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.lg, marginBottom: SPACING.xl },
   searchField: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderWidth: 1, borderRadius: 999, paddingHorizontal: SPACING.lg, height: 46, marginTop: SPACING.sm },
   searchInput: { flex: 1, fontSize: 15, height: '100%' },

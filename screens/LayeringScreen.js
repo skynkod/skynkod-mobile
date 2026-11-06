@@ -12,7 +12,9 @@ import { getProductsByIds } from '../utils/catalog'
 import { layerRoutine } from '../utils/layering'
 import { DAY_LABELS } from '../utils/routine-checks'
 import { logError } from '../utils/errorLogger'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 const LAYER_LABEL = { cleanser: 'Cleanse', spot: 'Spot treatment', exfoliant: 'Exfoliate', toner: 'Tone', essence: 'Essence', serum: 'Treat', eye: 'Eyes', oil: 'Face oil', moisturizer: 'Moisturize', mask: 'Mask', 'sleeping mask': 'Sleeping mask', sunscreen: 'Protect' }
 // Monday first, like the rest of the app's weeks.
@@ -57,8 +59,8 @@ export default function LayeringScreen({ route }) {
     <>
       {guide.notes.map((n, i) => (
         <View key={i} style={[styles.note, { backgroundColor: n.level === 'warning' ? colors.warningSoft : colors.primarySoft }]}>
-          <Ionicons name={n.level === 'warning' ? 'alert-circle-outline' : 'information-circle-outline'} size={18} color={n.level === 'warning' ? colors.warning : colors.primary} />
-          <Text style={[TYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(n.text)}</Text>
+          <FeatureIcon name={n.level === 'warning' ? 'alert-circle-outline' : 'information-circle-outline'} size={18} color={n.level === 'warning' ? colors.warning : colors.primary} />
+          <Text style={[GTYPE.caption, { color: colors.text, flex: 1, lineHeight: 18 }]}>{t(n.text)}</Text>
         </View>
       ))}
 
@@ -66,20 +68,20 @@ export default function LayeringScreen({ route }) {
         <View key={`${s.product.id}-${i}`}>
           <Card style={{ marginTop: i ? 0 : SPACING.md }}>
             <View style={styles.stepHead}>
-              <View style={[styles.num, { backgroundColor: colors.primary }]}><Text style={{ color: colors.onPrimary, fontWeight: '700' }}>{i + 1}</Text></View>
+              <View style={[styles.num, { backgroundColor: colors.primary }]}><Text style={{ color: colors.onPrimary, ...GFW('700') }}>{i + 1}</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={[TYPE.overline, { color: colors.primary }]}>{t(LAYER_LABEL[s.layer] || 'Treat')}</Text>
-                <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: 2 }]}>{s.product.brand} {s.product.name}</Text>
-                {s.days.length < 7 ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t(s.daysLabel)}</Text> : null}
+                <Text style={[GTYPE.overline, { color: colors.primary }]}>{t(LAYER_LABEL[s.layer] || 'Treat')}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 2 }]}>{s.product.brand} {s.product.name}</Text>
+                {s.days.length < 7 ? <Text style={[GTYPE.caption, { color: colors.muted, marginTop: 2 }]}>{t(s.daysLabel)}</Text> : null}
               </View>
             </View>
-            <View style={styles.row}><Ionicons name="water-outline" size={15} color={colors.primary} /><Text style={[TYPE.caption, { color: colors.text, flex: 1 }]}>{t(s.amount)}</Text></View>
-            <View style={styles.row}><Ionicons name="hand-left-outline" size={15} color={colors.primary} /><Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.how)}</Text></View>
+            <View style={styles.row}><FeatureIcon name="water-outline" size={15} color={colors.primary} /><Text style={[GTYPE.caption, { color: colors.text, flex: 1 }]}>{t(s.amount)}</Text></View>
+            <View style={styles.row}><Ionicons name="hand-left-outline" size={15} color={colors.primary} /><Text style={[GTYPE.caption, { color: colors.textSecondary, flex: 1, lineHeight: 18 }]}>{t(s.how)}</Text></View>
           </Card>
           {s.then ? (
             <View style={styles.then}>
               <View style={[styles.thenLine, { backgroundColor: colors.border }]} />
-              <Text style={[TYPE.caption, { color: colors.muted, fontStyle: 'italic' }]}>{t(s.then)}</Text>
+              <Text style={[GTYPE.caption, { color: colors.muted, fontStyle: 'italic' }]}>{t(s.then)}</Text>
             </View>
           ) : null}
         </View>
@@ -91,8 +93,8 @@ export default function LayeringScreen({ route }) {
           <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
             {WEEK.map(day => guide.nights.find(n => n.day === day)).map((n, i) => (
               <View key={n.day} style={[styles.night, i < 6 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <Text style={[TYPE.bodyStrong, { color: colors.text, width: 48 }]}>{t(DAY_LABELS[n.day])}</Text>
-                <Text style={[TYPE.caption, { color: n.actives.length ? colors.text : colors.muted, flex: 1 }]}>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text, width: 48 }]}>{t(DAY_LABELS[n.day])}</Text>
+                <Text style={[GTYPE.caption, { color: n.actives.length ? colors.text : colors.muted, flex: 1 }]}>
                   {n.actives.length ? n.actives.map(a => `${a.name} (${t(a.kind === 'retinoid' ? 'retinoid' : 'exfoliant')})`).join(' + ') : t('Recovery night: no strong active')}
                 </Text>
               </View>
@@ -115,7 +117,7 @@ export default function LayeringScreen({ route }) {
       ) : body}
 
       {premium && guide?.rules.length ? (
-        <Text style={[TYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.lg }]}>{t('If you use a prescribed treatment, follow your doctor’s instructions.')}</Text>
+        <Text style={[GTYPE.caption, { color: colors.muted, lineHeight: 17, marginTop: SPACING.lg }]}>{t('If you use a prescribed treatment, follow your doctor’s instructions.')}</Text>
       ) : null}
     </Screen>
   )
@@ -128,6 +130,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, marginTop: SPACING.sm },
   then: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingLeft: 29, paddingVertical: SPACING.sm },
   thenLine: { width: 2, height: 18, borderRadius: 1 },
-  section: { fontSize: 12, fontWeight: '700', letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  section: { fontSize: 12, ...GFW('700'), letterSpacing: 1.1, marginTop: SPACING.xxl, marginBottom: SPACING.sm },
   night: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md },
 })

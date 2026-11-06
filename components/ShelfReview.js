@@ -7,7 +7,9 @@ import { useT } from '../utils/LanguageContext'
 import { shelfReview, SHELF_GROUPS } from '../utils/shelf-review'
 import { weekAudit } from '../utils/week-audit'
 import { shelfLife } from '../utils/shelf-life'
-import { SPACING, TYPE } from '../utils/theme'
+import { SPACING } from '../utils/theme'
+import { GTYPE, GFW } from './glossy'
+import FeatureIcon from './FeatureIcon'
 
 // "Your shelf" at the top of My products: the counts and the one-line verdict
 // for everyone, each group's products for Premium.
@@ -35,8 +37,8 @@ export default function ShelfReview({ rows = [], profile, stop, style }) {
 
   return (
     <Card style={style}>
-      <Text style={[TYPE.overline, { color: colors.primary }]}>{t('YOUR SKYN SHELF')} · {t('{n} products', { n: total })}</Text>
-      <Text style={[TYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{verdict}</Text>
+      <Text style={[GTYPE.overline, { color: colors.primary }]}>{t('YOUR SKYN SHELF')} · {t('{n} products', { n: total })}</Text>
+      <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.sm, lineHeight: 21 }]}>{verdict}</Text>
       <View style={{ marginTop: SPACING.md }}>
         {SHELF_GROUPS.map(g => {
           const list = groups[g.key]
@@ -45,21 +47,21 @@ export default function ShelfReview({ rows = [], profile, stop, style }) {
             <View key={g.key}>
               <Pressable onPress={() => tapGroup(g.key)} style={[styles.row, { borderTopColor: colors.border }]} accessibilityRole="button">
                 <View style={[styles.dot, { backgroundColor: colors[g.color] }]} />
-                <Text style={[TYPE.body, { color: colors.text, flex: 1 }]}>{t(g.label)}</Text>
-                <Text style={[TYPE.bodyStrong, { color: colors.text }]}>{list.length}</Text>
-                <Ionicons name={stop.premium === false ? 'diamond' : open === g.key ? 'chevron-up' : 'chevron-down'} size={stop.premium === false ? 12 : 16} color={stop.premium === false ? colors.primary : colors.muted} />
+                <Text style={[GTYPE.body, { color: colors.text, flex: 1 }]}>{t(g.label)}</Text>
+                <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{list.length}</Text>
+                <FeatureIcon name={stop.premium === false ? 'diamond' : open === g.key ? 'chevron-up' : 'chevron-down'} size={stop.premium === false ? 12 : 16} color={stop.premium === false ? colors.primary : colors.muted} />
               </Pressable>
               {open === g.key && stop.premium ? list.map((x, i) => (
                 <Pressable key={x.product?.id || i} disabled={!x.product} onPress={() => navigation.navigate('Product', { id: x.product.id })} style={styles.item}>
-                  <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>{x.product ? x.product.name : t(x.label, x.params)}</Text>
-                  {x.why ? <Text style={[TYPE.caption, { color: colors.textSecondary, lineHeight: 17 }]}>{t(x.why.text, x.why.params)}</Text> : null}
+                  <Text style={[GTYPE.caption, { color: colors.text, ...GFW('600') }]} numberOfLines={1}>{x.product ? x.product.name : t(x.label, x.params)}</Text>
+                  {x.why ? <Text style={[GTYPE.caption, { color: colors.textSecondary, lineHeight: 17 }]}>{t(x.why.text, x.why.params)}</Text> : null}
                 </Pressable>
               )) : null}
             </View>
           )
         })}
       </View>
-      {stop.premium === false ? <Text style={[TYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('See which products, and why, with Premium.')}</Text> : null}
+      {stop.premium === false ? <Text style={[GTYPE.caption, { color: colors.muted, marginTop: SPACING.sm }]}>{t('See which products, and why, with Premium.')}</Text> : null}
     </Card>
   )
 }

@@ -34,7 +34,8 @@ import SkinProfileScreen from './SkinProfileScreen'
 import ProposalsScreen from './ProposalsScreen'
 import { isAdmin } from '../utils/contributions'
 import { isPremiumUser, setPremium } from '../utils/premium'
-import { GlossyScope, GTYPE, GFW } from '../components/glossy'
+import { GlossyScope, GTYPE, GFW, glassCard } from '../components/glossy'
+import FeatureIcon from '../components/FeatureIcon'
 
 export const MORE_SCREENS = [
   { name: 'LifeModes', component: LifeModesScreen, label: 'Your skin right now', subtitle: 'Pregnancy, reacting skin, season', icon: 'heart-outline', group: 'track' },
@@ -112,7 +113,7 @@ function MoreScreenInner({ navigation }) {
   return (
     <Screen back title="Profile">
       {/* Who she is, and where she is in her skin journey */}
-      <Pressable onPress={() => open('Journey')} style={({ pressed }) => [styles.profile, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.9 : 1 }]}>
+      <Pressable onPress={() => open('Journey')} style={({ pressed }) => [styles.profile, { ...glassCard(colors), borderColor: colors.border, opacity: pressed ? 0.9 : 1 }]}>
         <View style={styles.profileTop}>
           <ProfileAvatar name={firstName || user?.email} level={journey?.level.level} size={64} background={colors.primarySoft} textColor={colors.primary} />
           <View style={{ flex: 1, marginLeft: SPACING.sm }}>
@@ -129,7 +130,7 @@ function MoreScreenInner({ navigation }) {
             <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: 2 }]}>{t('Level {n}', { n: journey.level.level })} · {t(journey.level.name)}</Text>
             <ProgressBar value={journey.level.progress} style={{ marginTop: SPACING.sm }} />
             <View style={[styles.stats, { borderTopColor: colors.border }]}>
-              <View style={styles.stat}><Ionicons name="ribbon-outline" size={16} color={colors.primary} /><Text style={[GTYPE.caption, { color: colors.text }]}><Text style={{ ...GFW('700') }}>{journey.earned.length}/{journey.earnableCount}</Text> {t('badges')}</Text></View>
+              <View style={styles.stat}><FeatureIcon name="ribbon-outline" glossy size={16} color={colors.primary} /><Text style={[GTYPE.caption, { color: colors.text }]}><Text style={{ ...GFW('700') }}>{journey.earned.length}/{journey.earnableCount}</Text> {t('badges')}</Text></View>
               <View style={styles.stat}><Ionicons name="star" size={15} color="#C99A45" /><Text style={[GTYPE.caption, { color: colors.text }]}><Text style={{ ...GFW('700') }}>{journey.stars}</Text> {t('stars')}</Text></View>
               <Ionicons name="chevron-forward" size={16} color={colors.muted} />
             </View>
@@ -171,7 +172,7 @@ function MoreScreenInner({ navigation }) {
       <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
         {tracking.map((item, idx, arr) => (
-          <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1}
+          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1}
             right={item.premium ? <Ionicons name="diamond" size={14} color={LIGHT_COLORS.secondary} /> : undefined} />
         ))}
       </Card>
@@ -179,14 +180,14 @@ function MoreScreenInner({ navigation }) {
       <SectionHeader title="Learn & care" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
         {byGroup('learn').map((item, idx, arr) => (
-          <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
+          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
         ))}
       </Card>
 
       <SectionHeader title="Account" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
         {byGroup('account').map((item, idx, arr) => (
-          <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
+          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
         ))}
       </Card>
 
@@ -197,7 +198,7 @@ function MoreScreenInner({ navigation }) {
             <ListRow icon="diamond-outline" title="See the app as Premium" subtitle={viewPremium ? 'On: every Premium feature is open' : 'Off: you see the app as a free user'}
               right={<Switch value={viewPremium} onValueChange={toggleView} trackColor={{ true: colors.primary }} />} />
             {byGroup('admin').map((item, idx, arr) => (
-              <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
+              <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
             ))}
           </Card>
         </>

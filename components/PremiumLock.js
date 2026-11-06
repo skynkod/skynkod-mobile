@@ -7,9 +7,10 @@ import { isPremiumUser } from '../utils/premium'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useColors } from './ui'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS } from '../utils/theme'
+import { GTYPE, GFW, glassCard } from './glossy'
 
-const PLUM = '#33202E'
+const PLUM = '#5E3F56'
 
 // Premium or not, read again each time the screen shows (the team's Free /
 // Premium switch applies at once). undefined while loading.
@@ -29,7 +30,7 @@ export function UnlockButton({ label, style }) {
   return (
     <Pressable onPress={() => navigation.navigate('Premium')} accessibilityRole="button"
       style={({ pressed }) => [styles.unlock, { opacity: pressed ? 0.85 : 1 }, style]}>
-      <Ionicons name="diamond" size={14} color="#E2C6DA" />
+      <Ionicons name="diamond" size={14} color="#C5A8BB" />
       <Text style={styles.unlockText}>{t(label || 'Unlock with Premium')}</Text>
     </Pressable>
   )
@@ -46,10 +47,10 @@ export function PremiumBlur({ locked, title, text, children, style }) {
       <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{children}</View>
       <BlurView intensity={36} tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.overlay}>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={[styles.card, { ...glassCard(colors) }]}>
           <Ionicons name="diamond" size={18} color={PLUM} />
-          {title ? <Text style={[TYPE.bodyStrong, { color: colors.text, textAlign: 'center', marginTop: SPACING.xs }]}>{t(title)}</Text> : null}
-          {text ? <Text style={[TYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>{t(text)}</Text> : null}
+          {title ? <Text style={[GTYPE.bodyStrong, { color: colors.text, textAlign: 'center', marginTop: SPACING.xs }]}>{t(title)}</Text> : null}
+          {text ? <Text style={[GTYPE.caption, { color: colors.textSecondary, textAlign: 'center', marginTop: 4, lineHeight: 18 }]}>{t(text)}</Text> : null}
           <UnlockButton style={{ marginTop: SPACING.md }} />
         </View>
       </View>
@@ -62,5 +63,5 @@ const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg },
   card: { alignItems: 'center', borderRadius: RADIUS.lg, paddingVertical: SPACING.lg, paddingHorizontal: SPACING.lg, maxWidth: 300, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   unlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: PLUM, borderRadius: 999, paddingVertical: 11, paddingHorizontal: SPACING.lg },
-  unlockText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  unlockText: { color: '#FFFFFF', ...GFW('700'), fontSize: 14 },
 })

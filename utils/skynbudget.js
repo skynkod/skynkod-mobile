@@ -161,6 +161,6 @@ export const budgetInsights = ({ owned = [], toBuy = [], purchases = [], budget 
     out.push({ icon: 'pie-chart-outline', text: "You're spending much more on serums than on cleansers this month." })
   }
 
-  if (!out.length) out.push({ icon: 'sparkles-outline', text: 'No duplicates in your collection. Nice and minimal!' })
+  if (!out.length) out.push({ icon: 'koda', text: 'No duplicates in your collection. Nice and minimal!' })
   return out
 }

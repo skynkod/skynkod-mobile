@@ -24,8 +24,8 @@ import YourWeek from '../components/YourWeek';
 import { weekAudit } from '../utils/week-audit';
 import { todaySteps, describeDays } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
-import { SPACING, RADIUS, TYPE, LIGHT_COLORS } from '../utils/theme';
-import { GlossyScope, GTYPE, GFW } from '../components/glossy'
+import { SPACING, RADIUS, LIGHT_COLORS } from '../utils/theme';
+import { GlossyScope, GTYPE, GFW, glassCard, GlossyFill } from '../components/glossy'
 
 const todayKey = (userId, tab) => `routine_day_${userId}_${tab}_${skinDay().toDateString()}`;
 
@@ -157,7 +157,7 @@ function RoutinesScreenInner({ route, navigation }) {
           <Text style={[GTYPE.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
             {t('Add the products you already use, or let us build a routine made for your skin.')}
           </Text>
-          <Pressable onPress={build} style={[styles.buildButton, { backgroundColor: colors.primary }]}>
+          <Pressable onPress={build} style={[styles.buildButton, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
             <Text style={{ color: colors.onPrimary, fontSize: 16, ...GFW('600') }}>{t('Add my products')}</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('Rekod')} style={[styles.buildButton, styles.programmeButton]}>
@@ -191,7 +191,7 @@ function RoutinesScreenInner({ route, navigation }) {
       {saved ? (
         <Card style={{ marginTop: SPACING.md }} onPress={() => navigation.navigate('Layering', { period: tab })}>
           <View style={styles.quizRow}>
-            <Ionicons name="layers-outline" size={22} color={colors.primary} />
+            <FeatureIcon name="layers-outline" size={22} color={colors.primary} />
             <View style={{ flex: 1 }}>
               <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('How to apply, in order')}</Text>
               <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Which product first, how much and how')}</Text>
@@ -226,7 +226,7 @@ function RoutinesScreenInner({ route, navigation }) {
                     styles.check,
                     isDone
                       ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                      : { backgroundColor: colors.card, borderColor: colors.border },
+                      : { ...glassCard(colors), borderColor: colors.border },
                   ]}
                 >
                   {isDone ? (
@@ -253,7 +253,7 @@ function RoutinesScreenInner({ route, navigation }) {
                     style={({ pressed }) => [styles.productRow, { opacity: pressed ? 0.7 : 1 }]}
                   >
                     {photoOf(step) ? <Image source={{ uri: photoOf(step) }} style={styles.productPhoto} resizeMode="contain" /> : null}
-                    <Text style={[GTYPE.body, { color: step.product_id ? colors.primary : colors.textSecondary, flex: 1, fontWeight: step.product_id ? '600' : '400' }]}>{t(step.product)}</Text>
+                    <Text style={[GTYPE.body, { color: step.product_id ? colors.primary : colors.textSecondary, flex: 1, ...GFW(step.product_id ? '600' : '400') }]}>{t(step.product)}</Text>
                     {step.product_id ? <Ionicons name="chevron-forward" size={16} color={colors.muted} /> : null}
                   </Pressable>
                 ) : (

@@ -6,6 +6,7 @@ import FeatureIcon from './FeatureIcon'
 import { useT } from '../utils/LanguageContext'
 import { SPACING } from '../utils/theme'
 import { usePremium } from './PremiumLock'
+import { GFW } from './glossy'
 
 // "Ask Koda" where the question comes up (Lita, 2026-10-24), with the question
 // already written from what she's looking at.
@@ -19,7 +20,7 @@ export default function AskKodaLink({ label, prefill, returnTo, pill = false, st
     <Pressable onPress={() => navigation.navigate('Koda', { prefill, returnTo })} hitSlop={6} accessibilityRole="button"
       style={({ pressed }) => [styles.link, pill && [styles.pill, { borderColor: colors.border }], { opacity: pressed ? 0.7 : 1 }, style]}>
       <FeatureIcon name="koda" size={pill ? 16 : 13} color={colors.primary} />
-      <Text style={{ color: colors.primary, fontWeight: '700', fontSize: pill ? 14 : 12 }}>{t(label)}</Text>
+      <Text style={{ color: colors.primary, ...GFW('700'), fontSize: pill ? 14 : 12 }}>{t(label)}</Text>
       {premium === false ? <Text style={{ color: colors.muted, fontSize: pill ? 12 : 11 }}>· {t('3 free a week')}</Text> : null}
     </Pressable>
   )
