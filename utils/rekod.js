@@ -13,6 +13,7 @@ import { engineProfile } from './skin-quiz'
 import { getPausedProducts } from './paused-products'
 import { getProductReactions } from './journal-day'
 import { isRemover, removerPrefer, REMOVER_ACTION } from './removers'
+import { fitsConcern, GENTLE_CONCERNS } from './buy-advice'
 import { textureFor, planPrecautions, morningCleanse, isThermal, isRich } from './rekod-schedule'
 import { sunscreenOk, tintTip, TINT_TIP } from './sunscreen'
 import { loadState } from './cloud-state'
@@ -518,6 +519,17 @@ export const safeAlternativeFor = async (userId, product) => {
     if (alt) return { safe: false, alternative: alt, active: alt && main && has(alt, [main.id], 10) ? main.name.split(' (')[0] : null }
   }
   return { safe: false, alternative: null, active: main && !basicRole ? main.name.split(' (')[0] : null }
+}
+
+// "Probably not" because it targets another concern: a 100% safe product of the
+// same kind for her main concern. null when the catalogue has none.
+export const concernAlternativeFor = async (userId, product, concern, owned = []) => {
+  const profile = await loadProfile(userId).catch(() => ({}))
+  // Never an acid, retinol or another strong active for dryness or sensitivity, even a gentle PHA.
+  const gentle = !!GENTLE_CONCERNS[concern]
+  const strong = has(product, STRONG, 12) && !gentle
+  const candidates = (await allProductsByCategory([product.category]).catch(() => [])).filter(p => p.id !== product.id)
+  return pickFrom(candidates, profile, { strictOnly: true, avoidHarsh: !strong, noStrong: !strong, reject: p => (gentle && has(p, [...STRONG, 'pha'])) || !fitsConcern(p, { concern, profile, owned }) })
 }
 
 // The same step with another product (an alternative, or one the user chose).

@@ -13,7 +13,7 @@ import { PatchTestOffer } from '../components/PatchTest'
 import { purgeOfferFor, purgeCheckOf } from '../utils/purge-check'
 import BuyAdvice from '../components/BuyAdvice'
 import AskKodaLink from '../components/AskKodaLink'
-import { buyVerdict } from '../utils/buy-advice'
+import { buyVerdict, concernToSuggest } from '../utils/buy-advice'
 import { getProduct, addToMyProducts, myProductStatus, getMyProducts } from '../utils/catalog'
 import ProductThumb from '../components/ProductThumb'
 import { CONCERN_CONDITIONS } from '../utils/encyclopedia/conditions'
@@ -22,7 +22,7 @@ import { getPriceStats } from '../utils/community-data'
 import { formatMAD } from '../utils/skynbudget'
 import { productMatch, getIngredient } from '../utils/ingredients-guide'
 import { logError } from '../utils/errorLogger'
-import { safeAlternativeFor } from '../utils/rekod'
+import { safeAlternativeFor, concernAlternativeFor } from '../utils/rekod'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 
 // A product: its match with the user's skin first, the why underneath, then
@@ -48,6 +48,7 @@ export default function ProductScreen({ navigation, route }) {
   const [owned, setOwned] = useState(null)
   const [prices, setPrices] = useState(null)
   const [alt, setAlt] = useState(null) // { safe, alternative } for her skin
+  const [forConcern, setForConcern] = useState(null) // { alternative, concern } after a "Probably not"
   // Product details studied count once for My Skin Journey.
   useEffect(() => { if (user?.id && product?.id) trackProductPage(user.id, product.id) }, [user?.id, product?.id])
   // Smart Shopper: "Should I buy this?" seen on a product she doesn't own.
@@ -57,6 +58,15 @@ export default function ProductScreen({ navigation, route }) {
     setAlt(null)
     safeAlternativeFor(user.id, product).then(setAlt).catch(() => setAlt(null))
   }, [user?.id, product?.id])
+  // "Probably not": a product for her main concern, or nothing if she already has what she needs.
+  const concern = owned && product && status !== 'owned' ? concernToSuggest({ product, profile, owned }) : null
+  useEffect(() => {
+    setForConcern(null)
+    if (!user?.id || !product?.id || !concern) return
+    concernAlternativeFor(user.id, product, concern, owned)
+      .then(alternative => setForConcern(alternative ? { alternative, concern } : null))
+      .catch(() => setForConcern(null))
+  }, [user?.id, product?.id, concern, owned])
   useEffect(() => {
     if (!product?.id) return
     getPriceStats(product.id).then(setPrices).catch(() => setPrices(null))
@@ -97,6 +107,9 @@ export default function ProductScreen({ navigation, route }) {
   if (!product) return <Screen back><EmptyState icon="alert-circle-outline" title={t('Product not found')} /></Screen>
 
   const match = productMatch(product, profile)
+  // After a "Probably not", only the product for her main concern; otherwise the closest safe one.
+  const probablyNot = owned && status !== 'owned' && buyVerdict({ product, profile, owned })?.answer === 'probablyNot'
+  const altShown = probablyNot ? forConcern : owned && alt && !alt.safe ? alt : null
 
   // Adding a product the user should avoid needs a clear, explained warning.
   const confirmAdd = (nextStatus) => {
@@ -236,31 +249,31 @@ export default function ProductScreen({ navigation, route }) {
       )}
 
       {/* Not 100% safe for her: the closest product that is */}
-      {alt && !alt.safe && alt.alternative && lockedDetail ? (
+      {altShown?.alternative && lockedDetail ? (
         <PremiumBlur locked title="A better product for your skin" text="Premium shows the closest product that is 100% safe for you." style={{ marginTop: SPACING.lg, minHeight: 150 }}>
           <View style={[styles.altCard, { backgroundColor: '#33202E', marginTop: 0 }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{alt.alternative.brand} {alt.alternative.name}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{altShown.alternative.brand} {altShown.alternative.name}</Text>
             </View>
           </View>
         </PremiumBlur>
-      ) : alt && !alt.safe ? (
-        alt.alternative ? (
-          <Pressable onPress={() => navigation.navigate('Product', { id: alt.alternative.id, product: undefined })} style={[styles.altCard, { backgroundColor: '#33202E' }]}>
+      ) : altShown ? (
+        altShown.alternative ? (
+          <Pressable onPress={() => navigation.navigate('Product', { id: altShown.alternative.id, product: undefined })} style={[styles.altCard, { backgroundColor: '#33202E' }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color="#A8E2BC" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#E2C6DA', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }}>{t('100% SAFE FOR YOUR SKIN')}</Text>
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{alt.alternative.brand} {alt.alternative.name}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 }}>{alt.active ? t('Also with {active}, without the ingredients that bother your skin.', { active: alt.active.toLowerCase() }) : t('A similar product without the ingredients that bother your skin.')}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: 2 }}>{altShown.alternative.brand} {altShown.alternative.name}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 2 }}>{altShown.concern ? t('Targets {concern}, your main concern, and suits your skin.', { concern: t(altShown.concern).toLowerCase() }) : altShown.active ? t('Also with {active}, without the ingredients that bother your skin.', { active: altShown.active.toLowerCase() }) : t('A similar product without the ingredients that bother your skin.')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#E2C6DA" />
           </Pressable>
         ) : (
           <View style={[styles.altCard, { backgroundColor: colors.surface }]}>
             <Ionicons name="search-outline" size={20} color={colors.muted} />
-            <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{alt.active ? t("We couldn't find another product with {active} that is 100% safe for your skin yet.", { active: alt.active.toLowerCase() }) : t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
+            <Text style={[TYPE.caption, { color: colors.textSecondary, flex: 1 }]}>{altShown.active ? t("We couldn't find another product with {active} that is 100% safe for your skin yet.", { active: altShown.active.toLowerCase() }) : t("We couldn't find a similar product that is 100% safe for your skin in our catalogue yet.")}</Text>
           </View>
         )
       ) : null}

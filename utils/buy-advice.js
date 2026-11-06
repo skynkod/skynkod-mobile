@@ -9,7 +9,7 @@ import { keyActives, TREATS, CONCERNS } from './stop-advice'
 const ESSENTIALS = { cleanser: 'cleanser', moisturizer: 'moisturizer', sunscreen: 'sunscreen' }
 
 // owned: the catalogue products she owns.
-// { answer: 'yes' | 'probablyNot' | 'no' | 'yourCall', free, text, params, save }
+// { answer: 'yes' | 'probablyNot' | 'no' | 'yourCall', free, text, params, save, offTarget }
 export const buyVerdict = ({ product, profile = null, owned = [] }) => {
   if (!product) return null
   const match = profile ? productMatch(product, profile) : null
@@ -40,9 +40,35 @@ export const buyVerdict = ({ product, profile = null, owned = [] }) => {
   // It targets concerns she doesn't have.
   const hers = [...new Set([...(profile?.skin_concerns || []), profile?.priority, profile?.secondary].filter(Boolean))]
   if (TREATS.includes(product.category) && hers.length && targets.length && !targets.some(c => hers.includes(c))) {
-    return { answer: 'probablyNot', free: false, save: true, text: 'It mainly targets {targets}, which isn’t among your concerns.', params: { targets: targets.slice(0, 2).map(c => c.toLowerCase()).join(' and ') } }
+    return { answer: 'probablyNot', free: false, save: true, offTarget: true, text: 'It mainly targets {targets}, which isn’t among your concerns.', params: { targets: targets.slice(0, 2).map(c => c.toLowerCase()).join(' and ') } }
   }
   return sameKind.length
     ? { answer: 'yourCall', free: false, text: 'It suits your skin, but you already have a {kind}: your routine covers this.', params: { kind: product.category } }
     : { answer: 'yourCall', free: false, text: 'It suits your skin and you have nothing like it. Buy it only if it answers something you want.' }
 }
+
+// Dryness and sensitivity are answered by hydrating and calming ingredients, not by
+// the actives that give a product its job (Lita, 2026-11-06).
+export const GENTLE_CONCERNS = {
+  Dryness: ['hyaluronic', 'ceramides', 'panthenol', 'squalane'],
+  Sensitivity: ['ceramides', 'panthenol', 'centella'],
+}
+const targetsConcern = (product, concern) => (GENTLE_CONCERNS[concern]
+  ? findIngredients(product).some(f => f.pos <= 8 && GENTLE_CONCERNS[concern].includes(f.entry.id))
+  : keyActives(product).some(a => (a.goodFor || []).includes(concern)))
+
+// "Probably not" because it targets something else (Lita, 2026-11-03): the concern
+// to suggest a product for, her main one. null when she already owns a product
+// of this kind for it, or when she owns one that does the same job (save: nothing more).
+export const concernToSuggest = ({ product, profile = null, owned = [] }) => {
+  if (!buyVerdict({ product, profile, owned })?.offTarget) return null
+  const concern = [profile?.priority, profile?.secondary, ...(profile?.skin_concerns || [])].find(c => CONCERNS.includes(c))
+  if (!concern) return null
+  return owned.some(p => p?.category === product.category && targetsConcern(p, concern)) ? null : concern
+}
+
+// A product worth suggesting for that concern: it targets it, she doesn't own it,
+// and "Should I buy this?" wouldn't turn it down on its own page.
+export const fitsConcern = (candidate, { concern, profile = null, owned = [] }) => targetsConcern(candidate, concern)
+  && !owned.some(p => p?.id === candidate.id)
+  && !['no', 'probablyNot'].includes(buyVerdict({ product: candidate, profile, owned })?.answer)
