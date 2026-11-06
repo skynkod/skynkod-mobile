@@ -137,15 +137,25 @@ const WASH = [
   { v: 'oily', t: 'Shiny all over', s: 'Whole face', img: 'skin-test-oily' },
 ]
 const SHINE = [{ v: 'matte', t: 'Not at all' }, { v: 'tzone', t: 'In the center', s: 'Forehead, nose, chin' }, { v: 'all', t: 'All over' }]
-const PORES = [{ v: 'small', t: 'Barely' }, { v: 'nose', t: 'On the nose' }, { v: 'cheeks', t: 'On the nose and cheeks' }]
 const TONES = ['#F6E1D3', '#EBC8AE', '#D6A584', '#B07A55', '#7E5236', '#4A2E1F']
 // Face zones on the photo (x, y in the 1145 × 1374 image).
+// Where she sees her pores: it feeds the skin type (computeSkinType reads nose, forehead, chin, cheeks).
+const PORE_ZONES = [
+  { t: 'Forehead', v: 'forehead', x: 575, y: 330, e: [[575, 330, 250, 105]] },
+  { t: 'Cheeks', v: 'cheeks', x: 340, y: 830, e: [[340, 830, 120, 150], [810, 830, 120, 150]] },
+  { t: 'Nose', v: 'nose', x: 575, y: 760, e: [[575, 760, 72, 150]] },
+  { t: 'Chin', v: 'chin', x: 575, y: 1195, e: [[575, 1195, 140, 70]] },
+]
+// Where she gets breakouts, asked only after "Breakouts" (Lita, 2026-11-06).
 const ZONES = [
   { t: 'Forehead', v: 'forehead', x: 575, y: 330, e: [[575, 330, 250, 105]] },
   { t: 'Cheeks', v: 'cheeks', x: 340, y: 830, e: [[340, 830, 120, 150], [810, 830, 120, 150]] },
   { t: 'Nose', v: 'nose', x: 575, y: 760, e: [[575, 760, 72, 150]] },
-  { t: 'Chin', v: 'jaw', x: 575, y: 1175, e: [[575, 1175, 140, 80]] },
+  { t: 'Around the mouth', v: 'mouth', x: 575, y: 1030, e: [[575, 1030, 190, 72]] },
+  { t: 'Chin and jaw', v: 'jaw', x: 575, y: 1195, e: [[575, 1195, 140, 70]] },
 ]
+// Older answers were one word: 'small' (barely), 'nose', 'cheeks' (nose and cheeks).
+const poreZones = pores => (Array.isArray(pores) ? pores : { nose: ['nose'], cheeks: ['nose', 'cheeks'] }[pores] || [])
 const FAMILIES = [
   { k: 'acne', t: 'Breakouts', s: 'Blackheads, cysts…', img: 'family-breakouts' },
   { k: 'red', t: 'Redness', s: 'Comes and goes', img: 'family-redness' },
@@ -160,7 +170,7 @@ const DETAILS = {
     { id: 'comedonal-acne', t: 'Blackheads & whiteheads', img: 'card-blackheads' },
     { id: 'inflammatory-acne', t: 'Red spots', img: 'card-red-spots' },
     { id: 'cystic-acne', t: 'Deep, painful spots', img: 'card-deep-spots' },
-    { id: 'hormonal-acne', t: 'Chin breakouts with your cycle or hormones', img: 'card-hormonal' },
+    { id: 'hormonal-acne', t: 'Breakouts that follow your cycle', img: 'card-hormonal' },
     { id: 'fungal-acne', t: 'Small, itchy, identical bumps', img: 'card-fungal', health: true },
     { id: 'acne-scars', t: 'Acne scars', img: 'card-scars' },
   ]],
@@ -267,7 +277,7 @@ export const fromAnswers = (a = {}, row = {}) => {
   }
 }
 // Where each step starts, which screen ends it, and the answers it owns.
-const CHAPTER_START = { skin: 'goals', face: 'faceZones', eyes: 'eyes', lips: 'lips', neck: 'neck', life: 'sleep', safety: 'safety', priority: 'spotted' }
+const CHAPTER_START = { skin: 'goals', face: 'face', eyes: 'eyes', lips: 'lips', neck: 'neck', life: 'sleep', safety: 'safety', priority: 'spotted' }
 const CHAPTER_END = { skinDone: 'skin', faceDone: 'face', eyesDone: 'eyes', lipsDone: 'lips', neckDone: 'neck', lifeDone: 'life', last: 'safety' }
 const ISSUE_KEYS = ['issues', 'eyeDetails', 'priority', 'secondary']
 const CHAPTER_KEYS = {
@@ -838,36 +848,37 @@ const Between = ({ from, next, onGo, summary }) => {
   )
 }
 
-const FaceZones = () => {
-  const { F, W, P, set, go } = useOb()
-  const [on, setOn] = useState(P.faceZones)
+// Tap the zones on the face photo: pores (skin chapter) or breakouts (after "Breakouts").
+const FaceZones = ({ z, q, h, zones, initial, optional, onDone }) => {
+  const { F, W } = useOb()
+  const [on, setOn] = useState(initial)
   const fw = W - 44
   const fh = fw * 1374 / 1145
-  const tap = z => {
-    setOn(on.includes(z) ? on.filter(x => x !== z) : [...on, z])
+  const tap = zone => {
+    setOn(on.includes(zone) ? on.filter(x => x !== zone) : [...on, zone])
   }
   return (
     <Page>
-      <Head z="face" q="Where do you notice the most changes?" h="Tap the zones on the face." />
+      <Head z={z} q={q} h={h} />
       <Rise i={1} style={[styles.fz, { width: fw, height: fh }]}>
         <Image source={IMG.faceZones} style={{ position: 'absolute', left: 0, top: 0, width: fw, height: fh }} resizeMode="cover" />
         <Svg style={StyleSheet.absoluteFill} width={fw} height={fh} viewBox="0 0 1145 1374">
           <Defs><RadialGradient id="zg"><Stop offset="0" stopColor={K.halo} stopOpacity="0.75" /><Stop offset="0.6" stopColor={K.halo} stopOpacity="0.45" /><Stop offset="1" stopColor={K.halo} stopOpacity="0" /></RadialGradient></Defs>
-          {ZONES.filter(z => on.includes(z)).flatMap(z => z.e.map(([cx, cy, rx, ry], i) => <Ellipse key={z.v + i} cx={cx} cy={cy} rx={rx * 1.2} ry={ry * 1.2} fill="url(#zg)" />))}
+          {zones.filter(zone => on.includes(zone)).flatMap(zone => zone.e.map(([cx, cy, rx, ry], i) => <Ellipse key={zone.v + i} cx={cx} cy={cy} rx={rx * 1.2} ry={ry * 1.2} fill="url(#zg)" />))}
         </Svg>
         {/* Tap the face itself: each zone is a touch area; a picked zone glows and shows its name. */}
-        {ZONES.flatMap(z => z.e.map(([cx, cy, rx, ry], i) => (
-          <Pressable key={z.v + i} onPress={() => tap(z)} accessibilityLabel={z.t} accessibilityState={{ selected: on.includes(z) }}
+        {zones.flatMap(zone => zone.e.map(([cx, cy, rx, ry], i) => (
+          <Pressable key={zone.v + i} onPress={() => tap(zone)} accessibilityLabel={zone.t} accessibilityState={{ selected: on.includes(zone) }}
             style={{ position: 'absolute', left: (cx - rx) / 1145 * fw, top: (cy - ry) / 1374 * fh, width: 2 * rx / 1145 * fw, height: 2 * ry / 1374 * fh, borderRadius: 999 }} />
         )))}
-        {ZONES.filter(z => on.includes(z)).map(z => (
-          <View key={z.v} pointerEvents="none" style={[styles.zp, { left: z.x / 1145 * fw, top: z.y / 1374 * fh, backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
-            <Text style={[F.s, { fontSize: 12.5, color: '#fff' }]}>{z.t}</Text>
+        {zones.filter(zone => on.includes(zone)).map(zone => (
+          <View key={zone.v} pointerEvents="none" style={[styles.zp, { left: zone.x / 1145 * fw, top: zone.y / 1374 * fh, backgroundColor: C.mauve2, borderColor: C.mauve2 }]}>
+            <Text style={[F.s, { fontSize: 12.5, color: '#fff' }]}>{zone.t}</Text>
           </View>
         ))}
       </Rise>
       <View style={{ height: 16 }} />
-      <Btn disabled={!on.length} onPress={() => { set({ faceZones: on }); go('face') }} />
+      <Btn disabled={!optional && !on.length} onPress={() => onDone(on)} />
     </Page>
   )
 }
@@ -1569,8 +1580,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
       sun: P.skinYes ? (P.skinYes[1] ? 'burntan' : 'tan') : null,
       tightAfterShower: P.skinYes ? P.skinYes[2] : null,
       tone: P.tone ?? null,
-      faceZones: zones,
-      acneWhere: hasAcne ? zones.filter(z => z !== 'nose') : [],
+      faceZones: hasAcne ? zones : [],
+      acneWhere: hasAcne ? zones : [],
       issues,
       priority: P.priority || null,
       secondary: P.secondary || null,
@@ -1658,13 +1669,15 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
     case 'meno': content = <RowPick z="skin" q="Where are you with menopause?" h="It changes the skin a lot: drier, thinner, less firm. We adapt your care." opts={MENO} onDone={o => { set({ meno: o.v }); go('wash') }} />; break
     case 'wash': content = <PhotoPick z="skin" q="2 hours after washing, your skin…" h="Think of a normal day." opts={WASH} one onDone={o => { set({ feel: o.v }); go('shine') }} />; break
     case 'shine': content = <RowPick z="skin" q="At midday, your skin shines…" opts={SHINE} onDone={o => { set({ shine: o.v }); go('pores') }} />; break
-    case 'pores': content = <RowPick z="skin" q="Your pores, you see them…" opts={PORES} onDone={o => { set({ pores: o.v }); go('react') }} />; break
+    // Nothing tapped: she barely sees them.
+    case 'pores': content = <FaceZones z="skin" q="Where can you see your pores?" h="Tap the zones on the face. Barely see them? Just continue." zones={PORE_ZONES} optional
+      initial={PORE_ZONES.filter(zone => poreZones(P.pores).includes(zone.v))} onDone={on => { set({ pores: on.length ? on.map(zone => zone.v) : 'small' }); go('react') }} />; break
     case 'react': content = <Statements z="skin" q="A few quick ones" h="Yes or no." items={SKIN_STATEMENTS} reacts={SKIN_SAYS} initial={P.skinYes} onDone={a => { set({ skinYes: a }); go('tone') }} />; break
     case 'tone': content = <Tone />; break
     case 'skinDone': {
       const type = computeSkinType(answersOf())
       content = (
-        <Between from="skin" next="face" onGo={() => go('faceZones')} summary={
+        <Between from="skin" next="face" onGo={() => go('face')} summary={
           <>
             <Summary label="Your skin type" items={type ? [`${type}${P.skinYes?.[0] ? ', sensitive' : ''}`] : []} d={SKIN_WHY[type]} empty={false} />
             <Summary label="Your goals" items={P.goals.map(g => g.t)} empty={false} />
@@ -1673,7 +1686,6 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
       )
       break
     }
-    case 'faceZones': content = <FaceZones />; break
     case 'face': content = <YesNo z="face" q="Is anything bothering you on your face?" h="Breakouts, redness, spots, pores, lines…" onDone={y => { if (y) return go('families'); set({ face: [] }); go('faceDone') }} />; break
     case 'families': content = (
       <PhotoPick z="face" q="What bothers you?" h="Pick the families, we'll look at each one in detail." opts={FAMILIES}
@@ -1684,11 +1696,20 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
       const rest = cur.queue.slice(1)
       content = (
         <PhotoPick key={cur.k} z="face" q={title} h="Select all that apply." opts={opts.filter(o => health || !o.health)}
-          onDone={sel => { setP(prev => ({ ...prev, face: [...prev.face.filter(o => !opts.includes(o)), ...sel] })); if (rest.length) go('family', { queue: rest, k: rest[0] }); else go('faceDone') }} />
+          onDone={sel => {
+            setP(prev => ({ ...prev, face: [...prev.face.filter(o => !opts.includes(o)), ...sel] }))
+            // After her kinds of breakouts: where she gets them.
+            if (cur.k === 'acne' && sel.length) return go('faceZones', { queue: rest })
+            if (rest.length) go('family', { queue: rest, k: rest[0] }); else go('faceDone')
+          }} />
       )
       break
     }
-    case 'faceDone': content = <Between from="face" next="eyes" onGo={() => go('eyes')} summary={<Summary label="You identified" items={[...P.faceZones.map(z => `Zone: ${z.t}`), ...P.face.map(o => o.t)]} />} />; break
+    case 'faceZones': content = (
+      <FaceZones z="face" q="Where do you get breakouts?" h="Tap the zones on the face." zones={ZONES} initial={P.faceZones}
+        onDone={on => { set({ faceZones: on }); if (cur.queue.length) go('family', { queue: cur.queue, k: cur.queue[0] }); else go('faceDone') }} />
+    ); break
+    case 'faceDone': content = <Between from="face" next="eyes" onGo={() => go('eyes')} summary={<Summary label="You identified" items={[...P.face.map(o => o.t), ...(P.face.some(o => DETAILS.acne[1].includes(o)) && P.faceZones.length ? [`Breakouts: ${P.faceZones.map(z => z.t.toLowerCase()).join(', ')}`] : [])]} />} />; break
     case 'eyes': content = <YesNo z="eyes" q="Anything around your eyes?" h="Dark circles, puffiness, fine lines…" onDone={y => { if (y) return go('eyeTypes'); set({ eyes: [] }); go('eyesDone') }} />; break
     case 'eyeTypes': content = <PhotoPick z="eyes" q="What do you notice?" h="Dark circles don't all have the same cause, so not the same solution." opts={EYES} initial={P.eyes} onDone={sel => { set({ eyes: sel }); go('eyesDone') }} />; break
     case 'eyesDone': content = <Between from="eyes" next="lips" onGo={() => go('lips')} summary={<Summary label="You identified" items={P.eyes.map(o => o.t)} />} />; break
