@@ -7,7 +7,7 @@ import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
 import { useSkinProfile } from '../utils/useSkinProfile'
 import { getMyProducts } from '../utils/catalog'
-import { ISSUES, questionsFor, buildSosPlan, issuesFromSituation } from '../utils/sos-plan'
+import { ISSUES, questionsFor, buildSosPlan, issuesFromSituation, prefilledAnswers } from '../utils/sos-plan'
 import { getActivePlan, startPlan, endPlan, RETURN_LABELS } from '../utils/emergency-state'
 import { isPremiumUser } from '../utils/premium'
 import { syncSmartReminders } from '../utils/notifications'
@@ -349,7 +349,7 @@ export default function EmergencyScreen({ navigation, route }) {
           <Text style={[TYPE.caption, { color: colors.text, fontWeight: '600', flex: 1 }]}>{t('Other')}</Text>
         </Pressable>
       </View>
-      <PrimaryButton label="Continue" disabled={!issues.length} onPress={() => { setAnswers({}); setQIndex(0); setStage('quiz') }} />
+      <PrimaryButton label="Continue" disabled={!issues.length} onPress={() => { setAnswers(prefilledAnswers(profile)); setQIndex(0); setStage('quiz') }} />
       {active ? (
         <Pressable onPress={reset} style={{ alignSelf: 'center', padding: SPACING.md }}>
           <Text style={[TYPE.caption, { color: colors.textSecondary, fontWeight: '700' }]}>{t('See my current plan')}</Text>

@@ -831,7 +831,7 @@ export default function TodayScreen({ navigation, route }) {
 
       {/* One tip a day: water and sun by day, sleep at night (Lita, 2026-10-25) */}
       {(() => {
-        const tip = tipOfTheMoment({ period: afterSunrise && hour < 18 ? 'day' : 'evening', sleptHours: todayEntry?.sleep_hours ?? null })
+        const tip = tipOfTheMoment({ period: afterSunrise && hour < 18 ? 'day' : 'evening', sleptHours: todayEntry?.sleep_hours ?? null, zones: profile?.acneWhere || [] })
         return (
           <View style={[styles.tip, { backgroundColor: colors.primarySoft }]}>
             <Ionicons name={afterSunrise && hour < 18 ? 'water-outline' : 'bed-outline'} size={16} color={colors.primary} />

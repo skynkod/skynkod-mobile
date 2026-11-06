@@ -73,6 +73,13 @@ export const SOS_QUESTIONS = [
     options: [o('no', 'No'), o('pregnant', 'I’m pregnant'), o('breastfeeding', 'I’m breastfeeding')] },
 ]
 
+// What the quiz already knows from her sign-up (Lita, 2026-11-06): where she gets
+// breakouts comes ticked, she can change it. Only the zones this question offers.
+export const prefilledAnswers = (profile) => {
+  const where = (profile?.acneWhere || []).filter(z => SOS_QUESTIONS.find(q => q.id === 'acneWhere').options.some(x => x.value === z))
+  return where.length ? { acneWhere: where } : {}
+}
+
 export const questionsFor = (issues, answers, profile) =>
   SOS_QUESTIONS.filter(q => !q.showIf || q.showIf(issues, answers, profile))
     .map(q => {

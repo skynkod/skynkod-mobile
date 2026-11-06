@@ -213,6 +213,8 @@ export const engineProfile = (row) => {
     stress: sp.stress || null,
     sleep: sp.sleep || null,
     eyeDetails: sp.eyeDetails || [],
+    // Where she gets breakouts, from the sign-up (forehead, cheeks, nose, mouth, jaw).
+    acneWhere: sp.acneWhere || [],
     // Product preferences: fragrance_free, vegan.
     prefs: (sp.prefs || []).filter(x => x !== 'None'),
     meds,

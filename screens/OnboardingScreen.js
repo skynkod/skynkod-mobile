@@ -1564,9 +1564,12 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
 
   // ---------- saving ----------
   const answersOf = () => {
-    const issues = [...new Set([...P.face, ...P.eyes, ...P.lips, ...P.neck].map(o => o.id))]
     const zones = P.faceZones.map(z => z.v)
     const hasAcne = P.face.some(o => DETAILS.acne[1].includes(o))
+    // Red spots around the mouth can be perioral dermatitis (Lita, 2026-11-06): a
+    // suspicion like the others, only with the health consent; a doctor confirms it.
+    const perioral = health && hasAcne && zones.includes('mouth') && P.face.some(o => o.id === 'inflammatory-acne')
+    const issues = [...new Set([...P.face, ...P.eyes, ...P.lips, ...P.neck].map(o => o.id).concat(perioral ? ['perioral-dermatitis'] : []))]
     const otherAvoid = (P.avoidOther || '').trim()
     return {
       goals: P.goals.map(g => g.v),
