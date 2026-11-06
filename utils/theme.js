@@ -117,9 +117,13 @@ export const isNightTime = () => {
 // it also calls useTheme() so it redraws when day turns to night.
 let liveDark = false
 export const setLiveDark = (dark) => { liveDark = !!dark }
+// The glossy colours of the mode on screen (glass, see-through background…), set by
+// GlossyScope, so these screens share the glossy universe too (Lita, 2026-11-06).
+let liveGlossy = null
+export const setLiveGlossy = (colors) => { liveGlossy = colors }
 // `extra`: { name: [light, dark] } for colours the main palette doesn't have.
 export const livePalette = (extra = {}) => new Proxy({}, {
-  get: (_, key) => (key in extra ? extra[key][liveDark ? 1 : 0] : (liveDark ? DARK_COLORS : LIGHT_COLORS)[key]),
+  get: (_, key) => (key in extra ? extra[key][liveDark ? 1 : 0] : liveGlossy && key in liveGlossy ? liveGlossy[key] : (liveDark ? DARK_COLORS : LIGHT_COLORS)[key]),
 })
 // StyleSheet built from livePalette, made once per mode.
 export const liveStyles = (make) => {

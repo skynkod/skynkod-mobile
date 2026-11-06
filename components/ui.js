@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import FeatureIcon from './FeatureIcon'
 import { useTheme } from '../utils/ThemeContext'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
-import { GlossyBackdrop, GTYPE, GFW } from './glossy'
+import { GlossyBackdrop, GTYPE, GFW, glassBubble } from './glossy'
 
 const BTN = require('../assets/onboarding/btn.png')
 // Inside a GlossyScope (audit 2026-10-28): Inter, glass and the glossy button.
@@ -215,7 +215,7 @@ export function SectionHeader({ title, action, onAction, style }) {
   )
 }
 
-export function IconCircle({ name, size = 40, color, background, iconSize }) {
+export function IconCircle({ name, size = 40, color, background, iconSize, glossy = false }) {
   const theme = useTheme()
   const { colors } = theme
   const { T, fw } = look(theme)
@@ -228,21 +228,23 @@ export function IconCircle({ name, size = 40, color, background, iconSize }) {
         backgroundColor: background || colors.primarySoft,
         alignItems: 'center',
         justifyContent: 'center',
+        // In the glossy universe the icon sits in a round glass bubble.
+        ...(theme.glossy ? glassBubble(colors) : null),
       }}
     >
-      <FeatureIcon name={name} size={iconSize || size * 0.5} color={color || colors.primary} focused={name === 'rekod'} />
+      <FeatureIcon name={name} size={iconSize || size * (theme.glossy && glossy ? 0.62 : 0.5)} color={color || colors.primary} focused={name === 'rekod'} glossy={glossy} />
     </View>
   )
 }
 
 // `below`: an extra control under the subtitle (a time chooser…).
-export function ListRow({ icon, iconColor, iconBackground, title, subtitle, right, onPress, last, destructive, below = null }) {
+export function ListRow({ icon, iconColor, iconBackground, glossy = false, title, subtitle, right, onPress, last, destructive, below = null }) {
   const theme = useTheme()
   const { colors } = theme
   const { T, fw } = look(theme)
   const content = (
     <View style={[styles.listRow, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-      {icon ? <IconCircle name={icon} size={36} color={iconColor} background={iconBackground} /> : null}
+      {icon ? <IconCircle name={icon} size={36} color={iconColor} background={iconBackground} glossy={glossy} /> : null}
       <View style={{ flex: 1 }}>
         <Text style={[T.bodyStrong, { color: destructive ? colors.danger : colors.text }]}>{title}</Text>
         {subtitle ? <Text style={[T.caption, { color: colors.muted, marginTop: 2 }]}>{subtitle}</Text> : null}
@@ -491,7 +493,7 @@ export function BottomSheet({ title, onClose, children }) {
     <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]}>
       <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: colors.bg }]}>
+        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: colors.solid || colors.bg }]}>
           <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
           <View style={[styles.rowBetween, { marginBottom: SPACING.lg }]}>
             <Text style={[T.heading, { color: colors.text }]}>{title}</Text>

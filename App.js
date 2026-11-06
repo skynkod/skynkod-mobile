@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { View, ActivityIndicator, Platform, Pressable, Modal, StyleSheet, Image, AppState } from 'react-native'
+import { View, ActivityIndicator, Platform, Pressable, Modal, StyleSheet, AppState } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import JourneyToast from './components/JourneyToast'
 import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
+import { GlossyScope, GFW } from './components/glossy'
 import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
 import { supabase, signOut, updateUserProfile } from './utils/supabase'
@@ -18,6 +18,7 @@ import { setAnalyticsUser, track } from './utils/analytics'
 import * as SplashScreen from 'expo-splash-screen'
 import AnimatedSplash from './components/AnimatedSplash'
 import RekodIcon from './components/RekodIcon'
+import { GlossyIcon } from './components/FeatureIcon'
 import { BottomSheet, ListRow, Card } from './components/ui'
 import { SPACING } from './utils/theme'
 import LoginScreen from './screens/LoginScreen'
@@ -75,7 +76,6 @@ const QUICK_ACTIONS = [
 ]
 
 const Empty = () => null
-const KODA_ICON = require('./assets/images/koda-logo-white.png')
 
 function AppTabs({ userId }) {
   const { colors } = useTheme()
@@ -90,9 +90,9 @@ function AppTabs({ userId }) {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, ...GFW('600') },
         tabBarStyle: {
-          backgroundColor: colors.card,
+          backgroundColor: colors.solid || colors.card,
           borderTopColor: colors.border,
           paddingTop: 6,
           height: Platform.OS === 'ios' ? 88 : 68,
@@ -117,9 +117,9 @@ function AppTabs({ userId }) {
                     onLongPress={() => { if (navigationRef.isReady()) navigationRef.navigate('Scanner') }}
                     accessibilityRole="button"
                     accessibilityLabel={t('Menu')}
-                    style={({ pressed }) => [styles.addButton, { backgroundColor: colors.accent, shadowColor: colors.shadow, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+                    style={({ pressed }) => [styles.addButton, { backgroundColor: colors.solid || colors.accent, borderWidth: 1.5, borderColor: colors.border, shadowColor: colors.shadow, transform: [{ scale: pressed ? 0.94 : 1 }] }]}
                   >
-                    <Ionicons name="add" size={32} color="#FFFFFF" />
+                    <GlossyIcon name="plus" size={30} />
                   </Pressable>
                 </View>
               ),
@@ -135,11 +135,11 @@ function AppTabs({ userId }) {
               tabBarLabel: t(tab.label),
               tabBarIcon: ({ color, focused, size }) =>
                 tab.icon === 'koda' ? (
-                  <Image source={KODA_ICON} style={{ width: size, height: size, tintColor: color }} />
+                  <GlossyIcon name="koda" size={size} dimmed={!focused} />
                 ) : tab.icon === 'rekod' ? (
-                  <RekodIcon size={size} color={color} focused={focused} />
+                  <RekodIcon size={size} dimmed={!focused} />
                 ) : (
-                  <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />
+                  <GlossyIcon name={tab.icon === 'home' ? 'home' : 'dekod'} size={size} dimmed={!focused} />
                 ),
             }}
           />
@@ -187,9 +187,7 @@ function AppTabs({ userId }) {
             <ListRow
               key={action.to}
               icon={action.icon}
-              // The scan stays the star of the menu.
-              iconColor={idx === 0 ? '#FFFFFF' : undefined}
-              iconBackground={idx === 0 ? colors.accent : undefined}
+              glossy
               title={t(action.title)}
               subtitle={t(action.subtitle)}
               last={idx === QUICK_ACTIONS.length - 1}
@@ -425,6 +423,8 @@ function AppContent() {
   }
 
   let content = null
+  // Dev web preview of the signed-in screens' look, with no account (?app-preview): data stays empty.
+  const devApp = __DEV__ && Platform.OS === 'web' && globalThis.location?.search?.includes('app-preview') ? { id: '00000000-0000-0000-0000-000000000000', email: 'preview@localhost' } : null
   const devChapter = __DEV__ && Platform.OS === 'web' ? new URLSearchParams(globalThis.location?.search || '').get('chapter') : null
   if (devChapter) {
     // Dev web preview of a profile step, with sample saved answers; the result is logged.
@@ -432,17 +432,19 @@ function AppContent() {
     content = <OnboardingScreen userId={null} mode={{ chapters: devChapter.split(','), answers: sample, row: { first_name: 'Lina', consent_health_at: 'x' }, onDone: (answers, health) => { globalThis.__profileSaved = { answers, health } }, onCancel: () => { globalThis.__profileCancelled = true } }} />
   } else if (__DEV__ && Platform.OS === 'web' && globalThis.location?.search?.includes('onboarding')) {
     content = <OnboardingScreen userId={null} onComplete={async () => {}} onLeave={() => {}} />
-  } else if (booting) {
+  } else if (booting && !devApp) {
     content = showSplash ? null : <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1 }} />
-  } else if (!user && showLogin) {
+  } else if (!devApp && !user && showLogin) {
     content = <LoginScreen onLogin={handleLogin} onNew={() => setShowLogin(false)} />
-  } else if (!user || showOnboarding) {
+  } else if (!devApp && (!user || showOnboarding)) {
     // One screen for both: creating the account mid-journey keeps her answers.
     content = <OnboardingScreen key={`journey-${journeyKey}`} userId={user?.userId || null} onComplete={handleOnboardingComplete} onLeave={handleAccountGone}
       onSignedIn={handleSignedUp} onHaveAccount={() => setShowLogin(true)} />
   } else {
     content = (
-      <AuthProvider user={{ id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>
+      <AuthProvider user={devApp || { id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>
+        {/* The whole app in the glossy universe of the sign-up (Lita, 2026-11-06). */}
+        <GlossyScope>
         <NavigationContainer
           ref={navigationRef}
           theme={navTheme}
@@ -458,9 +460,10 @@ function AppContent() {
             lastScreen.current = screen
           }}
         >
-          <AppTabs userId={user.userId} />
+          <AppTabs userId={devApp?.id || user.userId} />
           <JourneyToast onOpen={() => { if (navigationRef.isReady()) navigationRef.navigate('Journey') }} />
         </NavigationContainer>
+        </GlossyScope>
       </AuthProvider>
     )
   }

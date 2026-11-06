@@ -3,7 +3,7 @@ import { View, Text, Image, Pressable, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { useTheme, ThemeContext } from '../utils/ThemeContext'
-import { TYPE, LIGHT_COLORS, DARK_COLORS } from '../utils/theme'
+import { TYPE, LIGHT_COLORS, DARK_COLORS, setLiveGlossy } from '../utils/theme'
 
 // The glossy universe of the sign-up, for the screens inside the app (audit
 // 2026-10-28; Lita: one model screen first, then the others). Pink glass by day,
@@ -14,8 +14,9 @@ const BG = { day: require('../assets/onboarding/bg.jpg'), night: require('../ass
 const BTN = require('../assets/onboarding/btn.png')
 
 // Every colour comes from the charter, utils/theme.js (Lita, 2026-11-06).
-const fromCharter = c => ({ ink: c.text, soft: c.textSecondary, mute: c.muted, mauve: c.primary, mauve2: c.accent, line: c.border, bg: c.bg, glass: c.glass, glassLine: c.glassLine, glassOn: c.glassOn, icon: c.primary, iconBg: c.glassIcon, shadow: c.shadow })
-export const GLOSS = { day: fromCharter(LIGHT_COLORS), night: fromCharter(DARK_COLORS) }
+const fromCharter = (c, shadow) => ({ ink: c.text, soft: c.textSecondary, mute: c.muted, mauve: c.primary, mauve2: c.accent, line: c.border, bg: c.bg, glass: c.glass, glassLine: c.glassLine, glassOn: c.glassOn, icon: c.primary, iconBg: c.glassIcon, shadow })
+// By day the glass casts a soft mauve shadow (the logo mauve), at night a dark one.
+export const GLOSS = { day: fromCharter(LIGHT_COLORS, LIGHT_COLORS.accent), night: fromCharter(DARK_COLORS, DARK_COLORS.shadow) }
 
 // Colours and Inter for the time of day the app shows.
 export const useGlossy = () => {
@@ -50,6 +51,31 @@ export const GlossyButton = ({ title, onPress, disabled, loading, icon = 'arrow-
     {icon ? <Ionicons name={icon} size={18} color="#fff" style={styles.btnArrow} /> : null}
   </Pressable>
 )
+
+// The glossy backdrop for a page that doesn't use <Screen> (Home, Rekod, Dekod…).
+// Its container keeps a solid colour (colors.solid) so the screen below never shows.
+export const PageBackdrop = () => {
+  const theme = useTheme()
+  return theme.glossy ? <GlossyBackdrop night={theme.isDark} /> : null
+}
+
+// The glass of the sign-up for any card drawn by a screen (Lita, 2026-11-06):
+// see-through white, a white edge and a soft shadow. `colors` from useColors().
+export const glassCard = colors => ({
+  backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border,
+  shadowColor: colors.shadow, shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3,
+})
+// An icon sitting in a round glass bubble.
+export const glassBubble = colors => ({
+  borderWidth: 1.5, borderColor: colors.border, borderRadius: 999,
+  shadowColor: colors.shadow, shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 2,
+})
+// The shine of the sign-up's button, laid inside any main button (its style gets overflow hidden).
+export const GlossyFill = () => {
+  const theme = useTheme()
+  if (!theme.glossy) return null
+  return <Image source={BTN} pointerEvents="none" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="stretch" />
+}
 
 // A round glass icon.
 export const GlassIcon = ({ C, size = 40, children }) => (
@@ -89,7 +115,9 @@ export const GlossyScope = ({ children }) => {
     textSecondary: C.soft,
     muted: C.mute,
     solid: C.bg,
+    shadow: C.shadow,
   }
+  setLiveGlossy(colors)
   if (!loaded) return <View style={{ flex: 1, backgroundColor: C.bg }} />
   return <ThemeContext.Provider value={{ ...base, colors, glossy: true, gloss: C }}>{children}</ThemeContext.Provider>
 }
