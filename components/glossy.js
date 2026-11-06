@@ -3,7 +3,7 @@ import { View, Text, Image, Pressable, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { useTheme, ThemeContext } from '../utils/ThemeContext'
-import { TYPE } from '../utils/theme'
+import { TYPE, LIGHT_COLORS, DARK_COLORS } from '../utils/theme'
 
 // The glossy universe of the sign-up, for the screens inside the app (audit
 // 2026-10-28; Lita: one model screen first, then the others). Pink glass by day,
@@ -13,10 +13,9 @@ import { TYPE } from '../utils/theme'
 const BG = { day: require('../assets/onboarding/bg.jpg'), night: require('../assets/onboarding/bg-night.jpg') }
 const BTN = require('../assets/onboarding/btn.png')
 
-export const GLOSS = {
-  day: { ink: '#2F2230', soft: '#6E5F6B', mute: '#A0909B', mauve: '#8E6688', mauve2: '#A57B9C', line: '#EADCE5', bg: '#FBF4F8', glass: 'rgba(255,255,255,0.62)', glassLine: 'rgba(255,255,255,0.9)', glassOn: 'rgba(255,255,255,0.88)', icon: '#94557F', iconBg: 'rgba(255,255,255,0.75)', shadow: '#AA789B' },
-  night: { ink: '#F6EDF3', soft: '#D3C2CE', mute: '#9F8C9B', mauve: '#E2B6D6', mauve2: '#C996BD', line: 'rgba(255,255,255,0.12)', bg: '#1B131E', glass: 'rgba(255,255,255,0.07)', glassLine: 'rgba(255,255,255,0.14)', glassOn: 'rgba(201,150,189,0.16)', icon: '#E2B6D6', iconBg: 'rgba(255,255,255,0.08)', shadow: '#000000' },
-}
+// Every colour comes from the charter, utils/theme.js (Lita, 2026-11-06).
+const fromCharter = c => ({ ink: c.text, soft: c.textSecondary, mute: c.muted, mauve: c.primary, mauve2: c.accent, line: c.border, bg: c.bg, glass: c.glass, glassLine: c.glassLine, glassOn: c.glassOn, icon: c.primary, iconBg: c.glassIcon, shadow: c.shadow })
+export const GLOSS = { day: fromCharter(LIGHT_COLORS), night: fromCharter(DARK_COLORS) }
 
 // Colours and Inter for the time of day the app shows.
 export const useGlossy = () => {
@@ -60,7 +59,7 @@ export const GlassIcon = ({ C, size = 40, children }) => (
 )
 
 const styles = StyleSheet.create({
-  btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: '#86607F', shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
+  btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: LIGHT_COLORS.shadow, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
   btnText: { color: '#fff', fontSize: 16 },
   btnArrow: { position: 'absolute', right: 22 },
 })

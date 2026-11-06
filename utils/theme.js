@@ -25,6 +25,14 @@ export const LIGHT_COLORS = {
   dangerSoft: '#FBE7E8',
   overlay: 'rgba(30, 26, 29, 0.45)',
   shadow: '#4A3043',
+  // The glossy universe (Lita, 2026-11-06): glass is the charter's white, a little
+  // transparent; two pinks for the light of the sign-up (face zones, current step).
+  glass: 'rgba(255,255,255,0.62)',
+  glassLine: 'rgba(255,255,255,0.9)',
+  glassOn: 'rgba(255,255,255,0.88)',
+  glassIcon: 'rgba(255,255,255,0.75)',
+  halo: '#F2A5C4',
+  glow: '#E8AACD',
 }
 
 export const DARK_COLORS = {
@@ -50,6 +58,12 @@ export const DARK_COLORS = {
   dangerSoft: '#3D1F23',
   overlay: 'rgba(0, 0, 0, 0.6)',
   shadow: '#000000',
+  glass: 'rgba(255,255,255,0.07)',
+  glassLine: 'rgba(255,255,255,0.14)',
+  glassOn: 'rgba(210,182,200,0.16)',
+  glassIcon: 'rgba(255,255,255,0.08)',
+  halo: '#F2A5C4',
+  glow: '#E8AACD',
 }
 
 export const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 40 }

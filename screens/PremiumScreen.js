@@ -169,7 +169,7 @@ export default function PremiumScreen({ navigation, route }) {
       </ScrollView>
 
       {/* The button stays in reach */}
-      <View style={[gs.footer, { paddingBottom: Math.max(insets.bottom, 12), borderTopColor: C.line, backgroundColor: night ? 'rgba(27,19,30,0.92)' : 'rgba(251,244,248,0.92)' }]}>
+      <View style={[gs.footer, { paddingBottom: Math.max(insets.bottom, 12), borderTopColor: C.line, backgroundColor: night ? 'rgba(21,18,21,0.92)' : 'rgba(251,248,250,0.92)' }]}>
         <GlossyButton title={cta} onPress={buy} loading={busy} F={F} />
         <Text style={[F.r, { fontSize: 12, color: C.mute, textAlign: 'center', marginTop: 8 }]}>
           {chosen.trialDays

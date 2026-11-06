@@ -110,7 +110,7 @@ export function Screen({
   )
 
   // Glass screens keep a solid bar so text never shows through it.
-  const barBg = theme.glossy ? (theme.isDark ? 'rgba(27,19,30,0.94)' : 'rgba(251,244,248,0.94)') : colors.bg
+  const barBg = theme.glossy ? (theme.isDark ? 'rgba(21,18,21,0.94)' : 'rgba(251,248,250,0.94)') : colors.bg
   const stickyBar = scroll && compact && (title || showBack) ? (
     <View style={[styles.sticky, { backgroundColor: barBg, borderBottomColor: colors.border }]}>
       {showBack ? (

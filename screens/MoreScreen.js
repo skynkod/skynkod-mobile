@@ -12,7 +12,7 @@ import { VISIBLE_BADGES, BADGES, canEarn } from '../utils/journey-core'
 import { useLanguage } from '../utils/LanguageContext'
 import { useAuth } from '../utils/AuthContext'
 import { useFirstName } from '../utils/useFirstName'
-import { SPACING, RADIUS, TYPE } from '../utils/theme'
+import { SPACING, RADIUS, TYPE, LIGHT_COLORS } from '../utils/theme'
 import MyProgressScreen from './MyProgressScreen'
 import SkinTimelineScreen from './SkinTimelineScreen'
 import MySkinJourneyScreen from './MySkinJourneyScreen'
@@ -172,7 +172,7 @@ function MoreScreenInner({ navigation }) {
       <Card padded={false} style={styles.listCard}>
         {tracking.map((item, idx, arr) => (
           <ListRow key={item.name} icon={item.icon} title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1}
-            right={item.premium ? <Ionicons name="diamond" size={14} color="#33202E" /> : undefined} />
+            right={item.premium ? <Ionicons name="diamond" size={14} color={LIGHT_COLORS.secondary} /> : undefined} />
         ))}
       </Card>
 

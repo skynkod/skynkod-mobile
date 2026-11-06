@@ -18,6 +18,7 @@ import { track } from '../utils/analytics'
 import { toColumns, computeSkinType, QUESTIONS } from '../utils/skin-quiz'
 import { getIssue } from '../utils/skin-issues'
 import { TOPICAL_RX, OTHER_RX, WEEK, planDone, isTopicalRx, isRetinoidRx } from '../utils/treatments'
+import { LIGHT_COLORS } from '../utils/theme'
 
 // Sign-up v8 (Lita's mockup v3, 2026-10-27): soft pink glass, real skin photos,
 // thin mauve line icons, one calm question per screen. The questions and their
@@ -30,7 +31,9 @@ export const CONSENT_VERSION = 'v1-2026-10'
 const TERMS_URL = 'https://skynkod.com/terms'
 const PRIVACY_URL = 'https://skynkod.com/privacy'
 
-const C = { ink: '#2F2230', soft: '#6E5F6B', mute: '#A0909B', mauve: '#8E6688', mauve2: '#A57B9C', line: '#EADCE5', bg1: '#FBF4F8', bg2: '#F3E3EC', glass: 'rgba(255,255,255,0.62)', glassLine: 'rgba(255,255,255,0.9)', icon: '#94557F' }
+// Every colour comes from the charter, utils/theme.js (Lita, 2026-11-06).
+const K = LIGHT_COLORS
+const C = { ink: K.text, soft: K.textSecondary, mute: K.muted, mauve: K.primary, mauve2: K.accent, line: K.border, bg1: K.bg, bg2: K.surface, glass: K.glass, glassLine: K.glassLine, icon: K.primary }
 
 const IMG = {
   logo: require('../assets/images/skynkod-logo.png'),
@@ -602,7 +605,7 @@ const Hero = ({ source, height, fade }) => {
       <View style={{ height: height - 6, overflow: 'hidden' }}>
         <Animated.Image source={source} style={{ width: '100%', height: '100%', transform: [{ scale: zoom }] }} resizeMode="cover" />
       </View>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(246,214,228,0.10)' }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: K.halo, opacity: 0.1 }]} />
       <Image source={fade} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="stretch" />
     </View>
   )
@@ -733,7 +736,7 @@ const Journey = () => {
       <View style={{ width: w, height, marginTop: 16 }}>
         <Svg style={StyleSheet.absoluteFill} width={w} height={height}>
           <Path d={d} fill="none" stroke="#FFFFFF" strokeWidth={9} opacity={0.55} strokeLinecap="round" />
-          <Path d={d} fill="none" stroke="#D7A3C4" strokeWidth={3} opacity={0.9} strokeLinecap="round" />
+          <Path d={d} fill="none" stroke={K.accent} strokeWidth={3} opacity={0.9} strokeLinecap="round" />
           <Path d={d} fill="none" stroke="#FFFFFF" strokeWidth={1} opacity={0.8} strokeLinecap="round" />
         </Svg>
         {all.map((s, i) => (
@@ -814,7 +817,7 @@ const Between = ({ from, next, onGo, summary }) => {
       <View style={{ height: sh, width: sw }}>
         <Svg style={StyleSheet.absoluteFill} width={sw} height={sh}>
           <Path d={ribbon} fill="none" stroke="#FFFFFF" strokeWidth={8} opacity={0.5} strokeLinecap="round" />
-          <Path d={ribbon} fill="none" stroke="#C99BBB" strokeWidth={2.6} opacity={0.85} strokeLinecap="round" />
+          <Path d={ribbon} fill="none" stroke={K.accent} strokeWidth={2.6} opacity={0.85} strokeLinecap="round" />
           <Path d={ribbon} fill="none" stroke="#FFFFFF" strokeWidth={0.9} opacity={0.9} strokeLinecap="round" />
         </Svg>
         <Pop delay={200} style={{ position: 'absolute', left: cx - bub / 2, top: cy - bub / 2 }}><Bubble name={st.i} size={bub} /></Pop>
@@ -849,7 +852,7 @@ const FaceZones = () => {
       <Rise i={1} style={[styles.fz, { width: fw, height: fh }]}>
         <Image source={IMG.faceZones} style={{ position: 'absolute', left: 0, top: 0, width: fw, height: fh }} resizeMode="cover" />
         <Svg style={StyleSheet.absoluteFill} width={fw} height={fh} viewBox="0 0 1145 1374">
-          <Defs><RadialGradient id="zg"><Stop offset="0" stopColor="#F2A5C4" stopOpacity="0.75" /><Stop offset="0.6" stopColor="#F2A5C4" stopOpacity="0.45" /><Stop offset="1" stopColor="#F2A5C4" stopOpacity="0" /></RadialGradient></Defs>
+          <Defs><RadialGradient id="zg"><Stop offset="0" stopColor={K.halo} stopOpacity="0.75" /><Stop offset="0.6" stopColor={K.halo} stopOpacity="0.45" /><Stop offset="1" stopColor={K.halo} stopOpacity="0" /></RadialGradient></Defs>
           {ZONES.filter(z => on.includes(z)).flatMap(z => z.e.map(([cx, cy, rx, ry], i) => <Ellipse key={z.v + i} cx={cx} cy={cy} rx={rx * 1.2} ry={ry * 1.2} fill="url(#zg)" />))}
         </Svg>
         {/* Tap the face itself: each zone is a touch area; a picked zone glows and shows its name. */}
@@ -1107,7 +1110,7 @@ const Safety = () => {
                       </Pressable>
                     )
                     return (
-                      <View key={id} style={[styles.rxCard, missing && { borderColor: '#C0577A' }]}>
+                      <View key={id} style={[styles.rxCard, missing && { borderColor: K.danger }]}>
                         <Text style={[F.s, { fontSize: 13, color: C.ink }]}>{x.o.find(o => o[0] === id)?.[1]}</Text>
                         {id === 'rx_other' ? (
                           <TextInput value={medsOther} onChangeText={v => { setMedsOther(v); setRxErr(false) }} placeholder="Its name (e.g. a cortisone cream)" placeholderTextColor={C.mute}
@@ -1133,11 +1136,11 @@ const Safety = () => {
                     )
                   }) : null}
                   {x.k === 'meds' && picked.preg.length && open.preg && picked.meds.some(isRetinoidRx) ? (
-                    <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: '#C0577A', marginTop: 10 }]}>Retinoid treatments aren't recommended during pregnancy or breastfeeding: talk to your doctor as soon as you can.</Text>
+                    <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: K.danger, marginTop: 10 }]}>Retinoid treatments aren't recommended during pregnancy or breastfeeding: talk to your doctor as soon as you can.</Text>
                   ) : null}
                   {x.k === 'avoid' && picked.avoid.includes('Other') ? (
                     <TextInput value={other} onChangeText={v => { setOther(v); setOtherErr(false) }} placeholder="Which ingredient? (e.g. niacinamide)" placeholderTextColor={C.mute} autoFocus
-                      style={[F.r, styles.other, otherErr && { borderColor: '#C0577A' }]} />
+                      style={[F.r, styles.other, otherErr && { borderColor: K.danger }]} />
                   ) : null}
                 </View>
               ) : null}
@@ -1270,7 +1273,7 @@ const Account = () => {
             keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={[F.r, styles.other]} />
           <TextInput value={password} onChangeText={v => { setPassword(v); setError(null) }} placeholder={mine ? 'Your password' : 'Password (at least 8 characters)'} placeholderTextColor={C.mute}
             secureTextEntry autoComplete={mine ? 'current-password' : 'new-password'} textContentType={mine ? 'password' : 'newPassword'} onSubmitEditing={submit} returnKeyType="go" style={[F.r, styles.other]} />
-          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: '#C0577A', marginTop: 6 }]}>{error}</Text> : null}
+          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: K.danger, marginTop: 6 }]}>{error}</Text> : null}
         </Rise>
         <Spacer />
         <Btn title={busy ? '…' : mine ? 'Sign in and see my results' : 'Create my account'} onPress={submit} disabled={busy} />
@@ -1733,7 +1736,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
   )
 }
 
-const shadow = { shadowColor: '#AA789B', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
+const shadow = { shadowColor: K.shadow, shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
 const glass = { backgroundColor: C.glass, borderWidth: 1.5, borderColor: C.glassLine, borderRadius: 16, ...shadow }
 
 const styles = StyleSheet.create({
@@ -1742,14 +1745,14 @@ const styles = StyleSheet.create({
   segs: { flex: 1, flexDirection: 'row', gap: 5 },
   seg: { flex: 1, height: 4, borderRadius: 4, backgroundColor: C.line },
   segOn: { backgroundColor: C.mauve2 },
-  btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: '#86607F', shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
+  btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: K.shadow, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
   btnText: { color: '#fff', fontSize: 15.5 },
   btnArrow: { position: 'absolute', right: 22 },
   ghost: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, marginTop: 6 },
-  gc: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(250,236,244,0.85)', borderWidth: 1, borderColor: C.glassLine, ...shadow },
+  gc: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: K.primarySoft, borderWidth: 1, borderColor: C.glassLine, ...shadow },
   feats: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 18, marginBottom: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 18 },
-  pc: { backgroundColor: '#FDF7FA', borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden', ...shadow },
+  pc: { backgroundColor: K.card, borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden', ...shadow },
   pcOn: { borderColor: C.mauve2, shadowOpacity: 0.25 },
   pcT: { fontSize: 13, lineHeight: 16, color: C.ink },
   pcS: { fontSize: 11, lineHeight: 14, color: C.mute, marginTop: 2 },
@@ -1758,14 +1761,14 @@ const styles = StyleSheet.create({
   rows: { marginTop: 18, gap: 10 },
   row: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },
   rowOn: { borderColor: C.mauve2 },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: '#D9C6D3' },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: K.accent },
   yes2: { flexDirection: 'row', gap: 12, paddingTop: 16 },
   no: { ...glass, flex: 1, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   yes: { flex: 1, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', ...shadow },
   yni: { ...glass, padding: 14, paddingBottom: 12 },
   ynb: { flex: 1, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center' },
   inp: { ...glass, marginTop: 22, height: 56, paddingHorizontal: 18, fontSize: 17, color: C.ink },
-  cur: { borderRadius: 999, shadowColor: '#E8AACD', shadowOpacity: 0.9, shadowRadius: 13, shadowOffset: { width: 0, height: 0 } },
+  cur: { borderRadius: 999, shadowColor: K.glow, shadowOpacity: 0.9, shadowRadius: 13, shadowOffset: { width: 0, height: 0 } },
   hero: { position: 'absolute', left: 0, right: 0, top: 0, overflow: 'hidden' },
   lens: { position: 'absolute', borderWidth: 1.2, borderColor: 'rgba(255,255,255,0.75)', shadowColor: '#fff', shadowOpacity: 0.35, shadowRadius: 9 },
   info: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 18, marginBottom: 14 },
@@ -1774,7 +1777,7 @@ const styles = StyleSheet.create({
   fz: { borderRadius: 20, overflow: 'hidden', marginTop: 16, ...shadow },
   zp: { position: 'absolute', transform: [{ translateX: -40 }, { translateY: -16 }], minWidth: 80, alignItems: 'center', paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.95)', backgroundColor: 'rgba(255,255,255,0.78)' },
   sw: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 28 },
-  swatch: { width: 76, height: 76, borderRadius: 38, borderWidth: 3, borderColor: '#fff', shadowColor: '#785064', shadowOpacity: 0.18, shadowRadius: 9, shadowOffset: { width: 0, height: 8 } },
+  swatch: { width: 76, height: 76, borderRadius: 38, borderWidth: 3, borderColor: '#fff', shadowColor: K.shadow, shadowOpacity: 0.18, shadowRadius: 9, shadowOffset: { width: 0, height: 8 } },
   swatchOn: { transform: [{ scale: 1.12 }], borderColor: C.mauve2 },
   sec: { ...glass, paddingVertical: 10, paddingHorizontal: 14, marginTop: 10 },
   hours: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 26 },
@@ -1784,8 +1787,8 @@ const styles = StyleSheet.create({
   notifIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   lifeCard: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingLeft: 12, paddingRight: 22, minHeight: 72 },
   tgHd: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  reco: { alignSelf: 'flex-start', backgroundColor: 'rgba(246,226,238,0.95)', borderRadius: 999, paddingVertical: 3, paddingHorizontal: 8, marginBottom: 5 },
-  toggle: { width: 44, height: 26, borderRadius: 13, backgroundColor: '#E6D8E1' },
+  reco: { alignSelf: 'flex-start', backgroundColor: K.primarySoft, borderRadius: 999, paddingVertical: 3, paddingHorizontal: 8, marginBottom: 5 },
+  toggle: { width: 44, height: 26, borderRadius: 13, backgroundColor: K.border },
   knob: { position: 'absolute', top: 3, left: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
   chipsel: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   chip: { borderWidth: 1.5, borderColor: C.line, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12 },
@@ -1796,11 +1799,11 @@ const styles = StyleSheet.create({
   rxBox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   other: { marginTop: 8, height: 42, borderRadius: 12, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', paddingHorizontal: 12, fontSize: 13.5, color: C.ink },
   cl: { ...glass, borderRadius: 18, paddingVertical: 6, paddingHorizontal: 14, marginTop: 16, marginBottom: 14 },
-  it: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },
-  oc: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: '#D9C6D3' },
+  it: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: K.border },
+  oc: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: K.accent },
   cardLabel: { position: 'absolute', textAlign: 'center', fontSize: 9.5, letterSpacing: 1.1, color: C.mauve },
   list: { ...glass, borderRadius: 20, paddingVertical: 4, paddingHorizontal: 16, marginTop: 6 },
-  listRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: K.border },
   kd: { position: 'absolute', left: 18, right: 18, flexDirection: 'row', alignItems: 'center', gap: 8 },
   kdb: { flexShrink: 1, backgroundColor: 'rgba(255,255,255,0.85)', borderWidth: 1, borderColor: C.glassLine, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, ...shadow },
 })

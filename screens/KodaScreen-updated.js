@@ -11,7 +11,7 @@ import { saveChatMessage, getChatHistory } from '../utils/chat-service';
 import { isDiscreet } from '../utils/privacy';
 import { useAuth } from '../utils/AuthContext';
 import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
-import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { SPACING, RADIUS, TYPE, LIGHT_COLORS } from '../utils/theme';
 import { track } from '../utils/analytics';
 import { GlossyScope, GTYPE, GFW } from '../components/glossy'
 
@@ -198,7 +198,7 @@ function KodaScreenInner({ route, navigation }) {
           </Text>
           <Pressable onPress={() => navigation.navigate('Premium')}
             style={({ pressed }) => [styles.unlock, { opacity: pressed ? 0.85 : 1 }]}>
-            <Ionicons name="diamond" size={15} color="#E2C6DA" />
+            <Ionicons name="diamond" size={15} color={LIGHT_COLORS.accent} />
             <Text style={{ color: '#FFFFFF', ...GFW('700'), fontSize: 15 }}>{t('Unlock Koda with Premium')}</Text>
           </Pressable>
           <Text style={[GTYPE.caption, { color: colors.muted, textAlign: 'center', marginTop: SPACING.sm }]}>{t('See you Monday 👋')}</Text>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm },
   quotaLine: { fontSize: 12, textAlign: 'center', paddingHorizontal: SPACING.xl, paddingTop: SPACING.sm },
   outCard: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.lg },
-  unlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 999, backgroundColor: '#33202E', marginTop: SPACING.lg },
+  unlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 999, backgroundColor: LIGHT_COLORS.secondary, marginTop: SPACING.lg },
   rowUser: { justifyContent: 'flex-end' },
   rowKoda: { justifyContent: 'flex-start' },
   bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: RADIUS.lg },

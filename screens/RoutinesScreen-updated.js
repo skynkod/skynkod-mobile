@@ -24,7 +24,7 @@ import YourWeek from '../components/YourWeek';
 import { weekAudit } from '../utils/week-audit';
 import { todaySteps, describeDays } from '../utils/routine-checks';
 import { Screen, Card, SegmentedControl, ProgressBar, LoadingView, Badge, useColors } from '../components/ui';
-import { SPACING, RADIUS, TYPE } from '../utils/theme';
+import { SPACING, RADIUS, TYPE, LIGHT_COLORS } from '../utils/theme';
 import { GlossyScope, GTYPE, GFW } from '../components/glossy'
 
 const todayKey = (userId, tab) => `routine_day_${userId}_${tab}_${skinDay().toDateString()}`;
@@ -196,7 +196,7 @@ function RoutinesScreenInner({ route, navigation }) {
               <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('How to apply, in order')}</Text>
               <Text style={[GTYPE.caption, { color: colors.textSecondary, marginTop: 2 }]}>{t('Which product first, how much and how')}</Text>
             </View>
-            <Ionicons name="diamond" size={14} color="#33202E" />
+            <Ionicons name="diamond" size={14} color={LIGHT_COLORS.secondary} />
           </View>
         </Card>
       ) : null}
@@ -295,7 +295,7 @@ function RoutinesScreenInner({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  programmeButton: { backgroundColor: '#33202E', flexDirection: 'row', gap: 8, marginTop: SPACING.sm },
+  programmeButton: { backgroundColor: LIGHT_COLORS.secondary, flexDirection: 'row', gap: 8, marginTop: SPACING.sm },
   buildButton: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginTop: SPACING.xl },
   productRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 6 },
   productPhoto: { width: 36, height: 36, borderRadius: 6, backgroundColor: '#FFFFFF' },

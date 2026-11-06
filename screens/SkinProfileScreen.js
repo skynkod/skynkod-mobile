@@ -13,6 +13,7 @@ import { fromRow, computeSkinType, suspicionsFrom, SUSPICIONS, DOCTOR_NOTE, prio
 import { logError } from '../utils/errorLogger'
 import { fromAnswers, Backdrop, Bubble, LineIcon, GLOSSY as C, STEPS, CONCERN_LABEL, AGES, SAFETY, LIFE_CARDS } from './OnboardingScreen'
 import { rxName } from '../utils/treatments'
+import { LIGHT_COLORS } from '../utils/theme'
 
 // My Skyn Profile (Lita, 2026-10-27): the 7 steps of the sign-up, in the same
 // glossy style, each with what she answered. Tapping a step replays it with
@@ -121,17 +122,19 @@ export default function SkinProfileScreen({ navigation }) {
   )
 }
 
-const glass = { backgroundColor: 'rgba(255,255,255,0.62)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.9)', borderRadius: 18, shadowColor: '#AA789B', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
+// Every colour comes from the charter, utils/theme.js (Lita, 2026-11-06).
+const K = LIGHT_COLORS
+const glass = { backgroundColor: K.glass, borderWidth: 1.5, borderColor: K.glassLine, borderRadius: 18, shadowColor: K.shadow, shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 }
 const styles = StyleSheet.create({
   bar: { height: 36, justifyContent: 'center', marginBottom: 6 },
-  h1: { fontSize: 28, lineHeight: 33, letterSpacing: -0.6, color: '#2F2230' },
-  hint: { fontSize: 13.5, lineHeight: 19, color: '#6E5F6B', marginTop: 4 },
+  h1: { fontSize: 28, lineHeight: 33, letterSpacing: -0.6, color: K.text },
+  hint: { fontSize: 13.5, lineHeight: 19, color: K.textSecondary, marginTop: 4 },
   glass: { ...glass, padding: 14 },
   rowHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  k: { flex: 1, fontSize: 11, color: '#A0909B', letterSpacing: 0.5, textTransform: 'uppercase' },
-  value: { fontSize: 16, color: '#2F2230', marginTop: 6 },
-  small: { fontSize: 12.5, lineHeight: 17, color: '#6E5F6B', marginTop: 4 },
+  k: { flex: 1, fontSize: 11, color: K.muted, letterSpacing: 0.5, textTransform: 'uppercase' },
+  value: { fontSize: 16, color: K.text, marginTop: 6 },
+  small: { fontSize: 12.5, lineHeight: 17, color: K.textSecondary, marginTop: 4 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  chip: { backgroundColor: 'rgba(246,226,238,0.95)', borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10 },
-  step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(234,220,229,0.7)' },
+  chip: { backgroundColor: K.primarySoft, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10 },
+  step: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: K.border },
 })

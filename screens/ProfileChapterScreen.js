@@ -10,6 +10,7 @@ import { syncSoon } from '../utils/journey'
 import { logError } from '../utils/errorLogger'
 import { refreshIfRekod, refreshBasicRoutine } from '../utils/rekod'
 import { syncSmartReminders } from '../utils/notifications'
+import { LIGHT_COLORS } from '../utils/theme'
 
 // My Skyn Profile and "My skin issues" (Lita, 2026-10-27): she redoes one or
 // more steps with the very same screens as the sign-up, already filled in,
@@ -27,7 +28,7 @@ export default function ProfileChapterScreen({ route, navigation }) {
     getUserProfile(user.id).then(setRow).catch(error => logError('ProfileChapter_load', error))
   }, [user?.id, chapters.join()]))
 
-  if (!row) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FBEDF2' }}><ActivityIndicator color="#A57B9C" /></View>
+  if (!row) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: LIGHT_COLORS.bg }}><ActivityIndicator color={LIGHT_COLORS.accent} /></View>
 
   const onDone = async (answers, health) => {
     const ok = await updateUserProfile(user.id, {
