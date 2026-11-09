@@ -116,11 +116,11 @@ export const generateKodaIntroduction = () => {
   return `Hi! I'm Koda, your AI skin coach. 👋
 
 I'm here to help you with:
-✨ Personalized skincare routines
-🧪 Product recommendations
-💊 Ingredient information
-🆘 Emergency skin rescue plans
-📊 Skin tracking & analysis
+• Personalized skincare routines
+• Product recommendations
+• Ingredient information
+• Emergency skin rescue plans
+• Skin tracking & analysis
 
 Ask me anything about your skin! What can I help with today?`;
 };

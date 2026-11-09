@@ -10,7 +10,7 @@ export const DEKOD_POINTS = [
   { key: 'blackheads', label: 'Blackheads', icon: 'grid-outline', tag: null, issue: null },
   { key: 'dryness', label: 'Dryness', icon: 'water-outline', tag: 'Dryness', issue: 'dry' },
   { key: 'spots', label: 'Dark spots & tone', icon: 'color-palette-outline', tag: null, issue: null, old: 'tone' },
-  { key: 'radiance', label: 'Dullness', icon: 'sparkles-outline', tag: null, issue: null, old: 'tone' },
+  { key: 'radiance', label: 'Dullness', icon: 'sunny-outline', tag: null, issue: null, old: 'tone' },
 ]
 
 // The five points of scans made before Dekod v2, shown as they were.

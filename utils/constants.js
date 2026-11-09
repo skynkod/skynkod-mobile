@@ -55,7 +55,7 @@ export const SKIN_TYPES = {
   },
   normal: {
     name: 'Normal',
-    emoji: '✨',
+    emoji: '',
     description: 'Well-balanced, minimal issues',
   },
 }

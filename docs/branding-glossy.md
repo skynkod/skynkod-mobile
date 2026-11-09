@@ -40,7 +40,7 @@ Lita a choisi cet univers pour l'inscription, la landing page puis toute la marq
 
 ## Ce qu'on évite
 - Les aplats saturés, le noir pur et les dégradés criards.
-- Les icônes remplies ou cartoon, et les emojis dans l'interface (sauf ✨ avec parcimonie).
+- Les icônes remplies ou cartoon, et les emojis dans l'interface. Jamais de ✨ (Lita, 2026-11-09).
 - La peau retouchée, les promesses sur la peau et les chiffres inventés.
 - Les termes de santé non vérifiés (par exemple « validé par des dermatologues » tant que ce n'est pas vrai).
 

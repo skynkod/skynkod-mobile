@@ -214,7 +214,7 @@ export default function MySkinJourneyScreen() {
         <>
           <View style={[styles.statGrid, { marginTop: SPACING.lg }]}>
             {[
-              { icon: 'sparkles-outline', value: data.xp, label: 'XP earned' },
+              { icon: 'trending-up-outline', value: data.xp, label: 'XP earned' },
               { icon: 'ribbon-outline', value: `${data.earnedCount}/${data.earnableCount}`, label: 'Badges' },
               { icon: 'star-outline', value: data.stars, label: 'Seniority stars' },
               { icon: streak.active ? 'flame' : 'flame-outline', value: streak.current, label: 'Current series' },
@@ -319,7 +319,7 @@ export default function MySkinJourneyScreen() {
               </Text>
               <Text style={styles.boxText}>
                 {box.contents.kind === 'star'
-                  ? (box.contents.star === 1 ? t('Your first week with Skynkod. Thank you for being here ✨') : t('{n} active weeks with Skynkod. Thank you for being here ✨', { n: box.contents.star }))
+                  ? (box.contents.star === 1 ? t('Your first week with Skynkod. Thank you for being here.') : t('{n} active weeks with Skynkod. Thank you for being here.', { n: box.contents.star }))
                   : t('Here’s a cup of tea to start this week gently, together.')}
               </Text>
               <Button title={t('Let’s go')} onPress={closeBox} style={{ marginTop: SPACING.lg, minWidth: 220 }} />

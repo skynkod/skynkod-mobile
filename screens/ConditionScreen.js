@@ -118,7 +118,7 @@ export default function ConditionScreen({ route, navigation }) {
       <List icon="checkmark-circle" color={colors.success} title="WHAT SKINCARE CAN DO" items={c.can} />
       <List icon="close-circle" color={colors.danger} title="WHAT SKINCARE CAN’T DO" items={c.cant} />
       <Treatments title="WHAT A DERMATOLOGIST MAY PRESCRIBE" items={c.rx} icon="medkit-outline" prescription />
-      <Treatments title="CLINIC TREATMENTS WORTH ASKING ABOUT" items={c.clinic} icon="sparkles-outline" />
+      <Treatments title="CLINIC TREATMENTS WORTH ASKING ABOUT" items={c.clinic} icon="medical-outline" />
 
       {/* Always: Skynkod guides, a dermatologist confirms */}
       <View style={[styles.derm, { backgroundColor: c.derm?.level === 'urgent' ? colors.dangerSoft : c.derm?.level === 'soon' ? colors.warningSoft : colors.primarySoft }]}>

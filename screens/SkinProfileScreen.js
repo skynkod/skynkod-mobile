@@ -76,7 +76,7 @@ export default function SkinProfileScreen({ navigation }) {
         {/* Her priorities: they lead every recommendation. */}
         <Pressable disabled={concerns.length < 2} onPress={() => open(['priority'])} style={[styles.glass, { marginTop: 18 }]}>
           <View style={styles.rowHead}>
-            <LineIcon name="sparkles" size={20} />
+            <LineIcon name="shield-check" size={20} />
             <Text style={[F.s, styles.k]}>{t('Your priority')}</Text>
             {concerns.length >= 2 ? <Ionicons name="chevron-forward" size={18} color={C.mauve2} /> : null}
           </View>

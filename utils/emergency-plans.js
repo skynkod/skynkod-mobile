@@ -81,7 +81,7 @@ export const SITUATIONS = [
     pause: ['newest'],
     days: [
       { icon: 'water-outline', title: 'Hydrate', focus: 'Drink water, hydrating serum morning and night.', avoid: 'Any new product this week.' , needs: ['hydrate'] },
-      { icon: 'sparkles-outline', title: 'Gentle exfoliation', focus: 'Only if your skin is used to it: one gentle exfoliation tonight.', avoid: 'Strong peels or scrubs.' , needs: ['gentleExfoliant'] },
+      { icon: 'refresh-outline', title: 'Gentle exfoliation', focus: 'Only if your skin is used to it: one gentle exfoliation tonight.', avoid: 'Strong peels or scrubs.' , needs: ['gentleExfoliant'] },
       { icon: 'happy-outline', title: 'Mask night', focus: 'A hydrating mask (sheet or sleeping mask).', avoid: 'Clay masks if your skin is dry.' , needs: ['hydratingMask'] },
       { icon: 'leaf-outline', title: 'Calm', focus: 'Soothing products, early night.', avoid: 'Retinol from now on, so skin stays calm.' , needs: ['soothe'] },
       { icon: 'water-outline', title: 'Hydrate again', focus: 'Hydrating serum, rich moisturizer at night.', avoid: 'Salty food and alcohol.' , needs: ['hydrate'] },

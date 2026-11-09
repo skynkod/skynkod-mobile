@@ -9,7 +9,7 @@ import { SPACING } from '../utils/theme'
 import { GTYPE, GFW } from './glossy'
 
 const LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-const ICON = { retinoid: 'rekod', exfoliation: 'sparkles-outline', both: 'alert-circle-outline', recovery: 'leaf-outline' }
+const ICON = { retinoid: 'rekod', exfoliation: 'refresh-outline', both: 'alert-circle-outline', recovery: 'leaf-outline' }
 
 // "Your week": each evening at a glance, and what adds up too much.
 export default function YourWeek({ audit, style }) {

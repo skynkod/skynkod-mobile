@@ -27,7 +27,7 @@ const KIND = {
   'verdict-same': { icon: 'remove-outline', color: 'muted' },
   'verdict-worse': { icon: 'thumbs-down-outline', color: 'warning' },
   season: { icon: 'leaf-outline', color: 'primary' },
-  rekod: { icon: 'sparkles-outline', color: 'primary' },
+  rekod: { icon: 'rekod', color: 'primary' },
   better: { icon: 'trending-down', color: 'success' },
   worse: { icon: 'trending-up', color: 'warning' },
 }

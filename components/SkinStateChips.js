@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useColors } from './ui'
 import { useT } from '../utils/LanguageContext'
 import { SKIN_STATES } from '../utils/skin-state'
@@ -25,8 +26,9 @@ export default function SkinStateChips({ value = [], onChange, style }) {
           return (
             <Pressable key={s.id} onPress={() => toggle(s.id)} accessibilityLabel={t(s.label)}
               style={[styles.chip, { backgroundColor: on ? colors.primary : colors.primarySoft }]}>
-              <Text style={{ fontSize: 13 }}>{s.emoji}</Text>
-              <Text style={[GTYPE.caption, { color: on ? colors.onPrimary : colors.primary, ...GFW('700') }]}>{t(s.label)}</Text>
+              <Ionicons name={s.icon} size={14} color={on ? colors.onPrimary : colors.primary} />
+              {/* The word in the text colour, easier to read than mauve on pale pink (audit 2026-11-09). */}
+              <Text style={[GTYPE.caption, { color: on ? colors.onPrimary : colors.text, ...GFW('700') }]}>{t(s.label)}</Text>
             </Pressable>
           )
         })}

@@ -6,13 +6,14 @@ import { supabase } from './supabase'
 // changes the recommendations for a while: a product can be a great match for
 // her skin and still be "not right for you right now".
 
+// Thin mauve icons, no emojis in the interface (Lita, 2026-11-09).
 export const SKIN_STATES = [
-  { id: 'balanced', label: 'Balanced', emoji: '😌' },
-  { id: 'dehydrated', label: 'Dehydrated', emoji: '💧' },
-  { id: 'irritated', label: 'Irritated', emoji: '🔥' },
-  { id: 'red', label: 'Red', emoji: '🔴' },
-  { id: 'breakout', label: 'Breaking out', emoji: '😵‍💫' },
-  { id: 'barrier', label: 'Barrier damaged', emoji: '🧱' },
+  { id: 'balanced', label: 'Balanced', icon: 'happy-outline' },
+  { id: 'dehydrated', label: 'Dehydrated', icon: 'water-outline' },
+  { id: 'irritated', label: 'Irritated', icon: 'flame-outline' },
+  { id: 'red', label: 'Red', icon: 'thermometer-outline' },
+  { id: 'breakout', label: 'Breaking out', icon: 'radio-button-on-outline' },
+  { id: 'barrier', label: 'Barrier damaged', icon: 'shield-half-outline' },
 ]
 // Computed, never picked: irritation while the routine exfoliates a lot.
 export const OVER_EXFOLIATED = { id: 'overexfoliated', label: 'Over-exfoliated', emoji: '🧽' }

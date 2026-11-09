@@ -30,7 +30,7 @@ export const whyAfter = (chapter, a = {}) => {
     const type = computeSkinType(a)
     const sensitive = a.reactivity === 'often'
     return {
-      icon: 'sparkles-outline',
+      icon: 'koda',
       title: type ? 'Your skin seems {type}' : 'Your skin test is saved',
       params: { type: (type || '').toLowerCase() },
       text: `${TEXTURES[type] || 'Your daily check-ins will help us read your skin even better.'}${sensitive ? ' Your skin reacts easily, so no fragrance and no strong actives at first.' : ''}`,

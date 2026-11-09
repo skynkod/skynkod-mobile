@@ -42,7 +42,7 @@ export const planWhy = plan => goalOf(goalsOf(plan).reduce((a, g) => (goalOf(g).
 // ---------- The week (skin cycling) ----------
 
 export const NIGHTS = {
-  exfoliation: { label: 'Exfoliation night', short: 'Exfoliate', icon: 'sparkles-outline' },
+  exfoliation: { label: 'Exfoliation night', short: 'Exfoliate', icon: 'refresh-outline' },
   retinoid: { label: 'Retinol night', short: 'Retinol', icon: 'moon-outline' },
   repair: { label: 'Repair night', short: 'Repair', icon: 'bandage-outline' },
   reset: { label: 'Reset night', short: 'Reset', icon: 'leaf-outline' },

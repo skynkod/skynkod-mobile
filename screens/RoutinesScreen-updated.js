@@ -173,7 +173,7 @@ function RoutinesScreenInner({ route, navigation }) {
           <View>
             <Text style={[GTYPE.overline, { color: colors.muted }]}>{t('Today')}</Text>
             <Text style={[GTYPE.heading, { color: colors.text, marginTop: 2 }]}>
-              {completed === filled.length && filled.length ? t('All done ✨') : t('{done} of {total} steps', { done: completed, total: filled.length })}
+              {completed === filled.length && filled.length ? t('All done') : t('{done} of {total} steps', { done: completed, total: filled.length })}
             </Text>
           </View>
           <Text style={[GTYPE.title, { color: colors.primary }]}>{Math.round(progress * 100)}%</Text>

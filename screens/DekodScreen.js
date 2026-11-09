@@ -349,7 +349,7 @@ export default function DekodScreen({ navigation }) {
       <PremiumShell label={LABEL} onBack={toHome} title={t('For a good scan')}
         footer={<PButton title={t('Take my photo')} icon="camera-outline" onPress={openCamera} />}>
         <Line icon="sunny-outline" text="Daylight, facing a window" />
-        <Line icon="sparkles-outline" text="No makeup, clean face" />
+        <Line icon="water-outline" text="No makeup, clean face" />
         <Line icon="person-outline" text="Face the camera, hair tied back" />
         <Line icon="phone-portrait-outline" text="Phone at eye level, no filter" />
         {/* Shine and redness change through the day and after products: same conditions, comparable scans */}
