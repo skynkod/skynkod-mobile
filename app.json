@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.skynkod.app",
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "plugins": [
       [
@@ -65,7 +66,8 @@
         }
       ],
       "expo-font",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-apple-authentication"
     ],
     "android": {
       "package": "com.skynkod.app",
