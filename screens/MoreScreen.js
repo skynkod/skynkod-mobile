@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch, Linking, Platform } from 'react-native'
+import Constants from 'expo-constants'
 import { useFocusEffect } from '@react-navigation/native'
 import { logError } from '../utils/errorLogger'
 import { Ionicons } from '@expo/vector-icons'
@@ -46,7 +47,7 @@ export const MORE_SCREENS = [
   { name: 'SkinTimeline', component: SkinTimelineScreen, label: 'Skyn Timeline', subtitle: 'Your skin story, step by step', icon: 'git-commit-outline', group: 'track' },
   { name: 'Journey', component: MySkinJourneyScreen, label: 'My Skin Journey', subtitle: 'Badges, levels and challenges', icon: 'ribbon-outline', group: 'track' },
   { name: 'SkinReport', component: SkinReportScreen, label: 'My skin report', subtitle: 'One page for your dermatologist', icon: 'document-text-outline', group: 'track', premium: true },
-  { name: 'Products', component: ProductsScreen, label: 'Products', subtitle: 'Your Skyn Shelf', icon: 'flask-outline', group: 'track' },
+  { name: 'Products', component: ProductsScreen, label: 'My products', subtitle: 'Your shelf and wishlist', icon: 'flask-outline', group: 'track' },
   { name: 'Budget', component: BudgetScreen, label: 'Budget', subtitle: 'Skincare spending', icon: 'wallet-outline', group: 'track' },
   { name: 'Scanner', component: BarcodeScannerScreen, label: 'Scanner', subtitle: 'Analyze a product', icon: 'barcode-outline', group: 'learn' },
   { name: 'Skyncyclopedia', component: SkyncyclopediaScreen, label: 'Skyncyclopedia', subtitle: 'Learn to care for your skin', icon: 'library-outline', group: 'learn' },
@@ -54,7 +55,7 @@ export const MORE_SCREENS = [
   { name: 'Emergency', component: EmergencyScreen, label: 'Emergency', subtitle: '7-day recovery plan', icon: 'medkit-outline', group: 'learn', premium: true },
   { name: 'Alerts', component: NotificationsScreen, label: 'Notifications', subtitle: 'Reminders', icon: 'notifications-outline', group: 'account' },
   { name: 'Premium', component: PremiumScreen, label: 'Premium', subtitle: 'Unlock everything', icon: 'diamond-outline', group: 'account' },
-  { name: 'Settings', component: SettingsScreen, label: 'Settings', subtitle: 'Theme, language, account', icon: 'settings-outline', group: 'account' },
+  { name: 'Settings', component: SettingsScreen, label: 'Settings', subtitle: 'Theme, privacy, account', icon: 'settings-outline', group: 'account' },
   { name: 'About', component: AboutScreen, label: 'About', subtitle: 'Skynkod v1.0', icon: 'information-circle-outline', group: 'account' },
   // Only shown to the Skynkod team.
   { name: 'Proposals', component: ProposalsScreen, label: 'Product proposals', subtitle: 'Products sent from the scanner', icon: 'cube-outline', group: 'admin' },
@@ -65,12 +66,21 @@ const STAR_BADGES = BADGES.filter(b => b.category === 'stars')
 const STAR_LABEL = { 4: '1 month', 13: '3 months', 26: '6 months', 52: '1 year', 104: '2 years', 156: '3 years' }
 
 const ROUTINES_TILE = { name: 'Routines', label: 'Routines', subtitle: 'Morning & evening', icon: 'water-outline', group: 'track' }
+// The Journal in Profile too, right after Routines (Lita, 2026-11-09); its screen is registered in App.js.
+const JOURNAL_TILE = { name: 'Journal', label: 'Journal', subtitle: 'Log how your skin feels today', icon: 'book-outline', group: 'track' }
 
 // Progress photos are parked for now (essentials first); Progress only shows photos.
 // Scanner is in the search bar and the + button; the skin type is asked at sign-up.
 // V1: Budget comes back later as a new feature.
 const HIDDEN = ['Photos', 'Scanner', 'Quiz', 'Budget', 'PregnancySafe', 'SkinTimeline', 'SkinReport']
-const byGroup = group => [ROUTINES_TILE, ...MORE_SCREENS].filter(s => s.group === group && !HIDDEN.includes(s.name))
+// Write to the team (Lita, 2026-11-09): an email to support@ with the app version already in it.
+const CONTACT_TILE = { name: 'Contact', label: 'Contact us', subtitle: 'support@skynkod.com', icon: 'mail-outline', group: 'account' }
+const writeToUs = () => {
+  const about = `Skynkod ${Constants.expoConfig?.version || ''} · ${Platform.OS} ${Platform.Version}`
+  Linking.openURL(`mailto:support@skynkod.com?subject=${encodeURIComponent('Skynkod')}&body=${encodeURIComponent(`\n\n—\n${about}`)}`)
+    .catch(() => Alert.alert('support@skynkod.com', 'Write to us at this address from your email app.'))
+}
+const byGroup = group => [ROUTINES_TILE, JOURNAL_TILE, ...MORE_SCREENS, CONTACT_TILE].filter(s => s.group === group && !HIDDEN.includes(s.name))
 
 function MoreScreenInner({ navigation }) {
   const colors = useColors()
@@ -138,6 +148,22 @@ function MoreScreenInner({ navigation }) {
         ) : null}
       </Pressable>
 
+      <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
+      <Card padded={false} style={styles.listCard}>
+        {tracking.map((item, idx, arr) => (
+          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1}
+            right={item.premium ? <Ionicons name="diamond" size={14} color={LIGHT_COLORS.secondary} /> : undefined} />
+        ))}
+      </Card>
+
+      <SectionHeader title="Learn & care" style={{ marginTop: SPACING.xl }} />
+      <Card padded={false} style={styles.listCard}>
+        {byGroup('learn').map((item, idx, arr) => (
+          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
+        ))}
+      </Card>
+
+      {/* Badges and stars come after what she uses every day (Lita, 2026-11-09). */}
       {/* My badges: the newest ones, or the first ones to aim for */}
       <SectionHeader title={t('My badges')} action={t('See all')} onAction={() => open('Journey')} style={{ marginTop: SPACING.xl }} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.md, paddingRight: SPACING.lg }}>
@@ -169,25 +195,10 @@ function MoreScreenInner({ navigation }) {
         </Text>
       </Card>
 
-      <SectionHeader title="Track" style={{ marginTop: SPACING.xl }} />
-      <Card padded={false} style={styles.listCard}>
-        {tracking.map((item, idx, arr) => (
-          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1}
-            right={item.premium ? <Ionicons name="diamond" size={14} color={LIGHT_COLORS.secondary} /> : undefined} />
-        ))}
-      </Card>
-
-      <SectionHeader title="Learn & care" style={{ marginTop: SPACING.xl }} />
-      <Card padded={false} style={styles.listCard}>
-        {byGroup('learn').map((item, idx, arr) => (
-          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
-        ))}
-      </Card>
-
       <SectionHeader title="Account" style={{ marginTop: SPACING.xl }} />
       <Card padded={false} style={styles.listCard}>
         {byGroup('account').map((item, idx, arr) => (
-          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => open(item.name)} last={idx === arr.length - 1} />
+          <ListRow key={item.name} icon={item.icon} glossy title={item.label} subtitle={item.subtitle} onPress={() => (item === CONTACT_TILE ? writeToUs() : open(item.name))} last={idx === arr.length - 1} />
         ))}
       </Card>
 

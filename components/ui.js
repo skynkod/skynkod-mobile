@@ -17,9 +17,8 @@ import { Ionicons } from '@expo/vector-icons'
 import FeatureIcon from './FeatureIcon'
 import { useTheme } from '../utils/ThemeContext'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
-import { GlossyBackdrop, GTYPE, GFW, glassBubble } from './glossy'
+import { GlossyBackdrop, GTYPE, GFW, glassBubble, GlossyFill } from './glossy'
 
-const BTN = require('../assets/onboarding/btn.png')
 // Inside a GlossyScope (audit 2026-10-28): Inter, glass and the glossy button.
 const look = theme => ({ T: theme.glossy ? GTYPE : TYPE, fw: w => (theme.glossy ? GFW(w) : { fontWeight: w }) })
 
@@ -109,8 +108,8 @@ export function Screen({
     </View>
   )
 
-  // Glass screens keep a solid bar so text never shows through it.
-  const barBg = theme.glossy ? (theme.isDark ? 'rgba(21,18,21,0.94)' : 'rgba(251,248,250,0.94)') : colors.bg
+  // Glass screens keep a solid bar (the charter background, fully opaque) so text never shows through it.
+  const barBg = theme.glossy ? colors.solid || colors.bg : colors.bg
   const stickyBar = scroll && compact && (title || showBack) ? (
     <View style={[styles.sticky, { backgroundColor: barBg, borderBottomColor: colors.border }]}>
       {showBack ? (
@@ -292,7 +291,9 @@ export function Button({ title, onPress, variant = 'primary', icon, loading, dis
         style,
       ]}
     >
-      {theme.glossy && variant === 'primary' ? <Image source={BTN} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', borderRadius: 999 }]} resizeMode="stretch" /> : null}
+      {/* The shine in a full-size layer over the charter mauve (GlossyFill): alone, the
+          image could shrink to a thin strip and leave the button blank (audit 2026-11-09). */}
+      {glossyPrimary ? <GlossyFill /> : null}
       {loading ? (
         <ActivityIndicator color={glossyPrimary ? '#fff' : v.fg} />
       ) : (
@@ -430,7 +431,7 @@ export function ProgressBar({ value = 0, color, style, height = 8 }) {
 
 // ─── Feedback ────────────────────────────────────────────────────────────────
 
-export function EmptyState({ icon = 'leaf-outline', title, description, action, onAction }) {
+export function EmptyState({ icon = 'leaf-outline', title, description, action, onAction, actionVariant = 'secondary' }) {
   const theme = useTheme()
   const { colors } = theme
   const { T, fw } = look(theme)
@@ -441,7 +442,7 @@ export function EmptyState({ icon = 'leaf-outline', title, description, action, 
       {description ? (
         <Text style={[T.body, { color: colors.muted, marginTop: 6, textAlign: 'center', maxWidth: 280 }]}>{description}</Text>
       ) : null}
-      {action ? <Button title={action} onPress={onAction} variant="secondary" style={{ marginTop: SPACING.lg }} /> : null}
+      {action ? <Button title={action} onPress={onAction} variant={actionVariant} style={{ marginTop: SPACING.lg }} /> : null}
     </View>
   )
 }
@@ -485,7 +486,9 @@ export function Badge({ label, tone = 'primary' }) {
   )
 }
 
-export function BottomSheet({ title, onClose, children }) {
+// `bottomGap`: room left under the sheet, so a menu opened from the tab bar
+// sits above it and its last row is never hidden (the + menu, audit 2026-11-09).
+export function BottomSheet({ title, onClose, children, bottomGap = 0 }) {
   const theme = useTheme()
   const { colors } = theme
   const { T, fw } = look(theme)
@@ -493,7 +496,7 @@ export function BottomSheet({ title, onClose, children }) {
     <View style={[styles.sheetOverlay, { backgroundColor: colors.overlay }]}>
       <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: colors.solid || colors.bg }]}>
+        <SafeAreaView edges={bottomGap ? [] : ['bottom']} style={[styles.sheet, { backgroundColor: colors.solid || colors.bg }, bottomGap ? { marginBottom: bottomGap, borderRadius: RADIUS.xl, paddingBottom: SPACING.sm } : null]}>
           <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
           <View style={[styles.rowBetween, { marginBottom: SPACING.lg }]}>
             <Text style={[T.heading, { color: colors.text }]}>{title}</Text>

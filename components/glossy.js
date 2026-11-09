@@ -46,7 +46,11 @@ export const Glass = ({ C, night, style, children }) => (
 export const GlossyButton = ({ title, onPress, disabled, loading, icon = 'arrow-forward', F }) => (
   <Pressable onPress={onPress} disabled={disabled || loading} accessibilityRole="button"
     style={({ pressed }) => [styles.btn, { opacity: disabled || loading ? 0.55 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-    <Image source={BTN} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', borderRadius: 26 }]} resizeMode="stretch" />
+    {/* Pinned in a full-size layer over the charter mauve, like GlossyFill: alone, the
+        image could shrink to a thin strip (white Premium button, audit 2026-11-09). */}
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: LIGHT_COLORS.primary, borderRadius: 26, overflow: 'hidden' }]}>
+      <Image source={BTN} style={StyleSheet.absoluteFill} resizeMode="stretch" />
+    </View>
     <Text style={[F?.s, styles.btnText]}>{loading ? '…' : title}</Text>
     {icon ? <Ionicons name={icon} size={18} color="#fff" style={styles.btnArrow} /> : null}
   </Pressable>
@@ -74,7 +78,14 @@ export const glassBubble = colors => ({
 export const GlossyFill = () => {
   const theme = useTheme()
   if (!theme.glossy) return null
-  return <Image source={BTN} pointerEvents="none" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} resizeMode="stretch" />
+  // On iPhone a percentage size let the image cover only part of the button (a pink
+  // band next to the mauve one): it is pinned to the four edges instead, over the
+  // charter mauve so no other colour can show.
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: LIGHT_COLORS.primary }]}>
+      <Image source={BTN} style={StyleSheet.absoluteFill} resizeMode="stretch" />
+    </View>
+  )
 }
 
 // A round glass icon.
@@ -116,6 +127,8 @@ export const GlossyScope = ({ children }) => {
     muted: C.mute,
     solid: C.bg,
     shadow: C.shadow,
+    // Text on the glossy mauve buttons stays white, by night too.
+    onPrimary: LIGHT_COLORS.onPrimary,
   }
   setLiveGlossy(colors)
   if (!loaded) return <View style={{ flex: 1, backgroundColor: C.bg }} />

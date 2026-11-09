@@ -62,10 +62,12 @@ function Shell({ navigation, overline, title, subtitle, footer, children, onBack
           <Ionicons name="diamond" size={12} color={C.plum} />
           <Text style={[GTYPE.overline, { color: C.plum }]}>Rekod · Premium</Text>
         </View>
-        {/* Always a way out, back to where she came from */}
-        <Pressable onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
-          <Ionicons name="close" size={24} color={C.text} />
-        </Pressable>
+        {/* A way out inside its steps only: at the tab's own page the tab bar is the way (Lita, 2026-11-09) */}
+        {onBack ? (
+          <Pressable onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
+            <Ionicons name="close" size={24} color={C.text} />
+          </Pressable>
+        ) : <View style={{ width: 24 }} />}
       </View>
       {scroll ? (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -790,7 +792,7 @@ export default function RekodScreen({ navigation }) {
                 backgroundColor: on ? C.primarySoft : C.card, borderColor: on ? C.primary : C.border, borderWidth: on ? 2 : 1,
                 flexDirection: 'row', alignItems: 'center', gap: SPACING.md, opacity: blocker || full ? 0.45 : 1, transform: [{ scale: pressed ? 0.98 : 1 }],
               }]}>
-                <FeatureIcon name={GOAL_ICONS[g.id] || 'sparkles-outline'} size={20} color={C.primary} />
+                <FeatureIcon name={GOAL_ICONS[g.id] || 'rekod'} size={20} color={C.primary} />
                 <View style={{ flex: 1 }}>
                   <Text style={[GTYPE.bodyStrong, { color: C.text }]}>{g.title}</Text>
                   <Text style={[GTYPE.caption, { color: C.muted }]}>
@@ -991,7 +993,7 @@ const precautionOf = plan => (!plan ? null
 const TREATMENT_LABEL = { retinol: 'Retinol night', azelaic: 'Azelaic acid night', gentle: 'Gentle treatment night' }
 const GOAL_END = { clear: 'Clearer skin, fewer breakouts', antiaging: 'Smoother skin, softer fine lines', spots: 'Visibly faded spots, a more even tone', glow: 'Brighter, smoother skin', pores: 'Less visible pores, less shine', calm: 'Calmer, more comfortable skin', hydration: 'Comfortable, hydrated skin' }
 const GOAL_ICONS = { clear: 'water-outline', antiaging: 'hourglass-outline', spots: 'contrast-outline', glow: 'sunny-outline', pores: 'grid-outline', calm: 'leaf-outline', hydration: 'rainy-outline' }
-const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'sparkles-outline', treatment: 'moon-outline', eye: 'eye-outline', lips: 'happy-outline', lipscrub: 'sparkles-outline', lipmask: 'moon-outline' }
+const STEP_ICONS = { cleanser: 'water-outline', serum: 'eyedrop-outline', moisturizer: 'leaf-outline', sunscreen: 'sunny-outline', exfoliant: 'refresh-outline', treatment: 'moon-outline', eye: 'eye-outline', lips: 'happy-outline', lipscrub: 'refresh-outline', lipmask: 'moon-outline' }
 
 function Ring({ progress, label, sub }) {
   const size = 104, stroke = 9, r = (size - stroke) / 2, c = 2 * Math.PI * r

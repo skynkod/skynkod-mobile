@@ -940,7 +940,7 @@ export default function TodayScreen({ navigation, route }) {
 
     {/* Fades in as the big greeting fades out: date, weather and greeting */}
     {(
-      <Animated.View onLayout={e => setBarHeight(e.nativeEvent.layout.height)} pointerEvents={compact ? 'auto' : 'none'} style={[styles.sticky, { opacity: smallFade }, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+      <Animated.View onLayout={e => setBarHeight(e.nativeEvent.layout.height)} pointerEvents={compact ? 'auto' : 'none'} style={[styles.sticky, { opacity: smallFade }, { paddingTop: insets.top + SPACING.xs, backgroundColor: colors.solid || colors.bg, borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.date, { color: colors.primary }]} numberOfLines={1}>{new Date().toLocaleDateString(language, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
@@ -988,6 +988,7 @@ const styles = StyleSheet.create({
   learnLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.sm },
   reactOption: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, borderWidth: 1, borderRadius: 14, padding: SPACING.md, marginTop: SPACING.sm },
   modeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: 999, paddingVertical: 5, paddingHorizontal: SPACING.md, marginTop: SPACING.md },
+  // Its background is colors.solid (charter, opaque): colors.bg is see-through in the glossy universe and the page showed under it (audit 2026-11-09).
   sticky: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingBottom: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },
   date: { fontSize: 12, ...GFW('700'), letterSpacing: 1.2, textTransform: 'uppercase' },

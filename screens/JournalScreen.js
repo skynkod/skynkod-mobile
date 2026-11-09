@@ -424,7 +424,7 @@ export default function JournalScreen({ route, navigation }) {
                 <View style={[styles.face, on && { backgroundColor: colors.primarySoft }]}>
                   <MaterialCommunityIcons name={m.icon} size={34} color={on ? colors.primary : colors.textSecondary} />
                 </View>
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[GTYPE.caption, { color: on ? colors.primary : colors.textSecondary, ...GFW(on ? '700' : '500'), textAlign: 'center' }]}>{t(m.label)}</Text>
+                <Text numberOfLines={2} style={[GTYPE.caption, { color: on ? colors.primary : colors.textSecondary, ...GFW(on ? '700' : '500'), textAlign: 'center', lineHeight: 16 }]}>{t(m.label)}</Text>
               </Pressable>
             );
           })}
@@ -684,7 +684,8 @@ const styles = StyleSheet.create({
   overline: { fontSize: 12, ...GFW('700'), letterSpacing: 0.8 },
   moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.lg },
   notePlaceholder: { position: 'absolute', top: SPACING.xl + SPACING.lg, left: SPACING.lg, fontSize: 15, zIndex: 2, elevation: 2 },
-  mood: { alignItems: 'center', gap: 6, width: 58 },
+  // Each mood shares the row evenly; a long word ("Not great", "Tough day") goes on two lines instead of overlapping (audit 2026-11-09).
+  mood: { alignItems: 'center', gap: 6, flex: 1, paddingHorizontal: 3 },
   face: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md },
   tag: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 13, paddingVertical: 8 },

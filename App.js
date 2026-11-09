@@ -50,6 +50,8 @@ import LayeringScreen from './screens/LayeringScreen'
 // Keep the native splash up until our animated one takes over.
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
+// The tab bar's height; the + menu sits just above it.
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 88 : 68
 const Tab = createBottomTabNavigator()
 const navigationRef = createNavigationContainerRef()
 
@@ -71,7 +73,7 @@ const QUICK_ACTIONS = [
   { icon: 'water-outline', title: 'My routines', subtitle: 'Morning and evening', to: 'Routines' },
   { icon: 'trending-up-outline', title: 'My progress', subtitle: 'How your skin is doing', to: 'Progress' },
   { icon: 'flask-outline', title: 'My products', subtitle: 'Your shelf and wishlist', to: 'Products' },
-  { icon: 'library-outline', title: 'Learn', subtitle: 'Skin issues, ingredients, the basics', to: 'Skyncyclopedia' },
+  { icon: 'library-outline', title: 'Skyncyclopedia', subtitle: 'Skin issues, ingredients, the basics', to: 'Skyncyclopedia' },
   { icon: 'person-outline', title: 'Profile', subtitle: 'Your account and skin profile', to: 'More' },
 ]
 
@@ -95,7 +97,7 @@ function AppTabs({ userId }) {
           backgroundColor: colors.solid || colors.card,
           borderTopColor: colors.border,
           paddingTop: 6,
-          height: Platform.OS === 'ios' ? 88 : 68,
+          height: TAB_BAR_HEIGHT,
           paddingBottom: Platform.OS === 'ios' ? 28 : 10,
         },
       }}
@@ -181,7 +183,7 @@ function AppTabs({ userId }) {
     </Tab.Navigator>
 
     <Modal visible={quickOpen} transparent animationType="fade" onRequestClose={() => setQuickOpen(false)}>
-      <BottomSheet title={t('Menu')} onClose={() => setQuickOpen(false)}>
+      <BottomSheet title={t('Menu')} onClose={() => setQuickOpen(false)} bottomGap={TAB_BAR_HEIGHT}>
         <Card padded={false} style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg }}>
           {QUICK_ACTIONS.map((action, idx) => (
             <ListRow

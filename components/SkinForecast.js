@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useColors } from './ui'
 import FeatureIcon from './FeatureIcon'
-import WeatherArt, { skyKind, SKY_LABEL } from './WeatherArt'
+import { skyKind, SKY_LABEL } from './WeatherArt'
 import { GlossyIcon } from './FeatureIcon'
 import { useT } from '../utils/LanguageContext'
 import { SPACING, RADIUS } from '../utils/theme'
@@ -51,8 +51,8 @@ export default function SkinForecast({ forecast, now, season, signals = [], onEn
     <View style={[styles.card, { ...glassCard(colors), borderColor: colors.border }, style]}>
       {/* The weather right now, and the season */}
       <View style={styles.nowRow}>
-        {/* Sun behind a cloud has its glossy icon; the other skies keep their drawings. */}
-        {nowKind === 'partly' ? <GlossyIcon name="forecast" size={50} /> : <WeatherArt kind={nowKind} width={60} />}
+        {/* The skin weather's own glossy icon, whatever the sky (Lita, 2026-11-06); the sky is in the words. */}
+        <GlossyIcon name="forecast" size={50} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.temp, { color: colors.text }]}>{now ? now.temp : forecast.tiles[0].temp}°</Text>
           <Text style={[GTYPE.caption, { color: colors.primary }]} numberOfLines={1}>

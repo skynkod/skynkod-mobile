@@ -31,10 +31,12 @@ export function PremiumShell({ label, overline, title, subtitle, footer, childre
           <Ionicons name="diamond" size={12} color={P.plum} />
           <Text style={[GTYPE.overline, { color: P.plum }]}>{label}</Text>
         </View>
-        {/* Always a way out, back to where she came from */}
-        <Pressable onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
-          <Ionicons name="close" size={24} color={P.text} />
-        </Pressable>
+        {/* A way out inside its steps only: at the tab's own page the tab bar is the way (Lita, 2026-11-09) */}
+        {onBack ? (
+          <Pressable onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
+            <Ionicons name="close" size={24} color={P.text} />
+          </Pressable>
+        ) : <View style={{ width: 24 }} />}
       </View>
       {scroll ? (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>

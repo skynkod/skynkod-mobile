@@ -98,6 +98,8 @@ export default function BarcodeScannerScreen({ navigation, route }) {
           description={t('Skynkod needs your camera to read product barcodes.')}
           action={t('Allow camera')}
           onAction={requestPermission}
+          // The only way on from here: the main (mauve) button, not a pale one (audit 2026-11-09).
+          actionVariant="primary"
         />
       </Screen>
     )
