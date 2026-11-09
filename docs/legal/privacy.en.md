@@ -23,13 +23,19 @@ This processing has been [declared to / authorised by] the **Moroccan data prote
 ## 3. The data we collect
 
 ### a) Your account
-Email address, password (stored encrypted by our host; we never see it), first name, **date of birth** (to check you are at least 18), your consent choices and their dates.
+Email address, password (stored encrypted by our host; we never see it), first name, **your age range** (18–24, 25–34, 35–44, 45–54, 55 and over), your consent choices and their dates. If your account was created with an earlier version of the app, it may also hold your date of birth.
+
+**Discreet mode** (Settings › Privacy): your first name and date of birth are erased, usage statistics are turned off, and your conversations with Koda are no longer kept (past ones are deleted). Your email stays, only so you can sign in.
 
 ### b) Your skin profile
-Skin type, concerns and goals. You pick your skin issues by tapping photos (face, eyes, lips, neck); we only keep the list of the ones you picked, never an image of you. Photos of issues a doctor confirms (rosacea, eczema…) only show with your agreement for health data.
+Skin type, concerns and goals, and your sex. You pick your skin issues by tapping photos (face, eyes, lips, neck), and the zones of the face where you see your pores or get breakouts; we only keep the list of what you picked, never an image of you.
+
+- **Skin tone** (optional): one of 6 shades, only to suggest sunscreens without a white cast and gentle care for dark spots.
+
+Photos of issues a doctor confirms (rosacea, eczema…) only show with your agreement for health data.
 
 ### c) Health data (only with your explicit consent)
-If you tick "Use my sensitive skin information", we also collect: acne type, skin conditions (rosacea, eczema…), ingredients to avoid or allergies, pregnancy or breastfeeding.
+If you tick "Use my sensitive skin information", we also collect: acne type, skin conditions (rosacea, eczema…), ingredients to avoid or allergies, pregnancy or breastfeeding, treatments (for example Roaccutane) and, for women aged 45 or over, where you are with menopause (not yet, going through it, or after), to adapt your care to drier, thinner skin. When red spots show around the mouth, the app may suggest it could be perioral dermatitis: a suspicion only, which a doctor confirms.
 
 Without this consent, these questions are skipped. You can withdraw it at any time in Profile → Settings → Privacy: this information is then erased.
 
@@ -61,6 +67,8 @@ We don't receive this data:
   **Exception:** to tell you when you're far from home in another climate ("Your environment changed"), the app keeps one reading a day for 45 days (these rounded coordinates, temperature, humidity and UV index). It is stored on your phone **and in your account**, so it follows you to a new phone, and deleted with your account.
 - **Camera**: to scan a product's barcode (no image is saved or sent; only the barcode number is used), and for Dekod (see 3h).
 - **Notifications**: reminders are scheduled on your phone.
+- **Face ID** (optional lock): your iPhone checks your face itself. Skynkod never receives your face or any biometric data, only whether the unlock worked.
+- **Apple Health** (iPhone only, only if you connect it): Skynkod **reads** your period dates and your sleep, and **never writes** anything to Apple Health. This data stays on your phone and is never sent to us, sold or used for advertising. It is used to warn you before a period ("period expected in 3 days") and to spot links in your journal (for example breakouts before your period, or after short nights). If you consented to health data, only these links may be part of what Koda reads (see section 5). You can disconnect it at any time in the app or in the Health app.
 
 ## 4. Why we use it
 
@@ -83,7 +91,7 @@ When you write to Koda, your message is sent to our AI provider, **Anthropic PBC
 - a summary of your situation: your routine, products opened or added recently, and any 7-day plan in progress;
 - your Rekod programme, if you follow one (goals, week, tonight's step);
 - the days you use each product, how long you've used your actives, the products you stopped or that the app suggests stopping, your "Better / Same / Worse" answers, and whether you're travelling in another climate;
-- **if you consented to health data**: your journal for the last 7 days (including your sleep), the trends spotted in it, your latest Dekod result, your progress, your Skin reviews, and the links seen with your products.
+- **if you consented to health data**: your journal for the last 7 days (including your sleep), the trends spotted in it (including those found with Apple Health, if connected), your latest Dekod result, your progress, your Skin reviews, and the links seen with your products.
 
 **Dekod** works the same way: your photo is sent to Anthropic only to read what is visible on your skin, then deleted.
 
@@ -97,6 +105,7 @@ We use service providers who process data on our behalf and on our instructions:
 |---|---|---|
 | Supabase Inc. | Hosting of the database, accounts and files | Servers in **Frankfurt (Germany, European Union)** |
 | Anthropic PBC | Runs Koda and Dekod | United States |
+| Resend Inc. | Sends the app's emails (account confirmation, password reset, account notices) | United States |
 | Apple / Google | App distribution; Premium payments (when available) | Under their own terms |
 
 When you scan an unknown product, only the **barcode number** is sent to the open database Open Beauty Facts. No personal data is shared.
@@ -126,7 +135,7 @@ Traffic between the app and our servers is encrypted (HTTPS). Access to your dat
 
 Under Law 09-08, you have the right to:
 
-- **access**: know what data we hold about you;
+- **access**: know what data we hold about you. You can get a copy of your data at any time, straight away, in Settings › Privacy › "Get a copy of my data";
 - **rectification**: correct it;
 - **objection**: object to processing for legitimate reasons, and to marketing without giving a reason;
 - **deletion**: erase your account and data at any time, directly in the app;
@@ -138,7 +147,7 @@ You can also lodge a complaint with the **CNDP** (www.cndp.ma).
 
 ## 11. Minimum age
 
-Skynkod is for people aged **18 or over**. Your date of birth is asked at sign-up: if it shows you are under 18, the account just created is deleted immediately. We don't knowingly collect data from people under 18. If you think a minor has given us data, contact us and we will delete it.
+Skynkod is for people aged **18 or over**. Your age range is asked at sign-up, and the youngest one is 18–24. If you tell us you are under 18, your answers and the account just created are deleted immediately. We don't knowingly collect data from people under 18. If you think a minor has given us data, contact us and we will delete it.
 
 ## 12. Changes
 

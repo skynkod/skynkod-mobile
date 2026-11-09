@@ -108,14 +108,15 @@ export default function PrivacyScreen({ navigation }) {
     if (on) return save({ consent_health_at: new Date().toISOString() })
     Alert.alert(
       t('Stop using sensitive skin information?'),
-      t('Your skin conditions, acne type, allergies and pregnancy answers will be deleted, and your advice will be less personal.'),
+      t('Your skin conditions, acne type, allergies, pregnancy and menopause answers will be deleted, and your advice will be less personal.'),
       [
         { text: t('Cancel'), style: 'cancel' },
         {
           text: t('Stop and delete'),
           style: 'destructive',
           // Rekod is rebuilt without the deleted answers.
-          onPress: async () => { await save({ consent_health_at: null, acne_types: [], skin_conditions: [], avoid_ingredients: [], pregnancy: null }); refreshIfRekod(user.id).catch(() => {}) },
+          // Menopause sits in skin_profile and is health data too (Lita, 2026-11-09).
+          onPress: async () => { await save({ consent_health_at: null, acne_types: [], skin_conditions: [], avoid_ingredients: [], pregnancy: null, skin_profile: { ...(profile.skin_profile || {}), menopause: null } }); refreshIfRekod(user.id).catch(() => {}) },
         },
       ]
     )
@@ -160,7 +161,7 @@ export default function PrivacyScreen({ navigation }) {
       <Card padded={false} style={{ paddingHorizontal: SPACING.lg }}>
         <Row
           title={t('Sensitive skin information')}
-          subtitle={t('Skin conditions, acne type, allergies and pregnancy, used only to personalise your advice.')}
+          subtitle={t('Skin conditions, acne type, allergies, pregnancy and menopause, used only to personalise your advice.')}
           value={profile.consent_health_at}
           onChange={setHealth}
         />

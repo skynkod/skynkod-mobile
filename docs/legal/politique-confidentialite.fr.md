@@ -23,13 +23,19 @@ Ce traitement a fait l'objet [d'une déclaration / d'une demande d'autorisation]
 ## 3. Les données que nous collectons
 
 ### a) Votre compte
-Adresse email, mot de passe (stocké de façon chiffrée par notre hébergeur, nous ne le voyons jamais), prénom, **date de naissance** (pour vérifier que vous avez au moins 18 ans), vos choix de consentement et leurs dates.
+Adresse email, mot de passe (stocké de façon chiffrée par notre hébergeur, nous ne le voyons jamais), prénom, **votre tranche d'âge** (18–24, 25–34, 35–44, 45–54, 55 et plus), vos choix de consentement et leurs dates. Si votre compte a été créé avec une version précédente de l'application, il peut aussi contenir votre date de naissance.
+
+**Mode discret** (Réglages › Confidentialité) : votre prénom et votre date de naissance sont effacés, les statistiques d'utilisation sont désactivées et vos conversations avec Koda ne sont plus conservées (les anciennes sont supprimées). Votre email reste, uniquement pour vous connecter.
 
 ### b) Votre profil de peau
-Type de peau, préoccupations et objectifs. Vous choisissez vos problèmes de peau en touchant des photos (visage, yeux, lèvres, cou) ; nous gardons seulement la liste de ceux que vous avez choisis, jamais d'image de vous. Les photos de problèmes qui relèvent d'un médecin (rosacée, eczéma…) ne s'affichent qu'avec votre accord pour les données de santé.
+Type de peau, préoccupations et objectifs, et votre sexe. Vous choisissez vos problèmes de peau en touchant des photos (visage, yeux, lèvres, cou), ainsi que les zones du visage où vous voyez vos pores ou avez des boutons ; nous gardons seulement la liste de ce que vous avez choisi, jamais d'image de vous.
+
+- **Couleur de peau** (facultatif) : une teinte parmi 6, uniquement pour proposer des crèmes solaires sans traces blanches et des soins doux pour les taches.
+
+Les photos de problèmes qui relèvent d'un médecin (rosacée, eczéma…) ne s'affichent qu'avec votre accord pour les données de santé.
 
 ### c) Données de santé (uniquement avec votre accord explicite)
-Si vous cochez la case « Utiliser mes informations sensibles », nous collectons aussi : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement.
+Si vous cochez la case « Utiliser mes informations sensibles », nous collectons aussi : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement, traitements (par exemple Roaccutane) et, pour les femmes de 45 ans ou plus, où vous en êtes de la ménopause (pas encore, en cours, ou après), pour adapter vos soins à une peau plus sèche et plus fine. Quand des boutons rouges apparaissent autour de la bouche, l'application peut évoquer une possible dermatite périorale : une simple piste, qu'un médecin confirme.
 
 Sans cet accord, ces questions ne vous sont pas posées. Vous pouvez retirer votre accord à tout moment dans Profil → Réglages → Confidentialité : ces informations sont alors effacées.
 
@@ -61,6 +67,8 @@ Nous ne recevons pas ces données :
   **Exception :** pour vous prévenir quand vous êtes loin de chez vous sous un autre climat (« Your environment changed »), l'application garde un relevé par jour pendant 45 jours (ces coordonnées arrondies, la température, l'humidité et l'indice UV). Il est enregistré sur votre téléphone **et dans votre compte**, pour suivre un changement de téléphone, et effacé avec votre compte.
 - **Caméra** : pour scanner le code-barres d'un produit (aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé), et pour Dekod (voir 3h).
 - **Notifications** : les rappels sont programmés sur votre téléphone.
+- **Face ID** (verrouillage facultatif) : c'est votre iPhone qui reconnaît votre visage. Skynkod ne reçoit jamais votre visage ni aucune donnée biométrique, seulement si le déverrouillage a réussi.
+- **Apple Health** (iPhone uniquement, seulement si vous le connectez) : Skynkod **lit** les dates de vos règles et votre sommeil, et **n'écrit jamais** rien dans Apple Health. Ces données restent sur votre téléphone : elles ne nous sont jamais envoyées, ne sont jamais vendues ni utilisées pour la publicité. Elles servent à vous prévenir avant vos règles (« règles prévues dans 3 jours ») et à repérer des liens dans votre journal (par exemple des boutons avant les règles, ou après des nuits courtes). Si vous avez donné votre accord pour les données de santé, seuls ces liens peuvent faire partie de ce que Koda lit (voir section 5). Vous pouvez le déconnecter à tout moment dans l'application ou dans l'app Santé.
 
 ## 4. Pourquoi nous les utilisons
 
@@ -83,7 +91,7 @@ Quand vous écrivez à Koda, votre message est envoyé à notre prestataire d'IA
 - un résumé de votre situation : votre routine, les produits ouverts ou ajoutés récemment et un éventuel plan de 7 jours en cours ;
 - votre programme Rekod, si vous en suivez un (objectifs, semaine, étape du soir) ;
 - les jours où vous utilisez chaque produit, depuis quand vous utilisez vos actifs, les produits que vous avez arrêtés ou que l'application vous suggère d'arrêter, vos réponses « Better / Same / Worse », et le fait que vous soyez en voyage sous un autre climat ;
-- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours (dont votre sommeil), les tendances repérées dans votre journal, votre dernier résultat Dekod, vos progrès, vos Skin reviews et les liens observés avec vos produits.
+- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours (dont votre sommeil), les tendances repérées dans votre journal (y compris avec Apple Health, s'il est connecté), votre dernier résultat Dekod, vos progrès, vos Skin reviews et les liens observés avec vos produits.
 
 **Dekod** fonctionne de la même façon : votre photo est envoyée à Anthropic uniquement pour lire ce qui est visible sur votre peau, puis supprimée.
 
@@ -97,6 +105,7 @@ Nous faisons appel à des prestataires qui traitent les données pour notre comp
 |---|---|---|
 | Supabase Inc. | Hébergement de la base de données, des comptes et des fichiers | Serveurs à **Francfort (Allemagne, Union européenne)** |
 | Anthropic PBC | Fonctionnement de Koda et de Dekod | États-Unis |
+| Resend Inc. | Envoi des emails de l'application (confirmation du compte, nouveau mot de passe, avis sur le compte) | États-Unis |
 | Apple / Google | Distribution de l'application ; paiements Premium (quand ils seront disponibles) | Selon leurs conditions |
 
 Quand vous scannez un produit inconnu, seul le **numéro du code-barres** est envoyé à la base ouverte Open Beauty Facts. Aucune donnée personnelle n'est transmise.
@@ -126,7 +135,7 @@ Les échanges entre l'application et nos serveurs sont chiffrés (HTTPS). L'acc�
 
 Conformément à la loi 09-08, vous disposez des droits suivants :
 
-- **accès** : savoir quelles données nous avons sur vous ;
+- **accès** : savoir quelles données nous avons sur vous. Vous pouvez obtenir une copie de vos données à tout moment, tout de suite, dans Réglages › Confidentialité › « Obtenir une copie de mes données » ;
 - **rectification** : les corriger ;
 - **opposition** : vous opposer à un traitement pour un motif légitime, et à la prospection sans motif ;
 - **suppression** : effacer votre compte et vos données à tout moment, directement dans l'application ;
@@ -138,7 +147,7 @@ Vous pouvez aussi introduire une réclamation auprès de la **CNDP** (www.cndp.m
 
 ## 11. Âge minimum
 
-Skynkod est réservée aux personnes de **18 ans ou plus**. La date de naissance est demandée à l'inscription : si elle indique moins de 18 ans, le compte qui vient d'être créé est immédiatement supprimé. Nous ne collectons pas sciemment de données sur des personnes de moins de 18 ans. Si vous pensez qu'un mineur nous a transmis des données, contactez-nous pour que nous les supprimions.
+Skynkod est réservée aux personnes de **18 ans ou plus**. Votre tranche d'âge est demandée à l'inscription, et la plus jeune est 18–24 ans. Si vous nous indiquez avoir moins de 18 ans, vos réponses et le compte qui vient d'être créé sont immédiatement supprimés. Nous ne collectons pas sciemment de données sur des personnes de moins de 18 ans. Si vous pensez qu'un mineur nous a transmis des données, contactez-nous pour que nous les supprimions.
 
 ## 12. Modifications
 
