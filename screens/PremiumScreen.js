@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { logError } from '../utils/errorLogger'
 import { useAuth } from '../utils/AuthContext'
 import { useT } from '../utils/LanguageContext'
-import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue, planPrice } from '../utils/premium'
+import { isPremiumUser, PREMIUM_PLANS, PREMIUM_BENEFITS, startPurchase, restorePurchases, getMonthValue, planPrice, getStorePlans } from '../utils/premium'
 import { Screen, Card, IconCircle, useColors } from '../components/ui'
 import { SPACING, RADIUS } from '../utils/theme'
 import FeatureIcon from '../components/FeatureIcon'
@@ -24,28 +24,42 @@ export default function PremiumScreen({ navigation, route }) {
   const [plan, setPlan] = useState('yearly')
   const [busy, setBusy] = useState(false)
   const [month, setMonth] = useState(null)
+  // The store's own prices for her country (RevenueCat); null until payments open.
+  const [store, setStore] = useState(null)
   const glossy = useGlossy()
   const insets = useSafeAreaInsets()
 
   useEffect(() => {
     if (!user?.id) return
     isPremiumUser(user.id).then(p => { setIsPremium(p); if (p) getMonthValue(user.id).then(setMonth).catch(() => {}) }).catch(error => logError('Premium_status', error, {}, 'warn'))
+    getStorePlans(user.id).then(setStore)
   }, [user?.id])
 
   const chosen = PREMIUM_PLANS.find(p => p.id === plan)
+  // The price shown: the store's, else the written one in its own currency only.
+  const priceOf = p => store?.[p.id]?.price || planPrice(p)
   const notYet = () => Alert.alert(t('Almost there'), t('Payments open with the next version of the app.'))
+  const welcome = async () => {
+    setIsPremium(true)
+    getMonthValue(user.id).then(setMonth).catch(() => {})
+  }
   const buy = async () => {
     setBusy(true)
     try {
-      const result = await startPurchase(chosen)
-      if (result.unavailable) notYet()
+      const result = await startPurchase(chosen, user.id, store)
+      if (result.ok) await welcome()
+      else if (result.unavailable) notYet()
+      else if (result.error) Alert.alert(t('Something went wrong'), t('Please try again.'))
     } finally {
       setBusy(false)
     }
   }
   const restore = async () => {
-    const result = await restorePurchases()
-    if (result.unavailable) notYet()
+    const result = await restorePurchases(user.id)
+    if (result.ok) await welcome()
+    else if (result.unavailable) notYet()
+    else if (result.error) Alert.alert(t('Something went wrong'), t('Please try again.'))
+    else Alert.alert(t('No purchase found'), t('We found no Premium subscription on this store account.'))
   }
 
   if (isPremium) {
@@ -53,7 +67,7 @@ export default function PremiumScreen({ navigation, route }) {
       <Screen back>
         <View style={styles.hero}>
           <IconCircle name="diamond" size={80} />
-          <Text style={[GTYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>{t('You’re Premium ✨')}</Text>
+          <Text style={[GTYPE.title, { color: colors.text, textAlign: 'center', marginTop: SPACING.lg }]}>{t('You’re Premium')}</Text>
           <Text style={[GTYPE.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.sm }]}>{t('Your skin code is fully unlocked. Enjoy every feature.')}</Text>
         </View>
         {month ? (
@@ -144,7 +158,7 @@ export default function PremiumScreen({ navigation, route }) {
                     {p.trialDays ? t('{n} days free, the best value', { n: p.trialDays }) : p.note ? t(p.note) : t('Cancel anytime')}
                   </Text>
                 </View>
-                <Text style={[F.s, { fontSize: 14, color: C.ink }]}>{planPrice(p) || t('Every {per}', { per: t(p.per) })}{planPrice(p) ? <Text style={[F.r, { fontSize: 12, color: C.mute }]}> / {t(p.per)}</Text> : null}</Text>
+                <Text style={[F.s, { fontSize: 14, color: C.ink }]}>{priceOf(p) || t('Every {per}', { per: t(p.per) })}{priceOf(p) ? <Text style={[F.r, { fontSize: 12, color: C.mute }]}> / {t(p.per)}</Text> : null}</Text>
               </Glass>
             </Pressable>
           )
@@ -173,8 +187,8 @@ export default function PremiumScreen({ navigation, route }) {
         <GlossyButton title={cta} onPress={buy} loading={busy} F={F} />
         <Text style={[F.r, { fontSize: 12, color: C.mute, textAlign: 'center', marginTop: 8 }]}>
           {chosen.trialDays
-            ? (planPrice(chosen) ? t('Free for {n} days, then {price} a {per}. Cancel anytime.', { n: chosen.trialDays, price: planPrice(chosen), per: t(chosen.per) }) : t('Free for {n} days, then your App Store price. Cancel anytime.', { n: chosen.trialDays }))
-            : (planPrice(chosen) ? t('{price} a {per}. Cancel anytime.', { price: planPrice(chosen), per: t(chosen.per) }) : t('Your App Store price. Cancel anytime.'))}
+            ? (priceOf(chosen) ? t('Free for {n} days, then {price} a {per}. Cancel anytime.', { n: chosen.trialDays, price: priceOf(chosen), per: t(chosen.per) }) : t('Free for {n} days, then your App Store price. Cancel anytime.', { n: chosen.trialDays }))
+            : (priceOf(chosen) ? t('{price} a {per}. Cancel anytime.', { price: priceOf(chosen), per: t(chosen.per) }) : t('Your App Store price. Cancel anytime.'))}
         </Text>
         {route?.params?.fromOnboarding ? (
           <Text onPress={() => navigation.goBack()} style={[F.m, { fontSize: 14, color: C.soft, textAlign: 'center', marginTop: 10 }]}>{t('Not now')}</Text>
