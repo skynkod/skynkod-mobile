@@ -35,7 +35,7 @@ Type de peau, préoccupations et objectifs, et votre sexe. Vous choisissez vos p
 Les photos de problèmes qui relèvent d'un médecin (rosacée, eczéma…) ne s'affichent qu'avec votre accord pour les données de santé.
 
 ### c) Données de santé (uniquement avec votre accord explicite)
-Si vous cochez la case « Utiliser mes informations sensibles », nous collectons aussi : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement, traitements (par exemple Roaccutane) et, pour les femmes de 45 ans ou plus, où vous en êtes de la ménopause (pas encore, en cours, ou après), pour adapter vos soins à une peau plus sèche et plus fine. Quand des boutons rouges apparaissent autour de la bouche, l'application peut évoquer une possible dermatite périorale : une simple piste, qu'un médecin confirme.
+Si vous activez « Let Skynkod keep my skin safe » à l'inscription (ou « Sensitive skin information » dans Réglages › Confidentialité), nous collectons aussi : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement, traitements (par exemple Roaccutane) et, pour les femmes de 45 ans ou plus, où vous en êtes de la ménopause (pas encore, en cours, ou après), pour adapter vos soins à une peau plus sèche et plus fine. Quand des boutons rouges apparaissent autour de la bouche, l'application peut évoquer une possible dermatite périorale : une simple piste, qu'un médecin confirme.
 
 Sans cet accord, ces questions ne vous sont pas posées. Vous pouvez retirer votre accord à tout moment dans Profil → Réglages → Confidentialité : ces informations sont alors effacées.
 

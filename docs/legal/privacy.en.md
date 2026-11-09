@@ -35,7 +35,7 @@ Skin type, concerns and goals, and your sex. You pick your skin issues by tappin
 Photos of issues a doctor confirms (rosacea, eczema…) only show with your agreement for health data.
 
 ### c) Health data (only with your explicit consent)
-If you tick "Use my sensitive skin information", we also collect: acne type, skin conditions (rosacea, eczema…), ingredients to avoid or allergies, pregnancy or breastfeeding, treatments (for example Roaccutane) and, for women aged 45 or over, where you are with menopause (not yet, going through it, or after), to adapt your care to drier, thinner skin. When red spots show around the mouth, the app may suggest it could be perioral dermatitis: a suspicion only, which a doctor confirms.
+If you turn on "Let Skynkod keep my skin safe" at sign-up (or "Sensitive skin information" in Settings › Privacy), we also collect: acne type, skin conditions (rosacea, eczema…), ingredients to avoid or allergies, pregnancy or breastfeeding, treatments (for example Roaccutane) and, for women aged 45 or over, where you are with menopause (not yet, going through it, or after), to adapt your care to drier, thinner skin. When red spots show around the mouth, the app may suggest it could be perioral dermatitis: a suspicion only, which a doctor confirms.
 
 Without this consent, these questions are skipped. You can withdraw it at any time in Profile → Settings → Privacy: this information is then erased.
 

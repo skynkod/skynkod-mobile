@@ -60,7 +60,7 @@ Certaines données peuvent être considérées comme des **données de santé** 
 - le résultat du scan Dekod.
 
 **Base légale** : le **consentement explicite** de l'utilisatrice.
-- Une case séparée « Utiliser mes informations sensibles », non cochée par défaut, à l'inscription ou plus tard dans Réglages › Confidentialité.
+- Une case séparée (« Let Skynkod keep my skin safe » à l'inscription, « Sensitive skin information » dans les réglages), non cochée par défaut, à l'inscription ou plus tard dans Réglages › Confidentialité.
 - Sans cet accord, ces questions ne sont pas posées.
 - Le retrait de l'accord efface ces données.
 - Dekod a son propre accord, demandé avant le premier scan ; sa date est gardée dans le compte, et il peut être retiré à tout moment (avec ou sans suppression des résultats).
