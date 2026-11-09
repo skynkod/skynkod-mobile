@@ -8,6 +8,8 @@ import * as Haptics from 'expo-haptics'
 import Svg, { Path, Circle, Ellipse, Defs, RadialGradient, Stop } from 'react-native-svg'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { updateUserProfile, signUp, signIn, supabase } from '../utils/supabase'
+import * as AppleAuthentication from 'expo-apple-authentication'
+import { socialProviders, signInWithGoogle, signInWithApple } from '../utils/social-auth'
 import { requestNotificationPermissions, DEFAULT_TIMES } from '../utils/notifications'
 import { startBasicRoutine } from '../utils/rekod'
 import { deleteAccount } from '../utils/account'
@@ -119,7 +121,7 @@ const pad = n => String(n).padStart(2, '0')
 const NEXT_LOOK = { face: 'your face', eyes: 'your eye area', lips: 'your lips', neck: 'your neck', life: 'your daily life', safety: 'your safety' }
 
 const GOALS = [
-  { v: 'clear', t: 'Clear skin', s: 'Breakouts, blackheads', ic: 'sparkles' },
+  { v: 'clear', t: 'Clear skin', s: 'Breakouts, blackheads', ic: 'face' },
   { v: 'hydration', t: 'Hydrated skin', s: 'Feels tight', ic: 'droplet' },
   { v: 'even_tone', t: 'Even tone', s: 'Spots, marks', ic: 'tone' },
   { v: 'anti_aging', t: 'Firmer skin', s: 'Fine lines, firmness', ic: 'hourglass' },
@@ -136,7 +138,9 @@ const WASH = [
   { v: 'combo', t: 'Shiny in the center', s: 'Forehead and nose', img: 'skin-test-tzone' },
   { v: 'oily', t: 'Shiny all over', s: 'Whole face', img: 'skin-test-oily' },
 ]
-const SHINE = [{ v: 'matte', t: 'Not at all' }, { v: 'tzone', t: 'In the center', s: 'Forehead, nose, chin' }, { v: 'all', t: 'All over' }]
+// Where the skin shines comes from the washing answer: the midday question asked the
+// same thing again (Lita, 2026-11-09).
+const SHINE_OF = { dry: 'matte', normal: 'matte', combo: 'tzone', oily: 'all' }
 const TONES = ['#F6E1D3', '#EBC8AE', '#D6A584', '#B07A55', '#7E5236', '#4A2E1F']
 // Face zones on the photo (x, y in the 1145 × 1374 image).
 // Where she sees her pores: it feeds the skin type (computeSkinType reads nose, forehead, chin, cheeks).
@@ -300,7 +304,6 @@ const ICON = {
   'shield': require('../assets/onboarding/icons/shield.png'),
   'lock': require('../assets/onboarding/icons/lock.png'),
   'unlock': require('../assets/onboarding/icons/unlock.png'),
-  'sparkles': require('../assets/onboarding/icons/sparkles.png'),
   'droplet': require('../assets/onboarding/icons/droplet.png'),
   'tone': require('../assets/onboarding/icons/tone.png'),
   'hourglass': require('../assets/onboarding/icons/hourglass.png'),
@@ -396,15 +399,32 @@ const Ghost = ({ title, onPress, icon }) => {
     </Pressable>
   )
 }
+// The screens of each chapter in order: the chapter's bar fills a little at each
+// one, so a long chapter still shows she moves on (Lita, 2026-11-09).
+const CHAPTER_SCREENS = {
+  skin: ['goals', 'you', 'age', 'meno', 'wash', 'pores', 'react', 'tone'],
+  face: ['face', 'families', 'faceZones'],
+  eyes: ['eyes', 'eyeTypes'],
+  lips: ['lips', 'lipTypes'],
+  neck: ['neck', 'neckTypes'],
+  life: ['spotted', 'sleep', 'life'],
+  safety: ['safety', 'last'],
+}
 const Bar = ({ z, noBack, skip, onPhoto }) => {
-  const { F, back } = useOb()
+  const { F, back, cur } = useOb()
   const i = z ? SI(z) : -1
+  const list = CHAPTER_SCREENS[z] || []
+  const fill = list.includes(cur?.id) ? (list.indexOf(cur.id) + 1) / list.length : 1
   return (
     <View style={styles.bar}>
       {noBack ? null : <Pressable onPress={back} hitSlop={12} accessibilityLabel="Back"><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable>}
       {i >= 0 ? (
         <>
-          <View style={styles.segs}>{STEPS.map((_, k) => <View key={k} style={[styles.seg, k <= i && styles.segOn]} />)}</View>
+          <View style={styles.segs}>{STEPS.map((_, k) => (
+            <View key={k} style={[styles.seg, k < i && styles.segOn]}>
+              {k === i ? <View style={[styles.segFill, { width: `${Math.round(fill * 100)}%` }]} /> : null}
+            </View>
+          ))}</View>
         </>
       ) : (
         <View style={{ flex: 1, alignItems: 'center' }}>
@@ -437,7 +457,9 @@ const Page = ({ children, scroll = true }) => {
     ? <ScrollView contentContainerStyle={inner} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">{children}</ScrollView>
     : <View style={[inner, { flex: 1 }]}>{children}</View>
 }
-const Spacer = () => <View style={{ flex: 1, minHeight: 16 }} />
+// Its minimum height keeps room for Koda's little word above the button, so the
+// bubble never covers the last answers of a long screen (audit 2026-11-09).
+const Spacer = () => <View style={{ flex: 1, minHeight: 88 }} />
 const Tick = ({ on }) => (
   <View style={[styles.tick, on && { backgroundColor: C.mauve2, borderColor: '#fff' }]}>
     {on ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
@@ -450,7 +472,7 @@ const Summary = ({ label, items, d, empty = true }) => {
   return (
     <View style={styles.sum}>
       <Text style={[F.r, { fontSize: 12.5, lineHeight: 18, color: C.soft, textAlign: 'center' }]}>
-        <Text style={[F.s, { color: C.mauve }]}>{label}: </Text>{items.length ? items.join(' · ') : 'nothing to report, lovely!'}{d ? ` ${d}` : ''}
+        <Text style={[F.s, { color: C.mauve }]}>{label}: </Text>{items.length ? items.join(' · ') : 'nothing to report, lovely!'}{d ? `. ${d}` : ''}
       </Text>
     </View>
   )
@@ -635,7 +657,7 @@ const Welcome = () => {
         <Float duration={4000}><Image source={IMG.orb} style={{ width: orb, height: orb }} resizeMode="contain" /></Float>
       </Rise>
       <Rise i={3} style={styles.feats}>
-        {[['sparkles', 'Personal'], ['shield-check', 'Ingredient-checked'], ['heart', 'Made for you']].map(([i, label]) => (
+        {[['document', 'Personal'], ['shield-check', 'Ingredient-checked'], ['heart', 'Made for you']].map(([i, label]) => (
           <View key={label} style={{ alignItems: 'center', gap: 8 }}>
             <View style={styles.gc}><LineIcon name={i} size={24} /></View>
             <Text style={[F.s, { fontSize: 10, letterSpacing: 0.8, color: C.soft }]}>{label.toUpperCase()}</Text>
@@ -714,7 +736,7 @@ const Consent = () => {
         <Switch on={health} onPress={() => setHealth(!health)} icon="shield-check">
           <View style={styles.reco}><Text style={[F.s, { fontSize: 10.5, letterSpacing: 0.6, color: C.mauve }]}>RECOMMENDED</Text></View>
           <Text style={body}>Let Skynkod keep my skin safe</Text>
-          <Text style={small}>I allow Skynkod to collect and save my sensitive health information (allergies, pregnancy, skin conditions, treatments like Roaccutane) in my private profile. It's only used to check which products are safe for me, and never sold or shared. Without it, Skynkod can't warn me about a product that could harm my skin.</Text>
+          <Text style={small}>I allow Skynkod to collect and save my sensitive health information (allergies, pregnancy, menopause, skin conditions, treatments like Roaccutane) in my private profile. It's only used to check which products are safe for me, and never sold or shared. Without it, Skynkod can't warn me about a product that could harm my skin.</Text>
         </Switch>
       </Rise>
       <Spacer />
@@ -821,7 +843,7 @@ const Between = ({ from, next, onGo, summary }) => {
     <Page>
       <Bar />
       <Rise style={{ alignItems: 'center' }}>
-        <Text style={[t.h1, { textAlign: 'center' }]}>{words[SI(from) % words.length]}{nm} ✨</Text>
+        <Text style={[t.h1, { textAlign: 'center' }]}>{words[SI(from) % words.length]}{nm}</Text>
         <Text style={[t.p, { textAlign: 'center', marginTop: 6 }]}>Now let's look at {NEXT_LOOK[next]}.</Text>
       </Rise>
       <View style={{ height: sh, width: sw }}>
@@ -889,7 +911,8 @@ const Tone = () => {
   const pick = i => {
     setOn(i)
     say(i >= 3 ? 'Noted: sunscreens with no white cast, and gentle care for dark spots.' : 'Noted: we\'ll adapt your sun protection.')
-    setTimeout(() => { set({ tone: i }); go('skinDone') }, 1100)
+    // Straight on: Koda's word shows over the next screen, no blank wait (Lita, 2026-11-09).
+    setTimeout(() => { set({ tone: i }); go('skinDone') }, 380)
   }
   return (
     <Page>
@@ -902,6 +925,8 @@ const Tone = () => {
         ))}
       </View>
       <Spacer />
+      {/* Optional (privacy policy and Lita's plan): she may keep it to herself (audit 2026-11-09). */}
+      <Ghost title="Skip" onPress={() => { set({ tone: null }); go('skinDone') }} />
     </Page>
   )
 }
@@ -1233,14 +1258,45 @@ const Last = () => {
 // "Save your Skyn Profile" (audit 2026-10-28, Lita: before her results). The
 // answers so far live in this screen's state; the account is created here, then
 // "See my results" saves everything to it.
+// Her answers while she confirms her email in her mailbox: if the phone closes
+// Skynkod meanwhile, the journey reopens here with them (Lita, 2026-11-09).
+const PENDING_KEY = 'skynkod_pending_signup'
+const CONFIRM_MSG = 'Check your inbox to confirm your email, then sign in here.'
+
 const Account = () => {
-  const { F, nm, go, onSignedIn } = useOb()
+  const { F, nm, go, onSignedIn, P, answersOf, health, terms, pending } = useOb()
   const t = useType()
-  const [mine, setMine] = useState(false) // she already has an account
-  const [email, setEmail] = useState('')
+  const [mine, setMine] = useState(!!pending) // she already has an account
+  const [email, setEmail] = useState(pending?.email || '')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(pending ? CONFIRM_MSG : null)
   const [busy, setBusy] = useState(false)
+  const [resent, setResent] = useState(false)
+  // Google / Apple in one tap, once switched on in Supabase (Lita, 2026-11-09).
+  const [social, setSocial] = useState({ google: false, apple: false })
+  useEffect(() => { socialProviders().then(setSocial) }, [])
+  const viaSocial = which => async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      const user = await (which === 'apple' ? signInWithApple() : signInWithGoogle())
+      if (!user) return
+      track('sign_up', { where: 'onboarding', with: which })
+      await onSignedIn?.(user.email, user.id)
+      go('final', {}, { push: false })
+    } catch (err) {
+      await logError(`Onboarding_${which}`, err, {}, 'warn')
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  const unconfirmed = error === CONFIRM_MSG || error === 'Email not confirmed'
+  const resend = async () => {
+    const { error: resendError } = await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() })
+    if (resendError) return setError(resendError.message)
+    setResent(true)
+  }
   const submit = async () => {
     const clean = email.trim().toLowerCase()
     setError(null)
@@ -1254,9 +1310,10 @@ const Account = () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
         // Email confirmation still required on the server: she confirms, then signs in here.
+        await AsyncStorage.setItem(PENDING_KEY, JSON.stringify({ email: clean, name: P.name || null, answers: answersOf(), health, terms })).catch(() => {})
         setMine(true)
         setPassword('')
-        return setError('Check your inbox to confirm your email, then sign in here.')
+        return setError(CONFIRM_MSG)
       }
       track(mine ? 'sign_in' : 'sign_up', { where: 'onboarding' })
       await onSignedIn?.(clean, session.user.id)
@@ -1284,10 +1341,22 @@ const Account = () => {
             keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={[F.r, styles.other]} />
           <TextInput value={password} onChangeText={v => { setPassword(v); setError(null) }} placeholder={mine ? 'Your password' : 'Password (at least 8 characters)'} placeholderTextColor={C.mute}
             secureTextEntry autoComplete={mine ? 'current-password' : 'new-password'} textContentType={mine ? 'password' : 'newPassword'} onSubmitEditing={submit} returnKeyType="go" style={[F.r, styles.other]} />
-          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: K.danger, marginTop: 6 }]}>{error}</Text> : null}
+          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: unconfirmed ? C.ink : K.danger, marginTop: 6 }]}>{error}</Text> : null}
+          {unconfirmed ? (
+            <Text onPress={resent ? undefined : resend} style={[F.m, { fontSize: 13, color: resent ? C.mute : C.mauve2, marginTop: 8, textDecorationLine: resent ? 'none' : 'underline' }]}>
+              {resent ? 'Email sent again.' : 'Send the email again'}
+            </Text>
+          ) : null}
         </Rise>
         <Spacer />
         <Btn title={busy ? '…' : mine ? 'Sign in and see my results' : 'Create my account'} onPress={submit} disabled={busy} />
+        {social.apple ? (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={mine ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={26} style={{ height: 50, width: '100%', marginTop: 10 }} onPress={viaSocial('apple')} />
+        ) : null}
+        {social.google ? <Ghost title="Continue with Google" icon="logo-google" onPress={viaSocial('google')} /> : null}
         <Ghost title={mine ? 'New here? Create an account' : 'I already have an account'} onPress={() => { setMine(!mine); setError(null); setPassword('') }} />
       </Page>
     </KeyboardAvoidingView>
@@ -1347,21 +1416,21 @@ const Final = () => {
     ...(P.lifeYes?.[3] ? ['Light textures'] : []),
   ]
   const sec = [
-    ['sparkles', 'Your goals', P.goals.map(g => g.t)],
+    ['heart', 'Your goals', P.goals.map(g => g.t)],
     ['sun', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
-    ['sparkles', 'Your priority', [P.priority, P.secondary].filter(Boolean).map((c, n) => `${n + 1}. ${CONCERN_LABEL[c] || c}`)],
+    ['shield-check', 'Your priority', [P.priority, P.secondary].filter(Boolean).map((c, n) => `${n + 1}. ${CONCERN_LABEL[c] || c}`)],
     ['eye', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
     ['ban-outline', 'What we avoid for you', [...a.avoid.map(x => `No ${low(x)}`), ...a.prefs.map(x => ({ fragrance_free: 'Fragrance-free', vegan: 'Vegan only' })[x])]],
     ['heart', 'We take care with', care],
     ['color-wand-outline', 'We choose for you', choose],
   ].filter(x => x[2].length)
-  const share = () => Share.share({ message: `My Skyn Profile on Skynkod ✨\n${sec.map(([, k, v]) => `${k}: ${v.join(', ')}`).join('\n')}` }).catch(() => {})
+  const share = () => Share.share({ message: `My Skyn Profile on Skynkod\n${sec.map(([, k, v]) => `${k}: ${v.join(', ')}`).join('\n')}` }).catch(() => {})
   const cw = Math.min(W - 70, 290)
   return (
     <Page>
       <Bar />
       <Rise style={{ alignItems: 'center' }}>
-        <Text style={[t.h1, { textAlign: 'center' }]}>All set{nm}! ✨</Text>
+        <Text style={[t.h1, { textAlign: 'center' }]}>All set{nm}!</Text>
         <Text style={[t.p, { textAlign: 'center', marginTop: 6 }]}>Your Skyn Profile is ready.</Text>
       </Rise>
       <Pop delay={100} style={{ width: cw, height: cw, alignSelf: 'center', marginTop: 14, marginBottom: 4 }}>
@@ -1549,6 +1618,21 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
   const [saving, setSaving] = useState(false)
   const nm = P.name ? `, ${P.name}` : ''
 
+  // Back from her mailbox after the phone closed Skynkod: her answers and the account screen.
+  const [pending, setPending] = useState(null)
+  useEffect(() => {
+    if (mode || userId || devStart) return
+    AsyncStorage.getItem(PENDING_KEY).then(raw => {
+      const saved = raw && JSON.parse(raw)
+      if (!saved?.answers) return
+      setP(prev => ({ ...prev, ...fromAnswers(saved.answers), name: saved.name }))
+      setHealth(!!saved.health)
+      setTerms(!!saved.terms)
+      setPending(saved)
+      setCur({ id: 'account' })
+    }).catch(() => {})
+  }, [])
+
   // Koda's little word above the button.
   const [koda, setKoda] = useState(null)
   const kodaTimer = useRef(null)
@@ -1575,7 +1659,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
       goals: P.goals.map(g => g.v),
       sex: P.sex || null,
       ageRange: P.age ?? null,
-      menopause: P.meno || null,
+      // Menopause is health data: only with the health consent (Lita, 2026-11-09).
+      menopause: health ? P.meno || null : null,
       feel: P.feel || null,
       shine: P.shine || null,
       pores: P.pores || null,
@@ -1646,6 +1731,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
           else await startBasicRoutine(userId).catch(error => logError('OnboardingScreen_basicRoutine', error, { userId }, 'warn'))
         }
       }
+      await AsyncStorage.removeItem(PENDING_KEY).catch(() => {})
       await onComplete(options)
     } catch (error) {
       await logError('OnboardingScreen_finish', error, { step: cur.id }, 'warn')
@@ -1653,7 +1739,7 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
     }
   }
 
-  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId, mode, onSignedIn, onHaveAccount }
+  const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId, mode, onSignedIn, onHaveAccount, pending, cur }
 
   let content
   switch (cur.id) {
@@ -1666,12 +1752,11 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
     case 'you': content = <RowPick z="skin" q="You are…" opts={SEX} onDone={o => { set({ sex: o.v }); go('age') }} />; break
     case 'age': content = (
       <RowPick z="skin" q="How old are you?" h="Your skin changes over the years: we adapt your routine to your age." opts={AGES.map(t => ({ t }))}
-        onDone={(o, i) => { say(AGE_SAY[i]); setTimeout(() => { set({ age: i }); go(i >= 3 && P.sex !== 'man' ? 'meno' : 'wash') }, 900) }}
+        onDone={(o, i) => { say(AGE_SAY[i]); set({ age: i }); go(i >= 3 && P.sex !== 'man' && health ? 'meno' : 'wash') }}
         below={<UnderAge onConfirm={() => { setMinor(true); if (userId) deleteAccount().catch(error => logError('Onboarding_minorDelete', error, {}, 'warn')) }} />} />
     ); break
     case 'meno': content = <RowPick z="skin" q="Where are you with menopause?" h="It changes the skin a lot: drier, thinner, less firm. We adapt your care." opts={MENO} onDone={o => { set({ meno: o.v }); go('wash') }} />; break
-    case 'wash': content = <PhotoPick z="skin" q="2 hours after washing, your skin…" h="Think of a normal day." opts={WASH} one onDone={o => { set({ feel: o.v }); go('shine') }} />; break
-    case 'shine': content = <RowPick z="skin" q="At midday, your skin shines…" opts={SHINE} onDone={o => { set({ shine: o.v }); go('pores') }} />; break
+    case 'wash': content = <PhotoPick z="skin" q="2 hours after washing, your skin…" h="Think of a normal day." opts={WASH} one onDone={o => { set({ feel: o.v, shine: SHINE_OF[o.v] }); go('pores') }} />; break
     // Nothing tapped: she barely sees them.
     case 'pores': content = <FaceZones z="skin" q="Where can you see your pores?" h="Tap the zones on the face. Barely see them? Just continue." zones={PORE_ZONES} optional
       initial={PORE_ZONES.filter(zone => poreZones(P.pores).includes(zone.v))} onDone={on => { set({ pores: on.length ? on.map(zone => zone.v) : 'small' }); go('react') }} />; break
@@ -1769,6 +1854,7 @@ const styles = StyleSheet.create({
   segs: { flex: 1, flexDirection: 'row', gap: 5 },
   seg: { flex: 1, height: 4, borderRadius: 4, backgroundColor: C.line },
   segOn: { backgroundColor: C.mauve2 },
+  segFill: { height: 4, borderRadius: 4, backgroundColor: C.mauve2 },
   btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: K.shadow, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 10 }, elevation: 4 },
   btnText: { color: '#fff', fontSize: 15.5 },
   btnArrow: { position: 'absolute', right: 22 },
@@ -1781,7 +1867,7 @@ const styles = StyleSheet.create({
   pcT: { fontSize: 13, lineHeight: 16, color: C.ink },
   pcS: { fontSize: 11, lineHeight: 14, color: C.mute, marginTop: 2 },
   rankBadge: { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12, backgroundColor: C.mauve2, borderWidth: 1.5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  tick: { position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.85)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.95)', alignItems: 'center', justifyContent: 'center' },
+  tick: { position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.85)', borderWidth: 1.5, borderColor: C.mute, alignItems: 'center', justifyContent: 'center' }, // a visible ring when not ticked, also on white cards (audit 2026-11-09)
   rows: { marginTop: 18, gap: 10 },
   row: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },
   rowOn: { borderColor: C.mauve2 },
