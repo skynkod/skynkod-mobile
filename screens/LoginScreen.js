@@ -1,31 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, Alert, Pressable, Image } from 'react-native'
 import * as Linking from 'expo-linking'
-import * as WebBrowser from 'expo-web-browser'
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { supabase, signUp, signIn } from '../utils/supabase'
 import { logError } from '../utils/errorLogger'
 import { useT } from '../utils/LanguageContext'
 import { Screen, Card, Input, Button, Banner, SegmentedControl, useColors } from '../components/ui'
 import { SPACING, TYPE } from '../utils/theme'
 import { GlossyScope, GTYPE, GFW } from '../components/glossy'
+import { readAuthParams, socialProviders, signInWithGoogle, signInWithApple } from '../utils/social-auth'
 
 const LOGO = require('../assets/images/skynkod-logo.png')
-// Turn on once Google is set up in Supabase > Authentication > Providers.
-// Reads key=value pairs from a URL's #fragment and ?query (auth redirects use
-// both), without relying on URLSearchParams, which React Native only partly supports.
-const readAuthParams = (url = '') => {
-  const params = {}
-  const parts = [url.split('#')[1], url.split('#')[0].split('?')[1]]
-  for (const part of parts) {
-    for (const pair of (part || '').split('&')) {
-      const [key, value = ''] = pair.split('=')
-      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value.replace(/\+/g, ' '))
-    }
-  }
-  return params
-}
-
-const GOOGLE_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH === 'true'
 
 function LoginScreenInner({ onLogin, onNew }) {
   const colors = useColors()
@@ -120,35 +105,18 @@ function LoginScreenInner({ onLogin, onNew }) {
     }
   }
 
-  // Google sign-in through Supabase in an in-app browser; the redirect brings
-  // the session back in the URL fragment.
-  const handleGoogle = async () => {
+  // Google or Apple (utils/social-auth.js); each button shows once its provider is on in Supabase.
+  const [social, setSocial] = useState({ google: false, apple: false })
+  useEffect(() => { socialProviders().then(setSocial) }, [])
+  const handleSocial = (which) => async () => {
     setError(null)
     setLoading(true)
     try {
-      const redirectTo = Linking.createURL('auth-callback')
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo, skipBrowserRedirect: true },
-      })
-      if (oauthError) throw oauthError
-
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
-      if (result.type !== 'success') return
-
-      const params = readAuthParams(result.url)
-      if (!params.access_token || !params.refresh_token) {
-        throw new Error(params.error_description || t('Google sign-in was cancelled.'))
-      }
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: params.access_token,
-        refresh_token: params.refresh_token,
-      })
-      if (sessionError) throw sessionError
-      await onLogin(sessionData.user.email, sessionData.user.id)
+      const user = await (which === 'apple' ? signInWithApple() : signInWithGoogle())
+      if (user) await onLogin(user.email, user.id)
     } catch (err) {
-      await logError('LoginScreen_google', err)
-      setError(t(err.message) || t('Google sign-in failed. Please try again.'))
+      await logError(`LoginScreen_${which}`, err)
+      setError(t(err.message) || t('Sign-in failed. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -281,14 +249,20 @@ function LoginScreenInner({ onLogin, onNew }) {
           </Pressable>
         ) : null}
 
-        {GOOGLE_ENABLED ? (
+        {social.google || social.apple ? (
         <>
         <View style={styles.divider}>
           <View style={[styles.line, { backgroundColor: colors.border }]} />
           <Text style={[GTYPE.caption, { color: colors.muted }]}>{t('or')}</Text>
           <View style={[styles.line, { backgroundColor: colors.border }]} />
         </View>
-        <Button title={t('Continue with Google')} icon="logo-google" variant="secondary" onPress={handleGoogle} disabled={loading} />
+        {social.apple ? (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={26} style={styles.apple} onPress={handleSocial('apple')} />
+        ) : null}
+        {social.google ? <Button title={t('Continue with Google')} icon="logo-google" variant="secondary" onPress={handleSocial('google')} disabled={loading} /> : null}
         </>
         ) : null}
       </Card>
@@ -308,6 +282,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'center', paddingVertical: SPACING.xxxl },
   hero: { alignItems: 'center', marginBottom: SPACING.xxl },
   divider: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginVertical: SPACING.xl },
+  apple: { height: 50, width: '100%', marginBottom: SPACING.md },
   line: { flex: 1, height: StyleSheet.hairlineWidth },
   logo: { width: 230, height: 230 * 333 / 1306, marginTop: SPACING.md },
 })

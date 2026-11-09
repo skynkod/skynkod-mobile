@@ -3,7 +3,10 @@ import { AppState } from 'react-native'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = 'https://akshyahfnxmilhpimzme.supabase.co'
+export const SUPABASE_URL = supabaseUrl
 const supabaseAnonKey = 'sb_publishable_B7gC1CGaQLe1thewflvNvA_qeKHI_iP'
+// Public (anon) key: made to live in the app.
+export const SUPABASE_ANON_KEY = supabaseAnonKey
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
