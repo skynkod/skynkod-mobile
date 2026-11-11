@@ -10,7 +10,7 @@ The character limits are the stores' own.
 
 | Field | Proposal |
 |---|---|
-| App name (30 max) | `Skynkod: Skincare Routine` (25), or just `Skynkod` |
+| App name (30 max) | `Skynkod: Personal Skin Routine` (30), chosen by Lita on 2026-11-09 |
 | Category | Health & Fitness (2nd choice: Lifestyle) |
 | Age | 18+ (Skynkod is for adults) |
 | Privacy policy | https://skynkod.com/privacy |
@@ -19,24 +19,24 @@ The character limits are the stores' own.
 
 ## 2. App Store (Apple)
 
-**Subtitle (30 max):** `Scan, routine & skin journal` (28)
+**Subtitle (30 max):** `Skincare scanner & journal` (26), chosen by Lita on 2026-11-09
 
 **Promotional text (170 max):**
-> Scan a product and see right away if it suits your skin. Then build a routine that fits you, with Koda, your AI skin coach, by your side.
+> Your personal skincare routine: built for your skin, adjusted as it changes. Scan a product to see if it suits you, and ask Koda, your AI skin coach.
 
-**Keywords (100 max, no spaces after the commas):**
+**Keywords (100 max, no spaces after the commas; no word already in the name or subtitle):**
 ```
-skincare,routine,ingredients,scanner,acne,skin type,journal,serum,spf,sensitive skin,cosmetics
+acne,serum,spf,sunscreen,moisturizer,cleanser,ingredients,sensitive,oily,dry,pores,glow,korean
 ```
 
 **Description:**
-> Skynkod reads your skin and your products, so you know what really suits you.
->
-> SCAN A PRODUCT
-> Scan a barcode and see at once whether it suits your skin, with the ingredients to watch for you.
+> Your personal skincare routine, made for your skin and adjusted as it changes.
 >
 > A ROUTINE MADE FOR YOU
 > Skynkod builds your morning and evening routine from your skin type, your concerns and the products you already own. It warns you when two actives shouldn't go together.
+>
+> SCAN A PRODUCT
+> Scan a barcode and see at once whether it suits your skin, with the ingredients to watch for you.
 >
 > KODA, YOUR AI SKIN COACH
 > Ask Koda your skincare questions. Koda knows your profile and your routine, and answers in simple words.
@@ -56,6 +56,8 @@ skincare,routine,ingredients,scanner,acne,skin type,journal,serum,spf,sensitive 
 > YOUR DATA STAYS YOURS
 > We never sell your data. No brand pays for a verdict. You can delete your account and get a copy of your data at any time, from the app.
 >
+> Some features need Skynkod Premium, a subscription you can cancel anytime. Scans, safety alerts and your skin forecast stay free.
+>
 > Skynkod gives skincare advice, not medical advice. For a skin condition, see a doctor or a dermatologist.
 
 **What to add for Apple's review team (App Review notes):**
@@ -64,7 +66,7 @@ skincare,routine,ingredients,scanner,acne,skin type,journal,serum,spf,sensitive 
 
 ## 3. Google Play
 
-**Short description (80 max):** `Scan your skincare, build your routine and ask Koda, your AI skin coach.` (73)
+**Short description (80 max):** `Your personal skincare routine: scan products, track your skin, ask Koda.` (73)
 
 **Full description:** the same text as the App Store.
 

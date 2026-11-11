@@ -18,6 +18,7 @@ import FeatureIcon from './FeatureIcon'
 import { useTheme } from '../utils/ThemeContext'
 import { SPACING, RADIUS, TYPE } from '../utils/theme'
 import { GlossyBackdrop, GTYPE, GFW, glassBubble, GlossyFill } from './glossy'
+import { KodaFace } from './Koda'
 
 // Inside a GlossyScope (audit 2026-10-28): Inter, glass and the glossy button.
 const look = theme => ({ T: theme.glossy ? GTYPE : TYPE, fw: w => (theme.glossy ? GFW(w) : { fontWeight: w }) })
@@ -431,13 +432,14 @@ export function ProgressBar({ value = 0, color, style, height = 8 }) {
 
 // ─── Feedback ────────────────────────────────────────────────────────────────
 
-export function EmptyState({ icon = 'leaf-outline', title, description, action, onAction, actionVariant = 'secondary' }) {
+// `koda`: Koda's face (a mood) instead of the icon, for an empty screen he guides (Lita, 2026-11-09).
+export function EmptyState({ icon = 'leaf-outline', title, description, action, onAction, actionVariant = 'secondary', koda }) {
   const theme = useTheme()
   const { colors } = theme
   const { T, fw } = look(theme)
   return (
     <View style={styles.empty}>
-      <IconCircle name={icon} size={64} />
+      {koda ? <KodaFace mood={koda} size={84} float /> : <IconCircle name={icon} size={64} />}
       <Text style={[T.subheading, { color: colors.text, marginTop: SPACING.lg, textAlign: 'center' }]}>{title}</Text>
       {description ? (
         <Text style={[T.body, { color: colors.muted, marginTop: 6, textAlign: 'center', maxWidth: 280 }]}>{description}</Text>

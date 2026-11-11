@@ -108,7 +108,7 @@ const CARD = {
 
 // ---------- the content (docs/onboarding-algorithme.md) ----------
 const STEPS = [
-  { z: 'skin', t: 'Skin', s: 'Type, tone & goals', i: 'sun', d: 'Let\'s start with the basics. We\'ll look at your skin type, tone and goals.' },
+  { z: 'skin', t: 'Skin', s: 'Type, tone & goals', i: 'sunny-outline', d: 'Let\'s start with the basics. We\'ll look at your skin type, tone and goals.' },
   { z: 'face', t: 'Face', s: 'Zones & concerns', i: 'face' },
   { z: 'eyes', t: 'Eyes', s: 'Dark circles, puffiness, fine lines', i: 'eye' },
   { z: 'lips', t: 'Lips', s: 'Condition & texture', i: 'lips' },
@@ -225,12 +225,14 @@ const NECK = [
   { id: 'neck-dry', t: 'Dry skin', img: 'card-neck-dry' },
   { id: 'neck-dark', t: 'Darker patches', img: 'card-neck-dark' },
 ]
+// One key per pick in an area: dark circles come in three kinds.
+const zoneKey = o => (o.d ? `${o.id}-${o.d}` : o.id)
 const SKIN_STATEMENTS = ['Does your skin turn red or sting with a new product?', 'In the sun, do you burn before you tan?', 'Does your skin feel tight after a shower?']
 const SKIN_SAYS = [['We\'ll go gently.', 'A resilient skin, great.'], ['Sunscreen will be your best friend.', 'Sunscreen still matters, promise.'], ['We\'ll hydrate it well.', 'Perfect.']]
 const LIFE_CARDS = [
   { t: 'Stress', s: 'Lately', ic: 'pulse-outline', say: 'Stress shows on the skin, we\'ll follow it.' },
   { t: 'Makeup', s: 'Most days', ic: 'color-palette-outline', say: 'We\'ll think about makeup removal.' },
-  { t: 'Outdoors', s: 'A lot of time', ic: 'sun', say: 'We\'ll boost your sun protection.' },
+  { t: 'Outdoors', s: 'A lot of time', ic: 'sunny-outline', say: 'We\'ll boost your sun protection.' },
   { t: 'Sweat', s: 'Sport or heat', ic: 'droplet', say: 'We\'ll pick light textures.' },
   { t: 'None', s: 'None of these', ic: 'leaf', none: true },
 ]
@@ -271,6 +273,7 @@ export const fromAnswers = (a = {}, row = {}) => {
     lips: LIPS.filter(o => ids.includes(o.id)),
     neck: NECK.filter(o => ids.includes(o.id)),
     priority: a.priority || null, secondary: a.secondary || null,
+    zonePri: { eyes: a.zonePriorities?.eyes || [], lips: a.zonePriorities?.lips || [], neck: a.zonePriorities?.neck || [] },
     sleep: a.sleepHours ?? ({ short: 5, ok: 7, long: 9 }[a.sleep]),
     lifeYes: a.stress || a.makeup || a.sunTime ? [a.stress === 'high', a.makeup === 'daily', a.sunTime === 'high', !!a.sweat] : undefined,
     preg: ['pregnant', 'breastfeeding'].includes(a.pregnancy) ? [a.pregnancy] : [],
@@ -287,9 +290,9 @@ const ISSUE_KEYS = ['issues', 'eyeDetails', 'priority', 'secondary']
 const CHAPTER_KEYS = {
   skin: ['goals', 'sex', 'ageRange', 'menopause', 'feel', 'shine', 'pores', 'reactivity', 'sun', 'tightAfterShower', 'tone'],
   face: ['faceZones', 'acneWhere', ...ISSUE_KEYS], eyes: ISSUE_KEYS, lips: ISSUE_KEYS, neck: ISSUE_KEYS,
-  life: ['sleepHours', 'sleep', 'stress', 'makeup', 'sunTime', 'sweat', 'priority', 'secondary'],
+  life: ['sleepHours', 'sleep', 'stress', 'makeup', 'sunTime', 'sweat', 'priority', 'secondary', 'zonePriorities'],
   safety: ['pregnancy', 'avoid', 'conditions', 'meds', 'prefs', 'rxPlan', 'medsOther', 'retinolOk'],
-  priority: ['priority', 'secondary'],
+  priority: ['priority', 'secondary', 'zonePriorities'],
 }
 
 // ---------- small pieces ----------
@@ -406,8 +409,8 @@ const CHAPTER_SCREENS = {
   face: ['face', 'families', 'faceZones'],
   eyes: ['eyes', 'eyeTypes'],
   lips: ['lips', 'lipTypes'],
-  neck: ['neck', 'neckTypes'],
-  life: ['spotted', 'sleep', 'life'],
+  neck: ['neck', 'neckTypes', 'spotted'],
+  life: ['sleep', 'life'],
   safety: ['safety', 'last'],
 }
 const Bar = ({ z, noBack, skip, onPhoto }) => {
@@ -450,16 +453,29 @@ const Head = ({ z, q, h, step = true }) => {
     </>
   )
 }
+// The page's last buttons (Btn / Ghost at the end) stay pinned at the bottom of the
+// screen while the rest scrolls above them: never cut on a small iPhone (Lita, 2026-11-09).
 const Page = ({ children, scroll = true }) => {
   const { insets } = useOb()
-  const inner = { flexGrow: 1, paddingHorizontal: 22, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }
+  const items = React.Children.toArray(children)
+  let cut = items.length
+  while (cut > 0 && (items[cut - 1].type === Btn || items[cut - 1].type === Ghost)) cut -= 1
+  const body = items.slice(0, cut)
+  const foot = items.slice(cut)
+  const inner = { flexGrow: 1, paddingHorizontal: 22, paddingTop: insets.top + 8, paddingBottom: foot.length ? 12 : insets.bottom + 16 }
+  const footer = foot.length ? <View style={{ paddingHorizontal: 22, paddingBottom: insets.bottom + 16 }}>{foot}</View> : null
   return scroll
-    ? <ScrollView contentContainerStyle={inner} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">{children}</ScrollView>
-    : <View style={[inner, { flex: 1 }]}>{children}</View>
+    ? (
+      <View style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={inner} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">{body}</ScrollView>
+        {footer}
+      </View>
+    )
+    : <View style={{ flex: 1 }}><View style={[inner, { flex: 1 }]}>{body}</View>{footer}</View>
 }
-// Its minimum height keeps room for Koda's little word above the button, so the
-// bubble never covers the last answers of a long screen (audit 2026-11-09).
-const Spacer = () => <View style={{ flex: 1, minHeight: 88 }} />
+// Kept small so the button of a long screen stays on the phone's screen (Lita,
+// 2026-11-09): a bigger room for Koda's word pushed it out of view.
+const Spacer = () => <View style={{ flex: 1, minHeight: 24 }} />
 const Tick = ({ on }) => (
   <View style={[styles.tick, on && { backgroundColor: C.mauve2, borderColor: '#fff' }]}>
     {on ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
@@ -501,7 +517,8 @@ const PhotoPick = ({ z, q, h, opts, onDone, max = 0, one = false, initial = [] }
               <Pressable onPress={() => tap(o)} style={({ pressed }) => [styles.pc, { width: cardW }, on && styles.pcOn, pressed && { transform: [{ scale: 0.97 }] }]}>
                 {o.img ? (
                   <>
-                    <View style={{ width: '100%', height: cardW / 1.1 }}>
+                    {/* Six cards or more: slightly shorter photos so the button stays on screen (Lita, 2026-11-09). */}
+                    <View style={{ width: '100%', height: cardW / (opts.length >= 6 ? 1.3 : 1.1) }}>
                       <Image source={CARD[o.img]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                       <Image source={IMG.cardFade} style={{ position: 'absolute', left: 0, right: 0, bottom: -3, height: '62%', width: '100%' }} resizeMode="stretch" />
                     </View>
@@ -750,7 +767,8 @@ const Journey = () => {
   const t = useType()
   // Like the mockup: big pearl bubbles zigzagging down a glowing ribbon, Koda halfway.
   const w = W - 44
-  const gap = Math.max(58, Math.min(84, (H - insets.top - insets.bottom - 250) / 8))
+  // Fits the screen with the button visible, also on smaller iPhones (Lita, 2026-11-09).
+  const gap = Math.max(50, Math.min(84, (H - insets.top - insets.bottom - 280) / 8))
   const b = Math.min(66, gap * 0.86)
   const X = [0, 1, 0, 1, 0, 1, 0, 1].map(r => (r ? 0.4 : 0.17) * w + b / 2 - 0.08 * w)
   const Y = X.map((_, i) => b / 2 + 4 + i * gap)
@@ -785,7 +803,8 @@ const Journey = () => {
           <Image source={KODA.happy} style={{ width: 64, height: 64 }} resizeMode="contain" />
         </Float>
       </View>
-      <Spacer />
+      {/* No Koda word on this screen: no room kept for it above the button. */}
+      <View style={{ flex: 1, minHeight: 12 }} />
       <Btn title="Let's begin" onPress={() => go('intro')} />
     </Page>
   )
@@ -971,55 +990,86 @@ const LifeCards = () => {
 
 // The concerns behind her picks, each with the photo she tapped first.
 const CONCERN_LABEL = { ...Object.fromEntries(QUESTIONS.find(q => q.id === 'priority').options.map(o => [o.value, o.label])), Acne: 'Breakouts' }
+// Anything picked under Breakouts counts as Breakouts here, also the kinds the
+// skin engine files apart (fungal bumps, scars): she chose Breakouts (Lita, 2026-11-09).
 const concernsOf = picks => {
   const out = []
   for (const o of picks) {
-    const c = getIssue(o.id)?.concern
+    const c = getIssue(o.id)?.concern || (DETAILS.acne[1].includes(o) ? 'Acne' : null)
     if (c && !out.some(x => x.c === c)) out.push({ c, t: CONCERN_LABEL[c] || c, img: o.img })
   }
   return out
 }
 
-// What we spotted, and what matters most (Lita, 2026-10-27): she ranks her
-// main concern (and a second one when she has 3 or more). They lead the
-// product verdicts, Rekod, the next buy and the week review.
+// What matters most, area by area (Lita, 2026-11-09): up to 2 picks for the face,
+// the eyes, the lips and the neck, in each area where she picked 2 things or more
+// (one pick is its area's priority by itself). Everything else she picked still
+// counts: verdicts, safety alerts, Koda. The face's picks lead the verdicts,
+// Rekod, the next buy and the week review; the other areas choose their own steps.
+const ZONE_TITLES = { face: 'Face', eyes: 'Eyes', lips: 'Lips', neck: 'Neck' }
+const spottedZones = P => {
+  const face = concernsOf(P.face).map(x => ({ key: x.c, t: x.t, img: x.img }))
+  const area = list => list.map(o => ({ key: zoneKey(o), t: o.t, img: o.img }))
+  return [['face', face], ['eyes', area(P.eyes)], ['lips', area(P.lips)], ['neck', area(P.neck)]].filter(([, list]) => list.length >= 2)
+}
 const Spotted = () => {
-  const { F, W, P, set, go } = useOb()
-  const concerns = concernsOf([...P.face, ...P.eyes, ...P.lips, ...P.neck])
-  const needs = concerns.length >= 3 ? 2 : 1
-  const [rank, setRank] = useState([P.priority, P.secondary].filter(c => concerns.some(x => x.c === c)))
+  const { F, W, P, set, go, mode } = useOb()
+  const zones = spottedZones(P)
+  const [rank, setRank] = useState(() => ({
+    face: [P.priority, P.secondary].filter(c => c && concernsOf(P.face).some(x => x.c === c)),
+    eyes: (P.zonePri?.eyes || []).filter(k => P.eyes.some(o => zoneKey(o) === k)),
+    lips: (P.zonePri?.lips || []).filter(k => P.lips.some(o => zoneKey(o) === k)),
+    neck: (P.zonePri?.neck || []).filter(k => P.neck.some(o => zoneKey(o) === k)),
+  }))
   const cw = (W - 44 - 12) / 2
-  const tap = c => {
+  const tap = (z, key) => {
     Haptics.selectionAsync().catch(() => {})
-    if (rank.includes(c)) return setRank(rank.filter(x => x !== c))
-    if (rank.length < needs) setRank([...rank, c])
-    else setRank([...rank.slice(0, needs - 1), c])
+    const now = rank[z]
+    if (now.includes(key)) return setRank({ ...rank, [z]: now.filter(x => x !== key) })
+    setRank({ ...rank, [z]: now.length < 2 ? [...now, key] : [now[0], key] })
   }
-  const q = rank.length === 0 || needs === 1 ? 'What matters most to you right now?' : 'And second?'
+  const ready = zones.every(([z]) => rank[z].length >= 1)
+  const save = () => {
+    // Areas with one pick only: that pick is the priority.
+    const single = z => (P[z].length === 1 ? [zoneKey(P[z][0])] : [])
+    const face = zones.some(([z]) => z === 'face') ? rank.face : concernsOf(P.face).map(x => x.c).slice(0, 1)
+    set({
+      priority: face[0] || null,
+      secondary: face[1] || null,
+      zonePri: Object.fromEntries(['eyes', 'lips', 'neck'].map(z => [z, rank[z].length ? rank[z] : single(z)])),
+    })
+    // At sign-up it closes the skin part, right after the neck; in My Skyn Profile it still leads to the end.
+    go(mode ? 'sleep' : 'neckDone')
+  }
   return (
     <Page>
-      <Head z="life" q={q} h={`We spotted ${concerns.length} things to track. Your choice leads every recommendation, and you can change it anytime.`} />
-      <View style={styles.grid}>
-        {concerns.map((x, i) => {
-          const n = rank.indexOf(x.c)
-          return (
-            <Rise key={x.c} i={i + 1}>
-              <Pressable onPress={() => tap(x.c)} style={({ pressed }) => [styles.pc, { width: cw }, n >= 0 && styles.pcOn, pressed && { transform: [{ scale: 0.97 }] }]}>
-                <View style={{ width: '100%', height: cw / 1.3 }}>
-                  <Image source={CARD[x.img]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  <Image source={IMG.cardFade} style={{ position: 'absolute', left: 0, right: 0, bottom: -3, height: '62%', width: '100%' }} resizeMode="stretch" />
-                </View>
-                <View style={{ padding: 10, paddingTop: 0, marginTop: -26 }}>
-                  <Text style={[F.s, styles.pcT]}>{x.t}</Text>
-                </View>
-                {n >= 0 ? <View style={styles.rankBadge}><Text style={[F.b, { color: '#fff', fontSize: 13 }]}>{n + 1}</Text></View> : <Tick on={false} />}
-              </Pressable>
-            </Rise>
-          )
-        })}
-      </View>
+      <Head z="neck" q="What matters most to you right now?" h="Up to 2 in each area. We take care of everything you picked: these lead your routine." />
+      {zones.map(([z, list]) => (
+        <View key={z}>
+          <Text style={[F.s, styles.zoneTitle]}>{ZONE_TITLES[z].toUpperCase()}</Text>
+          <View style={[styles.grid, { marginTop: 8 }]}>
+            {list.map((x, i) => {
+              const n = rank[z].indexOf(x.key)
+              return (
+                <Rise key={x.key} i={i + 1}>
+                  <Pressable onPress={() => tap(z, x.key)} style={({ pressed }) => [styles.pc, { width: cw }, n >= 0 && styles.pcOn, pressed && { transform: [{ scale: 0.97 }] }]}>
+                    <View style={{ width: '100%', height: cw / 1.6 }}>
+                      <Image source={CARD[x.img]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      <Image source={IMG.cardFade} style={{ position: 'absolute', left: 0, right: 0, bottom: -3, height: '62%', width: '100%' }} resizeMode="stretch" />
+                    </View>
+                    <View style={{ padding: 10, paddingTop: 0, marginTop: -22 }}>
+                      <Text style={[F.s, styles.pcT]}>{x.t}</Text>
+                    </View>
+                    {n >= 0 ? <View style={styles.rankBadge}><Text style={[F.b, { color: '#fff', fontSize: 13 }]}>{n + 1}</Text></View> : <Tick on={false} />}
+                  </Pressable>
+                </Rise>
+              )
+            })}
+          </View>
+        </View>
+      ))}
       <Spacer />
-      <Btn disabled={rank.length < needs} onPress={() => { set({ priority: rank[0], secondary: rank[1] || null }); go('sleep') }} />
+      <Btn disabled={!ready} onPress={save} />
     </Page>
   )
 }
@@ -1272,6 +1322,7 @@ const Account = () => {
   const [error, setError] = useState(pending ? CONFIRM_MSG : null)
   const [busy, setBusy] = useState(false)
   const [resent, setResent] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   // Google / Apple in one tap, once switched on in Supabase (Lita, 2026-11-09).
   const [social, setSocial] = useState({ google: false, apple: false })
   useEffect(() => { socialProviders().then(setSocial) }, [])
@@ -1329,34 +1380,57 @@ const Account = () => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Page>
         <Bar noBack />
-        <Rise style={{ alignItems: 'center', marginTop: 8 }}>
-          <Image source={IMG.cards} style={{ width: 170, height: 150 }} resizeMode="contain" />
+        {/* The last step, in the glossy universe (Lita's choice, 2026-11-09): the welcome
+            orb, glass fields with icons, the button right under them, then Apple / Google. */}
+        <Rise style={{ alignItems: 'center' }}>
+          <View style={styles.lastStep}><Text style={[F.s, styles.lastStepText]}>{mine ? 'WELCOME BACK' : 'LAST STEP'}</Text></View>
+          <Image source={IMG.orb} style={{ width: 150, height: 150, marginTop: 2 }} resizeMode="contain" />
         </Rise>
         <Rise i={1}>
-          <Text style={[t.h1, { textAlign: 'center' }]}>{mine ? 'Welcome back' : `Save your Skyn Profile${nm}`}</Text>
-          <Text style={[t.p, { textAlign: 'center' }]}>{mine ? 'Sign in: your new answers go to your account.' : 'Your results are ready. Create your account to see them and keep your routine.'}</Text>
+          <Text style={[t.h1, { textAlign: 'center' }]}>{mine ? 'Welcome back' : P.name ? `${P.name}, your routine is ready` : 'Your routine is ready'}</Text>
+          <Text style={[t.p, { textAlign: 'center' }]}>{mine ? 'Sign in: your new answers go to your account.' : 'Save your Skyn Profile to see it and keep it on any phone.'}</Text>
         </Rise>
-        <Rise i={2} style={[styles.tg, { marginTop: 18, gap: 4 }]}>
-          <TextInput value={email} onChangeText={v => { setEmail(v); setError(null) }} placeholder="Email" placeholderTextColor={C.mute}
-            keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={[F.r, styles.other]} />
-          <TextInput value={password} onChangeText={v => { setPassword(v); setError(null) }} placeholder={mine ? 'Your password' : 'Password (at least 8 characters)'} placeholderTextColor={C.mute}
-            secureTextEntry autoComplete={mine ? 'current-password' : 'new-password'} textContentType={mine ? 'password' : 'newPassword'} onSubmitEditing={submit} returnKeyType="go" style={[F.r, styles.other]} />
-          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: unconfirmed ? C.ink : K.danger, marginTop: 6 }]}>{error}</Text> : null}
+        <Rise i={2} style={{ marginTop: 14 }}>
+          <View style={styles.field}>
+            <Ionicons name="mail-outline" size={18} color={C.mauve} />
+            <TextInput value={email} onChangeText={v => { setEmail(v); setError(null) }} placeholder="Email" placeholderTextColor={C.mute}
+              keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={[F.r, styles.fieldInput]} />
+          </View>
+          <View style={styles.field}>
+            <Ionicons name="lock-closed-outline" size={18} color={C.mauve} />
+            <TextInput value={password} onChangeText={v => { setPassword(v); setError(null) }} placeholder={mine ? 'Your password' : 'Password (8+ characters)'} placeholderTextColor={C.mute}
+              secureTextEntry={!showPassword} autoComplete={mine ? 'current-password' : 'new-password'} textContentType={mine ? 'password' : 'newPassword'} onSubmitEditing={submit} returnKeyType="go" style={[F.r, styles.fieldInput]} />
+            <Pressable onPress={() => setShowPassword(v => !v)} hitSlop={10} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={C.mute} />
+            </Pressable>
+          </View>
+          {error ? <Text style={[F.m, { fontSize: 12.5, lineHeight: 17, color: unconfirmed ? C.ink : K.danger, marginTop: 8 }]}>{error}</Text> : null}
           {unconfirmed ? (
             <Text onPress={resent ? undefined : resend} style={[F.m, { fontSize: 13, color: resent ? C.mute : C.mauve2, marginTop: 8, textDecorationLine: resent ? 'none' : 'underline' }]}>
               {resent ? 'Email sent again.' : 'Send the email again'}
             </Text>
           ) : null}
         </Rise>
-        <Spacer />
-        <Btn title={busy ? '…' : mine ? 'Sign in and see my results' : 'Create my account'} onPress={submit} disabled={busy} />
+        <Btn title={busy ? '…' : mine ? 'Sign in and see my results' : 'Save my profile'} onPress={submit} disabled={busy} style={{ marginTop: 14 }} />
+        {social.apple || social.google ? (
+          <View style={styles.or}><View style={styles.orLine} /><Text style={[F.r, { fontSize: 12, color: C.mute }]}>or</Text><View style={styles.orLine} /></View>
+        ) : null}
         {social.apple ? (
           <AppleAuthentication.AppleAuthenticationButton
             buttonType={mine ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
             buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-            cornerRadius={26} style={{ height: 50, width: '100%', marginTop: 10 }} onPress={viaSocial('apple')} />
+            cornerRadius={26} style={{ height: 48, width: '100%' }} onPress={viaSocial('apple')} />
         ) : null}
-        {social.google ? <Ghost title="Continue with Google" icon="logo-google" onPress={viaSocial('google')} /> : null}
+        {social.google ? (
+          <Pressable onPress={viaSocial('google')} disabled={busy} accessibilityRole="button" style={[styles.googleBtn, social.apple && { marginTop: 10 }]}>
+            <Ionicons name="logo-google" size={17} color={C.ink} />
+            <Text style={[F.s, { fontSize: 14.5, color: C.ink }]}>Continue with Google</Text>
+          </Pressable>
+        ) : null}
+        <Spacer />
+        <Text style={[F.r, styles.trust]}>
+          <Ionicons name="shield-checkmark-outline" size={12} color={C.soft} /> We never sell your data · <Text style={{ textDecorationLine: 'underline' }} onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)}>Privacy</Text>
+        </Text>
         <Ghost title={mine ? 'New here? Create an account' : 'I already have an account'} onPress={() => { setMine(!mine); setError(null); setPassword('') }} />
       </Page>
     </KeyboardAvoidingView>
@@ -1417,7 +1491,7 @@ const Final = () => {
   ]
   const sec = [
     ['heart', 'Your goals', P.goals.map(g => g.t)],
-    ['sun', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
+    ['sunny-outline', 'Your skin', type ? [`${type} skin${a.reactivity === 'often' ? ', sensitive' : ''}`] : []],
     ['shield-check', 'Your priority', [P.priority, P.secondary].filter(Boolean).map((c, n) => `${n + 1}. ${CONCERN_LABEL[c] || c}`)],
     ['eye', 'What we\'ll track', issues.length > 3 ? [...issues.slice(0, 3), `+ ${issues.length - 3} more`] : issues],
     ['ban-outline', 'What we avoid for you', [...a.avoid.map(x => `No ${low(x)}`), ...a.prefs.map(x => ({ fragrance_free: 'Fragrance-free', vegan: 'Vegan only' })[x])]],
@@ -1459,7 +1533,7 @@ const Final = () => {
 // Reminders, right after her profile (Lita, 2026-10-27): Koda, what a reminder
 // looks like, her two times (same steps and ranges as Settings), then iOS asks.
 const TIME_ROWS = [
-  { key: 'morningTime', title: 'Morning check-in', s: 'How is your skin today? Then your routine.', icon: 'sun', range: [5 * 60, 11 * 60] },
+  { key: 'morningTime', title: 'Morning check-in', s: 'How is your skin today? Then your routine.', icon: 'sunny-outline', range: [5 * 60, 11 * 60] },
   { key: 'eveningTime', title: 'Evening routine', s: 'Cleanse, then your evening routine.', icon: 'moon-outline', range: [18 * 60, 23 * 60 + 30] },
 ]
 const toMin = text => { const [h, m] = String(text).split(':').map(Number); return h * 60 + m }
@@ -1673,6 +1747,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
       issues,
       priority: P.priority || null,
       secondary: P.secondary || null,
+      // Up to 2 per area; one pick in an area is its priority by itself (Lita, 2026-11-09).
+      zonePriorities: { face: [P.priority, P.secondary].filter(Boolean), ...Object.fromEntries(['eyes', 'lips', 'neck'].map(z => [z, P.zonePri?.[z]?.length ? P.zonePri[z] : P[z].length === 1 ? [zoneKey(P[z][0])] : []])) },
       eyeDetails: P.eyes.filter(o => o.d).map(o => o.d),
       sleepHours: P.sleep ?? null,
       sleep: P.sleep == null ? null : P.sleep < 6 ? 'short' : P.sleep <= 8 ? 'ok' : 'long',
@@ -1694,7 +1770,8 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
   useEffect(() => {
     if (!done || !mode) return
     setDone(false)
-    const concerns = concernsOf([...P.face, ...P.eyes, ...P.lips, ...P.neck])
+    // The face's priority is among the face's concerns (areas, Lita 2026-11-09).
+    const concerns = concernsOf(P.face)
     if (!endOnSleep.current && concerns.length >= 2 && !concerns.some(x => x.c === P.priority)) {
       endOnSleep.current = true
       return step('spotted')
@@ -1740,6 +1817,9 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
   }
 
   const ctx = { F, W, H, insets, P, set, go, back, say, nm, terms, setTerms, health, setHealth, answersOf, finish, saving, userId, mode, onSignedIn, onHaveAccount, pending, cur }
+
+  // After the neck: "What matters most" when she has two concerns or more (sign-up only).
+  const afterNeck = neck => (!mode && spottedZones({ ...P, neck }).length ? 'spotted' : 'neckDone')
 
   let content
   switch (cur.id) {
@@ -1804,15 +1884,16 @@ export default function OnboardingScreen({ userId, onComplete, onLeave, mode, on
     case 'lips': content = <YesNo z="lips" q="Any concern with your lips?" h="Dry, cracked, darker…" onDone={y => { if (y) return go('lipTypes'); set({ lips: [] }); go('lipsDone') }} />; break
     case 'lipTypes': content = <PhotoPick z="lips" q="Which ones?" h="Select all that apply." opts={LIPS} initial={P.lips} onDone={sel => { set({ lips: sel }); go('lipsDone') }} />; break
     case 'lipsDone': content = <Between from="lips" next="neck" onGo={() => go('neck')} summary={<Summary label="You identified" items={P.lips.map(o => o.t)} />} />; break
-    case 'neck': content = <YesNo z="neck" q="Do you notice anything on your neck?" h="Lines, sagging, dryness, dark patches…" onDone={y => { if (y) return go('neckTypes'); set({ neck: [] }); go('neckDone') }} />; break
-    case 'neckTypes': content = <PhotoPick z="neck" q="What do you notice?" h="Select all that apply." opts={NECK} initial={P.neck} onDone={sel => { set({ neck: sel }); go('neckDone') }} />; break
+    case 'neck': content = <YesNo z="neck" q="Do you notice anything on your neck?" h="Lines, sagging, dryness, dark patches…" onDone={y => { if (y) return go('neckTypes'); set({ neck: [] }); go(afterNeck([])) }} />; break
+    case 'neckTypes': content = <PhotoPick z="neck" q="What do you notice?" h="Select all that apply." opts={NECK} initial={P.neck} onDone={sel => { set({ neck: sel }); go(afterNeck(sel)) }} />; break
     case 'neckDone': content = (
       <Between from="neck" next="life" summary={<Summary label="You identified" items={P.neck.map(o => o.t)} />}
         onGo={() => {
-          const concerns = concernsOf([...P.face, ...P.eyes, ...P.lips, ...P.neck])
-          if (concerns.length >= 2) return go('spotted')
-          set({ priority: concerns[0]?.c || null, secondary: null })
-          if (!concerns.length) say('Nothing to report: your skin is doing well!')
+          // An area with 2 picks or more was ranked on "What matters most"; otherwise its
+          // only pick is its priority (answersOf does the same for the eyes, lips, neck).
+          const face = concernsOf(P.face)
+          if (face.length < 2) set({ priority: face[0]?.c || null, secondary: null })
+          if (![...P.face, ...P.eyes, ...P.lips, ...P.neck].length) say('Nothing to report: your skin is doing well!')
           go('sleep')
         }} />
     ); break
@@ -1862,6 +1943,7 @@ const styles = StyleSheet.create({
   gc: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: K.primarySoft, borderWidth: 1, borderColor: C.glassLine, ...shadow },
   feats: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 18, marginBottom: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 18 },
+  zoneTitle: { fontSize: 11, letterSpacing: 1, color: C.soft, marginTop: 18 },
   pc: { backgroundColor: K.card, borderRadius: 16, borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden', ...shadow },
   pcOn: { borderColor: C.mauve2, shadowOpacity: 0.25 },
   pcT: { fontSize: 13, lineHeight: 16, color: C.ink },
@@ -1907,6 +1989,14 @@ const styles = StyleSheet.create({
   rxChip: { paddingVertical: 6, paddingHorizontal: 11 },
   rxOk: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   rxBox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  lastStep: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: C.glass, borderWidth: 1, borderColor: C.glassLine },
+  lastStepText: { fontSize: 10, letterSpacing: 1.2, color: C.mauve },
+  field: { ...glass, flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, paddingHorizontal: 14, marginTop: 8 },
+  fieldInput: { flex: 1, fontSize: 14, color: C.ink, height: '100%' },
+  or: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 8 },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.mute, opacity: 0.4 },
+  googleBtn: { ...glass, height: 48, borderRadius: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  trust: { fontSize: 11.5, color: C.soft, textAlign: 'center', marginTop: 8 },
   other: { marginTop: 8, height: 42, borderRadius: 12, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', paddingHorizontal: 12, fontSize: 13.5, color: C.ink },
   cl: { ...glass, borderRadius: 18, paddingVertical: 6, paddingHorizontal: 14, marginTop: 16, marginBottom: 14 },
   it: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: K.border },

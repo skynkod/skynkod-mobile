@@ -72,6 +72,7 @@ const PLAN_PROMPTS = {
 import { Screen, useColors } from '../components/ui';
 import { SPACING, RADIUS } from '../utils/theme';
 import { GTYPE, GFW, glassCard, glassBubble } from '../components/glossy';
+import { useKodaSay } from '../components/Koda';
 import FeatureIcon from '../components/FeatureIcon';
 
 const startOfWeek = (date) => {
@@ -88,6 +89,7 @@ export default function JournalScreen({ route, navigation }) {
   const colors = useColors();
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const kodaSay = useKodaSay();
   // Her treatments are steps of her routine on Home: the count includes them too.
   const profile = useSkinProfile(user?.id);
   // Today is the skin day (sunrise to sunrise), like on Home: at 1 am it is still yesterday.
@@ -260,7 +262,13 @@ export default function JournalScreen({ route, navigation }) {
     if (!dirty.current || !user?.id) return;
     setStatus('saving');
     try {
+      const isNew = !entryRef.current;
       const id = await saveDay(user.id, selected, { ...latest.current, notes: latest.current.note }, entryRef.current);
+      // Koda's word the first time the day is written down (Lita, 2026-11-09).
+      if (isNew) {
+        const reacting = (latest.current.tags || []).some(tag => ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking'].includes(tag));
+        kodaSay(reacting ? t('Noted. Let’s be gentle with your skin today.') : t('Noted. I’ll watch how it goes.'), reacting ? 'calm' : 'wink');
+      }
       // Gradual return after a 7-day plan: a reaction puts the last product back on pause.
       if ((latest.current.tags || []).some(tag => ['New pimple', 'Redness', 'Itchiness / Sensitivity', 'Peeling / Flaking'].includes(tag))) {
         repauseAfterReaction(user.id).then(id2 => { if (id2) Alert.alert(t('Back on pause'), t('Your skin reacted: the last product that came back is paused again for now.')) });

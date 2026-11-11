@@ -6,6 +6,7 @@ import { onJourneyNews } from '../utils/journey'
 import { useLanguage } from '../utils/LanguageContext'
 import { BadgeImage, LevelEmblem, TierPill } from './Badge'
 import { GFW } from './glossy'
+import { KodaFace } from './Koda'
 
 // "New badge!": a dark, glowing screen the moment a badge is earned (one
 // after another if several), and a short note when a level is reached.
@@ -80,7 +81,11 @@ export default function JourneyToast({ onOpen }) {
           <TierPill tier={current.tier} style={{ marginTop: 10 }} />
           <Text style={styles.name}>{t(current.name)}</Text>
           <Text style={styles.text}>{t(current.description)}</Text>
-          <Text style={styles.koda}>“{t(current.koda)}” · Koda</Text>
+          {/* Koda celebrates with her, his face beside his word (Lita, 2026-11-09). */}
+          <View style={styles.kodaRow}>
+            <KodaFace mood="joy" size={40} float />
+            <Text style={[styles.koda, { flexShrink: 1, marginTop: 0 }]}>“{t(current.koda)}” · Koda</Text>
+          </View>
           <Pressable onPress={next} style={styles.button} accessibilityRole="button">
             <Text style={styles.buttonText}>{t('Continue')}</Text>
           </Pressable>
@@ -116,6 +121,7 @@ export default function JourneyToast({ onOpen }) {
 }
 
 const styles = StyleSheet.create({
+  kodaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, maxWidth: 320 },
   back: { flex: 1, backgroundColor: '#1E141D', alignItems: 'center', justifyContent: 'center', padding: 28 },
   glow: { position: 'absolute', left: -80, top: -80 },
   title: { color: '#FFFFFF', fontSize: 26, ...GFW('600'), marginTop: 18, textAlign: 'center' },

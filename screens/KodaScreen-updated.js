@@ -3,6 +3,7 @@ import { syncSoon } from '../utils/journey';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, FlatList, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { KodaFace } from '../components/Koda';
 import { askKoda, generateKodaIntroduction, getKodaQuota } from '../utils/koda-ai';
 import { getSituation } from '../utils/emergency-plans';
 import { useLanguage } from '../utils/LanguageContext';
@@ -10,7 +11,7 @@ import { useSkinProfile } from '../utils/useSkinProfile';
 import { saveChatMessage, getChatHistory } from '../utils/chat-service';
 import { isDiscreet } from '../utils/privacy';
 import { useAuth } from '../utils/AuthContext';
-import { Screen, Chip, IconCircle, LoadingView, useColors } from '../components/ui';
+import { Screen, Chip, LoadingView, useColors } from '../components/ui';
 import { SPACING, RADIUS, TYPE, LIGHT_COLORS } from '../utils/theme';
 import { track } from '../utils/analytics';
 import { GlossyScope, GTYPE, GFW, glassCard, GlossyFill } from '../components/glossy'
@@ -127,7 +128,8 @@ function KodaScreenInner({ route, navigation }) {
     const isUser = item.role === 'user';
     return (
       <View style={[styles.row, isUser ? styles.rowUser : styles.rowKoda]}>
-        {!isUser ? <IconCircle name="koda" size={30} /> : null}
+        {/* Koda's own face (Lita, 2026-11-09): calm when something went wrong or her skin needs a plan, happy otherwise. */}
+        {!isUser ? <KodaFace mood={item.error || item.plan ? 'calm' : 'happy'} size={34} /> : null}
         <View
           style={[
             styles.bubble,
@@ -174,9 +176,11 @@ function KodaScreenInner({ route, navigation }) {
           <>
             {loading ? (
               <View style={[styles.row, styles.rowKoda]}>
-                <IconCircle name="koda" size={30} />
-                <View style={[styles.bubble, { ...glassCard(colors), borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}>
+                {/* Thinking: curious, bobbing gently, and saying so. */}
+                <KodaFace mood="curious" size={34} float />
+                <View style={[styles.bubble, { ...glassCard(colors), borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
                   <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[GTYPE.caption, { color: colors.textSecondary }]}>{t('Koda is thinking…')}</Text>
                 </View>
               </View>
             ) : null}

@@ -104,7 +104,7 @@ export default function LayeringScreen({ route }) {
       ) : null}
     </>
   ) : (
-    <EmptyState icon="layers-outline" title={t('No products in this routine yet')} description={t('Add your products to your routine and we’ll show you the right order.')} />
+    <EmptyState icon="layers-outline" koda="curious" title={t('No products in this routine yet')} description={t('Add your products to your routine and we’ll show you the right order.')} />
   )
 
   return (

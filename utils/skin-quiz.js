@@ -230,6 +230,9 @@ export const engineProfile = (row) => {
     cystic: (row?.acne_types || []).includes('Cystic') || (sp.issues || []).includes('cystic-acne'),
     // Red marks left by spots: tranexamic acid on repair nights (rulebook T6).
     redMarks: (sp.issues || []).includes('post-acne-redness'),
+    // What matters most in each area (Lita, 2026-11-09): up to 2 picks for the eyes,
+    // the lips and the neck; they choose those steps' products (rekod.js).
+    zonePriorities: sp.zonePriorities || {},
     // Her main and secondary concern (they lead the product verdicts and Rekod).
     ...(() => { const p = prioritiesOf({ concerns: sp.concerns || row?.skin_concerns || [], priority: sp.priority, secondary: sp.secondary }); return { priority: p.main, secondary: p.second } })(),
   }

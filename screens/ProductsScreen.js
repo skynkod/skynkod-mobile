@@ -21,6 +21,7 @@ import { logError } from '../utils/errorLogger'
 import { patchOfferFor, startPatchTest, declinePatchTest } from '../utils/patch-test'
 import { SPACING, RADIUS } from '../utils/theme'
 import { GTYPE, GFW, glassCard, GlossyFill } from '../components/glossy'
+import { KodaFace } from '../components/Koda'
 import FeatureIcon from '../components/FeatureIcon'
 
 // Filter chips, in routine order; only categories the user has are shown.
@@ -251,7 +252,8 @@ export default function ProductsScreen({ navigation }) {
 
       {!inTab.length ? (
         <View style={[styles.empty, { borderColor: colors.border }]}>
-          <FeatureIcon name={tab === 'owned' ? 'flask-outline' : 'bag-handle-outline'} size={34} color={colors.primary} />
+          {/* Koda guides the empty shelf (Lita, 2026-11-09). */}
+          <KodaFace mood="curious" size={72} float />
           <Text style={[GTYPE.bodyStrong, { color: colors.text, marginTop: SPACING.md, textAlign: 'center' }]}>
             {tab === 'owned' ? t('Add the products you use') : t('Your To buy list is empty')}
           </Text>

@@ -22,13 +22,14 @@ import {
   GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, goalsOf,
   planWeeks, calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo,
   rekodKey, START, isReactive, nightCounts, resting, weekPattern,
-  JS_DAY, tonightNight, weekOf, checkInDue, applyCheckIn, projectRekod, introWeeks,
+  JS_DAY, tonightNight, weekOf, checkInDue, applyCheckIn, projectRekod, introWeeks, retinoidRung,
 } from './rekod-schedule'
 export {
   GOALS, INCOMPATIBLE, conflictWith, goalOf, goalsTitle, planWeeks,
   calmPhase, planWhy, NIGHTS, treatmentOf, nightInfo, rekodKey,
   isReactive, nightCounts, resting, weekPattern, tonightNight, weekOf,
   checkInDue, applyCheckIn, projectRekod, shiftedTo, nightOnDate, treatmentOnDate, retinolChoice,
+  RETINOID_RUNGS, retinoidRung, stepUpReady, applyStepUp, stepUpLater,
 } from './rekod-schedule'
 
 // ---------- Choosing products ----------
@@ -186,6 +187,49 @@ const spfExtra = (profile) => {
 const ZONE_T_TIP = 'Combination skin: only on your T-zone and where you break out, not on dry cheeks.'
 // Milia: light eye care only (dermatologists' practice, rulebook Y5).
 const MILIA_TIP = 'With milia, a light eye cream only: no rich balm around the eyes.'
+
+// What matters most for her eyes, lips and neck (Lita, 2026-11-09): up to 2 picks per
+// area choose those steps. Rulebook Y6–Y14: to be checked by the dermatologist.
+const EYE_WANT = {
+  'puffy-eyes': ['caffeine'],
+  'dark-circles-blue': ['caffeine', 'peptides'],
+  'dark-circles-brown': ['vitaminc', 'niacinamide'],
+  'dark-circles-hollow': ['hyaluronic'],
+  'eye-lines': ['argireline', 'matrixyl', 'copperpeptides', 'peptides'],
+}
+const EYE_TIP = {
+  'puffy-eyes': 'Puffiness: apply it cool in the morning; caffeine helps for a few hours.',
+  'dark-circles-brown': 'Brown circles fade slowly: give it 8 to 12 weeks, with sunscreen around the eyes.',
+  'dark-circles-hollow': 'A cream can’t fill a hollow: it keeps the area smooth and hydrated. A doctor can tell you what helps.',
+}
+const LIP_WANT = {
+  'chapped-lips': ['petrolatum', 'shea', 'ceramides', 'lanolin', 'panthenol'],
+  'lips-peeling': ['petrolatum', 'shea', 'ceramides', 'lanolin', 'panthenol'],
+  'angular-cheilitis': ['petrolatum', 'lanolin', 'panthenol'],
+  'lips-lines': ['peptides', 'argireline', 'matrixyl'],
+}
+const LIP_TIP = {
+  'angular-cheilitis': 'Cracked corners that last more than 2 weeks: see a doctor, it can need a treatment.',
+  'chapped-lips': 'Dry lips: a thick layer at night, and don’t lick them.',
+}
+// Lita's big lip tip (2026-11-10): glycolic acid once a week to exfoliate, then a
+// panthenol ointment to repair. Never on fragile, reactive or cracked lips: those
+// get the repair part only.
+const LIP_GLYCOLIC_TIP = 'Big tip, once a week instead of a scrub: on a night without retinol, a glycolic acid toner on your lips for a few seconds, rinse, then a thick layer of a panthenol ointment, like Bepanthen. Never on cracked or sore lips.'
+const LIP_PANTHENOL_TIP = 'Big tip: to repair your lips, a thick layer of a panthenol ointment, like Bepanthen, at night.'
+const LIPS_DARK_WHY = 'Darker lips: the sun deepens them. An SPF balm every morning, reapplied in the sun.'
+// One retinol for all (Lita, 2026-11-10): always down to the neck; on the eye bone,
+// never the eyelids; onto her lips only when they are in good shape. One short
+// sentence (Lita, 2026-11-11), the details are in the How to start guide.
+const retinoidAreasTip = (eyes, lips) => {
+  const areas = ['your neck', eyes && 'a rice grain under each eye (never on the eyelids)', lips && "your lips if they aren't dry or cracked"].filter(Boolean)
+  return `Then the same drop on ${areas.length > 1 ? `${areas.slice(0, -1).join(', ')} and ${areas[areas.length - 1]}` : areas[0]}.`
+}
+const NECK_SPF_TIP = 'On your neck too, every morning.'
+const NECK_DARK_TIP = 'Darker, velvety patches on the neck can be linked to blood sugar: worth showing a doctor.'
+const NECK_DRY_TIP = 'Down to your neck too.'
+// Adds a tip to a step's extras without losing the one it has.
+const withTip = (extra, tip) => (tip ? { ...extra, tip: [extra.tip, tip].filter(Boolean).join(' ') } : extra)
 // The free basic routine (Lita, 2026-10-27): made for her at the end of sign-up,
 // no actives (those are Rekod). Morning: cleanser, cream, SPF. Evening:
 // makeup remover, cleanser, cream. Same safety rules as Rekod; her own products first.
@@ -358,12 +402,24 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const PEPTIDES = ['argireline', 'matrixyl', 'copperpeptides', 'peptides']
   const milia = (profile.skin_concerns || []).includes('Milia')
   const eyeReject = milia ? isRich : null
-  const eyePeptide = plan.perioral ? null : await pick(['eye care'], { ...gentle, want: PEPTIDES, wantRequired: true, unique: true, reject: eyeReject })
+  // Her eye priorities choose the eye care (peptides when she has none).
+  const zp = profile.zonePriorities || {}
+  const eyeWant = union((zp.eyes || []).map(k => EYE_WANT[k])).length ? union((zp.eyes || []).map(k => EYE_WANT[k])) : PEPTIDES
+  const eyePeptide = plan.perioral ? null : await pick(['eye care'], { ...gentle, want: eyeWant, wantRequired: true, unique: true, reject: eyeReject })
+    || (eyeWant !== PEPTIDES && await pick(['eye care'], { ...gentle, want: PEPTIDES, wantRequired: true, unique: true, reject: eyeReject }))
     || await pick(['eye care'], { ...gentle, unique: true, reject: eyeReject })
-  const eyeTip = milia ? { tip: MILIA_TIP } : {}
+  const eyeTip = withTip(milia ? { tip: MILIA_TIP } : {}, (zp.eyes || []).map(k => EYE_TIP[k]).find(Boolean))
   const lipSpf = plan.perioral ? null : await pick(['lip care'], { want: ['zincoxide', 'titanium', 'chemicalspf'], wantRequired: true, unique: true })
   // Isotretinoin: lips are never optional (rulebook X1).
-  const lipsStep = plan.isotretinoin ? { why: ISO_LIPS_WHY } : OPTIONAL_STEP
+  const lipsStep = plan.isotretinoin ? { why: ISO_LIPS_WHY } : (zp.lips || []).includes('lips-dark') ? { why: LIPS_DARK_WHY } : OPTIONAL_STEP
+  // Dry, peeling or cracked lips, or lines around them: the night balm is chosen for it and not optional.
+  const lipWant = union((zp.lips || []).map(k => LIP_WANT[k]))
+  const lipNight = plan.isotretinoin ? { why: ISO_LIPS_WHY } : lipWant.length ? withTip({}, (zp.lips || []).map(k => LIP_TIP[k]).find(Boolean)) : OPTIONAL_STEP
+  const lipGlycolicOk = !plan.isotretinoin && !plan.sensitive && !plan.perioral && !(zp.lips || []).includes('angular-cheilitis')
+  const lipBigTip = lipGlycolicOk ? LIP_GLYCOLIC_TIP : LIP_PANTHENOL_TIP
+  const lipsHealthy = !plan.isotretinoin && !plan.fragile && !plan.perioral && !(zp.lips || []).some(k => ['chapped-lips', 'lips-peeling', 'angular-cheilitis'].includes(k))
+  // The neck: her actives and her sunscreen go down to it (Lita, 2026-11-09).
+  const neck = zp.neck || []
 
   // A peel or a high-strength acid only for a skin used to actives (audit 2026-10-25:
   // a 30% AHA peel came up for a skin with "some" experience).
@@ -371,11 +427,14 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const exfoliant = await pick(['exfoliant', 'toner', 'serum'], { want: exWant, wantRequired: true, unique: true, prefer: p => p.category === 'exfoliant', reject: plan.experience === 'used' && !plan.sensitive && !plan.deep ? null : tooStrongAcid })
   // Reactive conditions start with azelaic acid; a retinoid only after 4 calm weeks.
   const retinoidWant = { azelaic: ['azelaic'], gentle: ['bakuchiol', 'peptides'], retinol: ['retinol'] }[treatmentOf(plan)]
-  // Start low: a gentle strength for beginners and reactive skin (rules, section 3).
+  // A low retinol: 0.1–0.2%, a starter or an emulsion (rules, section 3).
   const gentleStrength = p => /0[.,]0?[12]\s?%|0[.,]2|starter|0[.,]1|2\s?% emulsion|emulsion/i.test(p.name || '')
-  const midStrength = p => /0[.,][2-5]|emulsion|2\s?%/i.test(p.name || '')
-  const strength = plan.experience === 'used' && !plan.sensitive ? null : plan.experience === 'some' && !plan.sensitive ? midStrength : gentleStrength
-  const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, wantRequired: true, unique: true, prefer: retinoidWant[0] === 'retinol' ? strength : null })
+  // Her rung on the retinoid ladder chooses the product (Lita, 2026-11-10): a low
+  // retinol, a gentle retinal, or a stronger one (0.2% or "intense" in its name).
+  const isRetinal = p => /retinal/i.test(p.name || '')
+  const strongRetinal = p => isRetinal(p) && /0[.,]2|intense/i.test(p.name || '')
+  const RUNG_PREFER = [p => !isRetinal(p) && gentleStrength(p), p => isRetinal(p) && !strongRetinal(p), strongRetinal]
+  const retinoid = await pick(['serum', 'moisturizer'], { want: retinoidWant, wantRequired: true, unique: true, prefer: retinoidWant[0] === 'retinol' ? RUNG_PREFER[Math.min(retinoidRung(plan), 2)] : null })
   // A strong step with no safe product: its nights become repair nights, so the
   // calendar never shows a night with nothing to do.
   plan.missing = [!exfoliant && 'exfoliation', !retinoid && 'retinoid'].filter(Boolean)
@@ -401,24 +460,20 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
   const morning = [
     morningCleanse(profile) ? stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }) : thermalStep(thermal),
     amSerum && stepFrom('serum', 'Serum', amSerum, { cats: ['serum', 'toner'] }, amWantNow),
-    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, PEPTIDES),
-    stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'], ...creamExtra(plan) }, moistWant),
-    stepFrom('sunscreen', 'SPF 50', sunscreen, { cats: ['sunscreen'], ...spfExtra(profile) }, ['zincoxide', 'titanium', 'chemicalspf']),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, eyeWant),
+    stepFrom('moisturizer', 'Moisturize', moisturizer, withTip({ cats: ['moisturizer'], ...creamExtra(plan) }, neck.includes('neck-dry') && NECK_DRY_TIP), moistWant),
+    stepFrom('sunscreen', 'SPF 50', sunscreen, withTip(withTip({ cats: ['sunscreen'], ...spfExtra(profile) }, neck.length && NECK_SPF_TIP), neck.includes('neck-dark') && NECK_DARK_TIP), ['zincoxide', 'titanium', 'chemicalspf']),
     lipSpf && stepFrom('lips', 'Lips · SPF', lipSpf, { cats: ['lip care'], ...lipsStep }, ['zincoxide', 'titanium', 'chemicalspf']),
   ].filter(Boolean)
 
   // A serum first: a second cream on the same night isn't a repair step (audit 2).
   const repair = simple ? null : await pick(['serum', 'moisturizer'], { ...gentle, want: repairWant, wantRequired: true, unique: true, prefer: p => p.category === 'serum' })
-  // Eyes at night: a retinoid eye cream on the retinoid nights (never in pregnancy,
-  // calm phase or reactive start), peptides on the other nights.
-  const eyeRetinoid = retinoidWant[0] === 'retinol' && !plan.sensitive && !simple
-    ? await pick(['eye care'], { want: ['retinol'], wantRequired: true, unique: true, prefer: strength, reject: eyeReject })
-    : null
-  const retinoidNights = daysFor('retinoid')
-  const peptideNights = eyeRetinoid && retinoidNights.length ? JS_DAY.filter(d => !retinoidNights.includes(d)) : null
+  // Eyes at night: no separate retinol eye cream. The face retinol goes around the
+  // eyes too, so one product does it all (Lita, 2026-11-10); her eye cream every night.
+  const eyesRetinolOk = retinoidWant[0] === 'retinol' && !plan.sensitive && !simple
   // Lips: a nourishing balm every night; a lip scrub and a lip mask once or twice a week.
   // Perioral dermatitis: nothing extra around the mouth.
-  const lipBalm = plan.perioral ? null : await pick(['lip care'], { ...gentle, unique: true, prefer: p => !/scrub|exfoli|gommage|mask|masque|sleeping/i.test(p.name || '') })
+  const lipBalm = plan.perioral ? null : await pick(['lip care'], { ...gentle, unique: true, want: lipWant, prefer: p => !/scrub|exfoli|gommage|mask|masque|sleeping/i.test(p.name || '') })
   const lipScrub = plan.perioral ? null : await pick(['lip care'], { unique: true, prefer: p => /scrub|exfoli|gommage/i.test(p.name || ''), strictOnly: false })
   const lipMask = plan.perioral ? null : await pick(['lip care'], { ...gentle, unique: true, prefer: p => /mask|masque|sleeping|overnight/i.test(p.name || '') })
   const isScrub = c => c && /scrub|exfoli|gommage/i.test(c.product.name || '')
@@ -432,17 +487,17 @@ export const buildRekodRoutine = async (userId, basePlan, givenProfile) => {
     remover && stepFrom('remover', REMOVER_ACTION, remover, { cats: ['cleanser'] }),
     stepFrom('cleanser', 'Cleanse', cleanser, { cats: ['cleanser'] }),
     daysFor('exfoliation').length && exfoliant && stepFrom('exfoliant', 'Exfoliate', exfoliant, { days: daysFor('exfoliation'), night: 'exfoliation', cats: ['exfoliant', 'toner', 'serum'], ...(profile.skin_type === 'Combination' && exWant.includes('salicylic') ? { tip: ZONE_T_TIP } : {}) }, exWant),
-    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : retinoidWant[0] === 'retinol' ? 'Retinol' : 'Gentle treatment', retinoid, { days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant),
+    daysFor('retinoid').length && retinoid && stepFrom('treatment', retinoidWant[0] === 'azelaic' ? 'Azelaic acid' : retinoidWant[0] === 'retinol' ? (isRetinal(retinoid.product) ? 'Retinal' : 'Retinol') : 'Gentle treatment', retinoid, withTip({ days: daysFor('retinoid'), night: 'retinoid', cats: ['serum', 'moisturizer'] }, retinoidWant[0] === 'retinol' && retinoidAreasTip(eyesRetinolOk, lipsHealthy)), retinoidWant),
     daysFor('repair').length && repair && stepFrom('serum', 'Repair', repair, { days: daysFor('repair'), night: 'repair', cats: ['serum', 'moisturizer'] }, repairWant),
-    eyeRetinoid && retinoidNights.length && stepFrom('eye', 'Eye care · retinol', eyeRetinoid, { days: retinoidNights, night: 'eye-retinoid', cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, ['retinol']),
-    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { days: peptideNights, night: peptideNights ? 'eye-peptides' : undefined, cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, PEPTIDES),
+    eyePeptide && stepFrom('eye', 'Eye care', eyePeptide, { cats: ['eye care'], ...OPTIONAL_STEP, ...eyeTip }, eyeWant),
     // Only on repair and reset nights: never the same evening as an acid or a retinoid.
     // A real step, on the whole area where she breaks out (AAD; Lita, 2026-10-27).
     spotTreatment && spotNights.length && stepFrom('treatment', 'On your breakout areas', spotTreatment, { days: spotNights, cats: ['serum', 'exfoliant', 'moisturizer'], why: BENZOYL_WHY }, ['benzoyl']),
     stepFrom('moisturizer', 'Moisturize', moisturizer, { cats: ['moisturizer'], ...creamExtra(plan) }, moistWant),
     // No lip scrub on fragile lips (isotretinoin, a prescription cream) or in the simple routine.
-    !plan.fragile && !simple && isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'], ...OPTIONAL_STEP }),
-    lipBalm && stepFrom('lips', 'Lips', lipBalm, { cats: ['lip care'], ...lipsStep }),
+    // Nor when the glycolic big tip shows: it replaces the scrub (Lita, 2026-11-11).
+    !plan.fragile && !simple && !(lipBalm && lipGlycolicOk) && isScrub(lipScrub) && stepFrom('lipscrub', 'Lip scrub', lipScrub, { days: [3], night: 'lip-scrub', cats: ['lip care'], ...OPTIONAL_STEP }),
+    lipBalm && stepFrom('lips', 'Lips', lipBalm, withTip({ cats: ['lip care'], ...lipNight }, lipBigTip), lipWant),
     !simple && isMask(lipMask) && stepFrom('lipmask', 'Lip mask', lipMask, { days: [0, 4], night: 'lip-mask', cats: ['lip care'], ...OPTIONAL_STEP }),
   ].filter(Boolean)
 

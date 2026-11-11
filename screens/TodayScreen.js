@@ -56,6 +56,7 @@ import { track } from '../utils/analytics'
 import { useColors } from '../components/ui'
 import { SPACING, RADIUS } from '../utils/theme'
 import { GTYPE, GFW, glassCard, glassBubble, GlossyFill, PageBackdrop } from '../components/glossy'
+import { useKodaSay, KodaFace } from '../components/Koda'
 
 // "My skin day", like a food diary: three things to do each day (morning
 // routine, check-in, evening routine), a ring that fills up and a streak.
@@ -94,6 +95,7 @@ const pickedToday = (entry, coords) => {
 export default function TodayScreen({ navigation, route }) {
   const colors = useColors()
   const t = useT()
+  const kodaSay = useKodaSay()
   const insets = useSafeAreaInsets()
   const { language } = useLanguage()
   const { user } = useAuth()
@@ -408,6 +410,8 @@ export default function TodayScreen({ navigation, route }) {
     if (next[idx] && steps.every(s => !s.product || s.optional || next[tickOf(period, s)])) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       track('routine_done', { period })
+      // Koda's word when a routine is finished (Lita, 2026-11-09).
+      kodaSay(period === 'morning' ? t('Morning routine done. Your skin thanks you.') : t('Evening routine done. Sleep well.'), period === 'morning' ? 'joy' : 'calm')
       setOpen(null)
       setStreak(s => Math.max(s, 1))
     }
@@ -499,7 +503,11 @@ export default function TodayScreen({ navigation, route }) {
     if (!routines[period]) {
       return (
         <View style={[styles.logCard, { ...glassCard(colors), borderColor: colors.border, gap: SPACING.md }]}>
-          <Text style={[GTYPE.bodyStrong, { color: colors.text }]}>{t('No products in your {period} routine yet', { period: period === 'morning' ? t('morning') : t('evening') })}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+            {/* Koda guides an empty routine (Lita, 2026-11-09). */}
+            <KodaFace mood="curious" size={46} float />
+            <Text style={[GTYPE.bodyStrong, { color: colors.text, flex: 1 }]}>{t('No products in your {period} routine yet', { period: period === 'morning' ? t('morning') : t('evening') })}</Text>
+          </View>
           <Text style={[GTYPE.caption, { color: colors.textSecondary, lineHeight: 18 }]}>{t('Add the products you already use, or let us build a routine made for your skin.')}</Text>
           <Pressable onPress={() => navigation.navigate('RoutineBuilder', { period, startedAt: Date.now() })} style={[styles.emptyBtn, { backgroundColor: colors.primary, overflow: 'hidden' }]}><GlossyFill />
             <Text style={[GTYPE.bodyStrong, { color: colors.onPrimary }]}>{t('Add my products')}</Text>
@@ -686,7 +694,8 @@ export default function TodayScreen({ navigation, route }) {
     keyed('tip', recap ? (
         <Pressable onPress={() => navigation.navigate('Progress')} style={[styles.recap, { ...glassCard(colors), borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-            <FeatureIcon name="koda" size={20} color={colors.primary} />
+            {/* Koda's face follows her skin (Lita, 2026-11-09): calm when it reacts, joyful on a good day. */}
+            <KodaFace mood={reactive ? 'calm' : ['great', 'good'].includes(entry?.mood) ? 'joy' : 'happy'} size={30} />
             <Text style={[styles.recapKicker, { color: colors.primary, flex: 1 }]}>{t('YOUR TIP FOR THE WEEK')}</Text>
             <Pressable onPress={closeRecap} hitSlop={12} accessibilityLabel={t('Close')}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
           </View>

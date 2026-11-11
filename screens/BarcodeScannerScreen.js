@@ -45,7 +45,7 @@ export default function BarcodeScannerScreen({ navigation, route }) {
         navigation.setParams({ pickFor: undefined })
         navigation.navigate('RoutineBuilder', { picked: { ...pickFor, product: result.product } }, { merge: true })
       } else {
-        navigation.navigate('Product', { id: result.product.id, product: result.product })
+        navigation.navigate('Product', { id: result.product.id, product: result.product, fromScan: Date.now() })
       }
       return
     }

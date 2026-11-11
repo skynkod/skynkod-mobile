@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar'
 import * as Notifications from 'expo-notifications'
 import { ThemeProvider, useTheme } from './utils/ThemeContext'
 import { GlossyScope, GFW } from './components/glossy'
+import { KodaSayProvider } from './components/Koda'
 import { LanguageProvider, useLanguage, useT } from './utils/LanguageContext'
 import { AuthProvider } from './utils/AuthContext'
 import { supabase, signOut, updateUserProfile } from './utils/supabase'
@@ -23,6 +24,7 @@ import { BottomSheet, ListRow, Card } from './components/ui'
 import { SPACING } from './utils/theme'
 import LoginScreen from './screens/LoginScreen'
 import LockScreen from './components/LockScreen'
+import CrashGuard from './components/CrashGuard'
 import { isLockOn } from './utils/privacy'
 import OnboardingScreen from './screens/OnboardingScreen'
 // The previous Home (screens/HomeScreen-updated.js) is kept, not deleted.
@@ -447,6 +449,8 @@ function AppContent() {
       <AuthProvider user={devApp || { id: user.userId, email: user.email }} onLogout={handleLogout} onReplayOnboarding={() => setShowOnboarding(true)}>
         {/* The whole app in the glossy universe of the sign-up (Lita, 2026-11-06). */}
         <GlossyScope>
+        {/* Koda's little words after what she does (Lita, 2026-11-09), above the tab bar. */}
+        <KodaSayProvider bottom={TAB_BAR_HEIGHT + 12}>
         <NavigationContainer
           ref={navigationRef}
           theme={navTheme}
@@ -465,6 +469,7 @@ function AppContent() {
           <AppTabs userId={devApp?.id || user.userId} />
           <JourneyToast onOpen={() => { if (navigationRef.isReady()) navigationRef.navigate('Journey') }} />
         </NavigationContainer>
+        </KodaSayProvider>
         </GlossyScope>
       </AuthProvider>
     )
@@ -475,7 +480,8 @@ function AppContent() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {statusBar}
-      {content}
+      {/* A screen that breaks shows a calm Try again page, not a blank app (audit 2026-11-11). */}
+      <CrashGuard name="screen">{content}</CrashGuard>
       {locked && user && !booting ? <View style={StyleSheet.absoluteFill}><LockScreen onUnlock={() => setLocked(false)} /></View> : null}
       {showSplash ? <AnimatedSplash ready={!booting} onDone={() => setShowSplash(false)} /> : null}
     </View>
@@ -487,7 +493,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <LanguageProvider>
-          <AppContent />
+          <CrashGuard name="app">
+            <AppContent />
+          </CrashGuard>
         </LanguageProvider>
       </ThemeProvider>
     </SafeAreaProvider>

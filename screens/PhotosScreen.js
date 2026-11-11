@@ -111,7 +111,7 @@ export default function PhotosScreen({ route }) {
       ) : null}
 
       {list.length === 0 ? (
-        <EmptyState icon="camera-outline" title="No photos yet" description="Progress photos make small changes visible. Take your first one today." />
+        <EmptyState icon="camera-outline" koda="curious" title="No photos yet" description="Progress photos make small changes visible. Take your first one today." />
       ) : (
         <View style={styles.grid}>
           {list.map(photo => (

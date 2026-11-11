@@ -19,6 +19,7 @@ import { getUserProfile, updateUserProfile } from '../utils/supabase'
 import { SPACING, livePalette, liveStyles } from '../utils/theme'
 import { useTheme } from '../utils/ThemeContext'
 import { getDekodResults, recentScan, goalsFromDekod, compareScans, checkInFromDekod, averagePoints, startPoints } from '../utils/dekod'
+import { KodaFace } from '../components/Koda'
 import { isIntroHidden } from '../components/PremiumSpace'
 import { usePremium } from '../components/PremiumLock'
 import { isPremiumUser } from '../utils/premium'
@@ -34,7 +35,7 @@ import {
   findSafeAlternative, stepWithProduct, replaceRoutineStep, refreshRekodRoutine,
   decideStep, stepId, saveRekodPlan, projectRekod, programmeFinished, startMaintenance,
   conflictWith, planWeeks, planWhy, extendRekod, restorePreviousRoutine, regularityOf, endAdvice, optionsForStep,
-  nightCounts, retinolChoice,
+  nightCounts, retinolChoice, RETINOID_RUNGS, retinoidRung, stepUpReady, applyStepUp, stepUpLater,
 } from '../utils/rekod'
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -98,7 +99,8 @@ function RButton({ title, onPress, loading, disabled, outline, small, style }) {
 const Loading = ({ label }) => (
   <View style={{ flex: 1, backgroundColor: C.solid || C.bg, alignItems: 'center', justifyContent: 'center', gap: SPACING.md }}>
 <PageBackdrop />
-    <ActivityIndicator color={C.primary} size="large" />
+    {/* A real wait (building her Rekod): Koda works on it; a short load keeps the spinner (Lita, 2026-11-09). */}
+    {label ? <KodaFace mood="curious" size={72} float /> : <ActivityIndicator color={C.primary} size="large" />}
     {label ? <Text style={[GTYPE.caption, { color: C.muted }]}>{label}</Text> : null}
   </View>
 )
@@ -199,6 +201,21 @@ export default function RekodScreen({ navigation }) {
       { text: `Keep ${advised}`, style: 'cancel' },
       { text: 'Add a night', onPress: () => setRetinolNights(1) },
     ])
+  }
+
+  // The retinoid ladder (Lita, 2026-11-10): Rekod offers the next step, she says when.
+  const answerStepUp = async (ready) => {
+    tap()
+    try {
+      const next = ready ? applyStepUp(plan) : stepUpLater(plan)
+      await saveRekodPlan(user.id, next)
+      setPlan(next)
+      if (ready) setRoutine(await refreshRekodRoutine(user.id, next))
+      syncSmartReminders(user.id)
+      track(ready ? 'rekod_step_up' : 'rekod_step_up_later')
+    } catch (error) {
+      logError('Rekod_stepUp', error)
+    }
   }
 
   const decide = async (period, idx, decision) => {
@@ -632,6 +649,29 @@ export default function RekodScreen({ navigation }) {
               {plan.extraRetDropped ? (
                 <Text style={[GTYPE.caption, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>Your skin reacted: we went back to the pace we advise. You can add nights again once it’s calm.</Text>
               ) : null}
+            </View>
+          )
+        })() : null}
+
+        {/* The next step on the retinoid ladder: 8 good weeks at her top pace (Lita, 2026-11-10) */}
+        {premium !== false && stepUpReady(plan) ? (() => {
+          const next = retinoidRung(plan) + 1
+          const derm = next === RETINOID_RUNGS.length - 1
+          return (
+            <View style={[styles.card, { ...glassCard(C) }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <FeatureIcon name="trending-up-outline" size={18} color={C.primary} />
+                <Text style={[GTYPE.bodyStrong, { color: C.text, flex: 1 }]}>Your skin is ready for the next step</Text>
+              </View>
+              <Text style={[GTYPE.caption, { color: C.textSecondary, marginTop: SPACING.sm, lineHeight: 18 }]}>
+                {derm
+                  ? '8 good weeks with a stronger retinal. To go further, the next step is tretinoin, on prescription only: ask your dermatologist.'
+                  : `8 good weeks at your full pace. Next: ${RETINOID_RUNGS[next]}, a little stronger. Finish your bottle first, then tap I’m ready: you’ll start again at 2 nights a week.`}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
+                <RButton small title={derm ? 'Got it' : 'I’m ready'} onPress={() => answerStepUp(true)} style={{ flex: 1 }} />
+                {derm ? null : <RButton small outline title="Not now" onPress={() => answerStepUp(false)} style={{ flex: 1 }} />}
+              </View>
             </View>
           )
         })() : null}
@@ -1179,6 +1219,13 @@ function StepSheet({ step: s, onClose, navigation, onOwn, onKeep, onRemove, onPi
           <Text style={[styles.sheetTitle, { color: C.text }]}>{s.product || 'No product yet'}</Text>
           {s.why ? <Text style={[GTYPE.body, { color: C.textSecondary, lineHeight: 22 }]}>{s.why}</Text> : null}
           {s.tip ? <Text style={[GTYPE.caption, { color: C.textSecondary, lineHeight: 18, marginTop: SPACING.xs }]}>{s.tip}</Text> : null}
+          {/* The retinol guide, where she needs it (Lita, 2026-11-10) */}
+          {s.night === 'retinoid' && /^Retin[oa]l$/.test(s.action) ? (
+            <Pressable onPress={() => { onClose(); navigation.navigate('Article', { id: 'retinol-start' }) }} hitSlop={8} accessibilityRole="link" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="book-outline" size={15} color={C.primary} />
+              <Text style={[GTYPE.caption, { color: C.primary, ...GFW('700') }]}>How to start</Text>
+            </Pressable>
+          ) : null}
           {s.issues?.length ? (
             <View style={[styles.issueBox, { borderColor: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422' }]}>
               <Text style={[GTYPE.caption, { color: s.issues[0].level === 'avoid' ? '#CF4F57' : '#C98422', ...GFW('700') }]}>

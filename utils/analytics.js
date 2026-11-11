@@ -87,6 +87,21 @@ export async function reportError({ source, message, stack, fatal = false }) {
   if (!fatal) flushErrors()
 }
 
+// Her own words after a crash (Lita, 2026-11-11): sent only when she taps Send,
+// so it goes even with statistics turned off. Kept beside the crash it follows.
+export async function sendCrashNote(note, crash) {
+  const { error } = await supabase.from('app_errors').insert({
+    source: 'crash_note',
+    message: String(note || '').slice(0, 1000),
+    stack: String(crash || '').slice(0, 1000),
+    fatal: false,
+    happened_at: new Date().toISOString(),
+    user_id: userId,
+    ...device(),
+  })
+  if (error) throw error
+}
+
 let flushing = false
 export async function flushErrors() {
   if (flushing || off) return

@@ -67,7 +67,11 @@ export const nightInfo = (plan, night, now = new Date()) => (night === 'retinoid
 // level, a rest week ending), the routine is rebuilt.
 // r2: the makeup remover step (2026-10-25) rebuilds routines made before it.
 // r3: one new active every 2 weeks (2026-10-27): each new one rebuilds it.
-export const rekodKey = (plan, now = new Date()) => `${weekPattern(plan).join(',')}|${treatmentOf(plan, now)}|${resting(plan, now) ? 'rest' : ''}|i${introStage(plan, now)}|r3`
+// r4 (2026-11-09): eye, lip and neck steps follow her priorities per area, every Rekod rebuilds once.
+// r5 (2026-11-10): retinol down to the neck, Lita's big lip tip (glycolic + panthenol).
+// r6 (2026-11-11): the glycolic tip replaces the lip scrub; one short retinol sentence.
+// The retinoid rung (g) is part of it: a step up rebuilds the routine with the new product.
+export const rekodKey = (plan, now = new Date()) => `${weekPattern(plan).join(',')}|${treatmentOf(plan, now)}|${resting(plan, now) ? 'rest' : ''}|i${introStage(plan, now)}|g${retinoidRung(plan)}|r6`
 
 // Nights per week, from the rules (exfoliation, retinoid, repair, reset).
 const LEVELS = [
@@ -220,6 +224,33 @@ export const nightCounts = (plan, now = new Date()) => {
   return c
 }
 // Whether she can add retinol nights herself right now.
+// ---------- Retinoid strength (Lita, 2026-11-10) ----------
+// The ladder, fast towards retinal: a low retinol → a gentle retinal → a stronger
+// retinal → her dermatologist (tretinoin is on prescription only). A skin that
+// isn't sensitive starts with a gentle retinal, even a beginner; one used to
+// retinoids with the stronger retinal; a sensitive skin with a low retinol.
+export const RETINOID_RUNGS = ['a low retinol', 'a gentle retinal', 'a stronger retinal', 'your dermatologist']
+export const startRung = plan => (plan.sensitive ? 0 : plan.experience === 'used' ? 2 : 1)
+export const retinoidRung = plan => plan.retinoidRung ?? startRung(plan)
+// Ready for the next rung: 8 weeks at her top pace, every check-in since then
+// "All good". "Not now" asks again 4 weeks later.
+export const stepUpReady = (plan, now = new Date()) => {
+  if (!plan || treatmentOf(plan, now) !== 'retinol' || plan.pregnant || resting(plan, now) || reacting(plan, now)) return false
+  if (retinoidRung(plan) >= RETINOID_RUNGS.length - 1 || plan.level < (TARGET[plan.experience] ?? 2)) return false
+  const since = plan.levelSince ?? 1
+  const week = weekOf(plan, now)
+  if (week - since < 8 || (plan.stepUpLater && week < plan.stepUpLater)) return false
+  return (plan.checkins || []).filter(c => c.week > since).every(c => c.answer === 'good')
+}
+// She said yes: the next product, and back to 2 retinoid nights a week (level 1),
+// climbing again from there. Seeing her dermatologist changes no product.
+export const applyStepUp = (plan, now = new Date()) => {
+  const rung = retinoidRung(plan) + 1
+  const product = rung < RETINOID_RUNGS.length - 1
+  return { ...plan, retinoidRung: rung, stepUpLater: null, ...(product ? { level: Math.min(plan.level, 1), levelSince: weekOf(plan, now), extraRet: 0 } : {}) }
+}
+export const stepUpLater = (plan, now = new Date()) => ({ ...plan, stepUpLater: weekOf(plan, now) + 4 })
+
 export const retinolChoice = (plan, now = new Date()) => treatmentOf(plan, now) === 'retinol' && !plan.sensitive && !plan.pregnant && !resting(plan, now) && !reacting(plan, now)
 
 // Seven nights, Monday first (audit 2026-10-25). Hard rules, checked on

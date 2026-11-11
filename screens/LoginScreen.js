@@ -42,8 +42,6 @@ function LoginScreenInner({ onLogin, onNew }) {
   useEffect(() => {
     if (!recoveryUrl || !recoveryUrl.includes('reset-password')) return
     const params = readAuthParams(recoveryUrl)
-    // Names only (never the tokens), to see what the link brought back.
-    console.log('Reset link params:', Object.keys(params), params.error_code || '', params.error_description || '')
     if (!params.access_token || !params.refresh_token) {
       setMode('reset')
       setError(t(params.error_description) || t('This link has expired. Please ask for a new one.'))
@@ -55,7 +53,7 @@ function LoginScreenInner({ onLogin, onNew }) {
         setError(null)
         setPassword('')
         if (sessionError) {
-          console.log('Reset link session error:', sessionError.message)
+          logError('LoginScreen_resetLinkSession', sessionError, {}, 'warn')
           return setError(t('This link has expired. Please ask for a new one.'))
         }
         setResetStep('newPassword')

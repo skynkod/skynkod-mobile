@@ -272,7 +272,6 @@ export default function RoutineBuilderScreen({ navigation, route }) {
       ))
       exitTo({ tab: period, savedAt: Date.now() })
     } catch (error) {
-      console.log('Routine save failed:', error?.message)
       await logError('RoutineBuilder_save', error, { period }, 'warn')
       Alert.alert(t('Error'), t("Couldn't save your routine. Try again."))
     } finally {

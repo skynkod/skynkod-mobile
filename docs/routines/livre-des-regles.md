@@ -132,7 +132,7 @@ Matin : nettoyant → crème → SPF. Soir : démaquillant → nettoyant → cr�
 | R1 | **Un seul nouvel actif fort à la fois**, 2 semaines d'écart, le plus utile d'abord : le soir Traitement (semaine 1), puis le peroxyde de benzoyle s'il y a des boutons rouges, puis la vitamine C, puis l'exfoliation. Les soins doux (niacinamide, peptides, acide hyaluronique) ne comptent pas. Ses 2 premières semaines, l'exfoliation prend la place d'un soir Traitement. | 🟡 pratique courante | ✅ |
 | R2 | Rétinoïde : 2 soirs par semaine au départ, puis plus souvent si tout va bien. Au moins 2 semaines à chaque palier. | 🟡 fiches AAD | ✅ |
 | R3 | Rétinoïde : une noisette pour tout le visage, sur peau sèche, crème par-dessus ; éviter le coin des yeux, du nez et de la bouche. | 🟡 fiches AAD | ✅ (guide d'application) |
-| R4 | Débutante ou peau sensible : rétinol faible (0,1–0,3 %) ou rétinal faible. Habituée : plus fort. | 🔵 Mukherjee · 🟡 | ✅ |
+| R4 | Point de départ (Lita, 2026-11-10) : peau sensible → rétinol faible (0,1–0,2 %) ; peau non sensible, même débutante → rétinal doux ; habituée aux rétinoïdes → rétinal plus fort. Voir R14. | 🔵 Fluhr 1999 (rétinal aussi doux que le rétinol), Creidi 1998 · ⚪ (aucune étude chez des débutantes) | ✅ |
 | R5 | Acide exfoliant : pas avant la semaine 3 ; 2 soirs maximum (1 pour une peau sensible). Peelings et acides à 15 % ou plus seulement pour une peau habituée. | 🔵 Kornhauser · ⚪ | ✅ |
 | R6 | Jamais un rétinoïde et un acide exfoliant le même soir, ni deux soirs de suite. | 🟡 Idriss, Bowe | ✅ |
 | R7 | Peroxyde de benzoyle : jamais en même temps que la trétinoïne classique (on sépare matin et soir, ou on change de soir). L'adapalène le supporte. | 🔵 études de stabilité | ✅ (soirs Réparation et Reset) |
@@ -142,6 +142,7 @@ Matin : nettoyant → crème → SPF. Soir : démaquillant → nettoyant → cr�
 | R11 | Test de tolérance : la quantité habituelle sur une zone de la taille d'une pièce, au pli du coude, matin et soir, pendant 7 à 10 jours (un nettoyant : 5 minutes puis rincer). Puis sur le visage un soir sur deux la première semaine. Une allergie peut mettre plusieurs jours à apparaître. | 🟢 AAD | ✅ (l'app demande le résultat au 7e jour) |
 | R12 | Délais honnêtes : acné, premier changement en 4 à 6 semaines et plus net vers 12 (AAD) ; rides, premier changement vers 12 semaines et résultat net vers 6 mois (essais sur les rétinoïdes) ; taches, 8 à 12 semaines. Jamais de promesse plus rapide. | 🟢 AAD · 🔵 études | ✅ |
 | R13 | Acné toujours là après 12 semaines régulières : on propose une seule fois, sans l'imposer, un essai de 6 à 8 semaines avec moins de lait et de sucres rapides, à noter dans le journal. On ne l'interdit jamais. | 🔵 méta-analyse sur le lait (Nutrients 2018) ; essai randomisé sur les sucres rapides (Smith 2007) ; lien modeste, sans preuve de cause | ✅ (fin de Rekod, Koda) |
+| R14 | Échelle des rétinoïdes, vite vers le rétinal (Lita, 2026-11-10) : rétinol faible → rétinal doux → rétinal plus fort (0,2 % ou « intense ») → trétinoïne, seulement sur ordonnance, avec le dermatologue. Rekod propose la marche suivante après 8 semaines au rythme le plus fréquent, tous les bilans « All good ». Elle accepte quand son flacon est fini (« I'm ready ») ou dit « Not now » (on redemande 4 semaines plus tard). Nouveau produit → retour à 2 soirs par semaine, puis on remonte palier par palier. Jamais pendant la grossesse, une semaine de repos ou après une réaction. Aussi dans Koda. À vérifier par le dermatologue. | 🔵 Mukherjee 2006, Kwon 2018 · 🟡 (paliers de 2 à 4 semaines) · ⚪ 8 semaines | ✅ |
 
 ---
 
@@ -214,6 +215,23 @@ Les soirs tournent : **Exfoliation**, **Traitement** (rétinol, acide azélaïqu
 | Y3 | Lèvres : baume avec SPF le jour, baume nourrissant le soir. | 🟢 AAD | ✅ (facultatif) |
 | Y4 | Cou : les mêmes produits que le visage, descendus jusqu'au cou ; le rétinol seulement quand le visage le tolère. | 🟡 | ✅ (guide d'application) |
 | Y5 | Grains de milium : une crème pour les yeux légère, jamais un baume riche autour des yeux. | 🟡 explication logique, pas d'étude | ✅ |
+
+**Priorités par zone (Lita, 2026-11-09) : jusqu'à 2 choix pour les yeux, les lèvres et le cou. À vérifier par le dermatologue.**
+
+| # | Règle | Preuve | Code |
+|---|---|---|---|
+| Y6 | Poches : un soin à la caféine le matin, appliqué frais. Effet de quelques heures. | 🟡 petites études | ✅ |
+| Y7 | Cernes bruns : vitamine C ou niacinamide autour des yeux, avec le SPF ; résultat lent (8 à 12 semaines). | 🔵 petites études | ✅ |
+| Y8 | Cernes bleutés : caféine et peptides, et le sommeil. | 🟡 | ✅ |
+| Y9 | Cernes creusés : hydratation seulement, et on dit honnêtement qu'une crème ne remplit pas un creux (médecin si besoin). | ⚪ honnêteté | ✅ |
+| Y10 | Ridules au coin des yeux : peptides le matin ; le même rétinol que le visage autour des yeux les soirs rétinol (voir Y17). | 🔵 | ✅ |
+| Y11 | Lèvres sèches, qui pèlent ou coins fendillés : baume nourrissant ou occlusif le soir (pétrolatum, karité, céramides, lanoline), non facultatif. Coins fendillés plus de 2 semaines : médecin. | 🟢 AAD | ✅ |
+| Y12 | Lèvres foncées : baume SPF chaque matin, non facultatif, à remettre au soleil. | 🟡 | ✅ |
+| Y13 | Ridules autour des lèvres : baume aux peptides le soir. | 🟡 | ✅ |
+| Y14 | Cou : le rétinol descend toujours jusqu'au cou les soirs rétinol, quels que soient ses choix (Lita, 2026-11-10) ; peau sèche → la crème aussi ; tout souci au cou → le SPF sur le cou chaque matin ; plaques foncées et veloutées → à montrer à un médecin (lien possible avec la glycémie). | 🟢 AAD (acanthosis) · 🟡 | ✅ |
+| Y15 | Grande astuce lèvres (Lita, 2026-11-10) : une fois par semaine, à la place du gommage, un tonique à l'acide glycolique quelques secondes sur les lèvres, rincé, puis une couche épaisse de pommade au panthénol (comme Bepanthen). Jamais sur lèvres fendillées, abîmées, coins fendillés, isotrétinoïne, crème sur ordonnance, peau réactive ou dermatite péri-orale : alors le panthénol seul, le soir. Quand cette astuce s'affiche, l'étape Lip scrub du mercredi disparaît (Lita, 2026-11-11) ; les autres gardent le Lip scrub. Aussi dans Koda. À vérifier par le dermatologue. | 🟡 panthénol · ⚪ glycolique (astuce populaire, sans étude) | ✅ |
+| Y16 | Le rétinol du visage passe aussi sur les lèvres, en couche fine, puis le baume (Lita, 2026-11-10). Seulement sur des lèvres en bon état : pas sèches, pas qui pèlent, pas gercées, pas blessées, pas de coins fendillés, pas d'isotrétinoïne ni de crème sur ordonnance, pas de dermatite péri-orale. Le glycolique des lèvres (Y15), un soir sans rétinol. Aussi dans Koda. À vérifier par le dermatologue. | ⚪ | ✅ |
+| Y17 | Un seul rétinol pour tout (Lita, 2026-11-10) : celui du visage sert aussi au contour des yeux (un grain de riz sur l'os sous l'œil, jamais sur la paupière, puis la crème des yeux) et aux lèvres en bon état (Y16). Plus de crème rétinol séparée pour les yeux : moins de produits à acheter. Pas autour des yeux pour une peau sensible ou dans la routine simple. La crème des yeux tous les soirs. Aussi dans Koda. À vérifier par le dermatologue. | 🟡 · ⚪ | ✅ |
 
 ---
 

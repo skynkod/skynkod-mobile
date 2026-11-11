@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, Modal, Image, Dimensions } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Alert, Modal, Image, Dimensions } from 'react-native'
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 import { useFocusEffect } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { Ionicons } from '@expo/vector-icons'
 import { P, PremiumShell, PButton, PLoading, tap } from '../components/PremiumSpace'
+import { KodaFace } from '../components/Koda'
 import { useAuth } from '../utils/AuthContext'
 import { useLanguage } from '../utils/LanguageContext'
 import { isPremiumUser } from '../utils/premium'
@@ -263,7 +264,8 @@ export default function DekodScreen({ navigation }) {
           </View>
           {!done ? (
             <View style={{ alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.xl }}>
-              <ActivityIndicator color={P.primary} />
+              {/* Koda looks at the photo while it's checked (Lita, 2026-11-09). */}
+              <KodaFace mood="curious" size={52} float />
               <Text style={[GTYPE.bodyStrong, { color: P.text }]}>{t('Checking light and position…')}</Text>
               <Text style={[GTYPE.caption, { color: P.muted }]}>{t('Your photo is analysed by our AI provider. Skynkod doesn\'t keep it.')}</Text>
             </View>

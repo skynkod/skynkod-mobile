@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { trackProductPage, trackBuyCheck } from '../utils/journey'
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
@@ -26,6 +26,7 @@ import { safeAlternativeFor, concernAlternativeFor } from '../utils/rekod'
 import { SPACING, RADIUS } from '../utils/theme'
 import { GTYPE, GFW, glassCard } from '../components/glossy'
 import FeatureIcon from '../components/FeatureIcon'
+import { useKodaSay } from '../components/Koda'
 
 // A product: its match with the user's skin first, the why underneath, then
 // key ingredients. The full INCI list stays folded away.
@@ -104,6 +105,18 @@ export default function ProductScreen({ navigation, route }) {
       .catch(error => logError('ProductScreen_load', error, { id }, 'warn'))
       .finally(() => setLoading(false))
   }, [route?.params?.id])
+
+  // Right after a scan, Koda gives his word on it (Lita, 2026-11-09): once per scan.
+  const kodaSay = useKodaSay()
+  const saidFor = useRef(null)
+  useEffect(() => {
+    const scan = route?.params?.fromScan
+    if (!scan || !product || !profile || saidFor.current === scan) return
+    saidFor.current = scan
+    const tone = productMatch(product, profile).tone
+    if (tone === 'danger' || tone === 'warning') kodaSay(t('Not for your skin. Let’s find better.'), 'calm')
+    else if (tone === 'success') kodaSay(t('A good match for your skin.'), 'joy')
+  }, [route?.params?.fromScan, product, profile])
 
   if (loading) return <LoadingView />
   if (!product) return <Screen back><EmptyState icon="alert-circle-outline" title={t('Product not found')} /></Screen>
