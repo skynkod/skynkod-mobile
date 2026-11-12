@@ -5,6 +5,13 @@
 
 Dernière mise à jour : [DATE]
 
+**En bref :**
+
+- Nous ne vendons jamais vos données, et les marques ne savent jamais qui vous êtes.
+- Vos informations de santé ne sont conservées qu'avec votre accord explicite, que vous pouvez retirer à tout moment.
+- Votre selfie Dekod est analysé une fois, puis supprimé. Seul le résultat est conservé.
+- Vous pouvez obtenir une copie de vos données, ou supprimer votre compte et toutes vos données, à tout moment dans l'application.
+
 Cette politique explique quelles données personnelles Skynkod collecte, pourquoi, où elles vont et quels sont vos droits, conformément à la **loi n° 09-08** relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.
 
 ## 1. Responsable du traitement
@@ -23,132 +30,106 @@ Ce traitement a fait l'objet [d'une déclaration / d'une demande d'autorisation]
 ## 3. Les données que nous collectons
 
 ### a) Votre compte
-Adresse email, mot de passe (stocké de façon chiffrée par notre hébergeur, nous ne le voyons jamais), prénom, **votre tranche d'âge** (18–24, 25–34, 35–44, 45–54, 55 et plus), vos choix de consentement et leurs dates. Si votre compte a été créé avec une version précédente de l'application, il peut aussi contenir votre date de naissance.
+Adresse email, mot de passe (stocké chiffré par notre hébergeur ; nous ne le voyons jamais), prénom, tranche d'âge, et vos choix de consentement avec leur date. Les comptes plus anciens peuvent aussi contenir une date de naissance.
 
-**Mode discret** (Réglages › Confidentialité) : votre prénom et votre date de naissance sont effacés, les statistiques d'utilisation sont désactivées et vos conversations avec Koda ne sont plus conservées (les anciennes sont supprimées). Votre email reste, uniquement pour vous connecter.
+Le **mode discret** (Réglages › Confidentialité) efface votre prénom et votre date de naissance, désactive les statistiques d'utilisation et arrête de conserver vos conversations avec Koda. Votre email reste, uniquement pour vous connecter.
 
 ### b) Votre profil de peau
-Type de peau, préoccupations et objectifs, et votre sexe. Vous choisissez vos problèmes de peau en touchant des photos (visage, yeux, lèvres, cou), ainsi que les zones du visage où vous voyez vos pores ou avez des boutons ; nous gardons seulement la liste de ce que vous avez choisi, jamais d'image de vous.
-
-- **Couleur de peau** (facultatif) : une teinte parmi 6, uniquement pour proposer des crèmes solaires sans traces blanches et des soins doux pour les taches.
-
-Les photos de problèmes qui relèvent d'un médecin (rosacée, eczéma…) ne s'affichent qu'avec votre accord pour les données de santé.
+Type de peau, préoccupations, objectifs et sexe ; les problèmes de peau et les zones du visage que vous choisissez (nous gardons la liste, jamais une image de vous) ; et, si vous l'indiquez, votre teinte de peau (une parmi 6), uniquement pour proposer des crèmes solaires et des soins des taches adaptés.
 
 ### c) Données de santé (uniquement avec votre accord explicite)
-Si vous activez « Let Skynkod keep my skin safe » à l'inscription (ou « Sensitive skin information » dans Réglages › Confidentialité), nous collectons aussi : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement, traitements (par exemple Roaccutane) et, pour les femmes de 45 ans ou plus, où vous en êtes de la ménopause (pas encore, en cours, ou après), pour adapter vos soins à une peau plus sèche et plus fine. Quand des boutons rouges apparaissent autour de la bouche, l'application peut évoquer une possible dermatite périorale : une simple piste, qu'un médecin confirme.
-
-Sans cet accord, ces questions ne vous sont pas posées. Vous pouvez retirer votre accord à tout moment dans Profil → Réglages → Confidentialité : ces informations sont alors effacées.
+Si vous activez « Let Skynkod keep my skin safe » à l'inscription (ou « Sensitive skin information » dans Réglages › Confidentialité) : type d'acné, affections de la peau (rosacée, eczéma…), ingrédients à éviter ou allergies, grossesse ou allaitement, traitements (par exemple Roaccutane) et, à partir de 45 ans, la ménopause. Sans cet accord, ces questions ne vous sont pas posées. Si vous le retirez, ces informations sont effacées.
 
 ### d) Votre journal
-Chaque jour, si vous le remplissez : l'état de votre peau (de « très bien » à « terrible », et « Your skin feels » : irritée, rouge, déshydratée…), ce qui se passe (nouveau bouton, rougeurs, sécheresse, mauvaise nuit, stress, règles, soleil, nouveau produit…), une note libre, et votre sommeil de la nuit (comment vous avez dormi et combien d'heures), si vous le notez. L'application cherche dans vos propres données si le sommeil semble jouer sur votre peau.
-
-Toutes les 2 semaines, si vous le faites : votre **Skin review** (votre peau va mieux, pareil ou moins bien depuis le début, et ce qui vous gêne). L'application en tire vos progrès (par exemple « boutons −31 % ») et les liens observés avec vos produits ; ce sont des calculs sur vos propres données, jamais un diagnostic.
+Si vous le remplissez : l'état de votre peau, ce qui se passe (boutons, stress, sommeil, règles, soleil, nouveau produit…), une note libre, votre sommeil et, toutes les 2 semaines, votre Skin review. L'application calcule vos progrès et les liens avec vos produits à partir de vos propres données, jamais un diagnostic.
 
 [⚠️ À trancher avec l'avocat : ces informations peuvent être considérées comme des données de santé. Voir le document « À faire dans l'application ».]
 
-### e) Vos routines, vos produits et vos dépenses
-Les produits de vos routines et les étapes cochées, les produits que vous possédez ou voulez acheter, leurs dates d'ouverture, les produits que vous retirez de vos routines (avec la date), vos réponses « Better / Same / Worse » sur un produit, les conseils que vous choisissez d'ignorer (« Keep it »), vos achats (prix, magasin, date, monnaie) et votre budget mensuel. Vos badges et vos points sont aussi gardés dans votre compte, pour ne pas les perdre en changeant de téléphone.
+### e) Vos routines, produits et dépenses
+Vos routines et les étapes que vous cochez, les produits que vous avez, voulez ou avez arrêtés (avec leurs dates), vos avis sur eux, vos achats et votre budget, et vos badges.
 
 ### f) Vos conversations avec Koda
 Les messages que vous échangez avec Koda.
 
 ### g) Ce que vous partagez avec la communauté
-Les prix et magasins que vous indiquez, les codes-barres que vous associez à un produit, et les produits que vous demandez à ajouter au catalogue.
+Les prix, magasins et codes-barres que vous saisissez, et les produits que vous nous demandez d'ajouter.
 
-### h) Dekod, le scan de peau
-Quand vous utilisez Dekod, vous prenez une photo de votre visage. Elle est recadrée sur votre visage, envoyée une seule fois pour être analysée, puis supprimée : **elle n'est jamais conservée, ni par nous ni par notre prestataire**. Les copies de la photo sur votre téléphone sont aussi effacées dès qu'elle a servi. Seul le résultat est gardé dans votre compte, enregistré par notre serveur (ce qui est visible, noté de 0 à 10 : rougeurs, brillance, boutons, points noirs, sécheresse, taches et teint, teint terne, avec un court conseil pour chacun, et la luminosité mesurée de la photo). Vous donnez votre accord avant votre premier scan ; nous gardons la date de cet accord dans votre compte. Vous pouvez le retirer à tout moment dans Réglages › Confidentialité, et supprimer chaque résultat, ou tous, depuis l'application. Dekod donne des observations cosmétiques, jamais un diagnostic médical.
+### h) Dekod, l'analyse de peau
+La photo de votre visage est envoyée une seule fois pour être analysée, puis supprimée : **elle n'est jamais conservée, ni par nous ni par notre prestataire**, et les copies sur votre téléphone sont supprimées aussi. Seul le résultat est gardé dans votre compte (ce qui est visible, noté de 0 à 10, avec un conseil pour chaque point). Vous donnez votre accord avant le premier scan, pouvez le retirer à tout moment dans Réglages › Confidentialité, et pouvez supprimer chaque résultat. Dekod donne des observations cosmétiques, jamais un diagnostic.
 
 ### i) Votre utilisation de l'application, et les erreurs
-Les écrans que vous ouvrez et les fonctionnalités que vous utilisez (par exemple : routine terminée, check-in du matin fait, message envoyé à Koda, produit scanné ou introuvable), avec la date, le type de téléphone (iPhone ou Android), la version de l'application et sa langue. Quand une recherche ne trouve aucun produit, les mots recherchés. Quand l'application rencontre une erreur, un rapport technique (écran, message d'erreur). **Jamais** ce que vous écrivez dans votre journal, votre humeur, ni le contenu de vos messages à Koda. Ces données sont liées à votre compte. Vous pouvez les désactiver à tout moment dans Réglages › Confidentialité › « Aider à améliorer Skynkod ». Si l'application s'arrête sur une erreur, vous pouvez aussi nous dire en quelques mots ce qui s'est passé : ces mots ne partent que si vous appuyez sur Envoyer, même si ce réglage est désactivé, et sont gardés avec le rapport d'erreur.
+Les écrans et fonctionnalités que vous utilisez, avec la date, le type de téléphone, la version de l'application et sa langue ; les mots des recherches qui ne trouvent rien ; et des rapports techniques quand une erreur survient. **Jamais** votre journal, votre humeur ni le contenu de vos messages à Koda. Vous pouvez désactiver cela dans Réglages › Confidentialité › « Aider à améliorer Skynkod ». Après une erreur, vous pouvez aussi nous dire en quelques mots ce qui s'est passé : ces mots ne partent que si vous appuyez sur Envoyer, même si ce réglage est désactivé, et sont gardés avec le rapport d'erreur.
 
 ### j) Les données qui restent sur votre téléphone
 Nous ne recevons pas ces données :
-- **Localisation approximative** (arrondie à environ 10 km) : uniquement si vous l'autorisez, pour calculer l'heure du lever et du coucher du soleil (mode jour ou nuit) et pour la « météo de votre peau ». Elle est enregistrée sur votre téléphone ; pour la météo, seules ces coordonnées arrondies sont envoyées au service météo Open-Meteo, sans votre nom, votre email ni aucun identifiant.
-  **Exception :** pour vous prévenir quand vous êtes loin de chez vous sous un autre climat (« Your environment changed »), l'application garde un relevé par jour pendant 45 jours (ces coordonnées arrondies, la température, l'humidité et l'indice UV). Il est enregistré sur votre téléphone **et dans votre compte**, pour suivre un changement de téléphone, et effacé avec votre compte.
-- **Caméra** : pour scanner le code-barres d'un produit (aucune image n'est enregistrée ni envoyée ; seul le numéro du code-barres est utilisé), et pour Dekod (voir 3h).
-- **Notifications** : les rappels sont programmés sur votre téléphone.
-- **Face ID** (verrouillage facultatif) : c'est votre iPhone qui reconnaît votre visage. Skynkod ne reçoit jamais votre visage ni aucune donnée biométrique, seulement si le déverrouillage a réussi.
-- **Apple Health** (iPhone uniquement, seulement si vous le connectez) : Skynkod **lit** les dates de vos règles et votre sommeil, et **n'écrit jamais** rien dans Apple Health. Ces données restent sur votre téléphone : elles ne nous sont jamais envoyées, ne sont jamais vendues ni utilisées pour la publicité. Elles servent à vous prévenir avant vos règles (« règles prévues dans 3 jours ») et à repérer des liens dans votre journal (par exemple des boutons avant les règles, ou après des nuits courtes). Si vous avez donné votre accord pour les données de santé, seuls ces liens peuvent faire partie de ce que Koda lit (voir section 5). Vous pouvez le déconnecter à tout moment dans l'application ou dans l'app Santé.
+- **Position approximative** (arrondie à environ 10 km), seulement si vous l'autorisez, pour le mode jour/nuit et la météo de votre peau. Seules ces coordonnées arrondies sont envoyées au service météo Open-Meteo, sans aucun identifiant. **Exception :** pour vous prévenir quand vous êtes dans un autre climat, un relevé par jour (ces coordonnées, température, humidité, UV) est aussi gardé 45 jours dans votre compte.
+- **Caméra** : pour les codes-barres (seul le numéro est utilisé) et pour Dekod (voir 3h).
+- **Notifications** : programmées sur votre téléphone.
+- **Face ID** (verrou facultatif) : votre iPhone vérifie lui-même votre visage ; nous savons seulement si le déverrouillage a réussi.
+- **Apple Santé** (iPhone uniquement, si vous le connectez) : Skynkod **lit** seulement vos dates de règles et votre sommeil, pour vous prévenir avant vos règles et repérer des liens dans votre journal. Ces données ne quittent jamais votre téléphone, sauf ces liens si vous avez accepté les données de santé (voir la section 5). Vous pouvez le déconnecter à tout moment.
 
 ## 4. Pourquoi nous les utilisons
 
-| Finalité | Données | Base |
+| Finalité | Données | Base légale |
 |---|---|---|
-| Créer et gérer votre compte | Compte | Exécution du contrat (les conditions d'utilisation) |
-| Vérifier si un produit vous convient, construire vos routines | Profil de peau, données de santé si accord, produits | Exécution du contrat ; **consentement explicite** pour les données de santé |
+| Créer et faire fonctionner votre compte | Compte | Exécution du contrat (les Conditions d'utilisation) |
+| Vérifier si un produit vous convient, construire vos routines | Profil de peau, données de santé si accord, produits | Contrat ; **accord explicite** pour les données de santé |
 | Tenir votre journal et repérer des tendances dans vos propres données | Journal, routines, produits | Exécution du contrat [et consentement : voir 3d] |
-| Répondre à vos questions avec Koda | Message, profil, et un résumé de votre semaine (voir section 5) | Exécution du contrat ; consentement explicite pour les données de santé |
-| Suivre vos produits et vos dépenses | Produits, dépenses | Exécution du contrat |
-| Améliorer le catalogue pour tous (prix moyens en dirhams, codes-barres) | Contributions communautaires, **sans nom ni email** | Intérêt légitime |
-| Comprendre comment l'application est utilisée et corriger les erreurs, pour améliorer Skynkod | Utilisation de l'application, rapports d'erreurs (voir 3i) | Intérêt légitime ; vous pouvez vous y opposer à tout moment dans Réglages › Confidentialité |
+| Répondre à vos questions avec Koda | Message, profil, et un résumé de votre semaine (voir la section 5) | Contrat ; accord explicite pour les données de santé |
+| Suivre vos produits et vos dépenses | Produits, dépenses | Contrat |
+| Améliorer le catalogue pour tous (prix moyens, codes-barres) | Contributions, **sans nom ni email** | Intérêt légitime |
+| Comprendre comment l'application est utilisée et corriger les erreurs | Utilisation et rapports d'erreurs (voir 3i) | Intérêt légitime ; vous pouvez vous y opposer dans Réglages › Confidentialité |
 | Offres et tests de produits de marques | Profil de peau, **sans transmettre votre identité aux marques** | Votre consentement (case facultative) |
-| Sécurité, prévention des abus (par exemple le nombre de questions à Koda par jour) | Compte, compteurs d'utilisation | Intérêt légitime |
+| Sécurité et prévention des abus (par exemple la limite quotidienne de questions à Koda) | Compte, compteurs d'utilisation | Intérêt légitime |
 
 ## 5. Koda et l'intelligence artificielle
 
-Quand vous écrivez à Koda, votre message est envoyé à notre prestataire d'IA, **Anthropic PBC (États-Unis)**, avec :
-- votre profil de peau ;
-- un résumé de votre situation : votre routine, les produits ouverts ou ajoutés récemment et un éventuel plan de 7 jours en cours ;
-- votre programme Rekod, si vous en suivez un (objectifs, semaine, étape du soir) ;
-- les jours où vous utilisez chaque produit, depuis quand vous utilisez vos actifs, les produits que vous avez arrêtés ou que l'application vous suggère d'arrêter, vos réponses « Better / Same / Worse », et le fait que vous soyez en voyage sous un autre climat ;
-- **si vous avez donné votre accord pour les données de santé** : votre journal des 7 derniers jours (dont votre sommeil), les tendances repérées dans votre journal (y compris avec Apple Health, s'il est connecté), votre dernier résultat Dekod, vos progrès, vos Skin reviews et les liens observés avec vos produits.
+Quand vous écrivez à Koda, votre message est envoyé à notre prestataire d'intelligence artificielle, **Anthropic PBC (États-Unis)**, avec votre profil de peau, votre routine et vos produits récents, votre programme Rekod et l'évolution de vos produits. **Si vous avez accepté les données de santé**, il reçoit aussi votre journal des 7 derniers jours (sommeil compris), les tendances repérées (y compris avec Apple Santé), votre dernier résultat Dekod, vos progrès et vos Skin reviews.
 
-**Dekod** fonctionne de la même façon : votre photo est envoyée à Anthropic uniquement pour lire ce qui est visible sur votre peau, puis supprimée.
+**Dekod** fonctionne de la même façon : votre photo est envoyée à Anthropic uniquement pour lire ce qui est visible, puis supprimée.
 
 Ces informations servent uniquement à générer les réponses de Koda et de Dekod. [À vérifier avec l'avocat et dans le contrat Anthropic en vigueur : selon ses conditions commerciales, Anthropic n'utilise pas les données envoyées via son API pour entraîner ses modèles et ne les conserve que pour une durée limitée.]
 
 ## 6. Qui reçoit vos données
 
-Nous faisons appel à des prestataires qui traitent les données pour notre compte, sur nos instructions :
+Des prestataires qui traitent les données pour notre compte et selon nos instructions :
 
-| Prestataire | Rôle | Lieu |
+| Prestataire | Rôle | Localisation |
 |---|---|---|
-| Supabase Inc. | Hébergement de la base de données, des comptes et des fichiers | Serveurs à **Francfort (Allemagne, Union européenne)** |
-| Anthropic PBC | Fonctionnement de Koda et de Dekod | États-Unis |
-| Resend Inc. | Envoi des emails de l'application (confirmation du compte, nouveau mot de passe, avis sur le compte) | États-Unis |
-| Apple / Google | Distribution de l'application ; paiements Premium (quand ils seront disponibles) | Selon leurs conditions |
+| Supabase Inc. | Base de données, comptes et fichiers | **Francfort (Allemagne, Union européenne)** |
+| Anthropic PBC | Fait fonctionner Koda et Dekod | États-Unis |
+| Resend Inc. | Envoie les emails de l'application | États-Unis |
+| Apple / Google | Distribution de l'application et paiements Premium | Selon leurs propres conditions |
 
-Quand vous scannez un produit inconnu, seul le **numéro du code-barres** est envoyé à la base ouverte Open Beauty Facts. Aucune donnée personnelle n'est transmise.
-
-Pour la météo de votre peau, seules vos **coordonnées arrondies à environ 10 km** sont envoyées au service météo **Open-Meteo** (Suisse), sans aucun identifiant.
-
-Nous pouvons aussi communiquer des données si la loi l'exige (par exemple sur demande d'une autorité judiciaire).
+Sans aucune donnée personnelle : les numéros de code-barres des produits inconnus vont à Open Beauty Facts, et les coordonnées arrondies à Open-Meteo (Suisse). Nous pouvons aussi communiquer des données si la loi l'exige.
 
 ## 7. Transferts hors du Maroc
 
-Vos données sont hébergées dans l'Union européenne (Allemagne), et les messages envoyés à Koda sont traités aux États-Unis. Ces transferts hors du Maroc sont réalisés conformément à la loi 09-08, [après autorisation de la CNDP / sur la base de votre consentement explicite : à confirmer avec l'avocat], avec des prestataires qui s'engagent à protéger vos données.
+Vos données sont hébergées dans l'Union européenne (Allemagne), et les messages envoyés à Koda sont traités aux États-Unis. Ces transferts sont réalisés conformément à la loi 09-08, [après autorisation de la CNDP / sur la base de votre consentement explicite : à confirmer avec l'avocat], avec des prestataires qui s'engagent à protéger vos données.
 
-## 8. Combien de temps nous les gardons
+## 8. Durée de conservation
 
-- **Tant que votre compte existe**, vos données sont conservées pour faire fonctionner l'application.
-- **Suppression du compte** : quand vous supprimez votre compte depuis l'application, nous effaçons immédiatement vos données (profil, journal, routines, produits, dépenses, conversations avec Koda, photos) et votre identifiant de connexion. Les sauvegardes techniques de notre hébergeur sont effacées automatiquement dans un délai de [X JOURS, à vérifier auprès de Supabase].
-- **Compte inactif** : un compte sans aucune connexion pendant **12 mois** est supprimé, après un email de prévenance.
-- **Retrait du consentement santé** : les données de santé correspondantes sont effacées.
-- **Statistiques d'utilisation et rapports d'erreurs** : conservés 12 mois, puis effacés automatiquement (et immédiatement si vous supprimez votre compte).
-- Les contributions communautaires anonymes (par exemple un prix moyen) peuvent être conservées, puisqu'elles ne permettent pas de vous identifier.
+- **Tant que votre compte existe**, pour que l'application fonctionne.
+- **Suppression du compte** : nous effaçons immédiatement vos données et votre identifiant de connexion. Les sauvegardes techniques de notre hébergeur sont effacées automatiquement dans un délai de [X JOURS, à vérifier auprès de Supabase].
+- **Compte inactif** : supprimé après **12 mois** sans connexion, après un email de prévenance.
+- **Retrait de l'accord santé** : les données de santé concernées sont effacées.
+- **Statistiques d'utilisation et rapports d'erreurs** : 12 mois (effacés tout de suite si vous supprimez votre compte).
+- Les contributions anonymes (par exemple un prix moyen) peuvent être conservées, car elles ne permettent pas de vous identifier.
 
 ## 9. Sécurité
 
-Les échanges entre l'application et nos serveurs sont chiffrés (HTTPS). L'accès à vos données est limité à votre compte grâce à des règles de sécurité au niveau de la base de données. Les clés d'accès sensibles ne sont jamais stockées dans l'application.
+Les échanges sont chiffrés (HTTPS), l'accès à vos données est limité à votre compte par des règles de sécurité de la base de données, et les clés d'accès sensibles ne sont jamais stockées dans l'application.
 
 ## 10. Vos droits
 
-Conformément à la loi 09-08, vous disposez des droits suivants :
+Conformément à la loi 09-08, vous pouvez **accéder** à vos données (en obtenir une copie à tout moment dans Réglages › Confidentialité › « Obtenir une copie de mes données »), les **rectifier**, vous **opposer** à leur traitement (et à la prospection sans avoir à vous justifier), **supprimer** votre compte et vos données directement dans l'application, et **retirer votre consentement** à tout moment dans Réglages › Confidentialité.
 
-- **accès** : savoir quelles données nous avons sur vous. Vous pouvez obtenir une copie de vos données à tout moment, tout de suite, dans Réglages › Confidentialité › « Obtenir une copie de mes données » ;
-- **rectification** : les corriger ;
-- **opposition** : vous opposer à un traitement pour un motif légitime, et à la prospection sans motif ;
-- **suppression** : effacer votre compte et vos données à tout moment, directement dans l'application ;
-- **retrait du consentement** : à tout moment, dans Profil → Réglages → Confidentialité, sans remettre en cause ce qui a été fait avant.
-
-Pour exercer ces droits : [EMAIL DE CONTACT]. Nous vous répondrons dans les délais prévus par la loi.
-
-Vous pouvez aussi introduire une réclamation auprès de la **CNDP** (www.cndp.ma).
+Contact : [EMAIL DE CONTACT]. Nous répondons dans les délais prévus par la loi. Vous pouvez aussi déposer une plainte auprès de la **CNDP** (www.cndp.ma).
 
 ## 11. Âge minimum
 
-Skynkod est réservée aux personnes de **18 ans ou plus**. Votre tranche d'âge est demandée à l'inscription, et la plus jeune est 18–24 ans. Si vous nous indiquez avoir moins de 18 ans, vos réponses et le compte qui vient d'être créé sont immédiatement supprimés. Nous ne collectons pas sciemment de données sur des personnes de moins de 18 ans. Si vous pensez qu'un mineur nous a transmis des données, contactez-nous pour que nous les supprimions.
+Skynkod est réservée aux personnes âgées de **18 ans ou plus**. Si vous nous indiquez avoir moins de 18 ans, vos réponses et le compte tout juste créé sont supprimés immédiatement. Si vous pensez qu'une personne mineure nous a transmis des données, contactez-nous et nous les supprimerons.
 
 ## 12. Modifications
 
-Nous pouvons modifier cette politique. En cas de changement important, nous vous préviendrons dans l'application ou par email, et nous vous redemanderons votre accord si la loi l'exige.
+Nous pouvons modifier cette politique. En cas de changement important, nous vous préviendrons dans l'application ou par email, et vous redemanderons votre accord quand la loi l'exige.
